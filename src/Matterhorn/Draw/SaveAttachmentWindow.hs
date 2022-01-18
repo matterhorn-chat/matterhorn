@@ -14,13 +14,15 @@ import           Brick.Widgets.Edit
 
 import qualified Data.Text as T
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.Draw.Buttons
 import           Matterhorn.Themes
 
 
-drawSaveAttachmentWindow :: ChatState -> Widget Name
-drawSaveAttachmentWindow st =
+drawSaveAttachmentWindow :: ChatState -> TeamId -> Widget Name
+drawSaveAttachmentWindow st tId =
     centerLayer $
     hLimit maxWindowWidth $
     joinBorders $
@@ -37,9 +39,8 @@ drawSaveAttachmentWindow st =
                 ]
          ]
     where
-        tId = st^.csCurrentTeamId
         editorHeight = 1
         maxWindowWidth = 50
-        foc = st^.csCurrentTeam.tsSaveAttachmentDialog.attachmentPathDialogFocus
-        ed = st^.csCurrentTeam.tsSaveAttachmentDialog.attachmentPathEditor
+        foc = st^.csTeam(tId).tsSaveAttachmentDialog.attachmentPathDialogFocus
+        ed = st^.csTeam(tId).tsSaveAttachmentDialog.attachmentPathEditor
         drawEditorTxt = txt . T.unlines

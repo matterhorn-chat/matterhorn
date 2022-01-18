@@ -29,34 +29,34 @@ import           Matterhorn.Types
 
 -- | Show the user list overlay with the given search scope, and issue a
 -- request to gather the first search results.
-enterThemeListMode :: MH ()
-enterThemeListMode =
-    enterListOverlayMode (csCurrentTeam.tsThemeListOverlay)
-        ThemeListOverlay () setInternalTheme getThemesMatching
+enterThemeListMode :: TeamId -> MH ()
+enterThemeListMode tId =
+    enterListOverlayMode tId (csTeam(tId).tsThemeListOverlay)
+        ThemeListOverlay () (setInternalTheme tId) getThemesMatching
 
 -- | Move the selection up in the user list overlay by one user.
-themeListSelectUp :: MH ()
-themeListSelectUp = themeListMove L.listMoveUp
+themeListSelectUp :: TeamId -> MH ()
+themeListSelectUp tId = themeListMove tId L.listMoveUp
 
 -- | Move the selection down in the user list overlay by one user.
-themeListSelectDown :: MH ()
-themeListSelectDown = themeListMove L.listMoveDown
+themeListSelectDown :: TeamId -> MH ()
+themeListSelectDown tId = themeListMove tId L.listMoveDown
 
 -- | Move the selection up in the user list overlay by a page of users
 -- (themeListPageSize).
-themeListPageUp :: MH ()
-themeListPageUp = themeListMove (L.listMoveBy (-1 * themeListPageSize))
+themeListPageUp :: TeamId -> MH ()
+themeListPageUp tId = themeListMove tId (L.listMoveBy (-1 * themeListPageSize))
 
 -- | Move the selection down in the user list overlay by a page of users
 -- (themeListPageSize).
-themeListPageDown :: MH ()
-themeListPageDown = themeListMove (L.listMoveBy themeListPageSize)
+themeListPageDown :: TeamId -> MH ()
+themeListPageDown tId = themeListMove tId (L.listMoveBy themeListPageSize)
 
 -- | Transform the user list results in some way, e.g. by moving the
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
-themeListMove :: (L.List Name InternalTheme -> L.List Name InternalTheme) -> MH ()
-themeListMove = listOverlayMove (csCurrentTeam.tsThemeListOverlay)
+themeListMove :: TeamId -> (L.List Name InternalTheme -> L.List Name InternalTheme) -> MH ()
+themeListMove tId = listOverlayMove (csTeam(tId).tsThemeListOverlay)
 
 -- | The number of users in a "page" for cursor movement purposes.
 themeListPageSize :: Int
@@ -73,15 +73,15 @@ getThemesMatching _ _ searchString = do
                     search `T.isInfixOf` T.toLower (internalThemeDesc t)
     return $ Vec.fromList matching
 
-setInternalTheme :: InternalTheme -> MH Bool
-setInternalTheme t = do
-    setTheme $ internalThemeName t
+setInternalTheme :: TeamId -> InternalTheme -> MH Bool
+setInternalTheme tId t = do
+    setTheme tId $ internalThemeName t
     return False
 
-setTheme :: Text -> MH ()
-setTheme name =
+setTheme :: TeamId -> Text -> MH ()
+setTheme tId name =
     case lookupTheme name of
-        Nothing -> enterThemeListMode
+        Nothing -> enterThemeListMode tId
         Just it -> do
             mh invalidateCache
             csResources.crTheme .= (themeToAttrMap $ internalTheme it)

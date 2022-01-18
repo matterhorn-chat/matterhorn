@@ -21,32 +21,31 @@ import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.Types
 import qualified Matterhorn.Zipper as Z
 
-beginChannelSelect :: MH ()
-beginChannelSelect = do
-    setMode ChannelSelect
-    tId <- use csCurrentTeamId
-    csCurrentTeam.tsChannelSelectState .= emptyChannelSelectState tId
-    updateChannelSelectMatches
+beginChannelSelect :: MM.TeamId -> MH ()
+beginChannelSelect tId = do
+    setMode tId ChannelSelect
+    csTeam(tId).tsChannelSelectState .= emptyChannelSelectState tId
+    updateChannelSelectMatches tId
 
     -- Preserve the current channel selection when initializing channel
     -- selection mode
-    zipper <- use (csCurrentTeam.tsFocus)
+    zipper <- use (csTeam(tId).tsFocus)
     let isCurrentFocus m = Just (matchEntry m) == Z.focus zipper
-    csCurrentTeam.tsChannelSelectState.channelSelectMatches %= Z.findRight isCurrentFocus
+    csTeam(tId).tsChannelSelectState.channelSelectMatches %= Z.findRight isCurrentFocus
 
 -- Select the next match in channel selection mode.
-channelSelectNext :: MH ()
-channelSelectNext = updateSelectedMatch Z.right
+channelSelectNext :: MM.TeamId -> MH ()
+channelSelectNext tId = updateSelectedMatch tId Z.right
 
 -- Select the previous match in channel selection mode.
-channelSelectPrevious :: MH ()
-channelSelectPrevious = updateSelectedMatch Z.left
+channelSelectPrevious :: MM.TeamId -> MH ()
+channelSelectPrevious tId = updateSelectedMatch tId Z.left
 
-updateChannelSelectMatches :: MH ()
-updateChannelSelectMatches = do
+updateChannelSelectMatches :: MM.TeamId -> MH ()
+updateChannelSelectMatches tId = do
     st <- use id
 
-    input <- use (csCurrentTeam.tsChannelSelectState.channelSelectInput)
+    input <- use (csTeam(tId).tsChannelSelectState.channelSelectInput)
     cconfig <- use csClientConfig
     prefs <- use (csResources.crUserPreferences)
 
@@ -86,8 +85,8 @@ updateChannelSelectMatches = do
         preserveFocus Nothing _ = False
         preserveFocus (Just m) m2 = matchEntry m == matchEntry m2
 
-    csCurrentTeam.tsChannelSelectState.channelSelectMatches %=
-        (Z.updateListBy preserveFocus $ Z.toList $ Z.maybeMapZipper matches (st^.csCurrentTeam.tsFocus))
+    csTeam(tId).tsChannelSelectState.channelSelectMatches %=
+        (Z.updateListBy preserveFocus $ Z.toList $ Z.maybeMapZipper matches (st^.csTeam(tId).tsFocus))
 
 applySelectPattern :: ChannelSelectPattern -> ChannelListEntry -> Text -> Maybe ChannelSelectMatch
 applySelectPattern CSPAny entry chanName = do
@@ -154,7 +153,8 @@ parseChannelSelectPattern pat = do
 
 -- Update the channel selection mode match cursor. The argument function
 -- determines how to navigate to the next item.
-updateSelectedMatch :: (Z.Zipper ChannelListGroup ChannelSelectMatch -> Z.Zipper ChannelListGroup ChannelSelectMatch)
+updateSelectedMatch :: MM.TeamId
+                    -> (Z.Zipper ChannelListGroup ChannelSelectMatch -> Z.Zipper ChannelListGroup ChannelSelectMatch)
                     -> MH ()
-updateSelectedMatch nextItem =
-    csCurrentTeam.tsChannelSelectState.channelSelectMatches %= nextItem
+updateSelectedMatch tId nextItem =
+    csTeam(tId).tsChannelSelectState.channelSelectMatches %= nextItem

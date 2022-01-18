@@ -3,7 +3,6 @@ module Matterhorn.Zipper
   , fromList
   , toList
   , focus
-  , unsafeFocus
   , left
   , leftL
   , right
@@ -74,9 +73,6 @@ rightL = lens right (\ _ b -> left b)
 -- Return the focus element
 focus :: Zipper a b -> Maybe b
 focus = C.focus . zRing
-
-unsafeFocus :: Zipper a b -> b
-unsafeFocus = fromJust . focus
 
 -- Turn a list into a wraparound zipper, focusing on the head
 fromList :: (Eq b) => [(a, [b])] -> Zipper a b

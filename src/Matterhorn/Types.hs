@@ -46,6 +46,7 @@ module Matterhorn.Types
   , ciPort
   , ciUrlPath
   , ciUsername
+  , ciOTPToken
   , ciPassword
   , ciType
   , ciAccessToken
@@ -122,6 +123,7 @@ module Matterhorn.Types
   , attrNameToConfig
 
   , sortTeams
+  , matchesTeam
   , mkTeamZipper
   , mkTeamZipperFromIds
   , teamZipperIds
@@ -162,15 +164,17 @@ module Matterhorn.Types
   , newState
   , newTeamState
 
+  , withCurrentChannel
+  , withCurrentChannel'
+  , withCurrentTeam
+
   , csTeamZipper
-  , csCurrentTeam
   , csTeams
   , csTeam
   , csChannelListOrientation
   , csResources
   , csLastMouseDownEvent
   , csVerbatimTruncateSetting
-  , csCurrentChannel
   , csCurrentChannelId
   , csCurrentTeamId
   , csPostMap
@@ -398,9 +402,8 @@ import qualified Data.Text.Zipper as Z2
 import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
-import           Lens.Micro.Platform ( at, makeLenses, lens, (%~), (^?!), (.=)
-                                     , (%=), (^?), (.~)
-                                     , _Just, Traversal', preuse, to
+import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
+                                     , (%=), (.~), _Just, Traversal', to
                                      , SimpleGetter
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
@@ -938,6 +941,7 @@ data AuthenticationException =
     | ResolveError HostNotResolved
     | AuthIOError IOError
     | LoginError LoginFailureException
+    | MattermostServerError MattermostError
     | OtherAuthError SomeException
     deriving (Show)
 
@@ -953,6 +957,7 @@ data ConnectionInfo =
                    , _ciPort     :: Int
                    , _ciUrlPath  :: Text
                    , _ciUsername :: Text
+                   , _ciOTPToken :: Maybe Text
                    , _ciPassword :: Text
                    , _ciAccessToken :: Text
                    , _ciType     :: ConnectionType
@@ -1698,6 +1703,14 @@ data SaveAttachmentDialogState =
 sortTeams :: [Team] -> [Team]
 sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
 
+matchesTeam :: T.Text -> Team -> Bool
+matchesTeam tName t =
+    let normalizeUserText = normalize . sanitizeUserText
+        normalize = T.strip . T.toLower
+        urlName = normalizeUserText $ teamName t
+        displayName = normalizeUserText $ teamDisplayName t
+    in normalize tName `elem` [displayName, urlName]
+
 mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
 mkTeamZipper m =
     let sortedTeams = sortTeams $ _tsTeam <$> HM.elems m
@@ -2153,7 +2166,7 @@ applyTeamOrderPref (Just prefTIds) st =
         unmentioned = filter (not . wasMentioned) $ HM.elems teams
         wasMentioned ts = (teamId $ _tsTeam ts) `elem` tIds
         zipperTids = tIds <> (teamId <$> sortTeams (_tsTeam <$> unmentioned))
-    in st { _csTeamZipper = (Z.findRight (== curTId) $ mkTeamZipperFromIds zipperTids)
+    in st { _csTeamZipper = (Z.findRight ((== curTId) . Just) $ mkTeamZipperFromIds zipperTids)
           }
 
 refreshTeamZipper :: MH ()
@@ -2209,18 +2222,18 @@ getSession = use (csResources.crSession)
 getResourceSession :: ChatResources -> Session
 getResourceSession = _crSession
 
-whenMode :: Mode -> MH () -> MH ()
-whenMode m act = do
-    curMode <- use (csCurrentTeam.tsMode)
+whenMode :: TeamId -> Mode -> MH () -> MH ()
+whenMode tId m act = do
+    curMode <- use (csTeam(tId).tsMode)
     when (curMode == m) act
 
-setMode :: Mode -> MH ()
-setMode m = do
-    csCurrentTeam.tsMode .= m
+setMode :: TeamId -> Mode -> MH ()
+setMode tId m = do
+    csTeam(tId).tsMode .= m
     mh invalidateCache
 
-setMode' :: Mode -> ChatState -> ChatState
-setMode' m = csCurrentTeam.tsMode .~ m
+setMode' :: TeamId -> Mode -> ChatState -> ChatState
+setMode' tId m = csTeam(tId).tsMode .~ m
 
 resetSpellCheckTimer :: ChatEditState -> IO ()
 resetSpellCheckTimer s =
@@ -2229,18 +2242,41 @@ resetSpellCheckTimer s =
         Just (_, reset) -> reset
 
 -- ** Utility Lenses
-csCurrentChannelId :: TeamId -> SimpleGetter ChatState ChannelId
+csCurrentChannelId :: TeamId -> SimpleGetter ChatState (Maybe ChannelId)
 csCurrentChannelId tId =
-    csTeam(tId).tsFocus.to Z.unsafeFocus.to channelListEntryChannelId
+    csTeam(tId).tsFocus.to Z.focus.to (fmap channelListEntryChannelId)
 
-csCurrentTeamId :: SimpleGetter ChatState TeamId
-csCurrentTeamId =
-    csTeamZipper.to Z.unsafeFocus
+withCurrentTeam :: (TeamId -> MH ()) -> MH ()
+withCurrentTeam f = do
+    mtId <- use csCurrentTeamId
+    case mtId of
+        Nothing -> return ()
+        Just tId -> f tId
 
-csCurrentTeam :: Lens' ChatState TeamState
-csCurrentTeam =
-    lens (\st   -> st^.csTeam(st^.csCurrentTeamId))
-         (\st t -> st & csTeam(st^.csCurrentTeamId) .~ t)
+withCurrentChannel :: TeamId -> (ChannelId -> ClientChannel -> MH ()) -> MH ()
+withCurrentChannel tId f = do
+    mcId <- use $ csCurrentChannelId tId
+    case mcId of
+        Nothing -> return ()
+        Just cId -> do
+            mChan <- preuse $ csChannel cId
+            case mChan of
+                Just ch -> f cId ch
+                _ -> return ()
+
+withCurrentChannel' :: TeamId -> (ChannelId -> ClientChannel -> MH (Maybe a)) -> MH (Maybe a)
+withCurrentChannel' tId f = do
+    mcId <- use $ csCurrentChannelId tId
+    case mcId of
+        Nothing -> return Nothing
+        Just cId -> do
+            mChan <- preuse $ csChannel cId
+            case mChan of
+                Just ch -> f cId ch
+                _ -> return Nothing
+
+csCurrentTeamId :: SimpleGetter ChatState (Maybe TeamId)
+csCurrentTeamId = csTeamZipper.to Z.focus
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
@@ -2263,11 +2299,6 @@ entryIsDMEntry e =
         CLUserDM {} -> True
         CLGroupDM {} -> True
         CLChannel {} -> False
-
-csCurrentChannel :: Lens' ChatState ClientChannel
-csCurrentChannel =
-    lens (\ st -> findChannelById (st^.csCurrentChannelId(st^.csCurrentTeamId)) (st^.csChannels) ^?! _Just)
-         (\ st n -> st & csChannels %~ addChannel (st^.csCurrentChannelId(st^.csCurrentTeamId)) n)
 
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
@@ -2360,10 +2391,10 @@ userIdForUsername :: Text -> ChatState -> Maybe UserId
 userIdForUsername name st =
     fst <$> (findUserByUsername name $ st^.csUsers)
 
-channelIdByChannelName :: Text -> ChatState -> Maybe ChannelId
-channelIdByChannelName name st =
+channelIdByChannelName :: TeamId -> Text -> ChatState -> Maybe ChannelId
+channelIdByChannelName tId name st =
     let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name) &&
-                          cc^.ccInfo.cdTeamId == (Just $ st^.csCurrentTeamId)
+                          cc^.ccInfo.cdTeamId == (Just tId)
     in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
@@ -2393,10 +2424,10 @@ data SidebarUpdate =
     deriving (Eq, Show)
 
 
-resetAutocomplete :: MH ()
-resetAutocomplete = do
-    csCurrentTeam.tsEditState.cedAutocomplete .= Nothing
-    csCurrentTeam.tsEditState.cedAutocompletePending .= Nothing
+resetAutocomplete :: TeamId -> MH ()
+resetAutocomplete tId = do
+    csTeam(tId).tsEditState.cedAutocomplete .= Nothing
+    csTeam(tId).tsEditState.cedAutocompletePending .= Nothing
 
 
 -- * Slash Commands
@@ -2488,13 +2519,12 @@ data HighlightSet =
 emptyHSet :: HighlightSet
 emptyHSet = HighlightSet Set.empty Set.empty mempty
 
-getHighlightSet :: ChatState -> HighlightSet
-getHighlightSet st =
-    let tId = st^.csCurrentTeamId
-    in HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
-                    , hChannelSet = getChannelNameSet tId $ st^.csChannels
-                    , hSyntaxMap = st^.csResources.crSyntaxMap
-                    }
+getHighlightSet :: ChatState -> TeamId -> HighlightSet
+getHighlightSet st tId =
+    HighlightSet { hUserSet = addSpecialUserMentions $ getUsernameSet $ st^.csUsers
+                 , hChannelSet = getChannelNameSet tId $ st^.csChannels
+                 , hSyntaxMap = st^.csResources.crSyntaxMap
+                 }
 
 attrNameToConfig :: Brick.AttrName -> Text
 attrNameToConfig = T.pack . intercalate "." . Brick.attrNameComponents

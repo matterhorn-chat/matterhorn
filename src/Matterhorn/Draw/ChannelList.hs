@@ -51,8 +51,8 @@ data ChannelListEntryData =
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
-renderChannelListHeader :: ChatState -> Widget Name
-renderChannelListHeader st =
+renderChannelListHeader :: ChatState -> MM.TeamId -> Widget Name
+renderChannelListHeader st tId =
     vBox [ teamHeader
          , selfHeader
          , unreadCountHeader
@@ -65,37 +65,36 @@ renderChannelListHeader st =
         selfHeader = hCenter $
                      colorUsername myUsername_ myUsername_
                          (T.singleton statusSigil <> " " <> addUserSigil myUsername_)
-        teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csCurrentTeam.tsTeam
+        teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csTeam(tId).tsTeam
         statusSigil = maybe ' ' userSigilFromInfo me
         me = userById (myUserId st) st
         unreadCountHeader = hCenter $ txt $ "Unread: " <> (T.pack $ show unreadCount)
-        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csCurrentTeam.tsFocus)
+        unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csTeam(tId).tsFocus)
 
-renderChannelList :: ChatState -> Widget Name
-renderChannelList st =
+renderChannelList :: ChatState -> MM.TeamId -> Widget Name
+renderChannelList st tId =
     viewport (ChannelList tId) Vertical body
     where
         myUsername_ = myUsername st
         channelName e = ClickableChannelListEntry $ channelListEntryChannelId  e
         renderEntry s e = clickable (channelName e) $
-                          renderChannelListEntry myUsername_ $ mkChannelEntryData s e
-        tId = st^.csCurrentTeamId
-        body = case st^.csCurrentTeam.tsMode of
+                          renderChannelListEntry myUsername_ $ mkChannelEntryData s tId e
+        body = case st^.csTeam(tId).tsMode of
             ChannelSelect ->
-                let zipper = st^.csCurrentTeam.tsChannelSelectState.channelSelectMatches
+                let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
                     matches = if Z.isEmpty zipper
                               then [hCenter $ txt "No matches"]
                               else (renderChannelListGroup st
-                                       (renderChannelSelectListEntry (Z.focus zipper)) <$>
+                                       (renderChannelSelectListEntry tId (Z.focus zipper)) <$>
                                    Z.toList zipper)
                 in vBox $
-                   renderChannelListHeader st :
+                   renderChannelListHeader st tId :
                    matches
             _ ->
                 cached (ChannelSidebar tId) $
                 vBox $
-                renderChannelListHeader st :
-                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csCurrentTeam.tsFocus))
+                renderChannelListHeader st tId :
+                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csTeam(tId).tsFocus))
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
 renderChannelListGroupHeading g =
@@ -128,9 +127,10 @@ renderChannelListGroup st renderEntry (group, es) =
        else emptyWidget
 
 mkChannelEntryData :: ChatState
+                   -> MM.TeamId
                    -> ChannelListEntry
                    -> ChannelListEntryData
-mkChannelEntryData st e =
+mkChannelEntryData st tId e =
     ChannelListEntryData { entrySigil       = sigilWithSpace
                          , entryLabel       = name
                          , entryHasUnread   = unread
@@ -145,9 +145,9 @@ mkChannelEntryData st e =
         cId = channelListEntryChannelId e
         unread = channelListEntryUnread e
         Just chan = findChannelById cId (st^.csChannels)
-        recent = isRecentChannel st cId
-        ret = isReturnChannel st cId
-        current = isCurrentChannel st cId
+        recent = isRecentChannel st tId cId
+        ret = isReturnChannel st tId cId
+        current = isCurrentChannel st tId cId
         muted = channelListEntryMuted e
         (name, normalSigil, addSpace, status) = case channelListEntryType e of
             CLChannel ->
@@ -195,16 +195,17 @@ renderChannelListEntry myUName entry = body
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
 -- entry if it doesn't match.
-renderChannelSelectListEntry :: Maybe ChannelSelectMatch
+renderChannelSelectListEntry :: MM.TeamId
+                             -> Maybe ChannelSelectMatch
                              -> ChatState
                              -> ChannelSelectMatch
                              -> Widget Name
-renderChannelSelectListEntry curMatch st match =
+renderChannelSelectListEntry tId curMatch st match =
     let ChannelSelectMatch preMatch inMatch postMatch _ entry = match
         maybeSelect = if (Just entry) == (matchEntry <$> curMatch)
                       then visible . withDefAttr currentChannelNameAttr
                       else id
-        entryData = mkChannelEntryData st entry
+        entryData = mkChannelEntryData st tId entry
         decorate = if | entryMentions entryData > 0 && not (entryIsMuted entryData) ->
                           withDefAttr mentionsChannelAttr
                       | entryHasUnread entryData ->

@@ -6,6 +6,8 @@ import           Matterhorn.Prelude
 import           Brick.Widgets.Edit ( handleEditorEvent )
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelSelect
@@ -14,32 +16,32 @@ import           Matterhorn.Types
 import qualified Matterhorn.Zipper as Z
 
 
-onEventChannelSelect :: Vty.Event -> MH Bool
-onEventChannelSelect =
-  handleKeyboardEvent channelSelectKeybindings $ \e -> do
-      handled <- handleKeyboardEvent (editingKeybindings (csCurrentTeam.tsChannelSelectState.channelSelectInput)) (const $ return ()) e
+onEventChannelSelect :: TeamId -> Vty.Event -> MH Bool
+onEventChannelSelect tId =
+  handleKeyboardEvent (channelSelectKeybindings tId) $ \e -> do
+      handled <- handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput)) (const $ return ()) e
       when (not handled) $
-          mhHandleEventLensed (csCurrentTeam.tsChannelSelectState.channelSelectInput) handleEditorEvent e
+          mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent e
 
-      updateChannelSelectMatches
+      updateChannelSelectMatches tId
 
-channelSelectKeybindings :: KeyConfig -> KeyHandlerMap
-channelSelectKeybindings = mkKeybindings channelSelectKeyHandlers
+channelSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
 
-channelSelectKeyHandlers :: [KeyEventHandler]
-channelSelectKeyHandlers =
+channelSelectKeyHandlers :: TeamId -> [KeyEventHandler]
+channelSelectKeyHandlers tId =
     [ staticKb "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do
-             matches <- use (csCurrentTeam.tsChannelSelectState.channelSelectMatches)
+             matches <- use (csTeam(tId).tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of
                  Nothing -> return ()
                  Just match -> do
-                     setMode Main
-                     setFocus $ channelListEntryChannelId $ matchEntry match
+                     setMode tId Main
+                     setFocus tId $ channelListEntryChannelId $ matchEntry match
 
-    , mkKb CancelEvent "Cancel channel selection" $ setMode Main
-    , mkKb NextChannelEvent "Select next match" channelSelectNext
-    , mkKb PrevChannelEvent "Select previous match" channelSelectPrevious
-    , mkKb NextChannelEventAlternate "Select next match (alternate binding)" channelSelectNext
-    , mkKb PrevChannelEventAlternate "Select previous match (alternate binding)" channelSelectPrevious
+    , mkKb CancelEvent "Cancel channel selection" $ setMode tId Main
+    , mkKb NextChannelEvent "Select next match" $ channelSelectNext tId
+    , mkKb PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
+    , mkKb NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId
+    , mkKb PrevChannelEventAlternate "Select previous match (alternate binding)" $ channelSelectPrevious tId
     ]

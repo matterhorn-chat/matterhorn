@@ -73,18 +73,17 @@ notifyPrefsForm tId globalDefaults =
             ]
     where radioStyle label = (padTop $ Pad 1 ) . (str label <=>) . (padLeft $ Pad 1)
 
-enterEditNotifyPrefsMode :: MH ()
-enterEditNotifyPrefsMode = do
-    chanInfo <- use (csCurrentChannel.ccInfo)
-    case chanInfo^.cdType of
-      Direct -> mhError $ GenericError "Cannot open notification preferences for DM channel."
-      _ -> do
-        let props = chanInfo^.cdNotifyProps
-        user <- use csMe
-        tId <- use csCurrentTeamId
-        csCurrentTeam.tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
-        setMode EditNotifyPrefs
+enterEditNotifyPrefsMode :: TeamId -> MH ()
+enterEditNotifyPrefsMode tId =
+    withCurrentChannel tId $ \_ chan -> do
+        case chan^.ccInfo.cdType of
+          Direct -> mhError $ GenericError "Cannot open notification preferences for DM channel."
+          _ -> do
+            let props = chan^.ccInfo.cdNotifyProps
+            user <- use csMe
+            csTeam(tId).tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
+            setMode tId EditNotifyPrefs
 
-exitEditNotifyPrefsMode :: MH ()
-exitEditNotifyPrefsMode = do
-    setMode Main
+exitEditNotifyPrefsMode :: TeamId -> MH ()
+exitEditNotifyPrefsMode tId = do
+    setMode tId Main

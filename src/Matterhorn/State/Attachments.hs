@@ -25,6 +25,8 @@ import           GHC.Exception ( toException )
 import           Lens.Micro.Platform ( (.=), (%=) )
 import           System.Directory ( doesDirectoryExist, doesFileExist, getDirectoryContents )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 
 validateAttachmentPath :: FilePath -> IO (Maybe FilePath)
@@ -40,43 +42,41 @@ validateAttachmentPath path = bool Nothing (Just path) <$> do
 defaultAttachmentsPath :: Config -> IO (Maybe FilePath)
 defaultAttachmentsPath = maybe (return Nothing) validateAttachmentPath . configDefaultAttachmentPath
 
-showAttachmentList :: MH ()
-showAttachmentList = do
-    lst <- use (csCurrentTeam.tsEditState.cedAttachmentList)
+showAttachmentList :: TeamId -> MH ()
+showAttachmentList tId = do
+    lst <- use (csTeam(tId).tsEditState.cedAttachmentList)
     case length (L.listElements lst) of
-        0 -> showAttachmentFileBrowser
-        _ -> setMode ManageAttachments
+        0 -> showAttachmentFileBrowser tId
+        _ -> setMode tId ManageAttachments
 
-resetAttachmentList :: MH ()
-resetAttachmentList = do
-    tId <- use csCurrentTeamId
+resetAttachmentList :: TeamId -> MH ()
+resetAttachmentList tId = do
     let listName = AttachmentList tId
-    csCurrentTeam.tsEditState.cedAttachmentList .= L.list listName mempty 1
+    csTeam(tId).tsEditState.cedAttachmentList .= L.list listName mempty 1
     mh $ vScrollToBeginning $ viewportScroll listName
 
-showAttachmentFileBrowser :: MH ()
-showAttachmentFileBrowser = do
+showAttachmentFileBrowser :: TeamId -> MH ()
+showAttachmentFileBrowser tId = do
     config <- use (csResources.crConfiguration)
-    tId <- use csCurrentTeamId
     filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
-    csCurrentTeam.tsEditState.cedFileBrowser .= browser
-    setMode ManageAttachmentsBrowseFiles
+    csTeam(tId).tsEditState.cedFileBrowser .= browser
+    setMode tId ManageAttachmentsBrowseFiles
 
-attachFileByPath :: Text -> MH ()
-attachFileByPath txtPath = do
+attachFileByPath :: TeamId -> Text -> MH ()
+attachFileByPath tId txtPath = do
     let strPath = unpack txtPath
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
     case FB.fileInfoFileStatus fileInfo of
         Left e -> do
             mhError $ AttachmentException (toException e)
-        Right _ -> tryAddAttachment [fileInfo]
+        Right _ -> tryAddAttachment tId [fileInfo]
 
 checkPathIsFile :: FB.FileInfo -> MH Bool
 checkPathIsFile = liftIO . doesFileExist . FB.fileInfoFilePath
 
-tryAddAttachment :: [FB.FileInfo] -> MH ()
-tryAddAttachment entries = do
+tryAddAttachment :: TeamId -> [FB.FileInfo] -> MH ()
+tryAddAttachment tId entries = do
     forM_ entries $ \entry -> do
         isFile <- checkPathIsFile entry
         if not isFile
@@ -84,7 +84,7 @@ tryAddAttachment entries = do
             "Error attaching file. It either doesn't exist or is a directory, which is not supported.")
         else do
             -- Is the entry already present? If so, ignore the selection.
-            es <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listElementsL)
+            es <- use (csTeam(tId).tsEditState.cedAttachmentList.L.listElementsL)
             let matches = (== FB.fileInfoFilePath entry) .
                               FB.fileInfoFilePath .
                               attachmentDataFileInfo
@@ -93,14 +93,14 @@ tryAddAttachment entries = do
                 Nothing -> do
                     tryReadAttachment entry >>= \case
                         Right a -> do
-                            oldIdx <- use (csCurrentTeam.tsEditState.cedAttachmentList.L.listSelectedL)
+                            oldIdx <- use (csTeam(tId).tsEditState.cedAttachmentList.L.listSelectedL)
                             let newIdx = if Vector.null es
                                          then Just 0
                                          else oldIdx
-                            csCurrentTeam.tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
+                            csTeam(tId).tsEditState.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
                         Left e -> mhError $ AttachmentException e
 
-    when (not $ null entries) $ setMode Main
+    when (not $ null entries) $ setMode tId Main
 
 tryReadAttachment :: FB.FileInfo -> MH (Either E.SomeException AttachmentData)
 tryReadAttachment fi = do

@@ -13,7 +13,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Lens.Micro.Platform ( to )
 
-import           Network.Mattermost.Types ( ServerTime(..), idString )
+import           Network.Mattermost.Types ( ServerTime(..), TeamId, idString )
 
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Util
@@ -23,24 +23,33 @@ import           Matterhorn.Types
 import           Matterhorn.Types.RichText
 
 
-renderUrlList :: ChatState -> Widget Name
-renderUrlList st =
+renderUrlList :: ChatState -> TeamId -> Widget Name
+renderUrlList st tId =
+    case st^.csCurrentChannelId(tId) of
+        Nothing -> emptyWidget
+        Just cId ->
+            case st^?csChannel(cId) of
+                Nothing -> emptyWidget
+                Just ch -> renderUrlList' st tId ch
+
+renderUrlList' :: ChatState -> TeamId -> ClientChannel -> Widget Name
+renderUrlList' st tId chan =
     header <=> urlDisplay
     where
+        cName = mkChannelName st (chan^.ccInfo)
         header = (withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (renderText' Nothing "" (getHighlightSet st) Nothing $
-                  "URLs: " <> (mkChannelName st (st^.csCurrentChannel.ccInfo))) <+>
+                 (renderText' Nothing "" hSet Nothing $ "URLs: " <> cName) <+>
                  fill ' ') <=> hBorder
 
         urlDisplay = if F.length urls == 0
                      then str "No URLs found in this channel."
                      else renderList renderItem True urls
 
-        urls = st^.csCurrentTeam.tsUrlList
+        urls = st^.csTeam(tId).tsUrlList
 
         me = myUsername st
 
-        hSet = getHighlightSet st
+        hSet = getHighlightSet st tId
 
         renderItem sel (i, link) =
           let time = link^.linkTime

@@ -2,7 +2,6 @@
 
 module Matterhorn.State.Messages
   ( PostToAdd(..)
-  , addDisconnectGaps
   , lastMsg
   , sendMessage
   , editMessage
@@ -35,7 +34,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Graphics.Vty ( outputIface )
 import           Graphics.Vty.Output.Interface ( ringTerminalBell )
-import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~), (^?)
+import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~)
                                      , to, at, traversed, filtered, ix, _1 )
 
 import           Network.Mattermost
@@ -206,16 +205,17 @@ addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
     addMessageToState True True p >>= postProcessMessageAdd
 
--- | Adds the set of Posts to the indicated channel.  The Posts must
--- all be for the specified Channel.  The reqCnt argument indicates
--- how many posts were requested, which will determine whether a gap
--- message is added to either end of the posts list or not.
+-- | Adds the set of Posts to the indicated channel. The Posts must all
+-- be for the specified Channel. The reqCnt argument indicates how many
+-- posts were requested, which will determine whether a gap message is
+-- added to either end of the posts list or not.
 --
--- The addTrailingGap is only True when fetching the very latest messages
--- for the channel, and will suppress the generation of a Gap message
--- following the added block of messages.
+-- The addTrailingGap is only True when fetching the very latest
+-- messages for the channel, and will suppress the generation of a Gap
+-- message following the added block of messages.
 addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
-addObtainedMessages cId reqCnt addTrailingGap posts =
+addObtainedMessages cId reqCnt addTrailingGap posts = do
+  mh $ invalidateCacheEntry (ChannelMessages cId)
   if null $ posts^.postsOrderL
   then do when addTrailingGap $
             -- Fetched at the end of the channel, but nothing was
@@ -389,7 +389,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts =
                       -- choice than allowing the user to perform select
                       -- actions on a message that isn't the one they just
                       -- selected.
-                      setMode Main
+                      setMode tId Main
                       csTeam(tId).tsMessageSelect .= MessageSelectState Nothing
 
                 -- Add a gap at each end of the newly fetched data, unless:
@@ -557,8 +557,11 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                             when (isNothing authorResult) $
                                 handleNewUsers (Seq.singleton authorId) (return ())
 
-                    curTId <- use csCurrentTeamId
-                    currCId <- use (csCurrentChannelId curTId)
+                    mcurTId <- use csCurrentTeamId
+                    currCId <- case mcurTId of
+                        Nothing -> return Nothing
+                        Just curTId -> use (csCurrentChannelId curTId)
+
                     flags <- use (csResources.crFlaggedPosts)
                     let (msg', mentionedUsers) = clientPostToMessage cp
                                  & _1.mFlagged .~ ((cp^.cpPostId) `Set.member` flags)
@@ -572,7 +575,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     csChannels %= modifyChannelById cId
                       ((ccContents.cdMessages %~ addMessage msg') .
                        (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
-                       (\c -> if currCId == cId
+                       (\c -> if currCId == Just cId
                               then c
                               else case newPostData of
                                      OldPost _ -> c
@@ -606,22 +609,25 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
 
                 postedChanMessage =
                   withChannelOrDefault (postChannelId new) NoAction $ \chan -> do
-                      currTid <- use csCurrentTeamId
-                      currCId <- use (csCurrentChannelId currTid)
+                      mcurrTid <- use csCurrentTeamId
+                      case mcurrTid of
+                          Nothing -> return NoAction
+                          Just currTid -> do
+                              currCId <- use (csCurrentChannelId currTid)
 
-                      let notifyPref = notifyPreference (myUser st) chan
-                          curChannelAction = if postChannelId new == currCId
-                                             then UpdateServerViewed
-                                             else NoAction
-                          originUserAction =
-                            if | fromMe                            -> NoAction
-                               | ignoredJoinLeaveMessage           -> NoAction
-                               | notifyPref == NotifyOptionAll     -> NotifyUser [newPostData]
-                               | notifyPref == NotifyOptionMention
-                                   && wasMentioned                 -> NotifyUser [newPostData]
-                               | otherwise                         -> NoAction
+                              let notifyPref = notifyPreference (myUser st) chan
+                                  curChannelAction = if Just (postChannelId new) == currCId
+                                                     then UpdateServerViewed
+                                                     else NoAction
+                                  originUserAction =
+                                    if | fromMe                            -> NoAction
+                                       | ignoredJoinLeaveMessage           -> NoAction
+                                       | notifyPref == NotifyOptionAll     -> NotifyUser [newPostData]
+                                       | notifyPref == NotifyOptionMention
+                                           && wasMentioned                 -> NotifyUser [newPostData]
+                                       | otherwise                         -> NoAction
 
-                      return $ curChannelAction `andProcessWith` originUserAction
+                              return $ curChannelAction `andProcessWith` originUserAction
 
             doHandleAddedMessage
 
@@ -788,28 +794,25 @@ maybePostUsername st p =
 -- messages to use as a starting point, but exceptions are new
 -- channels and empty channels.
 asyncFetchMoreMessages :: MH ()
-asyncFetchMoreMessages = do
-    tId <- use csCurrentTeamId
-    cId <- use (csCurrentChannelId tId)
-    withChannel cId $ \chan ->
-        let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
-            page = offset `div` pageAmount
-            usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccContents.cdMessages.to reverseMessages)
-            sndOldestId = (messagePostId . snd) =<< usefulMsgs
-            query = MM.defaultPostQuery
-                      { MM.postQueryPage = maybe (Just page) (const Nothing) sndOldestId
-                      , MM.postQueryPerPage = Just pageAmount
-                      , MM.postQueryBefore = sndOldestId
-                      }
-            addTrailingGap = MM.postQueryBefore query == Nothing &&
-                             MM.postQueryPage query == Just 0
-        in doAsyncChannelMM Preempt cId
-               (\s c -> MM.mmGetPostsForChannel c query s)
-               (\c p -> Just $ do
-                   pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
-                   postProcessMessageAdd pp
-                   mh $ invalidateCacheEntry (ChannelMessages cId))
-
+asyncFetchMoreMessages =
+    withCurrentTeam $ \tId ->
+        withCurrentChannel tId $ \cId chan -> do
+            let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
+                page = offset `div` pageAmount
+                usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccContents.cdMessages.to reverseMessages)
+                sndOldestId = (messagePostId . snd) =<< usefulMsgs
+                query = MM.defaultPostQuery
+                          { MM.postQueryPage = maybe (Just page) (const Nothing) sndOldestId
+                          , MM.postQueryPerPage = Just pageAmount
+                          , MM.postQueryBefore = sndOldestId
+                          }
+                addTrailingGap = MM.postQueryBefore query == Nothing &&
+                                 MM.postQueryPage query == Just 0
+            doAsyncChannelMM Preempt cId
+                (\s c -> MM.mmGetPostsForChannel c query s)
+                (\c p -> Just $ do
+                    pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
+                    postProcessMessageAdd pp)
 
 -- | Given a starting point and a direction to move from that point,
 -- returns the closest two adjacent messages on that direction (as a
@@ -858,8 +861,7 @@ asyncFetchMessagesForGap cId gapMessage =
     in doAsyncChannelMM Preempt cId
        (\s c -> MM.mmGetPostsForChannel c query s)
        (\c p -> Just $ do
-           void $ addObtainedMessages c (-pageAmount) addTrailingGap p
-           mh $ invalidateCacheEntry (ChannelMessages cId))
+           void $ addObtainedMessages c (-pageAmount) addTrailingGap p)
 
 -- | Given a particular message ID, this fetches n messages before and
 -- after immediately before and after the specified message in order
@@ -890,7 +892,6 @@ asyncFetchMessagesSurrounding cId pId = do
       (\c p -> Just $ do
           let last2ndId = secondToLastPostId p
           void $ addObtainedMessages c (-reqAmt) False p
-          mh $ invalidateCacheEntry (ChannelMessages cId)
           -- now start 2nd from end of this fetch to fetch some
           -- messages forward, also overlapping with this fetch and
           -- the original message ID to eliminate all gaps in this
@@ -903,34 +904,35 @@ asyncFetchMessagesSurrounding cId pId = do
             (\s' c' -> MM.mmGetPostsForChannel c' query' s')
             (\c' p' -> Just $ do
                 void $ addObtainedMessages c' (reqAmt + 2) False p'
-                mh $ invalidateCacheEntry (ChannelMessages cId)
             )
       )
       where secondToLastPostId posts =
               let pl = toList $ postsOrder posts
               in if length pl > 1 then Just $ last $ init pl else Nothing
 
-
-fetchVisibleIfNeeded :: MH ()
-fetchVisibleIfNeeded = do
+fetchVisibleIfNeeded :: TeamId -> MH ()
+fetchVisibleIfNeeded tId = do
     sts <- use csConnectionStatus
     when (sts == Connected) $ do
-        tId <- use csCurrentTeamId
-        cId <- use (csCurrentChannelId tId)
-        withChannel cId $ \chan ->
+        withCurrentChannel tId $ \cId chan -> do
             let msgs = chan^.ccContents.cdMessages.to reverseMessages
                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
+
+                gapTrail :: (Int, Bool, Maybe MessageId, Maybe MessageId, Int)
+                         -> Message
+                         -> (Int, Bool, Maybe MessageId, Maybe MessageId, Int)
                 gapTrail a@(_,  True, _, _, _) _ = a
                 gapTrail a@(0,     _, _, _, _) _ = a
                 gapTrail   (a, False, b, c, d) m | isGap m = (a, True, b, c, d)
                 gapTrail (remCnt, _, prev'pId, prev''pId, ovl) msg =
                     (remCnt - 1, False, msg^.mMessageId <|> prev'pId, prev'pId <|> prev''pId,
                      ovl + if not (isPostMessage msg) then 1 else 0)
-                numToReq = numRemaining + overlap
+
+                numToRequest = numRemaining + overlap
                 query = MM.defaultPostQuery
                         { MM.postQueryPage    = Just 0
-                        , MM.postQueryPerPage = Just numToReq
+                        , MM.postQueryPerPage = Just numToRequest
                         }
                 finalQuery = case rel'pId of
                                Just (MessagePostId pid) -> query { MM.postQueryBefore = Just pid }
@@ -938,12 +940,12 @@ fetchVisibleIfNeeded = do
                 op = \s c -> MM.mmGetPostsForChannel c finalQuery s
                 addTrailingGap = MM.postQueryBefore finalQuery == Nothing &&
                                  MM.postQueryPage finalQuery == Just 0
-            in when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
-                      csChannel(cId).ccContents.cdFetchPending .= True
-                      doAsyncChannelMM Preempt cId op
-                          (\c p -> Just $ do
-                              addObtainedMessages c (-numToReq) addTrailingGap p >>= postProcessMessageAdd
-                              csChannel(c).ccContents.cdFetchPending .= False)
+            when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
+                   csChannel(cId).ccContents.cdFetchPending .= True
+                   doAsyncChannelMM Preempt cId op
+                       (\c p -> Just $ do
+                           csChannel(c).ccContents.cdFetchPending .= False
+                           addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd)
 
 asyncFetchAttachments :: Post -> MH ()
 asyncFetchAttachments p = do
@@ -980,7 +982,7 @@ asyncFetchAttachments p = do
 -- reasonable effort will be made (fetch the post, join the channel)
 -- before giving up.
 jumpToPost :: PostId -> MH ()
-jumpToPost pId = do
+jumpToPost pId = withCurrentTeam $ \tId -> do
     st <- use id
     case getMessageForPostId st pId of
       Just msg ->
@@ -989,11 +991,11 @@ jumpToPost pId = do
               -- Are we a member of the channel?
               case findChannelById cId (st^.csChannels) of
                   Nothing ->
-                      joinChannel' cId (Just $ jumpToPost pId)
+                      joinChannel' tId cId (Just $ jumpToPost pId)
                   Just _ -> do
-                      setFocus cId
-                      setMode MessageSelect
-                      csCurrentTeam.tsMessageSelect .= MessageSelectState (msg^.mMessageId)
+                      setFocus tId cId
+                      setMode tId MessageSelect
+                      csTeam(tId).tsMessageSelect .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"
       Nothing -> do
@@ -1008,7 +1010,7 @@ jumpToPost pId = do
                               -- If not, join it and then try jumping to
                               -- the post if the channel join is successful.
                               Nothing -> do
-                                  joinChannel' (postChannelId p) (Just $ jumpToPost pId)
+                                  joinChannel' tId (postChannelId p) (Just $ jumpToPost pId)
                               -- Otherwise add the post to the state and
                               -- then jump.
                               Just _ -> do

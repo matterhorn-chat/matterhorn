@@ -5,15 +5,17 @@ import           Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.State.Channels
 import           Matterhorn.Types
 
 
-onEventLeaveChannelConfirm :: Vty.Event -> MH ()
-onEventLeaveChannelConfirm (Vty.EvKey k []) = do
+onEventLeaveChannelConfirm :: TeamId -> Vty.Event -> MH ()
+onEventLeaveChannelConfirm tId (Vty.EvKey k []) = do
     case k of
         Vty.KChar c | c `elem` ("yY"::String) ->
-            leaveCurrentChannel
+            leaveCurrentChannel tId
         _ -> return ()
-    setMode Main
-onEventLeaveChannelConfirm _ = return ()
+    setMode tId Main
+onEventLeaveChannelConfirm _ _ = return ()

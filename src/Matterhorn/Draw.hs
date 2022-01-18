@@ -28,27 +28,32 @@ import Matterhorn.Types
 
 draw :: ChatState -> [Widget Name]
 draw st =
-    case st^.csCurrentTeam.tsMode of
-        Main                         -> mainLayers
-        UrlSelect                    -> mainLayers
-        ChannelSelect                -> mainLayers
-        MessageSelect                -> mainLayers
-        MessageSelectDeleteConfirm   -> mainLayers
-        ShowHelp topic _             -> drawShowHelp topic st
-        ThemeListOverlay             -> drawThemeListOverlay st : mainLayers
-        LeaveChannelConfirm          -> drawLeaveChannelConfirm st : mainLayersMonochrome
-        DeleteChannelConfirm         -> drawDeleteChannelConfirm st : mainLayersMonochrome
-        PostListOverlay contents     -> drawPostListOverlay contents st : mainLayersMonochrome
-        UserListOverlay              -> drawUserListOverlay st : mainLayersMonochrome
-        ChannelListOverlay           -> drawChannelListOverlay st : mainLayersMonochrome
-        ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st : mainLayersMonochrome
-        ViewMessage                  -> drawTabbedWindow messageViewWindow st : mainLayersMonochrome
-        ManageAttachments            -> drawManageAttachments st : mainLayersMonochrome
-        ManageAttachmentsBrowseFiles -> drawManageAttachments st : mainLayersMonochrome
-        EditNotifyPrefs              -> drawNotifyPrefs st : mainLayersMonochrome
-        ChannelTopicWindow           -> drawChannelTopicWindow st : mainLayersMonochrome
-        SaveAttachmentWindow _       -> drawSaveAttachmentWindow st : mainLayersMonochrome
-    where
-        mainLayers = drawMain True st
+    let mainLayers = drawMain True st
         mainLayersMonochrome = drawMain False st
-        messageViewWindow = st^.csCurrentTeam.tsViewedMessage.singular _Just._2
+    in case st^.csCurrentTeamId of
+        Nothing ->
+            -- ^ Without a team data structure, we just assume Main mode
+            -- and render a skeletal UI.
+            mainLayers
+        Just tId ->
+            let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
+            in case st^.csTeam(tId).tsMode of
+                Main                         -> mainLayers
+                UrlSelect                    -> mainLayers
+                ChannelSelect                -> mainLayers
+                MessageSelect                -> mainLayers
+                MessageSelectDeleteConfirm   -> mainLayers
+                ShowHelp topic _             -> drawShowHelp topic st
+                ThemeListOverlay             -> drawThemeListOverlay st tId : mainLayers
+                LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
+                DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
+                PostListOverlay contents     -> drawPostListOverlay contents st tId : mainLayersMonochrome
+                UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
+                ChannelListOverlay           -> drawChannelListOverlay st tId : mainLayersMonochrome
+                ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : mainLayersMonochrome
+                ViewMessage                  -> drawTabbedWindow messageViewWindow st tId : mainLayersMonochrome
+                ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome
+                ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome
+                EditNotifyPrefs              -> drawNotifyPrefs st tId : mainLayersMonochrome
+                ChannelTopicWindow           -> drawChannelTopicWindow st tId : mainLayersMonochrome
+                SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : mainLayersMonochrome

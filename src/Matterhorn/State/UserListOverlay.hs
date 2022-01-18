@@ -32,49 +32,46 @@ import           Matterhorn.Types
 
 -- | Show the user list overlay for searching/showing members of the
 -- current channel.
-enterChannelMembersUserList :: MH ()
-enterChannelMembersUserList = do
-    myTId <- use csCurrentTeamId
-    cId <- use (csCurrentChannelId myTId)
-    myId <- gets myUserId
-    session <- getSession
+enterChannelMembersUserList :: TeamId -> MH ()
+enterChannelMembersUserList myTId = do
+    withCurrentChannel myTId $ \cId _ -> do
+        myId <- gets myUserId
+        session <- getSession
 
-    doAsyncWith Preempt $ do
-        stats <- MM.mmGetChannelStatistics cId session
-        return $ Just $ do
-            enterUserListMode myTId (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
-              (\u -> case u^.uiId /= myId of
-                True -> createOrFocusDMChannel u Nothing >> return True
-                False -> return False
-              )
+        doAsyncWith Preempt $ do
+            stats <- MM.mmGetChannelStatistics cId session
+            return $ Just $ do
+                enterUserListMode myTId (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
+                  (\u -> case u^.uiId /= myId of
+                    True -> createOrFocusDMChannel myTId u Nothing >> return True
+                    False -> return False
+                  )
 
 -- | Show the user list overlay for showing users that are not members
 -- of the current channel for the purpose of adding them to the
 -- channel.
-enterChannelInviteUserList :: MH ()
-enterChannelInviteUserList = do
-    myTId <- use csCurrentTeamId
-    cId <- use (csCurrentChannelId myTId)
-    myId <- gets myUserId
-    enterUserListMode myTId (ChannelNonMembers cId myTId) Nothing
-      (\u -> case u^.uiId /= myId of
-        True -> addUserToCurrentChannel u >> return True
-        False -> return False
-      )
+enterChannelInviteUserList :: TeamId -> MH ()
+enterChannelInviteUserList myTId = do
+    withCurrentChannel myTId $ \cId _ -> do
+        myId <- gets myUserId
+        enterUserListMode myTId (ChannelNonMembers cId myTId) Nothing
+          (\u -> case u^.uiId /= myId of
+            True -> addUserToCurrentChannel myTId u >> return True
+            False -> return False
+          )
 
 -- | Show the user list overlay for showing all users for the purpose of
 -- starting a direct message channel with another user.
-enterDMSearchUserList :: MH ()
-enterDMSearchUserList = do
+enterDMSearchUserList :: TeamId -> MH ()
+enterDMSearchUserList myTId = do
     myId <- gets myUserId
-    myTId <- use csCurrentTeamId
     config <- use csClientConfig
     let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
             Just MM.RestrictTeam -> Just myTId
             _ -> Nothing
     enterUserListMode myTId (AllUsers restrictTeam) Nothing
       (\u -> case u^.uiId /= myId of
-        True -> createOrFocusDMChannel u Nothing >> return True
+        True -> createOrFocusDMChannel myTId u Nothing >> return True
         False -> return False
       )
 
@@ -83,35 +80,35 @@ enterDMSearchUserList = do
 enterUserListMode :: TeamId -> UserSearchScope -> Maybe Int -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode tId scope resultCount enterHandler = do
     csTeam(tId).tsUserListOverlay.listOverlayRecordCount .= resultCount
-    enterListOverlayMode (csTeam(tId).tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
+    enterListOverlayMode tId (csTeam(tId).tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =
     userInfoFromUser u True & uiStatus .~ statusFromText status
 
 -- | Move the selection up in the user list overlay by one user.
-userListSelectUp :: MH ()
-userListSelectUp = userListMove L.listMoveUp
+userListSelectUp :: TeamId -> MH ()
+userListSelectUp tId = userListMove tId L.listMoveUp
 
 -- | Move the selection down in the user list overlay by one user.
-userListSelectDown :: MH ()
-userListSelectDown = userListMove L.listMoveDown
+userListSelectDown :: TeamId -> MH ()
+userListSelectDown tId = userListMove tId L.listMoveDown
 
 -- | Move the selection up in the user list overlay by a page of users
 -- (userListPageSize).
-userListPageUp :: MH ()
-userListPageUp = userListMove (L.listMoveBy (-1 * userListPageSize))
+userListPageUp :: TeamId -> MH ()
+userListPageUp tId = userListMove tId (L.listMoveBy (-1 * userListPageSize))
 
 -- | Move the selection down in the user list overlay by a page of users
 -- (userListPageSize).
-userListPageDown :: MH ()
-userListPageDown = userListMove (L.listMoveBy userListPageSize)
+userListPageDown :: TeamId -> MH ()
+userListPageDown tId = userListMove tId (L.listMoveBy userListPageSize)
 
 -- | Transform the user list results in some way, e.g. by moving the
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
-userListMove :: (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
-userListMove = listOverlayMove (csCurrentTeam.tsUserListOverlay)
+userListMove :: TeamId -> (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
+userListMove tId = listOverlayMove (csTeam(tId).tsUserListOverlay)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int

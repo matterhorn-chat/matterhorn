@@ -36,6 +36,7 @@ module Matterhorn.Types.RichText
   , findUsernames
   , blockGetURLs
   , findVerbatimChunk
+  , makePermalink
   )
 where
 
@@ -361,6 +362,10 @@ parseMarkdown mBaseUrl t =
             Nothing -> bs
             Just baseUrl -> rewriteBlocksPermalinks baseUrl bs
 
+makePermalink :: TeamBaseURL -> PostId -> Text
+makePermalink (TeamBaseURL (TeamURLName tName) (ServerBaseURL baseUrl)) pId =
+    baseUrl <> tName <> "/pl/" <> unId (unPI pId)
+
 -- | If the specified URL matches the active server base URL and team
 -- and refers to a post, extract the team name and post ID values and
 -- return them.
@@ -444,9 +449,18 @@ blockFindUsernames (Header _ is) =
     inlineFindUsernames $ F.toList $ unInlines is
 blockFindUsernames (Blockquote bs) =
     findUsernames bs
+blockFindUsernames (Table _ header rows) =
+    let cellFindUsernames = inlineFindUsernames . F.toList . unInlines
+    in S.unions $
+       ((cellFindUsernames <$> header) <>
+        (concat $ (fmap cellFindUsernames) <$> rows))
 blockFindUsernames (List _ _ bs) =
     S.unions $ F.toList $ findUsernames <$> bs
-blockFindUsernames _ =
+blockFindUsernames HRule =
+    mempty
+blockFindUsernames (HTMLBlock {}) =
+    mempty
+blockFindUsernames (CodeBlock {}) =
     mempty
 
 inlineFindUsernames :: [Inline] -> S.Set T.Text
@@ -467,7 +481,15 @@ blockGetURLs (Blockquote bs) =
 blockGetURLs (List _ _ bss) =
     mconcat $ mconcat $
     (fmap blockGetURLs . F.toList . unBlocks) <$> F.toList bss
-blockGetURLs _ =
+blockGetURLs (Table _ header rows) =
+    let cellFindURLs = catMaybes . fmap elementGetURL . F.toList . unInlines
+    in (concatMap cellFindURLs header) <>
+       (concatMap (concatMap cellFindURLs) rows)
+blockGetURLs HRule =
+    mempty
+blockGetURLs (HTMLBlock {}) =
+    mempty
+blockGetURLs (CodeBlock {}) =
     mempty
 
 elementGetURL :: Inline -> Maybe (Either (TeamURLName, PostId) URL, Maybe Inlines)

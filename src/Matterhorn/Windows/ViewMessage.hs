@@ -15,7 +15,6 @@ import           Brick.Widgets.Border
 
 import qualified Data.Set as S
 import qualified Data.Map as M
-import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
 import qualified Data.Foldable as F
 import qualified Graphics.Vty as Vty
@@ -44,8 +43,8 @@ viewMessageWindowTemplate tId =
 messageEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
 messageEntry tId =
     TabbedWindowEntry { tweValue = VMTabMessage
-                      , tweRender = renderTab
-                      , tweHandleEvent = handleEvent
+                      , tweRender = renderTab tId
+                      , tweHandleEvent = handleEvent tId
                       , tweTitle = tabTitle
                       , tweShowHandler = onShow tId
                       }
@@ -53,8 +52,8 @@ messageEntry tId =
 reactionsEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
 reactionsEntry tId =
     TabbedWindowEntry { tweValue = VMTabReactions
-                      , tweRender = renderTab
-                      , tweHandleEvent = handleEvent
+                      , tweRender = renderTab tId
+                      , tweHandleEvent = handleEvent tId
                       , tweTitle = tabTitle
                       , tweShowHandler = onShow tId
                       }
@@ -79,31 +78,36 @@ resetVp n = do
         vScrollToBeginning vs
         hScrollToBeginning vs
 
-renderTab :: ViewMessageWindowTab -> ChatState -> Widget Name
-renderTab tab cs =
-    let latestMessage = case cs^.csCurrentTeam.tsViewedMessage of
+renderTab :: TeamId -> ViewMessageWindowTab -> ChatState -> Widget Name
+renderTab tId tab cs =
+    let mLatestMessage = case cs^.csTeam(tId).tsViewedMessage of
           Nothing -> error "BUG: no message to show, please report!"
-          Just (m, _) -> getLatestMessage cs m
-    in case tab of
-        VMTabMessage -> viewMessageBox cs latestMessage
-        VMTabReactions -> reactionsText cs latestMessage
+          Just (m, _) -> getLatestMessage cs tId m
+    in case mLatestMessage of
+        Nothing -> emptyWidget
+        Just latestMessage ->
+            case tab of
+                VMTabMessage -> viewMessageBox cs tId latestMessage
+                VMTabReactions -> reactionsText cs tId latestMessage
 
-getLatestMessage :: ChatState -> Message -> Message
-getLatestMessage cs m =
+getLatestMessage :: ChatState -> TeamId -> Message -> Maybe Message
+getLatestMessage cs tId m =
     case m^.mMessageId of
-        Nothing -> m
-        Just mId -> fromJust $ findMessage mId $ cs^.csCurrentChannel.ccContents.cdMessages
+        Nothing -> Just m
+        Just mId -> do
+            cId <- cs^.csCurrentChannelId(tId)
+            chan <- cs^?csChannel(cId)
+            findMessage mId $ chan^.ccContents.cdMessages
 
-handleEvent :: ViewMessageWindowTab -> Vty.Event -> MH ()
-handleEvent VMTabMessage =
-    void . handleKeyboardEvent viewMessageKeybindings (const $ return ())
-handleEvent VMTabReactions =
-    void . handleKeyboardEvent viewMessageReactionsKeybindings (const $ return ())
+handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
+handleEvent tId VMTabMessage =
+    void . handleKeyboardEvent (viewMessageKeybindings tId) (const $ return ())
+handleEvent tId VMTabReactions =
+    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId) (const $ return ())
 
-reactionsText :: ChatState -> Message -> Widget Name
-reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
+reactionsText :: ChatState -> TeamId -> Message -> Widget Name
+reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
     where
-        tId = st^.csCurrentTeamId
         body = case null reacList of
             True -> txt "This message has no reactions."
             False -> vBox $ mkEntry <$> reacList
@@ -116,7 +120,7 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
             in (clickableName <+> (padLeft (Pad 1) count)) <=>
                (padLeft (Pad 2) usernameList)
 
-        hs = getHighlightSet st
+        hs = getHighlightSet st tId
 
         clickableUsernames i (EUser un) =
             Just $ ClickableUsername (ViewMessageReactionsArea tId) i un
@@ -140,17 +144,16 @@ reactionsText st m = viewport (ViewMessageReactionsArea tId) Vertical body
                 Just n ->  clickable n w
                 Nothing -> w
 
-viewMessageBox :: ChatState -> Message -> Widget Name
-viewMessageBox st msg =
+viewMessageBox :: ChatState -> TeamId -> Message -> Widget Name
+viewMessageBox st tId msg =
     let maybeWarn = if not (msg^.mDeleted) then id else warn
         warn w = vBox [w, hBorder, deleteWarning]
-        tId = st^.csCurrentTeamId
         deleteWarning = withDefAttr errorMessageAttr $
                         txtWrap $ "Alert: this message has been deleted and " <>
                                   "will no longer be accessible once this window " <>
                                   "is closed."
         mkBody vpWidth =
-            let hs = getHighlightSet st
+            let hs = getHighlightSet st tId
                 parent = case msg^.mInReplyToMsg of
                      NotAReply -> Nothing
                      InReplyTo pId -> getMessageForPostId st pId
@@ -177,80 +180,64 @@ viewMessageBox st msg =
         ctx <- getContext
         render $ maybeWarn $ viewport (ViewMessageArea tId) Both $ mkBody (ctx^.availWidthL)
 
-viewMessageKeybindings :: KeyConfig -> KeyHandlerMap
-viewMessageKeybindings = mkKeybindings viewMessageKeyHandlers
+viewMessageKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+viewMessageKeybindings tId = mkKeybindings (viewMessageKeyHandlers tId)
 
-viewMessageKeyHandlers :: [KeyEventHandler]
-viewMessageKeyHandlers =
+viewMessageKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageKeyHandlers tId =
     let vs = viewportScroll . ViewMessageArea
     in [ mkKb PageUpEvent "Page up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
        , mkKb PageDownEvent "Page down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) pageAmount
 
        , mkKb PageLeftEvent "Page left" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (-2 * pageAmount)
 
        , mkKb PageRightEvent "Page right" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (2 * pageAmount)
 
        , mkKb ScrollUpEvent "Scroll up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1)
 
        , mkKb ScrollDownEvent "Scroll down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) 1
 
        , mkKb ScrollLeftEvent "Scroll left" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) (-1)
 
        , mkKb ScrollRightEvent "Scroll right" $ do
-           tId <- use csCurrentTeamId
            mh $ hScrollBy (vs tId) 1
 
        , mkKb ScrollBottomEvent "Scroll to the end of the message" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToEnd (vs tId)
 
        , mkKb ScrollTopEvent "Scroll to the beginning of the message" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToBeginning (vs tId)
        ]
 
-viewMessageReactionsKeybindings :: KeyConfig -> KeyHandlerMap
-viewMessageReactionsKeybindings = mkKeybindings viewMessageReactionsKeyHandlers
+viewMessageReactionsKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+viewMessageReactionsKeybindings tId = mkKeybindings (viewMessageReactionsKeyHandlers tId)
 
-viewMessageReactionsKeyHandlers :: [KeyEventHandler]
-viewMessageReactionsKeyHandlers =
+viewMessageReactionsKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageReactionsKeyHandlers tId =
     let vs = viewportScroll . ViewMessageReactionsArea
     in [ mkKb PageUpEvent "Page up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
        , mkKb PageDownEvent "Page down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) pageAmount
 
        , mkKb ScrollUpEvent "Scroll up" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) (-1)
 
        , mkKb ScrollDownEvent "Scroll down" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollBy (vs tId) 1
 
        , mkKb ScrollBottomEvent "Scroll to the end of the reactions list" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToEnd (vs tId)
 
        , mkKb ScrollTopEvent "Scroll to the beginning of the reactions list" $ do
-           tId <- use csCurrentTeamId
            mh $ vScrollToBeginning (vs tId)
        ]

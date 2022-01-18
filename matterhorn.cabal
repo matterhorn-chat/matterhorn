@@ -1,5 +1,5 @@
 name:                matterhorn
-version:             50200.13.0
+version:             50200.15.0
 synopsis:            Terminal client for the Mattermost chat system
 description:         This is a terminal client for the Mattermost chat
                      system. Please see the README for a list of
@@ -85,6 +85,7 @@ library
                        Matterhorn.Events.EditNotifyPrefs
                        Matterhorn.Events.Keybindings
                        Matterhorn.Events.LeaveChannelConfirm
+                       Matterhorn.Events.Global
                        Matterhorn.Events.Main
                        Matterhorn.Events.ManageAttachments
                        Matterhorn.Events.MessageSelect
@@ -101,7 +102,6 @@ library
                        Matterhorn.HelpTopics
                        Matterhorn.IOUtil
                        Matterhorn.InputHistory
-                       Matterhorn.KeyMap
                        Matterhorn.LastRunState
                        Matterhorn.Login
                        Matterhorn.Options

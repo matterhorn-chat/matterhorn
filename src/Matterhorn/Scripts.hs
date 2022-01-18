@@ -12,7 +12,7 @@ import qualified Control.Concurrent.STM as STM
 import qualified Data.Text as T
 import           System.Exit ( ExitCode(..) )
 
-import           Network.Mattermost.Types ( ChannelId )
+import           Network.Mattermost.Types ( TeamId, ChannelId )
 
 import           Matterhorn.FilePaths ( Script(..), getAllScripts, locateScriptPath )
 import           Matterhorn.State.Common
@@ -20,13 +20,13 @@ import           Matterhorn.State.Messages ( sendMessage )
 import           Matterhorn.Types
 
 
-findAndRunScript :: ChannelId -> Text -> Text -> MH ()
-findAndRunScript cId scriptName input = do
+findAndRunScript :: TeamId -> ChannelId -> Text -> Text -> MH ()
+findAndRunScript tId cId scriptName input = do
     fpMb <- liftIO $ locateScriptPath (T.unpack scriptName)
     outputChan <- use (csResources.crSubprocessLog)
     case fpMb of
       ScriptPath scriptPath -> do
-        doAsyncWith Preempt $ runScript cId outputChan scriptPath input
+        doAsyncWith Preempt $ runScript tId cId outputChan scriptPath input
       NonexecScriptPath scriptPath -> do
         let msg = ("The script `" <> T.pack scriptPath <> "` cannot be " <>
              "executed. Try running\n" <>
@@ -38,8 +38,8 @@ findAndRunScript cId scriptName input = do
       ScriptNotFound -> do
         mhError $ NoSuchScript scriptName
 
-runScript :: ChannelId -> STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
-runScript cId outputChan fp text = do
+runScript :: TeamId -> ChannelId -> STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
+runScript tId cId outputChan fp text = do
   outputVar <- newEmptyMVar
   runLoggedCommand outputChan fp [] (Just $ T.unpack text) (Just outputVar)
   po <- takeMVar outputVar
@@ -47,11 +47,8 @@ runScript cId outputChan fp text = do
     ExitSuccess -> do
         case null $ programStderr po of
             True -> Just $ do
-                withChannel cId $ \chan -> do
-                    mode <- case chan^.ccInfo.cdTeamId of
-                        Nothing -> use (csCurrentTeam.tsEditState.cedEditMode)
-                        Just tId -> use (csTeam(tId).tsEditState.cedEditMode)
-                    sendMessage cId mode (T.pack $ programStdout po) []
+                mode <- use (csTeam(tId).tsEditState.cedEditMode)
+                sendMessage cId mode (T.pack $ programStdout po) []
             False -> Nothing
     ExitFailure _ -> Nothing
 

@@ -12,37 +12,39 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%=) )
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.State.Channels ( setChannelTopic )
 
 
-onEventChannelTopicWindow :: Vty.Event -> MH ()
-onEventChannelTopicWindow (Vty.EvKey (Vty.KChar '\t') []) =
-    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
-onEventChannelTopicWindow (Vty.EvKey Vty.KBackTab []) =
-    csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
-onEventChannelTopicWindow e@(Vty.EvKey Vty.KEnter []) = do
-    f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
+onEventChannelTopicWindow :: TeamId -> Vty.Event -> MH ()
+onEventChannelTopicWindow tId (Vty.EvKey (Vty.KChar '\t') []) =
+    csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
+onEventChannelTopicWindow tId (Vty.EvKey Vty.KBackTab []) =
+    csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
+onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
+    f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicSaveButton {}) -> do
-            ed <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
+            ed <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
             let topic = T.unlines $ getEditContents ed
-            setChannelTopic topic
-            setMode Main
+            setChannelTopic tId topic
+            setMode tId Main
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
+            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         Just (ChannelTopicCancelButton {}) ->
-            setMode Main
+            setMode tId Main
         _ ->
-            setMode Main
-onEventChannelTopicWindow (Vty.EvKey Vty.KEsc []) = do
-    setMode Main
-onEventChannelTopicWindow e = do
-    f <- use (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogFocus)
+            setMode tId Main
+onEventChannelTopicWindow tId (Vty.EvKey Vty.KEsc []) = do
+    setMode tId Main
+onEventChannelTopicWindow tId e = do
+    f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csCurrentTeam.tsChannelTopicDialog.channelTopicDialogEditor)
+            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         _ ->
             return ()

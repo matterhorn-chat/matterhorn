@@ -63,13 +63,13 @@ setTeamFocusWith f = do
     updateViewed True
 
     csTeamZipper %= f
-    postChangeTeamCommon
+    withCurrentTeam postChangeTeamCommon
 
 -- | Book-keeping common to all team selection changes.
-postChangeTeamCommon :: MH ()
-postChangeTeamCommon = do
+postChangeTeamCommon :: TeamId -> MH ()
+postChangeTeamCommon tId = do
     updateViewed False
-    fetchVisibleIfNeeded
+    fetchVisibleIfNeeded tId
     mh $ hScrollToBeginning (viewportScroll TeamList)
 
 -- | Fetch the specified team and add it to the application state.
@@ -81,19 +81,19 @@ handleJoinTeam tId = do
     session <- getSession
     cr <- use csResources
     me <- use csMe
+    curTs <- use csTeams
+    let myTIds = HM.keys curTs
 
-    mhLog LogGeneral $ T.pack $ "Joining team " <> show tId
-    doAsyncWith Normal $ do
-        t <- MM.mmGetTeam tId session
-        (ts, chans) <- buildTeamState cr me t
-        return $ Just $ do
-            curTs <- use csTeams
-            let myTIds = HM.keys curTs
-            when (not $ tId `elem` myTIds) $ do
-                addTeamState ts chans
-                updateSidebar $ Just tId
-                updateWindowTitle
-                refreshTeamZipper
+    when (not $ tId `elem` myTIds) $ do
+        mhLog LogGeneral $ T.pack $ "Joining team " <> show tId
+        doAsyncWith Normal $ do
+            t <- MM.mmGetTeam tId session
+            (ts, chans) <- buildTeamState cr me t
+            return $ Just $ do
+                    addTeamState ts chans
+                    updateSidebar $ Just tId
+                    updateWindowTitle
+                    refreshTeamZipper
 
 -- | Remove the specified team to the application state.
 --
@@ -129,14 +129,14 @@ handleUpdateTeam tId = do
 -- | Set the team zipper ordering with the specified transformation,
 -- which is expected to be either 'moveLeft' or 'moveRight'.
 setTeamOrderWith :: (TeamId -> [TeamId] -> [TeamId]) -> MH ()
-setTeamOrderWith sortFunc = do
+setTeamOrderWith transform = do
     session <- getSession
     me <- use csMe
 
-    tId <- use csCurrentTeamId
+    mtId <- use csCurrentTeamId
     z <- use csTeamZipper
     let tIds = teamZipperIds z
-        newList = sortFunc tId tIds
+        newList = maybe tIds (\tId -> transform tId tIds) mtId
 
     doAsyncWith Normal $ do
         let pref = teamOrderPref (me^.userIdL) newList
@@ -173,7 +173,7 @@ buildTeamState cr me team = do
         result <- readLastRunState tId
         case result of
             Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
-                 channelId c == lrs^.lrsSelectedChannelId
+                 Just (channelId c) == lrs^.lrsSelectedChannelId
             _ -> return isTownSquare
 
     -- Get all channels, but filter down to just the one we want
@@ -195,7 +195,7 @@ buildTeamState cr me team = do
         return (getId c, cChannel)
 
     -- Start the spell checker and spell check timer, if configured
-    spResult <- maybeStartSpellChecker (cr^.crConfiguration) (cr^.crEventQueue)
+    spResult <- maybeStartSpellChecker tId (cr^.crConfiguration) (cr^.crEventQueue)
 
     now <- getCurrentTime
     let chanIds = mkChannelZipperList now (cr^.crConfiguration) tId

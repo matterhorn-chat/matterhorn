@@ -99,72 +99,79 @@ commandList :: [Cmd]
 commandList =
   [ Cmd "quit" "Exit Matterhorn" NoArg $ \ () -> requestQuit
 
-  , Cmd "right" "Focus on the next channel" NoArg $ \ () ->
-        nextChannel
+  , Cmd "right" "Focus on the next channel" NoArg $ \ () -> do
+        withCurrentTeam nextChannel
 
-  , Cmd "left" "Focus on the previous channel" NoArg $ \ () ->
-        prevChannel
+  , Cmd "left" "Focus on the previous channel" NoArg $ \ () -> do
+        withCurrentTeam prevChannel
 
   , Cmd "create-channel" "Create a new public channel"
-    (LineArg "channel name") $ \ name ->
-        createOrdinaryChannel True name
+    (LineArg "channel name") $ \ name -> do
+        withCurrentTeam $ \tId ->
+            createOrdinaryChannel tId True name
 
   , Cmd "create-private-channel" "Create a new private channel"
-    (LineArg "channel name") $ \ name ->
-        createOrdinaryChannel False name
+    (LineArg "channel name") $ \ name -> do
+        withCurrentTeam $ \tId ->
+            createOrdinaryChannel tId False name
 
   , Cmd "delete-channel" "Delete the current channel"
-    NoArg $ \ () ->
-        beginCurrentChannelDeleteConfirm
+    NoArg $ \ () -> do
+        withCurrentTeam beginCurrentChannelDeleteConfirm
 
   , Cmd "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () -> do
-        tId <- use csCurrentTeamId
-        hideDMChannel =<< use (csCurrentChannelId tId)
+        withCurrentTeam $ \tId ->
+            withCurrentChannel tId $ \cId _ -> do
+                hideDMChannel cId
 
   , Cmd "reconnect" "Force a reconnection attempt to the server"
     NoArg $ \ () ->
         connectWebsockets
 
   , Cmd "members" "Show the current channel's members"
-    NoArg $ \ () ->
-        enterChannelMembersUserList
+    NoArg $ \ () -> do
+        withCurrentTeam enterChannelMembersUserList
 
-  , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () ->
-        startLeaveCurrentChannel
+  , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () -> do
+        withCurrentTeam startLeaveCurrentChannel
 
-  , Cmd "join" "Find a channel to join" NoArg $ \ () ->
-        enterChannelListOverlayMode
+  , Cmd "join" "Find a channel to join" NoArg $ \ () -> do
+        withCurrentTeam enterChannelListOverlayMode
 
-  , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) ->
-        joinChannelByName n
+  , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) -> do
+        withCurrentTeam $ \tId ->
+            joinChannelByName tId n
 
-  , Cmd "theme" "List the available themes" NoArg $ \ () ->
-        enterThemeListMode
+  , Cmd "theme" "List the available themes" NoArg $ \ () -> do
+        withCurrentTeam enterThemeListMode
 
   , Cmd "theme" "Set the color theme"
-    (TokenArg "theme" NoArg) $ \ (themeName, ()) ->
-        setTheme themeName
+    (TokenArg "theme" NoArg) $ \ (themeName, ()) -> do
+        withCurrentTeam $ \tId ->
+            setTheme tId themeName
 
   , Cmd "topic" "Set the current channel's topic (header) interactively"
-    NoArg $ \ () ->
-        openChannelTopicWindow
+    NoArg $ \ () -> do
+        withCurrentTeam openChannelTopicWindow
 
   , Cmd "topic" "Set the current channel's topic (header)"
-    (LineArg "topic") $ \ p ->
-        if not (T.null p) then setChannelTopic p else return ()
+    (LineArg "topic") $ \ p -> do
+        withCurrentTeam $ \tId ->
+            if not (T.null p) then setChannelTopic tId p else return ()
 
   , Cmd "add-user" "Search for a user to add to the current channel"
-    NoArg $ \ () ->
-        enterChannelInviteUserList
+    NoArg $ \ () -> do
+        withCurrentTeam enterChannelInviteUserList
 
   , Cmd "msg" "Search for a user to enter a private chat"
-    NoArg $ \ () ->
-        enterDMSearchUserList
+    NoArg $ \ () -> do
+        withCurrentTeam enterDMSearchUserList
 
   , Cmd "msg" "Chat with the specified user"
-    (UserArg NoArg) $ \ (name, ()) ->
-        changeChannelByName name
+    (UserArg NoArg) $ \ (name, ()) -> do
+        withCurrentTeam $ \tId ->
+            changeChannelByName tId name
 
   , Cmd "username-attribute" "Display the attribute used to color the specified username"
     (UserArg NoArg) $ \ (name, ()) ->
@@ -172,12 +179,12 @@ commandList =
 
   , Cmd "msg" "Go to a user's channel and send the specified message or command"
     (UserArg $ LineArg "message or command") $ \ (name, msg) -> do
-        withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
-            case foundUser of
-                Just user -> createOrFocusDMChannel user $ Just $ \cId -> do
-                    tId <- use csCurrentTeamId
-                    handleInputSubmission tId cId msg
-                Nothing -> mhError $ NoSuchUser name
+        withCurrentTeam $ \tId ->
+            withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
+                case foundUser of
+                    Just user -> createOrFocusDMChannel tId user $ Just $ \cId -> do
+                        handleInputSubmission tId cId msg
+                    Nothing -> mhError $ NoSuchUser name
 
   , Cmd "log-start" "Begin logging debug information to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->
@@ -200,18 +207,20 @@ commandList =
         getLogDestination
 
   , Cmd "add-user" "Add a user to the current channel"
-    (UserArg NoArg) $ \ (uname, ()) ->
-        addUserByNameToCurrentChannel uname
+    (UserArg NoArg) $ \ (uname, ()) -> do
+        withCurrentTeam $ \tId ->
+            addUserByNameToCurrentChannel tId uname
 
   , Cmd "remove" "Remove a user from the current channel"
-    (UserArg NoArg) $ \ (uname, ()) ->
-        removeUserFromCurrentChannel uname
+    (UserArg NoArg) $ \ (uname, ()) -> do
+        withCurrentTeam $ \tId ->
+            removeUserFromCurrentChannel tId uname
 
   , Cmd "user" "Show users to initiate a private DM chat channel"
     -- n.b. this is identical to "msg", but is provided as an
     -- alternative mental model for useability.
-    NoArg $ \ () ->
-        enterDMSearchUserList
+    NoArg $ \ () -> do
+        withCurrentTeam enterDMSearchUserList
 
   , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
@@ -229,51 +238,58 @@ commandList =
         toggleExpandedChannelTopics
 
   , Cmd "focus" "Focus on a channel or user"
-    (ChannelArg NoArg) $ \ (name, ()) ->
-        changeChannelByName name
+    (ChannelArg NoArg) $ \ (name, ()) -> do
+        withCurrentTeam $ \tId ->
+            changeChannelByName tId name
 
-  , Cmd "focus" "Select from available channels" NoArg $ \ () ->
-        beginChannelSelect
+  , Cmd "focus" "Select from available channels" NoArg $ \ () -> do
+        withCurrentTeam beginChannelSelect
 
-  , Cmd "help" "Show the main help screen" NoArg $ \ _ ->
-        showHelpScreen mainHelpTopic
+  , Cmd "help" "Show the main help screen" NoArg $ \ _ -> do
+        withCurrentTeam $ \tId ->
+            showHelpScreen tId mainHelpTopic
 
-  , Cmd "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ ->
-        showHelpScreen mainHelpTopic
+  , Cmd "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ -> do
+        withCurrentTeam $ \tId ->
+            showHelpScreen tId mainHelpTopic
 
   , Cmd "help" "Show help about a particular topic"
-      (TokenArg "topic" NoArg) $ \ (topicName, ()) ->
-          case lookupHelpTopic topicName of
-              Nothing -> mhError $ NoSuchHelpTopic topicName
-              Just topic -> showHelpScreen topic
+      (TokenArg "topic" NoArg) $ \ (topicName, ()) -> do
+          withCurrentTeam $ \tId ->
+              case lookupHelpTopic topicName of
+                  Nothing -> mhError $ NoSuchHelpTopic topicName
+                  Just topic -> showHelpScreen tId topic
 
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
         listScripts
 
   , Cmd "group-create" "Create a group chat"
-    (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]"))
-        createGroupChannel
+    (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]")) $ \ t -> do
+        withCurrentTeam $ \tId ->
+            createGroupChannel tId t
 
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
-        tId <- use csCurrentTeamId
-        cId <- use (csCurrentChannelId tId)
-        findAndRunScript cId script text
+        withCurrentTeam $ \tId ->
+            withCurrentChannel tId $ \cId _ -> do
+                findAndRunScript tId cId script text
 
-  , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () ->
-        enterFlaggedPostListMode
+  , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
+        withCurrentTeam enterFlaggedPostListMode
 
-  , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () ->
-        enterPinnedPostListMode
+  , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () -> do
+        withCurrentTeam enterPinnedPostListMode
 
-  , Cmd "search" "Search for posts with given terms" (LineArg "terms") $
-        enterSearchResultPostListMode
+  , Cmd "search" "Search for posts with given terms" (LineArg "terms") $ \t -> do
+        withCurrentTeam $ \tId ->
+            enterSearchResultPostListMode tId t
 
-  , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ ->
-        enterEditNotifyPrefsMode
+  , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ -> do
+        withCurrentTeam enterEditNotifyPrefsMode
 
-  , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) ->
-        renameChannelUrl name
+  , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) -> do
+        withCurrentTeam $ \tId ->
+            renameChannelUrl tId name
 
   , Cmd "move-team-left" "Move the currently-selected team to the left in the team list" NoArg $ \_ ->
         moveCurrentTeamLeft
@@ -281,11 +297,12 @@ commandList =
   , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
         moveCurrentTeamRight
 
-  , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $
-        attachFileByPath
+  , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
+        withCurrentTeam $ \tId ->
+            attachFileByPath tId path
 
-  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ ->
-        toggleChannelFavoriteStatus
+  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
+        withCurrentTeam toggleChannelFavoriteStatus
   ]
 
 displayUsernameAttribute :: Text -> MH ()
@@ -295,49 +312,48 @@ displayUsernameAttribute name = do
     postInfoMessage $ "The attribute used for " <> addUserSigil trimmed <>
                       " is " <> (attrNameToConfig an)
 
-execMMCommand :: Text -> Text -> MH ()
-execMMCommand name rest = do
-  tId      <- use csCurrentTeamId
-  cId      <- use (csCurrentChannelId tId)
-  session  <- getSession
-  em       <- use (csCurrentTeam.tsEditState.cedEditMode)
-  let mc = MM.MinCommand
-             { MM.minComChannelId = cId
-             , MM.minComCommand   = "/" <> name <> " " <> rest
-             , MM.minComParentId  = case em of
-                 Replying _ p -> Just $ MM.getId p
-                 Editing p _  -> MM.postRootId p
-                 _            -> Nothing
-             , MM.minComRootId  = case em of
-                 Replying _ p -> MM.postRootId p <|> (Just $ MM.postId p)
-                 Editing p _  -> MM.postRootId p
-                 _            -> Nothing
-             , MM.minComTeamId = tId
-             }
-      runCmd = liftIO $ do
-        void $ MM.mmExecuteCommand mc session
-      handleHTTP (MM.HTTPResponseException err) =
-        return (Just (T.pack err))
-        -- XXX: this might be a bit brittle in the future, because it
-        -- assumes the shape of an error message. We might want to
-        -- think about a better way of discovering this error and
-        -- reporting it accordingly?
-      handleCmdErr (MM.MattermostServerError err) =
-        let (_, msg) = T.breakOn ": " err in
-          return (Just (T.drop 2 msg))
-      handleMMErr (MM.MattermostError
-                     { MM.mattermostErrorMessage = msg }) =
-        return (Just msg)
-  errMsg <- liftIO $ (runCmd >> return Nothing) `Exn.catch` handleHTTP
-                                                `Exn.catch` handleCmdErr
-                                                `Exn.catch` handleMMErr
-  case errMsg of
-    Nothing -> return ()
-    Just err ->
-      mhError $ GenericError ("Error running command: " <> err)
+execMMCommand :: MM.TeamId -> Text -> Text -> MH ()
+execMMCommand tId name rest = do
+  withCurrentChannel tId $ \cId _ -> do
+      session  <- getSession
+      em       <- use (csTeam(tId).tsEditState.cedEditMode)
+      let mc = MM.MinCommand
+                 { MM.minComChannelId = cId
+                 , MM.minComCommand   = "/" <> name <> " " <> rest
+                 , MM.minComParentId  = case em of
+                     Replying _ p -> Just $ MM.getId p
+                     Editing p _  -> MM.postRootId p
+                     _            -> Nothing
+                 , MM.minComRootId  = case em of
+                     Replying _ p -> MM.postRootId p <|> (Just $ MM.postId p)
+                     Editing p _  -> MM.postRootId p
+                     _            -> Nothing
+                 , MM.minComTeamId = tId
+                 }
+          runCmd = liftIO $ do
+            void $ MM.mmExecuteCommand mc session
+          handleHTTP (MM.HTTPResponseException err) =
+            return (Just (T.pack err))
+            -- XXX: this might be a bit brittle in the future, because it
+            -- assumes the shape of an error message. We might want to
+            -- think about a better way of discovering this error and
+            -- reporting it accordingly?
+          handleCmdErr (MM.MattermostServerError err) =
+            let (_, msg) = T.breakOn ": " err in
+              return (Just (T.drop 2 msg))
+          handleMMErr (MM.MattermostError
+                         { MM.mattermostErrorMessage = msg }) =
+            return (Just msg)
+      errMsg <- liftIO $ (runCmd >> return Nothing) `Exn.catch` handleHTTP
+                                                    `Exn.catch` handleCmdErr
+                                                    `Exn.catch` handleMMErr
+      case errMsg of
+        Nothing -> return ()
+        Just err ->
+          mhError $ GenericError ("Error running command: " <> err)
 
-dispatchCommand :: Text -> MH ()
-dispatchCommand cmd =
+dispatchCommand :: MM.TeamId -> Text -> MH ()
+dispatchCommand tId cmd =
   case unwordHead cmd of
     Just (x, xs)
       | matchingCmds <- [ c
@@ -345,7 +361,7 @@ dispatchCommand cmd =
                         , name == x
                         ] -> go [] matchingCmds
       where go [] [] = do
-              execMMCommand x xs
+              execMMCommand tId x xs
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])

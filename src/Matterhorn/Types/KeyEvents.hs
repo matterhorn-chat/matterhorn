@@ -111,6 +111,7 @@ data KeyEvent
 
   | ViewMessageEvent
   | FillGapEvent
+  | CopyPostLinkEvent
   | FlagMessageEvent
   | PinMessageEvent
   | YankMessageEvent
@@ -231,6 +232,7 @@ allEvents =
   , PinMessageEvent
   , ViewMessageEvent
   , FillGapEvent
+  , CopyPostLinkEvent
   , YankMessageEvent
   , YankWholeMessageEvent
   , DeleteMessageEvent
@@ -472,6 +474,7 @@ keyEventName ev = case ev of
   PinMessageEvent   -> "pin-message"
   ViewMessageEvent   -> "view-message"
   FillGapEvent       -> "fetch-for-gap"
+  CopyPostLinkEvent  -> "copy-post-link"
   YankMessageEvent   -> "yank-message"
   YankWholeMessageEvent   -> "yank-whole-message"
   DeleteMessageEvent -> "delete-message"

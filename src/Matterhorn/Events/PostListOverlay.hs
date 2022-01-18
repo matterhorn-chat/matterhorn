@@ -5,24 +5,26 @@ import           Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.PostListOverlay
 
 
-onEventPostListOverlay :: Vty.Event -> MH ()
-onEventPostListOverlay =
-  void . handleKeyboardEvent postListOverlayKeybindings (const $ return ())
+onEventPostListOverlay :: TeamId -> Vty.Event -> MH ()
+onEventPostListOverlay tId =
+  void . handleKeyboardEvent (postListOverlayKeybindings tId) (const $ return ())
 
 -- | The keybindings we want to use while viewing a post list overlay
-postListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
-postListOverlayKeybindings = mkKeybindings postListOverlayKeyHandlers
+postListOverlayKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+postListOverlayKeybindings tId = mkKeybindings (postListOverlayKeyHandlers tId)
 
-postListOverlayKeyHandlers :: [KeyEventHandler]
-postListOverlayKeyHandlers =
-  [ mkKb CancelEvent "Exit post browsing" exitPostListMode
-  , mkKb SelectUpEvent "Select the previous message" postListSelectUp
-  , mkKb SelectDownEvent "Select the next message" postListSelectDown
-  , mkKb FlagMessageEvent "Toggle the selected message flag" postListUnflagSelected
-  , mkKb ActivateListItemEvent "Jump to and select current message" postListJumpToCurrent
+postListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
+postListOverlayKeyHandlers tId =
+  [ mkKb CancelEvent "Exit post browsing" $ exitPostListMode tId
+  , mkKb SelectUpEvent "Select the previous message" $ postListSelectUp tId
+  , mkKb SelectDownEvent "Select the next message" $ postListSelectDown tId
+  , mkKb FlagMessageEvent "Toggle the selected message flag" $ postListUnflagSelected tId
+  , mkKb ActivateListItemEvent "Jump to and select current message" $ postListJumpToCurrent tId
   ]

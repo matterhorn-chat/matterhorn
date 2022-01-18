@@ -10,33 +10,35 @@ import           Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.ReactionEmojiListOverlay
 import           Matterhorn.State.ListOverlay
 import           Matterhorn.Types
 
 
-onEventReactionEmojiListOverlay :: Vty.Event -> MH ()
-onEventReactionEmojiListOverlay =
-    void . onEventListOverlay (csCurrentTeam.tsReactionEmojiListOverlay)
-           reactionEmojiListOverlayKeybindings
+onEventReactionEmojiListOverlay :: TeamId -> Vty.Event -> MH ()
+onEventReactionEmojiListOverlay tId =
+    void . onEventListOverlay tId (csTeam(tId).tsReactionEmojiListOverlay)
+           (reactionEmojiListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing an emoji list overlay
-reactionEmojiListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
-reactionEmojiListOverlayKeybindings = mkKeybindings reactionEmojiListOverlayKeyHandlers
+reactionEmojiListOverlayKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+reactionEmojiListOverlayKeybindings tId = mkKeybindings (reactionEmojiListOverlayKeyHandlers tId)
 
-reactionEmojiListOverlayKeyHandlers :: [KeyEventHandler]
-reactionEmojiListOverlayKeyHandlers =
+reactionEmojiListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
+reactionEmojiListOverlayKeyHandlers tId =
     [ mkKb CancelEvent "Close the emoji search window"
-      (exitListOverlay (csCurrentTeam.tsReactionEmojiListOverlay))
-    , mkKb SearchSelectUpEvent "Select the previous emoji"
-      reactionEmojiListSelectUp
-    , mkKb SearchSelectDownEvent "Select the next emoji"
-      reactionEmojiListSelectDown
-    , mkKb PageDownEvent "Page down in the emoji list"
-      reactionEmojiListPageDown
-    , mkKb PageUpEvent "Page up in the emoji list"
-      reactionEmojiListPageUp
+      (exitListOverlay tId (csTeam(tId).tsReactionEmojiListOverlay))
+    , mkKb SearchSelectUpEvent "Select the previous emoji" $
+      reactionEmojiListSelectUp tId
+    , mkKb SearchSelectDownEvent "Select the next emoji" $
+      reactionEmojiListSelectDown tId
+    , mkKb PageDownEvent "Page down in the emoji list" $
+      reactionEmojiListPageDown tId
+    , mkKb PageUpEvent "Page up in the emoji list" $
+      reactionEmojiListPageUp tId
     , mkKb ActivateListItemEvent "Post the selected emoji reaction"
-      (listOverlayActivateCurrent (csCurrentTeam.tsReactionEmojiListOverlay))
+      (listOverlayActivateCurrent tId (csTeam(tId).tsReactionEmojiListOverlay))
     ]

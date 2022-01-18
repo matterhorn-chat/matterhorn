@@ -14,6 +14,7 @@ import           Brick.Forms (handleFormEvent, formState)
 import           Data.Maybe (fromJust)
 import qualified Graphics.Vty as V
 import qualified Network.Mattermost.Endpoints as MM
+import           Network.Mattermost.Types ( TeamId )
 
 import           Lens.Micro.Platform (_Just, (.=), singular)
 
@@ -23,29 +24,29 @@ import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.NotifyPrefs
 import           Matterhorn.State.Async
 
-onEventEditNotifyPrefs :: V.Event -> MH Bool
-onEventEditNotifyPrefs =
-    handleKeyboardEvent editNotifyPrefsKeybindings (handleEditNotifyPrefsEvent . VtyEvent)
+onEventEditNotifyPrefs :: TeamId -> V.Event -> MH Bool
+onEventEditNotifyPrefs tId =
+    handleKeyboardEvent (editNotifyPrefsKeybindings tId) (handleEditNotifyPrefsEvent tId . VtyEvent)
 
-handleEditNotifyPrefsEvent :: BrickEvent Name MHEvent -> MH ()
-handleEditNotifyPrefsEvent e = do
-    form <- use (csCurrentTeam.tsNotifyPrefs.singular _Just)
+handleEditNotifyPrefsEvent :: TeamId -> BrickEvent Name MHEvent -> MH ()
+handleEditNotifyPrefsEvent tId e = do
+    form <- use (csTeam(tId).tsNotifyPrefs.singular _Just)
     updatedForm <- mh $ handleFormEvent e form
-    csCurrentTeam.tsNotifyPrefs .= Just updatedForm
+    csTeam(tId).tsNotifyPrefs .= Just updatedForm
 
-editNotifyPrefsKeybindings :: KeyConfig -> KeyHandlerMap
-editNotifyPrefsKeybindings = mkKeybindings editNotifyPrefsKeyHandlers
+editNotifyPrefsKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+editNotifyPrefsKeybindings tId = mkKeybindings (editNotifyPrefsKeyHandlers tId)
 
-editNotifyPrefsKeyHandlers :: [KeyEventHandler]
-editNotifyPrefsKeyHandlers =
-    [ mkKb CancelEvent "Close channel notification preferences" exitEditNotifyPrefsMode
+editNotifyPrefsKeyHandlers :: TeamId -> [KeyEventHandler]
+editNotifyPrefsKeyHandlers tId =
+    [ mkKb CancelEvent "Close channel notification preferences" $
+        exitEditNotifyPrefsMode tId
     , mkKb FormSubmitEvent "Save channel notification preferences" $ do
         st <- use id
-        let form = fromJust $ st^.csCurrentTeam.tsNotifyPrefs
-            cId = st^.csCurrentChannelId(st^.csCurrentTeamId)
-
-        doAsyncChannelMM Preempt cId
-          (\s _ -> MM.mmUpdateChannelNotifications cId (myUserId st) (formState form) s)
-          (\_ _ -> Nothing)
-        exitEditNotifyPrefsMode
+        withCurrentChannel tId $ \cId _ -> do
+            let form = fromJust $ st^.csTeam(tId).tsNotifyPrefs
+            doAsyncChannelMM Preempt cId
+              (\s _ -> MM.mmUpdateChannelNotifications cId (myUserId st) (formState form) s)
+              (\_ _ -> Nothing)
+            exitEditNotifyPrefsMode tId
     ]

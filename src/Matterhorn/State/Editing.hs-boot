@@ -4,7 +4,8 @@ module Matterhorn.State.Editing
   )
 where
 
+import Network.Mattermost.Types ( TeamId )
 import Matterhorn.Types ( MH )
 
 data Direction = Forwards | Backwards
-tabComplete :: Direction -> MH ()
+tabComplete :: TeamId -> Direction -> MH ()

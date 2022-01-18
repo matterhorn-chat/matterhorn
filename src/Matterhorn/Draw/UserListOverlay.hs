@@ -14,15 +14,17 @@ import qualified Brick.Widgets.List as L
 import qualified Data.Text as T
 import qualified Graphics.Vty as V
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Draw.Util ( userSigilFromInfo )
 import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 
 
-drawUserListOverlay :: ChatState -> Widget Name
-drawUserListOverlay st =
-    let overlay = drawListOverlay (st^.csCurrentTeam.tsUserListOverlay) userSearchScopeHeader
+drawUserListOverlay :: ChatState -> TeamId -> Widget Name
+drawUserListOverlay st tId =
+    let overlay = drawListOverlay (st^.csTeam(tId).tsUserListOverlay) userSearchScopeHeader
                                   userSearchScopeNoResults userSearchScopePrompt
                                   (renderUser (myUsername st))
                                   Nothing

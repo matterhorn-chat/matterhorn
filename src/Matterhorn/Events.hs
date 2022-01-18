@@ -1,7 +1,5 @@
 module Matterhorn.Events
   ( onEvent
-  , globalKeybindings
-  , globalKeyHandlers
   )
 where
 
@@ -15,6 +13,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
 import qualified System.IO.Error as IO
 
+import qualified Network.Mattermost.Types as MM
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Exceptions ( mattermostErrorMessage )
 
@@ -24,7 +23,6 @@ import           Matterhorn.HelpTopics
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
-import           Matterhorn.State.Help
 import           Matterhorn.State.Messages
 import           Matterhorn.Types
 
@@ -32,6 +30,7 @@ import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.ChannelTopicWindow
 import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.DeleteChannelConfirm
+import           Matterhorn.Events.Global
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.LeaveChannelConfirm
 import           Matterhorn.Events.Main
@@ -73,8 +72,9 @@ onBrickEvent e@(MouseDown n button modifier _) = do
     when shouldHandle $ do
         mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
-        mode <- use (csCurrentTeam.tsMode)
-        mouseHandlerByMode mode e
+        withCurrentTeam $ \tId -> do
+            mode <- use (csTeam(tId).tsMode)
+            mouseHandlerByMode tId mode e
 onBrickEvent (MouseUp {}) = do
     csLastMouseDownEvent .= Nothing
     mhContinueWithoutRedraw
@@ -89,7 +89,7 @@ onAppEvent WebsocketConnect = do
     csConnectionStatus .= Connected
     refreshChannelsAndUsers
     refreshClientConfig
-    fetchVisibleIfNeeded
+    withCurrentTeam fetchVisibleIfNeeded
 onAppEvent (RateLimitExceeded winSz) =
     mhError $ GenericError $ T.pack $
         let s = if winSz == 1 then "" else "s"
@@ -203,46 +203,38 @@ onVtyEvent e = do
             mh invalidateCache
         _ -> return ()
 
-    void $ handleKeyboardEvent globalKeybindings handleGlobalEvent e
+    void $ handleKeyboardEvent globalKeybindings handleTeamModeEvent e
 
-handleGlobalEvent :: Vty.Event -> MH ()
-handleGlobalEvent e = do
-    mode <- use (csCurrentTeam.tsMode)
-    globalHandlerByMode mode e
+handleTeamModeEvent :: Vty.Event -> MH ()
+handleTeamModeEvent e =
+    withCurrentTeam $ \tId -> do
+        mode <- use (csTeam(tId).tsMode)
+        teamEventHandlerByMode tId mode e
 
-globalHandlerByMode :: Mode -> Vty.Event -> MH ()
-globalHandlerByMode mode =
+teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
+teamEventHandlerByMode tId mode =
     case mode of
-        Main                       -> onEventMain
-        ShowHelp _ _               -> void . onEventShowHelp
-        ChannelSelect              -> void . onEventChannelSelect
-        UrlSelect                  -> void . onEventUrlSelect
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm
-        MessageSelect              -> onEventMessageSelect
-        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm
-        ThemeListOverlay           -> onEventThemeListOverlay
-        PostListOverlay _          -> onEventPostListOverlay
-        UserListOverlay            -> onEventUserListOverlay
-        ChannelListOverlay         -> onEventChannelListOverlay
-        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay
-        ViewMessage                -> void . handleTabbedWindowEvent
-                                             (csCurrentTeam.tsViewedMessage.singular _Just._2)
-        ManageAttachments          -> onEventManageAttachments
-        ManageAttachmentsBrowseFiles -> onEventManageAttachments
-        EditNotifyPrefs            -> void . onEventEditNotifyPrefs
-        ChannelTopicWindow         -> onEventChannelTopicWindow
-        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow
-
-globalKeybindings :: KeyConfig -> KeyHandlerMap
-globalKeybindings = mkKeybindings globalKeyHandlers
-
-globalKeyHandlers :: [KeyEventHandler]
-globalKeyHandlers =
-    [ mkKb ShowHelpEvent
-        "Show this help screen"
-        (showHelpScreen mainHelpTopic)
-    ]
+        Main                       -> onEventMain tId
+        ShowHelp _ _               -> void . onEventShowHelp tId
+        ChannelSelect              -> void . onEventChannelSelect tId
+        UrlSelect                  -> void . onEventUrlSelect tId
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId
+        MessageSelect              -> onEventMessageSelect tId
+        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId
+        ThemeListOverlay           -> onEventThemeListOverlay tId
+        PostListOverlay _          -> onEventPostListOverlay tId
+        UserListOverlay            -> onEventUserListOverlay tId
+        ChannelListOverlay         -> onEventChannelListOverlay tId
+        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay tId
+        ViewMessage                -> void . (handleTabbedWindowEvent
+                                              (csTeam(tId).tsViewedMessage.singular _Just._2)
+                                              tId)
+        ManageAttachments          -> onEventManageAttachments tId
+        ManageAttachmentsBrowseFiles -> onEventManageAttachments tId
+        EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
+        ChannelTopicWindow         -> onEventChannelTopicWindow tId
+        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the

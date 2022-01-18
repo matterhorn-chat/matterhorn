@@ -32,28 +32,30 @@ import           Matterhorn.Types
 app :: App ChatState MHEvent Name
 app = App
   { appDraw         = draw
-  , appChooseCursor = \s cs -> case s^.csCurrentTeam.tsMode of
-      Main                          -> showFirstCursor s cs
-      ChannelSelect                 -> showFirstCursor s cs
-      UserListOverlay               -> showFirstCursor s cs
-      ReactionEmojiListOverlay      -> showFirstCursor s cs
-      ChannelListOverlay            -> showFirstCursor s cs
-      ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
-      ThemeListOverlay              -> showFirstCursor s cs
-      ChannelTopicWindow            -> let tId = s^.csCurrentTeamId
-                                       in showCursorNamed (ChannelTopicEditor tId) cs
-      SaveAttachmentWindow _        -> let tId = s^.csCurrentTeamId
-                                       in showCursorNamed (AttachmentPathEditor tId) cs
-      LeaveChannelConfirm           -> Nothing
-      DeleteChannelConfirm          -> Nothing
-      MessageSelect                 -> Nothing
-      MessageSelectDeleteConfirm    -> Nothing
-      PostListOverlay _             -> Nothing
-      ManageAttachments             -> Nothing
-      ViewMessage                   -> Nothing
-      ShowHelp _ _                  -> Nothing
-      UrlSelect                     -> Nothing
-      EditNotifyPrefs               -> Nothing
+  , appChooseCursor = \s cs ->
+      case s^.csCurrentTeamId of
+          Nothing -> showFirstCursor s cs
+          Just tId ->
+              case s^.csTeam(tId).tsMode of
+                  Main                          -> showFirstCursor s cs
+                  ChannelSelect                 -> showFirstCursor s cs
+                  UserListOverlay               -> showFirstCursor s cs
+                  ReactionEmojiListOverlay      -> showFirstCursor s cs
+                  ChannelListOverlay            -> showFirstCursor s cs
+                  ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
+                  ThemeListOverlay              -> showFirstCursor s cs
+                  ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
+                  SaveAttachmentWindow _        -> showCursorNamed (AttachmentPathEditor tId) cs
+                  LeaveChannelConfirm           -> Nothing
+                  DeleteChannelConfirm          -> Nothing
+                  MessageSelect                 -> Nothing
+                  MessageSelectDeleteConfirm    -> Nothing
+                  PostListOverlay _             -> Nothing
+                  ManageAttachments             -> Nothing
+                  ViewMessage                   -> Nothing
+                  ShowHelp _ _                  -> Nothing
+                  UrlSelect                     -> Nothing
+                  EditNotifyPrefs               -> Nothing
   , appHandleEvent  = Events.onEvent
   , appStartEvent   = return
   , appAttrMap      = (^.csResources.crTheme)

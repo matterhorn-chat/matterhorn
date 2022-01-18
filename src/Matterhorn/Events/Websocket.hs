@@ -11,7 +11,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( preuse )
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
@@ -58,9 +57,11 @@ handleWebsocketEvent we = do
                 when (inMyTeamOrDM (wepTeamId (weData we))) $ do
                     let wasMentioned = maybe False (Set.member myId) $ wepMentions (weData we)
                     addNewPostedMessage $ RecentPost p wasMentioned
-                    tId <- use csCurrentTeamId
-                    cId <- use (csCurrentChannelId tId)
-                    when (postChannelId p /= cId) $
+                    mtId <- use csCurrentTeamId
+                    cId <- case mtId of
+                        Nothing -> return Nothing
+                        Just tId -> use (csCurrentChannelId tId)
+                    when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
@@ -71,9 +72,9 @@ handleWebsocketEvent we = do
                 currTid <- use csCurrentTeamId
                 foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
-                    when (postChannelId p == cId && tId == currTid) $
+                    when (Just (postChannelId p) == cId && Just tId == currTid) $
                         updateViewed False
-                    when (postChannelId p /= cId) $
+                    when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
@@ -84,9 +85,9 @@ handleWebsocketEvent we = do
                 currTid <- use csCurrentTeamId
                 foreachTeam $ \tId -> do
                     cId <- use (csCurrentChannelId tId)
-                    when (postChannelId p == cId && tId == currTid) $
+                    when (Just (postChannelId p) == cId && Just tId == currTid) $
                         updateViewed False
-                    when (postChannelId p /= cId) $
+                    when (Just (postChannelId p) /= cId) $
                         showChannelInSidebar (p^.postChannelIdL) False
             | otherwise -> return ()
 
@@ -217,8 +218,9 @@ handleWebsocketEvent we = do
         WMUserUpdated
             | Just user <- wepUser (weData we) -> do
                 handleUserUpdated user
-                cid <- use $ csCurrentChannel . ccInfo . cdChannelId
-                refreshChannelById cid
+                withCurrentTeam $ \tId ->
+                    withCurrentChannel tId $ \cId _ -> do
+                        refreshChannelById cId
             | otherwise -> return ()
 
         -- We deliberately ignore these events:

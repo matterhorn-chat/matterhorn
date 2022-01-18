@@ -44,9 +44,10 @@ updateSidebar mTid = do
     -- Schedule the current team's sidebar for user status updates at
     -- the end of this MH action. This is okay because all team sidebars
     -- should include the same set of DM channels.
-    z <- use (csCurrentTeam.tsFocus)
-    myId <- gets myUserId
-    scheduleUserStatusFetches $ myId : userIdsFromZipper z
+    withCurrentTeam $ \tId -> do
+        z <- use (csTeam(tId).tsFocus)
+        myId <- gets myUserId
+        scheduleUserStatusFetches $ myId : userIdsFromZipper z
 
     updateWindowTitle
 
@@ -94,7 +95,7 @@ updateTeamSidebar tId = do
     -- that it gets loaded.
     newCid <- use (csCurrentChannelId tId)
     when (newCid /= oldCid) $
-        fetchVisibleIfNeeded
+        fetchVisibleIfNeeded tId
 
 toggleChannelListVisibility :: MH ()
 toggleChannelListVisibility = do
@@ -128,14 +129,9 @@ showChannelInSidebar cId setPending = do
             -- displayable, and the UI should always prefer to SATISFY
             -- the user's latest request over any pending/background
             -- task.
-            csCurrentTeam.tsPendingChannelChange .= Nothing
-
             now <- liftIO getCurrentTime
             csChannel(cId).ccInfo.cdSidebarShowOverride .= Just now
             updateSidebar (ch^.ccInfo.cdTeamId)
-
-            curTid <- use csCurrentTeamId
-            let tId = fromMaybe curTid (ch^.ccInfo.cdTeamId)
 
             case ch^.ccInfo.cdType of
                 Direct -> do
@@ -144,8 +140,9 @@ showChannelInSidebar cId setPending = do
                         Just False -> do
                             let pref = showDirectChannelPref (me^.userIdL) uId True
                             when setPending $
-                                csCurrentTeam.tsPendingChannelChange .=
-                                    Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
+                                withCurrentTeam $ \tId ->
+                                    csTeam(tId).tsPendingChannelChange .=
+                                        Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing
@@ -156,8 +153,9 @@ showChannelInSidebar cId setPending = do
                         Just False -> do
                             let pref = showGroupChannelPref cId (me^.userIdL)
                             when setPending $
-                                csCurrentTeam.tsPendingChannelChange .=
-                                    Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
+                                withCurrentTeam $ \tId ->
+                                    csTeam(tId).tsPendingChannelChange .=
+                                        Just (ChangeByChannelId tId (ch^.ccInfo.cdChannelId) Nothing)
                             doAsyncWith Preempt $ do
                                 MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
                                 return Nothing

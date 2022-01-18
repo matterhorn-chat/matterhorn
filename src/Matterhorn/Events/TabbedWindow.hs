@@ -12,17 +12,20 @@ import           Matterhorn.Prelude
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens', (.=) )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.Keybindings
 
 handleTabbedWindowEvent :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow a)
+                        -> TeamId
                         -> Vty.Event
                         -> MH Bool
-handleTabbedWindowEvent target e = do
+handleTabbedWindowEvent target tId e = do
     w <- use target
-    handleKeyboardEvent (tabbedWindowKeybindings target) (forwardEvent w) e
+    handleKeyboardEvent (tabbedWindowKeybindings target tId) (forwardEvent w) e
 
 forwardEvent :: (Show a, Eq a)
              => TabbedWindow a
@@ -34,17 +37,19 @@ forwardEvent w e = do
 
 tabbedWindowKeybindings :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow a)
+                        -> TeamId
                         -> KeyConfig
                         -> KeyHandlerMap
-tabbedWindowKeybindings target = mkKeybindings $ tabbedWindowKeyHandlers target
+tabbedWindowKeybindings target tId = mkKeybindings $ tabbedWindowKeyHandlers tId target
 
 tabbedWindowKeyHandlers :: (Show a, Eq a)
-                        => Lens' ChatState (TabbedWindow a)
+                        => TeamId
+                        -> Lens' ChatState (TabbedWindow a)
                         -> [KeyEventHandler]
-tabbedWindowKeyHandlers target =
+tabbedWindowKeyHandlers tId target =
     [ mkKb CancelEvent "Close window" $ do
         w <- use target
-        setMode (twReturnMode w)
+        setMode tId (twReturnMode w)
 
     , mkKb SelectNextTabEvent "Select next tab" $ do
         w' <- tabbedWindowNextTab =<< use target

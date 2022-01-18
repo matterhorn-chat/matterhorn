@@ -13,7 +13,7 @@ import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFoc
                                     )
 import qualified Data.Text as T
 
-import           Network.Mattermost.Types ( User(..), Channel(..) )
+import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
 
 import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.Draw.Util
@@ -22,13 +22,13 @@ import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 
 
-autocompleteLayer :: ChatState -> Widget Name
-autocompleteLayer st =
-    case st^.csCurrentTeam.tsEditState.cedAutocomplete of
+autocompleteLayer :: ChatState -> TeamId -> Widget Name
+autocompleteLayer st tId =
+    case st^.csTeam(tId).tsEditState.cedAutocomplete of
         Nothing ->
             emptyWidget
         Just ac ->
-            renderAutocompleteBox st ac
+            renderAutocompleteBox st tId ac
 
 userNotInChannelMarker :: T.Text
 userNotInChannelMarker = "*"
@@ -40,8 +40,8 @@ elementTypeLabel ACCodeBlockLanguage = "Languages"
 elementTypeLabel ACEmoji = "Emoji"
 elementTypeLabel ACCommands = "Commands"
 
-renderAutocompleteBox :: ChatState -> AutocompleteState -> Widget Name
-renderAutocompleteBox st ac =
+renderAutocompleteBox :: ChatState -> TeamId -> AutocompleteState -> Widget Name
+renderAutocompleteBox st tId ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
@@ -53,10 +53,15 @@ renderAutocompleteBox st ac =
                      " (Tab/Shift-Tab to select)"
 
         selElem = snd <$> listSelectedElement matchList
-        curChan = st^.csCurrentChannel
-        footer = case renderAutocompleteFooterFor curChan =<< selElem of
-            Just w -> hBorderWithLabel w
-            _ -> hBorder
+        mcId = st^.csCurrentChannelId(tId)
+        mCurChan = mcId >>= (\cId -> st^?csChannel(cId))
+        footer = case mCurChan of
+            Nothing ->
+                hBorder
+            Just curChan ->
+                case renderAutocompleteFooterFor curChan =<< selElem of
+                    Just w -> hBorderWithLabel w
+                    _ -> hBorder
         curUser = myUsername st
 
     in if numResults == 0
@@ -64,7 +69,7 @@ renderAutocompleteBox st ac =
        else Widget Greedy Greedy $ do
            ctx <- getContext
            let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
-               editorOffset = if st^.csCurrentTeam.tsEditState.cedEphemeral.eesMultiline
+               editorOffset = if st^.csTeam(tId).tsEditState.cedEphemeral.eesMultiline
                               then multilineHeightLimit
                               else 0
            render $ translateBy (Location (0, rowOffset)) $

@@ -8,13 +8,17 @@ import           Matterhorn.Prelude
 
 import           Lens.Micro.Platform ( (.=) )
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Types
 import           Matterhorn.State.Channels ( getCurrentChannelTopic )
 
 
-openChannelTopicWindow :: MH ()
-openChannelTopicWindow = do
-    t <- getCurrentChannelTopic
-    tId <- use csCurrentTeamId
-    csCurrentTeam.tsChannelTopicDialog .= newChannelTopicDialog tId t
-    setMode ChannelTopicWindow
+openChannelTopicWindow :: TeamId -> MH ()
+openChannelTopicWindow tId = do
+    t <- getCurrentChannelTopic tId
+    case t of
+        Nothing -> return ()
+        Just topic -> do
+            csTeam(tId).tsChannelTopicDialog .= newChannelTopicDialog tId topic
+            setMode tId ChannelTopicWindow

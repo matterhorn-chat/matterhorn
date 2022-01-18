@@ -11,7 +11,7 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( (^?), (%~), to )
+import           Lens.Micro.Platform ( (%~), to )
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
@@ -30,17 +30,17 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
-drawPostListOverlay :: PostListContents -> ChatState -> Widget Name
-drawPostListOverlay contents st = joinBorders $ drawPostsBox contents st
+drawPostListOverlay :: PostListContents -> ChatState -> TeamId -> Widget Name
+drawPostListOverlay contents st tId = joinBorders $ drawPostsBox contents st tId
 
 -- | Draw a PostListOverlay as a floating overlay on top of whatever
 -- is rendered beneath it
-drawPostsBox :: PostListContents -> ChatState -> Widget Name
-drawPostsBox contents st =
+drawPostsBox :: PostListContents -> ChatState -> TeamId -> Widget Name
+drawPostsBox contents st tId =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
     padRight (Pad 1) messageListContents
   where -- The 'window title' of the overlay
-        hs = getHighlightSet st
+        hs = getHighlightSet st tId
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
           PostListFlagged -> "Flagged posts"
           PostListPinned cId ->
@@ -52,7 +52,7 @@ drawPostsBox contents st =
             then ": " <> terms
             else " (" <> (T.pack . show . length) entries <> "): " <> terms
 
-        entries = filterMessages knownChannel $ st^.csCurrentTeam.tsPostListOverlay.postListPosts
+        entries = filterMessages knownChannel $ st^.csTeam(tId).tsPostListOverlay.postListPosts
         messages = insertDateMarkers
                      entries
                      (getDateFormat st)
@@ -100,7 +100,7 @@ drawPostsBox contents st =
         -- The full message list, rendered with the current selection
         renderedMessageList =
           let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
-              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csCurrentTeam.tsPostListOverlay.postListSelected)
+              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csTeam(tId).tsPostListOverlay.postListSelected)
               messagesWithStates = (, InThreadShowParent) <$> messages
           in case s of
             Nothing ->

@@ -23,26 +23,26 @@ import           Matterhorn.Types.KeyEvents
 drawTabbedWindow :: (Eq a, Show a)
                  => TabbedWindow a
                  -> ChatState
+                 -> TeamId
                  -> Widget Name
-drawTabbedWindow w cs =
+drawTabbedWindow w cs tId =
     let cur = getCurrentTabbedWindowEntry w
         tabBody = tweRender cur (twValue w) cs
         title = forceAttr clientEmphAttr $ twtTitle (twTemplate w) (tweValue cur)
-        tId = cs^.csCurrentTeamId
     in centerLayer $
        vLimit (twWindowHeight w) $
        hLimit (twWindowWidth w) $
        joinBorders $
        borderWithLabel title $
-       (tabBar tId w <=> tabBody <=> hBorder <=> hCenter keybindingHelp)
+       (tabBar tId w <=> tabBody <=> hBorder <=> hCenter (keybindingHelp cs))
 
 -- | Keybinding help to show at the bottom of a tabbed window.
-keybindingHelp :: Widget Name
-keybindingHelp =
+keybindingHelp :: ChatState -> Widget Name
+keybindingHelp st =
     let pairs = [ ("Switch tabs", [SelectNextTabEvent, SelectPreviousTabEvent])
                 , ("Scroll", [ScrollUpEvent, ScrollDownEvent, ScrollLeftEvent, ScrollRightEvent, PageLeftEvent, PageRightEvent])
                 ]
-    in hBox $ intersperse (txt "  ") $ (uncurry renderKeybindingHelp) <$> pairs
+    in hBox $ intersperse (txt "  ") $ (uncurry (renderKeybindingHelp st)) <$> pairs
 
 -- | The scrollable tab bar to show at the top of a tabbed window.
 tabBar :: (Eq a, Show a)

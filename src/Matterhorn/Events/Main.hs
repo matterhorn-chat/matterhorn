@@ -7,161 +7,139 @@ import           Matterhorn.Prelude
 import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
 
-import           Matterhorn.Command
+import           Network.Mattermost.Types ( TeamId )
+
+import           Matterhorn.HelpTopics
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.ChannelSelect
-import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
+import           Matterhorn.State.Help
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
-import           Matterhorn.State.Teams
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.Types
 
 
-onEventMain :: Vty.Event -> MH ()
-onEventMain =
-  void . handleKeyboardEvent mainKeybindings (\ ev -> do
-      resetReturnChannel
+onEventMain :: TeamId -> Vty.Event -> MH ()
+onEventMain tId =
+  void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
+      resetReturnChannel tId
       case ev of
-          (Vty.EvPaste bytes) -> handlePaste bytes
-          _ -> handleEditingInput ev
+          (Vty.EvPaste bytes) -> handlePaste tId bytes
+          _ -> handleEditingInput tId ev
   )
 
-mainKeybindings :: KeyConfig -> KeyHandlerMap
-mainKeybindings = mkKeybindings mainKeyHandlers
+mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
-mainKeyHandlers :: [KeyEventHandler]
-mainKeyHandlers =
-    [ mkKb EnterSelectModeEvent
-        "Select a message to edit/reply/delete"
-        beginMessageSelect
+mainKeyHandlers :: TeamId -> [KeyEventHandler]
+mainKeyHandlers tId =
+    [ mkKb ShowHelpEvent
+        "Show this help screen" $ do
+        showHelpScreen tId mainHelpTopic
+
+    , mkKb EnterSelectModeEvent
+        "Select a message to edit/reply/delete" $
+        beginMessageSelect tId
 
     , mkKb ReplyRecentEvent
-        "Reply to the most recent message"
-        replyToLatestMessage
-
-    , mkKb ToggleMessagePreviewEvent "Toggle message preview"
-        toggleMessagePreview
-
-    , mkKb ToggleChannelListVisibleEvent "Toggle channel list visibility"
-        toggleChannelListVisibility
-
-    , mkKb ToggleExpandedChannelTopicsEvent "Toggle display of expanded channel topics"
-        toggleExpandedChannelTopics
-
-    , mkKb NextTeamEvent "Switch to the next available team"
-        nextTeam
-
-    , mkKb PrevTeamEvent "Switch to the previous available team"
-        prevTeam
-
-    , mkKb MoveCurrentTeamLeftEvent "Move the current team to the left in the team list"
-        moveCurrentTeamLeft
-
-    , mkKb MoveCurrentTeamRightEvent "Move the current team to the right in the team list"
-        moveCurrentTeamRight
+        "Reply to the most recent message" $
+        replyToLatestMessage tId
 
     , mkKb
         InvokeEditorEvent
-        "Invoke `$EDITOR` to edit the current message"
-        invokeExternalEditor
+        "Invoke `$EDITOR` to edit the current message" $
+        invokeExternalEditor tId
 
     , mkKb
         EnterFastSelectModeEvent
-        "Enter fast channel selection mode"
-         beginChannelSelect
-
-    , mkKb
-        QuitEvent
-        "Quit"
-        requestQuit
+        "Enter fast channel selection mode" $
+         beginChannelSelect tId
 
     , staticKb "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $
-         tabComplete Forwards
+         tabComplete tId Forwards
 
     , staticKb "Tab-complete backward"
          (Vty.EvKey (Vty.KBackTab) []) $
-         tabComplete Backwards
+         tabComplete tId Backwards
 
     , mkKb
         ScrollUpEvent
         "Scroll up in the channel input history" $ do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
-             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
-                 False -> channelHistoryBackward
+                 False -> channelHistoryBackward tId
 
     , mkKb
         ScrollDownEvent
         "Scroll down in the channel input history" $ do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
-             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (csCurrentTeam.tsEditState.cedEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
-                 False -> channelHistoryForward
+                 False -> channelHistoryForward tId
 
     , mkKb PageUpEvent "Page up in the channel message list (enters message select mode)" $ do
-             beginMessageSelect
+             beginMessageSelect tId
 
     , mkKb SelectOldestMessageEvent "Scroll to top of channel message list" $ do
-             beginMessageSelect
-             messageSelectFirst
+             beginMessageSelect tId
+             messageSelectFirst tId
 
-    , mkKb NextChannelEvent "Change to the next channel in the channel list"
-         nextChannel
+    , mkKb NextChannelEvent "Change to the next channel in the channel list" $
+         nextChannel tId
 
-    , mkKb PrevChannelEvent "Change to the previous channel in the channel list"
-         prevChannel
+    , mkKb PrevChannelEvent "Change to the previous channel in the channel list" $
+         prevChannel tId
 
-    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'"
-         nextUnreadChannel
+    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'" $
+         nextUnreadChannel tId
 
-    , mkKb ShowAttachmentListEvent "Show the attachment list"
-         showAttachmentList
+    , mkKb ShowAttachmentListEvent "Show the attachment list" $
+         showAttachmentList tId
 
     , mkKb NextUnreadUserOrChannelEvent
-         "Change to the next channel with unread messages preferring direct messages"
-         nextUnreadUserOrChannel
+         "Change to the next channel with unread messages preferring direct messages" $
+         nextUnreadUserOrChannel tId
 
-    , mkKb LastChannelEvent "Change to the most recently-focused channel"
-         recentChannel
+    , mkKb LastChannelEvent "Change to the most recently-focused channel" $
+         recentChannel tId
 
     , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do
-             isMultiline <- use (csCurrentTeam.tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
              case isMultiline of
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a
                  -- newline instead.
-                 True -> handleEditingInput (Vty.EvKey Vty.KEnter [])
+                 True -> handleEditingInput tId (Vty.EvKey Vty.KEnter [])
                  False -> do
-                     tId <- use csCurrentTeamId
-                     cId <- use (csCurrentChannelId tId)
-                     content <- getEditorContent
-                     handleInputSubmission tId cId content
+                     withCurrentChannel tId $ \cId _ -> do
+                         content <- getEditorContent tId
+                         handleInputSubmission tId cId content
 
-    , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel"
-           startUrlSelect
+    , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel" $
+           startUrlSelect tId
 
     , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
-           tId <- use csCurrentTeamId
-           clearChannelUnreadStatus =<< use (csCurrentChannelId tId)
+           withCurrentChannel tId $ \cId _ -> do
+               clearChannelUnreadStatus cId
 
-    , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode"
-           toggleMultilineEditing
+    , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
+           toggleMultilineEditing tId
 
-    , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order"
-         cancelAutocompleteOrReplyOrEdit
+    , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
+         cancelAutocompleteOrReplyOrEdit tId
 
-    , mkKb EnterFlaggedPostsEvent "View currently flagged posts"
-         enterFlaggedPostListMode
+    , mkKb EnterFlaggedPostsEvent "View currently flagged posts" $
+         enterFlaggedPostListMode tId
     ]

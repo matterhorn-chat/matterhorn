@@ -4,6 +4,7 @@ module Matterhorn.Draw.ShowHelp
   , keybindingTextTable
   , commandTextTable
   , commandMarkdownTable
+  , keybindSections
   )
 where
 
@@ -13,18 +14,20 @@ import           Matterhorn.Prelude
 import           Brick
 import           Brick.Themes ( themeDescriptions )
 import           Brick.Widgets.Center ( hCenter )
+import           Brick.Widgets.Edit ( Editor )
 import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( singular, _Just, _2 )
+import           Lens.Micro.Platform ( Lens' )
 
+import           Network.Mattermost.Types ( TeamId )
 import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Matterhorn.Command
-import           Matterhorn.Events
 import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.Keybindings
+import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.ThemeListOverlay
@@ -250,8 +253,8 @@ keybindingHelp kc = vBox $
             , "values, are as follows:"
             ]
            ]
-        nextChanBinding = ppBinding (getFirstDefaultBinding NextChannelEvent)
-        prevChanBinding = ppBinding (getFirstDefaultBinding PrevChannelEvent)
+        nextChanBinding = ppBinding (firstActiveBinding kc NextChannelEvent)
+        prevChanBinding = ppBinding (firstActiveBinding kc PrevChannelEvent)
         validKeys = map paraL
           [ [ "The syntax used for key sequences consists of zero or more "
             , "single-character modifier characters followed by a keystroke, "
@@ -441,23 +444,32 @@ themeHelp = vBox
 keybindSections :: [(Text, [KeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
-    , ("Help Page", helpKeyHandlers)
-    , ("Main Interface", mainKeyHandlers)
-    , ("Text Editing", editingKeyHandlers (csCurrentTeam.tsEditState.cedEditor))
-    , ("Channel Select Mode", channelSelectKeyHandlers)
-    , ("Message Select Mode", messageSelectKeyHandlers)
-    , ("User Listings", userListOverlayKeyHandlers)
-    , ("URL Select Mode", urlSelectKeyHandlers)
-    , ("Theme List Window", themeListOverlayKeyHandlers)
-    , ("Channel Search Window", channelListOverlayKeyHandlers)
-    , ("Message Viewer: Common", tabbedWindowKeyHandlers (csCurrentTeam.tsViewedMessage.singular _Just._2))
-    , ("Message Viewer: Message tab", viewMessageKeyHandlers)
-    , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers)
-    , ("Attachment List", attachmentListKeyHandlers)
-    , ("Attachment File Browser", attachmentBrowseKeyHandlers)
-    , ("Flagged Messages", postListOverlayKeyHandlers)
-    , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers)
+    , ("Help Page", helpKeyHandlers teamIdThunk)
+    , ("Main Interface", mainKeyHandlers teamIdThunk)
+    , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
+    , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
+    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk)
+    , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
+    , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
+    , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
+    , ("Channel Search Window", channelListOverlayKeyHandlers teamIdThunk)
+    , ("Message Viewer: Common", tabbedWindowKeyHandlers teamIdThunk tabbedWinThunk)
+    , ("Message Viewer: Message tab", viewMessageKeyHandlers teamIdThunk)
+    , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
+    , ("Attachment List", attachmentListKeyHandlers teamIdThunk)
+    , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk)
+    , ("Flagged Messages", postListOverlayKeyHandlers teamIdThunk)
+    , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers teamIdThunk)
     ]
+
+teamIdThunk :: TeamId
+teamIdThunk = error "BUG: should not evaluate teamIdThunk"
+
+tabbedWinThunk :: Lens' ChatState (TabbedWindow Int)
+tabbedWinThunk = error "BUG: should not evaluate tabbedWinThunk"
+
+editorThunk :: Lens' ChatState (Editor Text Name)
+editorThunk = error "BUG: should not evaluate editorThunk"
 
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =

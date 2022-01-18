@@ -5,33 +5,35 @@ import           Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
 
+import           Network.Mattermost.Types ( TeamId )
+
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.ThemeListOverlay
 import           Matterhorn.State.ListOverlay
 import           Matterhorn.Types
 
 
-onEventThemeListOverlay :: Vty.Event -> MH ()
-onEventThemeListOverlay =
-    void . onEventListOverlay (csCurrentTeam.tsThemeListOverlay)
-        themeListOverlayKeybindings
+onEventThemeListOverlay :: TeamId -> Vty.Event -> MH ()
+onEventThemeListOverlay tId =
+    void . onEventListOverlay tId (csTeam(tId).tsThemeListOverlay)
+        (themeListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list overlay
-themeListOverlayKeybindings :: KeyConfig -> KeyHandlerMap
-themeListOverlayKeybindings = mkKeybindings themeListOverlayKeyHandlers
+themeListOverlayKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+themeListOverlayKeybindings tId = mkKeybindings (themeListOverlayKeyHandlers tId)
 
-themeListOverlayKeyHandlers :: [KeyEventHandler]
-themeListOverlayKeyHandlers =
+themeListOverlayKeyHandlers :: TeamId -> [KeyEventHandler]
+themeListOverlayKeyHandlers tId =
     [ mkKb CancelEvent "Close the theme list"
-      (exitListOverlay (csCurrentTeam.tsThemeListOverlay))
-    , mkKb SearchSelectUpEvent "Select the previous theme"
-      themeListSelectUp
-    , mkKb SearchSelectDownEvent "Select the next theme"
-      themeListSelectDown
-    , mkKb PageDownEvent "Page down in the theme list"
-      themeListPageDown
-    , mkKb PageUpEvent "Page up in the theme list"
-      themeListPageUp
+      (exitListOverlay tId (csTeam(tId).tsThemeListOverlay))
+    , mkKb SearchSelectUpEvent "Select the previous theme" $
+      themeListSelectUp tId
+    , mkKb SearchSelectDownEvent "Select the next theme" $
+      themeListSelectDown tId
+    , mkKb PageDownEvent "Page down in the theme list" $
+      themeListPageDown tId
+    , mkKb PageUpEvent "Page up in the theme list" $
+      themeListPageUp tId
     , mkKb ActivateListItemEvent "Switch to the selected color theme"
-      (listOverlayActivateCurrent (csCurrentTeam.tsThemeListOverlay))
+      (listOverlayActivateCurrent tId (csTeam(tId).tsThemeListOverlay))
     ]

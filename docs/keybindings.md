@@ -3,7 +3,14 @@
 # Global Keybindings
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
-| `F1` | `show-help` | Show this help screen |
+| `M-p` | `toggle-message-preview` | Toggle message preview |
+| `F2` | `toggle-channel-list-visibility` | Toggle channel list visibility |
+| `F3` | `toggle-expanded-channel-topics` | Toggle display of expanded channel topics |
+| `C-Right` | `next-team` | Switch to the next available team |
+| `C-Left` | `prev-team` | Switch to the previous available team |
+| (unbound) | `move-current-team-left` | Move the current team to the left in the team list |
+| (unbound) | `move-current-team-right` | Move the current team to the right in the team list |
+| `C-q` | `quit` | Quit |
 
 # Help Page
 | Keybinding | Event Name | Description |
@@ -19,18 +26,11 @@
 # Main Interface
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
+| `F1` | `show-help` | Show this help screen |
 | `C-s` | `select-mode` | Select a message to edit/reply/delete |
 | `C-r` | `reply-recent` | Reply to the most recent message |
-| `M-p` | `toggle-message-preview` | Toggle message preview |
-| `F2` | `toggle-channel-list-visibility` | Toggle channel list visibility |
-| `F3` | `toggle-expanded-channel-topics` | Toggle display of expanded channel topics |
-| `C-Right` | `next-team` | Switch to the next available team |
-| `C-Left` | `prev-team` | Switch to the previous available team |
-| (unbound) | `move-current-team-left` | Move the current team to the left in the team list |
-| (unbound) | `move-current-team-right` | Move the current team to the right in the team list |
 | `M-k` | `invoke-editor` | Invoke `$EDITOR` to edit the current message |
 | `C-g` | `enter-fast-select` | Enter fast channel selection mode |
-| `C-q` | `quit` | Quit |
 | `Tab` | (non-customizable key) | Tab-complete forward |
 | `BackTab` | (non-customizable key) | Tab-complete backward |
 | `Up` | `scroll-up` | Scroll up in the channel input history |
@@ -99,6 +99,7 @@
 | `f` | `flag-message` | Flag the selected message |
 | `v` | `view-message` | View the selected message |
 | `Enter` | `fetch-for-gap` | Fetch messages for the selected gap |
+| `l` | `copy-post-link` | Copy a post's link to the clipboard |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 
 # User Listings
