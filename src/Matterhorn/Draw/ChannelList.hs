@@ -75,7 +75,7 @@ renderChannelList :: ChatState -> MM.TeamId -> Widget Name
 renderChannelList st tId =
     withVScrollBars sbOrientation $
     withVScrollBarHandles $
-    withClickableVScrollBars ScrollBar $
+    withClickableVScrollBars VScrollBar $
     viewport (ChannelList tId) Vertical body
     where
         sbOrientation = case st^.csResources.crConfiguration.configChannelListOrientationL of
