@@ -129,7 +129,7 @@ data DrawCfg a =
             , drawNameGen :: Maybe (Int -> Inline -> Maybe a)
             }
 
-renderBlock :: SemEq a => Block -> M (Widget a) a
+renderBlock :: (Ord a, SemEq a) => Block -> M (Widget a) a
 renderBlock (Table aligns headings body) = do
     headingWs <- mapM renderInlines headings
     bodyWs <- forM body $ mapM renderInlines
@@ -239,7 +239,7 @@ renderRawCodeBlock tx = do
 
             render $ padding <+> (resultToWidget renderedText)
 
-renderInlines :: SemEq a => Inlines -> M (Widget a) a
+renderInlines :: (Ord a, SemEq a) => Inlines -> M (Widget a) a
 renderInlines es = do
     w <- asks drawLineWidth
     hSet <- asks drawHighlightSet
@@ -254,7 +254,7 @@ renderInlines es = do
                     (doLineWrapping width <$> (F.toList $ flattenInlineSeq hSet nameGen es))
         B.render (vBox ws)
 
-renderList :: SemEq a => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
+renderList :: (Ord a, SemEq a) => ListType -> ListSpacing -> Seq Blocks -> M (Widget a) a
 renderList ty _spacing bs = do
     let is = case ty of
           BulletList _ -> repeat ("• ")
@@ -271,10 +271,10 @@ renderList ty _spacing bs = do
 
     return $ vBox results
 
-renderWrappedLine :: Show a => Text -> WrappedLine a -> Widget a
+renderWrappedLine :: (Ord a, Show a) => Text -> WrappedLine a -> Widget a
 renderWrappedLine curUser l = hBox $ F.toList $ renderFlattenedValue curUser <$> l
 
-renderFlattenedValue :: Show a => Text -> FlattenedValue a -> Widget a
+renderFlattenedValue :: (Ord a, Show a) => Text -> FlattenedValue a -> Widget a
 renderFlattenedValue curUser (NonBreaking rs) =
     let renderLine = hBox . F.toList . fmap (renderFlattenedValue curUser)
     in vBox (F.toList $ renderLine <$> F.toList rs)

@@ -56,8 +56,9 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( viewportScroll, vScrollToBeginning
-                            , invalidateCache, invalidateCacheEntry )
+import           Brick.Main ( invalidateCache, invalidateCacheEntry
+                            , makeVisible
+                            )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
@@ -482,12 +483,15 @@ setFocusWith tId updatePrev f onNoChange = do
 
           updateViewed updatePrev
           postChangeChannelCommon tId
+
+          case newFocus of
+              Nothing -> return ()
+              Just _ -> mh $ makeVisible SelectedChannelListEntry
        else onNoChange
 
 postChangeChannelCommon :: TeamId -> MH ()
 postChangeChannelCommon tId = do
     resetEditorState tId
-    updateChannelListScroll tId
     loadLastEdit tId
     fetchVisibleIfNeeded tId
 
@@ -511,10 +515,6 @@ loadLastChannelInput tId = do
                 (lastEdit, lastEditMode) <- use (csTeam(tId).tsEditState.cedEphemeral.eesLastInput)
                 csTeam(tId).tsEditState.cedEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
                 csTeam(tId).tsEditState.cedEditMode .= lastEditMode
-
-updateChannelListScroll :: TeamId -> MH ()
-updateChannelListScroll tId = do
-    mh $ vScrollToBeginning (viewportScroll $ ChannelList tId)
 
 preChangeChannelCommon :: TeamId -> MH ()
 preChangeChannelCommon tId = do

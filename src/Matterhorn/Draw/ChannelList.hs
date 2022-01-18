@@ -185,7 +185,7 @@ renderChannelListEntry myUName entry = body
     body = decorate $ decorateEntry entry $ decorateMentions entry $ padRight Max $
            entryWidget $ entrySigil entry <> entryLabel entry
     decorate = if | entryIsCurrent entry ->
-                      visible . forceAttr currentChannelNameAttr
+                      reportExtent SelectedChannelListEntry . forceAttr currentChannelNameAttr
                   | entryMentions entry > 0 && not (entryIsMuted entry) ->
                       forceAttr mentionsChannelAttr
                   | entryHasUnread entry ->

@@ -923,6 +923,7 @@ data Name =
     | AttachmentPathCancelButton TeamId
     | RenderedMessage MessageId
     | ReactionEmojiListOverlayEntry (Bool, T.Text)
+    | SelectedChannelListEntry
     deriving (Eq, Show, Ord)
 
 -- | Types that provide a "semantically equal" operation. Two values may

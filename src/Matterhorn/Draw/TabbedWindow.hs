@@ -57,7 +57,7 @@ tabBar tId w =
                           then withDefAttr tabSelectedAttr
                           else withDefAttr tabUnselectedAttr
                 isCurrent = tweValue e == tweValue cur
-                makeVisible = if isCurrent then visible else id
+                makeTabVisible = if isCurrent then visible else id
                 decorateTab v = Widget Fixed Fixed $ do
                     result <- render v
                     let width = Vty.imageWidth (result^.imageL)
@@ -68,7 +68,7 @@ tabBar tId w =
                            render $ vBox [ resultToWidget result
                                          , hLimit width hBorder
                                          ]
-            in makeVisible $
+            in makeTabVisible $
                decorateTab $
                useAttr $
                padLeftRight 2 $
