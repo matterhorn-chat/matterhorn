@@ -80,7 +80,7 @@ renderChannelList st tId =
             ChannelListLeft -> OnLeft
             ChannelListRight -> OnRight
         myUsername_ = myUsername st
-        channelName e = ClickableChannelListEntry $ channelListEntryChannelId  e
+        channelName e = ClickableChannelListEntry $ channelListEntryChannelId e
         renderEntry s e = clickable (channelName e) $
                           renderChannelListEntry myUsername_ $ mkChannelEntryData s tId e
         body = case st^.csTeam(tId).tsMode of
