@@ -49,6 +49,7 @@
 | `/toggle-favorite` | Toggle the favorite status of the current channel |
 | `/toggle-message-timestamps` | Toggle message timestamps |
 | `/toggle-sidebar-group` | Toggle the visibility of the current channel's sidebar group |
+| `/toggle-sidebar-group <public|private|favorite|direct>` | Toggle the visibility of the a sidebar group |
 | `/toggle-truncate-verbatim-blocks` | Toggle truncation of verbatim and code blocks |
 | `/topic` | Set the current channel's topic (header) interactively |
 | `/topic <topic>` | Set the current channel's topic (header) |

@@ -49,6 +49,7 @@ module Matterhorn.State.Channels
   , toggleChannelFavoriteStatus
   , toggleChannelListGroupVisibility
   , toggleCurrentChannelChannelListGroup
+  , toggleCurrentChannelChannelListGroupByName
   )
 where
 
@@ -1138,3 +1139,10 @@ toggleCurrentChannelChannelListGroup tId = do
         case Z.focusHeading z of
             Nothing -> return ()
             Just grp -> toggleChannelListGroupVisibility $ channelListGroupLabel grp
+
+toggleCurrentChannelChannelListGroupByName :: T.Text -> TeamId -> MH ()
+toggleCurrentChannelChannelListGroupByName name tId = do
+    withCurrentChannel tId $ \_ _ -> do
+        case lookup (T.toLower $ T.strip name) channelListGroupNames of
+            Nothing -> postErrorMessage' $ "Invalid group name: " <> name
+            Just l -> toggleChannelListGroupVisibility l

@@ -306,6 +306,10 @@ commandList =
 
   , Cmd "toggle-sidebar-group" "Toggle the visibility of the current channel's sidebar group" NoArg $ \_ -> do
         withCurrentTeam toggleCurrentChannelChannelListGroup
+
+  , let names = T.intercalate "|" $ fst <$> channelListGroupNames
+    in Cmd "toggle-sidebar-group" "Toggle the visibility of the a sidebar group" (LineArg names) $ \name -> do
+        withCurrentTeam (toggleCurrentChannelChannelListGroupByName name)
   ]
 
 displayUsernameAttribute :: Text -> MH ()

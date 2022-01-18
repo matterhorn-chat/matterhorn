@@ -131,6 +131,7 @@ module Matterhorn.Types
   , ChannelListGroup(..)
   , ChannelListGroupLabel(..)
   , nonDMChannelListGroupUnread
+  , channelListGroupNames
 
   , trimChannelSigil
 
@@ -470,6 +471,14 @@ data ChannelListGroupLabel =
     | ChannelGroupFavoriteChannels
     | ChannelGroupDirectMessages
     deriving (Eq, Ord, Show)
+
+channelListGroupNames :: [(T.Text, ChannelListGroupLabel)]
+channelListGroupNames =
+    [ ("public", ChannelGroupPublicChannels)
+    , ("private", ChannelGroupPrivateChannels)
+    , ("favorite", ChannelGroupFavoriteChannels)
+    , ("direct", ChannelGroupDirectMessages)
+    ]
 
 nonDMChannelListGroupUnread :: ChannelListGroup -> Int
 nonDMChannelListGroupUnread g =
