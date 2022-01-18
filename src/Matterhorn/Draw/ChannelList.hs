@@ -73,6 +73,7 @@ renderChannelListHeader st tId =
 
 renderChannelList :: ChatState -> MM.TeamId -> Widget Name
 renderChannelList st tId =
+    withVScrollBars OnRight $
     viewport (ChannelList tId) Vertical body
     where
         myUsername_ = myUsername st

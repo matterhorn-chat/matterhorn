@@ -322,7 +322,7 @@ renderLastMessages st hs editCutoff msgs =
         results <- go targetHeight msgs
         render $ vBox $ resultToWidget <$> reverse results
 
-relaxHeight :: Context -> Context
+relaxHeight :: Context n -> Context n
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
 render1 :: (Message -> ThreadState -> Widget Name)
