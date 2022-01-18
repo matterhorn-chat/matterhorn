@@ -3,6 +3,7 @@ module Matterhorn.Zipper
   , fromList
   , toList
   , focus
+  , focusHeading
   , left
   , leftL
   , right
@@ -73,6 +74,15 @@ rightL = lens right (\ _ b -> left b)
 -- Return the focus element
 focus :: Zipper a b -> Maybe b
 focus = C.focus . zRing
+
+-- Return the heading value corresponding to the focused value, if any
+-- element is in focus
+focusHeading :: (Eq b) => Zipper a b -> Maybe a
+focusHeading z = do
+    f <- focus z
+    let matchesElems (_, es) = f `elem` es
+        matches = filter matchesElems $ toList z
+    listToMaybe $ fst <$> matches
 
 -- Turn a list into a wraparound zipper, focusing on the head
 fromList :: (Eq b) => [(a, [b])] -> Zipper a b

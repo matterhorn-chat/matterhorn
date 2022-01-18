@@ -303,6 +303,9 @@ commandList =
 
   , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
         withCurrentTeam toggleChannelFavoriteStatus
+
+  , Cmd "toggle-sidebar-group" "Toggle the visibility of the current channel's sidebar group" NoArg $ \_ -> do
+        withCurrentTeam toggleCurrentChannelChannelListGroup
   ]
 
 displayUsernameAttribute :: Text -> MH ()

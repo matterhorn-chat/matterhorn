@@ -48,6 +48,7 @@ module Matterhorn.State.Channels
   , renameChannelUrl
   , toggleChannelFavoriteStatus
   , toggleChannelListGroupVisibility
+  , toggleCurrentChannelChannelListGroup
   )
 where
 
@@ -1129,3 +1130,11 @@ toggleChannelListGroupVisibility label = do
             in HM.insert tId s' hidden
 
         updateSidebar Nothing
+
+toggleCurrentChannelChannelListGroup :: TeamId -> MH ()
+toggleCurrentChannelChannelListGroup tId = do
+    withCurrentChannel tId $ \_ _ -> do
+        z <- use (csTeam(tId).tsFocus)
+        case Z.focusHeading z of
+            Nothing -> return ()
+            Just grp -> toggleChannelListGroupVisibility $ channelListGroupLabel grp
