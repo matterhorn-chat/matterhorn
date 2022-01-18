@@ -73,10 +73,7 @@ renderChannelListHeader st tId =
 
 renderChannelList :: ChatState -> MM.TeamId -> Widget Name
 renderChannelList st tId =
-    withVScrollBars sbOrientation $
-    withVScrollBarHandles $
-    withClickableVScrollBars VScrollBar $
-    viewport (ChannelList tId) Vertical body
+    header <=> vpBody
     where
         sbOrientation = case st^.csResources.crConfiguration.configChannelListOrientationL of
             ChannelListLeft -> OnLeft
@@ -85,6 +82,11 @@ renderChannelList st tId =
         channelName e = ClickableChannelListEntry $ channelListEntryChannelId e
         renderEntry s e = clickable (channelName e) $
                           renderChannelListEntry myUsername_ $ mkChannelEntryData s tId e
+        header = renderChannelListHeader st tId
+        vpBody = withVScrollBars sbOrientation $
+                 withVScrollBarHandles $
+                 withClickableVScrollBars VScrollBar $
+                 viewport (ChannelList tId) Vertical body
         body = case st^.csTeam(tId).tsMode of
             ChannelSelect ->
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
@@ -93,13 +95,10 @@ renderChannelList st tId =
                               else (renderChannelListGroup st
                                        (renderChannelSelectListEntry tId (Z.focus zipper)) <$>
                                    Z.toList zipper)
-                in vBox $
-                   renderChannelListHeader st tId :
-                   matches
+                in vBox matches
             _ ->
                 cached (ChannelSidebar tId) $
                 vBox $
-                renderChannelListHeader st tId :
                 (renderChannelListGroup st renderEntry <$> Z.toList (st^.csTeam(tId).tsFocus))
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
