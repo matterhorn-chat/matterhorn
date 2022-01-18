@@ -1119,19 +1119,13 @@ toggleChannelListGroupVisibility label = do
     withCurrentTeam $ \tId -> do
         -- Get all channel list groups in the current sidebar that are
         -- currently not collapsed
-        z <- use (csTeam(tId).tsFocus)
-        let expandedLabels = channelListGroupLabel <$>
-                             (filter expanded $ fst <$> Z.toList z)
-            expanded g = (not $ channelListGroupCollapsed g) && (channelListGroupEntries g > 0)
-            canCollapse = length expandedLabels > 1
-
         csHiddenChannelGroups %= \hidden ->
             let s' = case HM.lookup tId hidden of
-                       Nothing -> if canCollapse then S.singleton label else mempty
+                       Nothing -> S.singleton label
                        Just s ->
                            if S.member label s
                            then S.delete label s
-                           else if canCollapse then S.insert label s else s
+                           else S.insert label s
             in HM.insert tId s' hidden
 
         updateSidebar Nothing
