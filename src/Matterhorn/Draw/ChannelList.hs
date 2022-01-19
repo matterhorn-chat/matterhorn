@@ -75,9 +75,9 @@ renderChannelList :: ChatState -> MM.TeamId -> Widget Name
 renderChannelList st tId =
     header <=> vpBody
     where
-        sbOrientation = case st^.csResources.crConfiguration.configChannelListOrientationL of
-            ChannelListLeft -> OnLeft
-            ChannelListRight -> OnRight
+        (sbOrientation, sbPad) = case st^.csResources.crConfiguration.configChannelListOrientationL of
+            ChannelListLeft -> (OnLeft, padLeft (Pad 1))
+            ChannelListRight -> (OnRight, padRight (Pad 1))
         myUsername_ = myUsername st
         channelName e = ClickableChannelListEntry $ channelListEntryChannelId e
         renderEntry s e = clickable (channelName e) $
@@ -86,7 +86,7 @@ renderChannelList st tId =
         vpBody = withVScrollBars sbOrientation $
                  withVScrollBarHandles $
                  withClickableVScrollBars VScrollBar $
-                 viewport (ChannelList tId) Vertical body
+                 viewport (ChannelList tId) Vertical $ sbPad body
         body = case st^.csTeam(tId).tsMode of
             ChannelSelect ->
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
