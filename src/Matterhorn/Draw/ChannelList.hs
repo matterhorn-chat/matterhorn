@@ -51,6 +51,12 @@ data ChannelListEntryData =
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
+sbRenderer :: ScrollbarRenderer n
+sbRenderer =
+    verticalScrollbarRenderer { renderScrollbarHandleBefore = str "▲"
+                              , renderScrollbarHandleAfter = str "▼"
+                              }
+
 renderChannelListHeader :: ChatState -> MM.TeamId -> Widget Name
 renderChannelListHeader st tId =
     vBox [ teamHeader
@@ -83,7 +89,8 @@ renderChannelList st tId =
         renderEntry s e = clickable (channelName e) $
                           renderChannelListEntry myUsername_ $ mkChannelEntryData s tId e
         header = renderChannelListHeader st tId
-        vpBody = withVScrollBars sbOrientation $
+        vpBody = withVScrollBarRenderer sbRenderer $
+                 withVScrollBars sbOrientation $
                  withVScrollBarHandles $
                  withClickableVScrollBars VScrollBar $
                  viewport (ChannelList tId) Vertical $ sbPad body
