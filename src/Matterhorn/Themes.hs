@@ -290,6 +290,9 @@ lightAttrs usernameColors =
        , (currentUserAttr,                  defAttr `withStyle` bold)
        , (channelHeaderAttr,                fg black)
        , (verbatimTruncateMessageAttr,      fg blue)
+       , (scrollbarAttr,                    defAttr)
+       , (scrollbarHandleAttr,              defAttr `withStyle` reverseVideo)
+       , (scrollbarTroughAttr,              defAttr)
        , (channelListHeaderAttr,            fg cyan)
        , (currentChannelNameAttr,           black `on` yellow `withStyle` bold)
        , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
@@ -360,6 +363,9 @@ darkAttrs usernameColors =
      , (unreadChannelAttr,                black `on` cyan   `withStyle` bold)
      , (unreadGroupMarkerAttr,            fg white `withStyle` bold)
      , (mentionsChannelAttr,              black `on` brightMagenta `withStyle` bold)
+     , (scrollbarAttr,                    defAttr)
+     , (scrollbarHandleAttr,              defAttr `withStyle` reverseVideo)
+     , (scrollbarTroughAttr,              defAttr)
      , (urlAttr,                          fg yellow)
      , (emailAttr,                        fg yellow)
      , (codeAttr,                         fg magenta)
@@ -847,6 +853,15 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( verbatimTruncateMessageAttr
       , "Attribute for a message indicating that a verbatim or code block has been only partially displayed"
+      )
+    , ( scrollbarAttr
+      , "Base aAttribute for scroll bars"
+      )
+    , ( scrollbarTroughAttr
+      , "Attribute for scroll bar troughs"
+      )
+    , ( scrollbarHandleAttr
+      , "Attribute for scroll bar handles"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..usernameColorHashBuckets-1]
