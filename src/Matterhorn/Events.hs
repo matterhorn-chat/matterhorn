@@ -200,7 +200,9 @@ onVtyEvent e = do
             -- important for modes to have their own additional logic
             -- to run when a resize occurs, so we don't want to stop
             -- processing here.
-            mh invalidateCache
+            mh $ do
+                invalidateCache
+                makeVisible SelectedChannelListEntry
         _ -> return ()
 
     void $ handleKeyboardEvent globalKeybindings handleTeamModeEvent e
