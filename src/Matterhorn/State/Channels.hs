@@ -488,7 +488,7 @@ setFocusWith tId updatePrev f onChange onNoChange = do
 
           case newFocus of
               Nothing -> return ()
-              Just _ -> mh $ makeVisible SelectedChannelListEntry
+              Just _ -> mh $ makeVisible $ SelectedChannelListEntry tId
 
           onChange
        else onNoChange

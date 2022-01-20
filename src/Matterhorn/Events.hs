@@ -192,7 +192,7 @@ formatMHError (AsyncErrEvent e) =
 onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent e = do
     case e of
-        (Vty.EvResize _ _) ->
+        (Vty.EvResize _ _) -> do
             -- On resize, invalidate the entire rendering cache since
             -- many things depend on the window size.
             --
@@ -200,9 +200,9 @@ onVtyEvent e = do
             -- important for modes to have their own additional logic
             -- to run when a resize occurs, so we don't want to stop
             -- processing here.
-            mh $ do
-                invalidateCache
-                makeVisible SelectedChannelListEntry
+            mh invalidateCache
+            withCurrentTeam $ \tId ->
+                mh $ makeVisible $ SelectedChannelListEntry tId
         _ -> return ()
 
     void $ handleKeyboardEvent globalKeybindings handleTeamModeEvent e

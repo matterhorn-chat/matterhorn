@@ -87,7 +87,7 @@ renderChannelList st tId =
         myUsername_ = myUsername st
         channelName e = ClickableChannelListEntry $ channelListEntryChannelId e
         renderEntry s e = clickable (channelName e) $
-                          renderChannelListEntry myUsername_ $ mkChannelEntryData s tId e
+                          renderChannelListEntry tId myUsername_ $ mkChannelEntryData s tId e
         header = renderChannelListHeader st tId
         vpBody = withVScrollBarRenderer sbRenderer $
                  withVScrollBars sbOrientation $
@@ -187,13 +187,13 @@ mkChannelEntryData st tId e =
 
 -- | Render an individual Channel List entry (in Normal mode) with
 -- appropriate visual decorations.
-renderChannelListEntry :: Text -> ChannelListEntryData -> Widget Name
-renderChannelListEntry myUName entry = body
+renderChannelListEntry :: MM.TeamId -> Text -> ChannelListEntryData -> Widget Name
+renderChannelListEntry tId myUName entry = body
     where
     body = decorate $ decorateEntry entry $ decorateMentions entry $ padRight Max $
            entryWidget $ entrySigil entry <> entryLabel entry
     decorate = if | entryIsCurrent entry ->
-                      reportExtent SelectedChannelListEntry . forceAttr currentChannelNameAttr
+                      reportExtent (SelectedChannelListEntry tId) . forceAttr currentChannelNameAttr
                   | entryMentions entry > 0 && not (entryIsMuted entry) ->
                       forceAttr mentionsChannelAttr
                   | entryHasUnread entry ->
