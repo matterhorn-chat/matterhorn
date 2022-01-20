@@ -14,7 +14,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( invalidateCache, hScrollToBeginning, viewportScroll )
+import           Brick.Main ( invalidateCache, hScrollToBeginning, viewportScroll, makeVisible )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
@@ -70,7 +70,9 @@ postChangeTeamCommon :: TeamId -> MH ()
 postChangeTeamCommon tId = do
     updateViewed False
     fetchVisibleIfNeeded tId
-    mh $ hScrollToBeginning (viewportScroll TeamList)
+    mh $ do
+        hScrollToBeginning (viewportScroll TeamList)
+        makeVisible $ SelectedChannelListEntry tId
 
 -- | Fetch the specified team and add it to the application state.
 --
