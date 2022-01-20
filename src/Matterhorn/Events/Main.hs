@@ -4,6 +4,7 @@ module Matterhorn.Events.Main where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Main ( viewportScroll, vScrollBy )
 import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
 
@@ -65,6 +66,18 @@ mainKeyHandlers tId =
     , staticKb "Tab-complete backward"
          (Vty.EvKey (Vty.KBackTab) []) $
          tabComplete tId Backwards
+
+    , mkKb
+        ChannelListScrollUpEvent
+        "Scroll up in the channel list" $ do
+            let vp = viewportScroll $ ChannelList tId
+            mh $ vScrollBy vp (-1)
+
+    , mkKb
+        ChannelListScrollDownEvent
+        "Scroll down in the channel list" $ do
+            let vp = viewportScroll $ ChannelList tId
+            mh $ vScrollBy vp 1
 
     , mkKb
         ScrollUpEvent

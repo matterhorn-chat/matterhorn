@@ -194,6 +194,8 @@ defaultBindings ev =
         ScrollDownEvent               -> [ kb Vty.KDown ]
         ScrollLeftEvent               -> [ kb Vty.KLeft ]
         ScrollRightEvent              -> [ kb Vty.KRight ]
+        ChannelListScrollUpEvent      -> [ ctrl (kb Vty.KUp) ]
+        ChannelListScrollDownEvent    -> [ ctrl (kb Vty.KDown) ]
         PageUpEvent                   -> [ kb Vty.KPageUp ]
         PageDownEvent                 -> [ kb Vty.KPageDown ]
         PageLeftEvent                 -> [ shift (kb Vty.KLeft) ]

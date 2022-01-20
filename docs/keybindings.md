@@ -33,6 +33,8 @@
 | `C-g` | `enter-fast-select` | Enter fast channel selection mode |
 | `Tab` | (non-customizable key) | Tab-complete forward |
 | `BackTab` | (non-customizable key) | Tab-complete backward |
+| `C-Up` | `channel-list-scroll-up` | Scroll up in the channel list |
+| `C-Down` | `channel-list-scroll-down` | Scroll down in the channel list |
 | `Up` | `scroll-up` | Scroll up in the channel input history |
 | `Down` | `scroll-down` | Scroll down in the channel input history |
 | `PgUp` | `page-up` | Page up in the channel message list (enters message select mode) |

@@ -96,6 +96,8 @@ data KeyEvent
   | ScrollTopEvent
   | ScrollBottomEvent
   | SelectOldestMessageEvent
+  | ChannelListScrollUpEvent
+  | ChannelListScrollDownEvent
 
   -- select events---not the same as scrolling sometimes!
   | SelectUpEvent
@@ -207,6 +209,8 @@ allEvents =
   , ScrollDownEvent
   , ScrollLeftEvent
   , ScrollRightEvent
+  , ChannelListScrollUpEvent
+  , ChannelListScrollDownEvent
   , PageUpEvent
   , PageDownEvent
   , PageLeftEvent
@@ -454,6 +458,10 @@ keyEventName ev = case ev of
   ScrollDownEvent   -> "scroll-down"
   ScrollLeftEvent   -> "scroll-left"
   ScrollRightEvent  -> "scroll-right"
+
+  ChannelListScrollUpEvent     -> "channel-list-scroll-up"
+  ChannelListScrollDownEvent   -> "channel-list-scroll-down"
+
   PageUpEvent       -> "page-up"
   PageDownEvent     -> "page-down"
   PageLeftEvent     -> "page-left"
