@@ -57,7 +57,8 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Main ( invalidateCache, invalidateCacheEntry
-                            , makeVisible
+                            , makeVisible, vScrollToBeginning
+                            , viewportScroll
                             )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
@@ -451,7 +452,7 @@ updateChannelInfo cid new member = do
 setFocus :: TeamId -> ChannelId -> MH ()
 setFocus tId cId = do
     showChannelInSidebar cId True
-    setFocusWith tId True (Z.findRight ((== cId) . channelListEntryChannelId)) (return ())
+    setFocusWith tId True (Z.findRight ((== cId) . channelListEntryChannelId)) (return ()) (return ())
 
 setFocusWith :: TeamId
              -> Bool
@@ -459,7 +460,8 @@ setFocusWith :: TeamId
              -> Zipper ChannelListGroup ChannelListEntry)
              -> MH ()
              -> MH ()
-setFocusWith tId updatePrev f onNoChange = do
+             -> MH ()
+setFocusWith tId updatePrev f onChange onNoChange = do
     oldZipper <- use (csTeam(tId).tsFocus)
     let newZipper = f oldZipper
         newFocus = Z.focus newZipper
@@ -487,6 +489,8 @@ setFocusWith tId updatePrev f onNoChange = do
           case newFocus of
               Nothing -> return ()
               Just _ -> mh $ makeVisible SelectedChannelListEntry
+
+          onChange
        else onNoChange
 
 postChangeChannelCommon :: TeamId -> MH ()
@@ -664,17 +668,30 @@ removeChannelFromState cId = do
 nextChannel :: TeamId -> MH ()
 nextChannel tId = do
     resetReturnChannel tId
-    setFocusWith tId True Z.right (return ())
+    let checkForFirst = do
+            z <- use (csTeam(tId).tsFocus)
+            case Z.focus z of
+                Nothing ->
+                    return ()
+                Just entry -> do
+                    -- If the newly-selected channel is the first
+                    -- visible entry in the channel list, we also want
+                    -- to scroll the channel list up far enough to show
+                    -- the topmost section header.
+                    when (entry == (head $ concat $ snd <$> Z.toList z)) $ do
+                        mh $ vScrollToBeginning $ viewportScroll (ChannelList tId)
+
+    setFocusWith tId True Z.right checkForFirst (return ())
 
 -- | This is almost never what you want; we use this when we delete a
 -- channel and we don't want to update the deleted channel's view time.
 nextChannelSkipPrevView :: TeamId -> MH ()
-nextChannelSkipPrevView tId = setFocusWith tId False Z.right (return ())
+nextChannelSkipPrevView tId = setFocusWith tId False Z.right (return ()) (return ())
 
 prevChannel :: TeamId -> MH ()
 prevChannel tId = do
     resetReturnChannel tId
-    setFocusWith tId True Z.left (return ())
+    setFocusWith tId True Z.left (return ()) (return ())
 
 recentChannel :: TeamId -> MH ()
 recentChannel tId = do
@@ -718,13 +735,13 @@ nextUnreadChannel :: TeamId -> MH ()
 nextUnreadChannel tId = do
     st <- use id
     setReturnChannel tId
-    setFocusWith tId True (getNextUnreadChannel st tId) (gotoReturnChannel tId)
+    setFocusWith tId True (getNextUnreadChannel st tId) (return ()) (gotoReturnChannel tId)
 
 nextUnreadUserOrChannel :: TeamId -> MH ()
 nextUnreadUserOrChannel tId = do
     st <- use id
     setReturnChannel tId
-    setFocusWith tId True (getNextUnreadUserOrChannel st tId) (gotoReturnChannel tId)
+    setFocusWith tId True (getNextUnreadUserOrChannel st tId) (return ()) (gotoReturnChannel tId)
 
 leaveChannel :: ChannelId -> MH ()
 leaveChannel cId = leaveChannelIfPossible cId False

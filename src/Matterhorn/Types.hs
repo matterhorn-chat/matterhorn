@@ -463,7 +463,7 @@ data ChannelListGroup =
                      , channelListGroupCollapsed :: Bool
                      , channelListGroupEntries :: Int
                      }
-                     deriving (Eq)
+                     deriving (Eq, Show)
 
 data ChannelListGroupLabel =
     ChannelGroupPublicChannels
