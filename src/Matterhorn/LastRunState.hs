@@ -59,14 +59,12 @@ instance A.FromJSON LastRunState where
 
 makeLenses ''LastRunState
 
-toLastRunState :: ChatState -> LastRunState
-toLastRunState cs =
+toLastRunState :: ChatState -> TeamId -> LastRunState
+toLastRunState cs tId =
     LastRunState { _lrsHost              = cs^.csResources.crConn.cdHostnameL
                  , _lrsPort              = cs^.csResources.crConn.cdPortL
                  , _lrsUserId            = myUserId cs
-                 , _lrsSelectedChannelId = do
-                     tId <- cs^.csCurrentTeamId
-                     cs^.csCurrentChannelId(tId)
+                 , _lrsSelectedChannelId = cs^.csCurrentChannelId(tId)
                  }
 
 lastRunStateFileMode :: P.FileMode
@@ -87,7 +85,7 @@ writeLastRunState cs tId =
             Nothing -> return ()
             Just chan ->
                 when (chan^.ccInfo.cdType `elem` [Ordinary, Private]) $ do
-                    let runState = toLastRunState cs
+                    let runState = toLastRunState cs tId
 
                     lastRunStateFile <- lastRunStateFilePath $ unId $ toId tId
                     createDirectoryIfMissing True $ dropFileName lastRunStateFile
