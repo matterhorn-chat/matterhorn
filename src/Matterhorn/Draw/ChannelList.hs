@@ -99,14 +99,14 @@ renderChannelList st tId =
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
                     matches = if Z.isEmpty zipper
                               then [hCenter $ txt "No matches"]
-                              else (renderChannelListGroup st
+                              else (renderChannelListGroup False st
                                        (renderChannelSelectListEntry tId (Z.focus zipper)) <$>
                                    Z.toList zipper)
                 in vBox matches
             _ ->
                 cached (ChannelSidebar tId) $
                 vBox $
-                (renderChannelListGroup st renderEntry <$> Z.toList (st^.csTeam(tId).tsFocus))
+                (renderChannelListGroup True st renderEntry <$> Z.toList (st^.csTeam(tId).tsFocus))
 
 renderChannelListGroupHeading :: ChannelListGroup -> Widget Name
 renderChannelListGroupHeading g =
@@ -127,11 +127,15 @@ renderChannelListGroupHeading g =
         labelWidget = addExpand $ addUnread $ withDefAttr channelListHeaderAttr $ txt labelStr
     in hBorderWithLabel $ clickable (ClickableChannelListGroupHeading label) labelWidget
 
-renderChannelListGroup :: ChatState
+renderChannelListGroup :: Bool
+                       -- ^ Whether to draw empty groups (just show
+                       -- their headings)
+                       -> ChatState
                        -> (ChatState -> e -> Widget Name)
                        -> (ChannelListGroup, [e])
                        -> Widget Name
-renderChannelListGroup st renderEntry (group, es) =
+renderChannelListGroup False _ _ (_, []) = emptyWidget
+renderChannelListGroup _ st renderEntry (group, es) =
     let heading = renderChannelListGroupHeading group
         entryWidgets = renderEntry st <$> es
     in if channelListGroupEntries group > 0 || (channelListGroupCollapsed group)
