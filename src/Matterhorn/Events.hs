@@ -58,9 +58,11 @@ onBrickEvent :: BrickEvent Name MHEvent -> MH ()
 onBrickEvent (AppEvent e) =
     onAppEvent e
 onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
+    csLastMouseDownEvent .= Nothing
     vty <- mh getVtyHandle
     liftIO $ Vty.refresh vty
-onBrickEvent (VtyEvent e) =
+onBrickEvent (VtyEvent e) = do
+    csLastMouseDownEvent .= Nothing
     onVtyEvent e
 onBrickEvent e@(MouseDown n button modifier _) = do
     mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
