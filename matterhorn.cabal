@@ -175,7 +175,7 @@ library
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
                      , microlens-platform   >= 0.3     && < 0.5
-                     , brick                >= 0.66.1  && < 0.67
+                     , brick                >= 0.67    && < 0.68
                      , brick-skylighting    >= 0.2     && < 0.4
                      , vty                  >= 5.33    && < 5.34
                      , word-wrap            >= 0.4.0   && < 0.5
