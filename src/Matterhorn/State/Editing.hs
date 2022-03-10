@@ -283,8 +283,9 @@ handleEditingInput tId e = do
         case e of
           -- Not editing; backspace here means cancel multi-line message
           -- composition
-          EvKey KBS [] | (not $ editingPermitted st tId) ->
+          EvKey KBS [] | (not $ editingPermitted st tId) -> do
             csTeam(tId).tsEditState.cedEditor %= applyEdit Z.clearZipper
+            mh invalidateCache
 
           -- Backspace in editing mode with smart pair insertion means
           -- smart pair removal when possible
