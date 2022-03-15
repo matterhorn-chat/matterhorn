@@ -13,6 +13,7 @@ import           Brick.Main ( getVtyHandle, invalidateCache, invalidateCacheEntr
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.Time.Clock ( getCurrentTime )
+import           Data.Maybe ( fromJust )
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform
 
@@ -135,7 +136,7 @@ showChannelInSidebar cId setPending = do
 
             case ch^.ccInfo.cdType of
                 Direct -> do
-                    let Just uId = ch^.ccInfo.cdDMUserId
+                    let uId = fromJust $ ch^.ccInfo.cdDMUserId
                     case dmChannelShowPreference prefs uId of
                         Just False -> do
                             let pref = showDirectChannelPref (me^.userIdL) uId True

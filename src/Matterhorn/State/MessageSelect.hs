@@ -31,6 +31,7 @@ import           Matterhorn.Prelude
 import           Brick ( invalidateCache )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Data.Text.Zipper ( clearZipper, insertMany )
+import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Endpoints as MM
@@ -131,7 +132,7 @@ copyPostLink tId = do
   case selected of
     Just msg | isPostMessage msg -> do
         baseUrl <- getServerBaseUrl tId
-        let Just pId = messageIdPostId =<< _mMessageId msg
+        let pId = fromJust (messageIdPostId =<< _mMessageId msg)
         copyToClipboard $ makePermalink baseUrl pId
         setMode tId Main
     _ -> return ()
@@ -270,7 +271,7 @@ beginReplyCompose tId = do
     case selected of
         Just msg | isReplyable msg -> do
             rootMsg <- getReplyRootMessage msg
-            let Just p = rootMsg^.mOriginalPost
+            let p = fromJust $ rootMsg^.mOriginalPost
             setMode tId Main
             csTeam(tId).tsEditState.cedEditMode .= Replying rootMsg p
         _ -> return ()
@@ -281,7 +282,7 @@ beginEditMessage tId = do
     st <- use id
     case selected of
         Just msg | isMine st msg && isEditable msg -> do
-            let Just p = msg^.mOriginalPost
+            let p = fromJust $ msg^.mOriginalPost
             setMode tId Main
             csTeam(tId).tsEditState.cedEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need

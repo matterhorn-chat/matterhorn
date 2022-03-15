@@ -11,6 +11,7 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center
 import Brick.Forms (renderForm)
 import Data.List (intersperse)
+import Data.Maybe (fromJust)
 
 import Network.Mattermost.Types ( TeamId )
 
@@ -21,7 +22,7 @@ import Matterhorn.Themes
 
 drawNotifyPrefs :: ChatState -> TeamId -> Widget Name
 drawNotifyPrefs st tId =
-    let Just form = st^.csTeam(tId).tsNotifyPrefs
+    let form = fromJust $ st^.csTeam(tId).tsNotifyPrefs
         label = forceAttr clientEmphAttr $ str "Notification Preferences"
         formKeys = withDefAttr clientEmphAttr <$> txt <$> ["Tab", "BackTab"]
         bindings = vBox $ hCenter <$> [ renderKeybindingHelp st "Save" [FormSubmitEvent] <+> txt "  " <+>

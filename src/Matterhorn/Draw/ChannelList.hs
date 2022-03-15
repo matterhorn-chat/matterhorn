@@ -25,6 +25,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center (hCenter)
 import qualified Data.Text as T
+import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform (non)
 
 import qualified Network.Mattermost.Types as MM
@@ -160,7 +161,7 @@ mkChannelEntryData st tId e =
     where
         cId = channelListEntryChannelId e
         unread = channelListEntryUnread e
-        Just chan = findChannelById cId (st^.csChannels)
+        chan = fromJust $ findChannelById cId (st^.csChannels)
         recent = isRecentChannel st tId cId
         ret = isReturnChannel st tId cId
         current = isCurrentChannel st tId cId
@@ -171,7 +172,7 @@ mkChannelEntryData st tId e =
             CLGroupDM ->
                 (chan^.ccInfo.cdDisplayName, Just " ", True, Nothing)
             CLUserDM uId ->
-                let Just u = userById uId st
+                let u = fromJust $ userById uId st
                     uname = if useNickname st
                             then u^.uiNickName.non (u^.uiName)
                             else u^.uiName

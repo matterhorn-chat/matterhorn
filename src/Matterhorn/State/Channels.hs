@@ -158,7 +158,7 @@ hideDMChannel cId = do
         case chan^.ccInfo.cdType of
             Direct -> do
                 let pref = showDirectChannelPref (me^.userIdL) uId False
-                    Just uId = chan^.ccInfo.cdDMUserId
+                    uId = fromJust $ chan^.ccInfo.cdDMUserId
                 csChannel(cId).ccInfo.cdSidebarShowOverride .= Nothing
                 doAsyncWith Preempt $ do
                     MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
@@ -577,7 +577,7 @@ applyPreferenceChange pref = do
           -- channel and, if so, whether it was the one we attempted to
           -- switch to (thus triggering the preference change). If so,
           -- we need to switch to it now.
-          let Just cId = getDmChannelFor (directChannelShowUserId d) cs
+          let cId = fromJust $ getDmChannelFor (directChannelShowUserId d) cs
           case directChannelShowValue d of
               True -> do
                   withCurrentTeam $ \tId -> do

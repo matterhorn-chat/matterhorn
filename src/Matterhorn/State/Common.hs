@@ -284,9 +284,11 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
         Right (stdinResult, Just outh, Just errh, ph) -> do
             case stdinResult of
                 Just inh -> do
-                    let Just input = mInput
-                    hPutStrLn inh input
-                    hFlush inh
+                    case mInput of
+                        Just input -> do
+                            hPutStrLn inh input
+                            hFlush inh
+                        Nothing -> return ()
                 Nothing -> return ()
 
             ec <- waitForProcess ph

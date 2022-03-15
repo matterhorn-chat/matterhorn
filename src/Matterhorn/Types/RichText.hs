@@ -267,7 +267,9 @@ parseUsername :: (Monad m) => C.InlineParser m Inlines
 parseUsername = P.try $ do
     void $ C.symbol userSigilChar
     let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
-        [period] = C.tokenize "" "."
+        period = case C.tokenize "" "." of
+            [p] -> p
+            _ -> error "BUG: parseUsername: failed to tokenize basic input"
     uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
     return $ singleI $ EUser $ C.untokenize uts
 

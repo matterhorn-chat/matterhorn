@@ -174,7 +174,10 @@ isHostnameFragment s = all validHostnameFragmentChar s
 isHostname :: String -> Bool
 isHostname "" = False
 isHostname s =
-    let parts@(h:_) = splitOn "." s
+    let parts = splitOn "." s
+        h = case parts of
+            (p:_) -> p
+            [] -> error $ "BUG: isHostname: should always get at least one component: " <> show parts
     in all isHostnameFragment parts && not ("-" `isPrefixOf` h)
 
 hostField :: Text -> Either String Text
@@ -359,7 +362,9 @@ getConfig fp = do
         Right (warns, conf) -> do
             actualPass <- case configPass conf of
                 Just (PasswordCommand cmdString) -> do
-                    let (cmd:rest) = T.unpack <$> T.words cmdString
+                    let (cmd, rest) = case T.unpack <$> T.words cmdString of
+                            (a:as) -> (a, as)
+                            [] -> error $ "BUG: getConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute password command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
@@ -368,7 +373,9 @@ getConfig fp = do
 
             actualToken <- case configToken conf of
                 Just (TokenCommand cmdString) -> do
-                    let (cmd:rest) = T.unpack <$> T.words cmdString
+                    let (cmd, rest) = case T.unpack <$> T.words cmdString of
+                            (a:as) -> (a, as)
+                            [] -> error $ "BUG: getConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute token command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)

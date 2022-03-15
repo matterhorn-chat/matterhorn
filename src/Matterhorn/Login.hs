@@ -251,7 +251,11 @@ findConnectionData connInfo = startSearch
 
     -- the candidates list is never empty because inits never returns an
     -- empty list
-    primary:alternatives =
+    (primary, alternatives) = case componentList of
+        (p:as) -> (p, as)
+        _ -> error $ "BUG: findConnectionData: got failed pattern match on component list: " <> show componentList
+
+    componentList =
         reverse
         [ (T.intercalate "/" l, listToMaybe r)
         | (l,r) <- zip (inits components) (tails components)

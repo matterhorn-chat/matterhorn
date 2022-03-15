@@ -202,7 +202,9 @@ editingKeyHandlers tId editor =
 getEditorContent :: TeamId -> MH Text
 getEditorContent tId = do
     cmdLine <- use (csTeam(tId).tsEditState.cedEditor)
-    let (line:rest) = getEditContents cmdLine
+    let (line, rest) = case getEditContents cmdLine of
+            (a:as) -> (a, as)
+            _ -> error "BUG: getEditorContent: got empty edit contents"
     return $ T.intercalate "\n" $ line : rest
 
 -- | Handle an input submission in the message editor.

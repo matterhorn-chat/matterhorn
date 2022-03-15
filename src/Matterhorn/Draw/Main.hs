@@ -14,6 +14,7 @@ import           Control.Arrow ( (>>>) )
 import           Data.Char ( isSpace, isPunctuation )
 import qualified Data.Foldable as F
 import           Data.List ( intersperse )
+import           Data.Maybe ( fromJust )
 import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
@@ -470,7 +471,7 @@ emptyChannelFillerMessage st cId =
         -- otherwise include this bogus date) or other messages (which
         -- would make for a broken message sorting).
         ts = ServerTime $ UTCTime (toEnum 0) 0
-        Just chan = findChannelById cId (st^.csChannels)
+        chan = fromJust $ findChannelById cId (st^.csChannels)
         chanName = mkChannelName st (chan^.ccInfo)
         msg = case chan^.ccInfo.cdType of
             Direct ->
@@ -531,7 +532,7 @@ teamList :: ChatState -> Widget Name
 teamList st =
     let curTid = st^.csCurrentTeamId
         z = st^.csTeamZipper
-        Just pos = Z.position z
+        pos = fromJust $ Z.position z
         teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
         numTeams = length teams
         entries = mkEntry <$> teams

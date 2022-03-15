@@ -33,8 +33,12 @@ onEventSaveAttachmentWindow tId (Vty.EvKey Vty.KEnter []) = do
     session <- getSession
     mode <- use (csTeam(tId).tsMode)
 
-    let SaveAttachmentWindow link = mode
-        LinkFileId fId = link^.linkTarget
+    let link = case mode of
+            SaveAttachmentWindow l -> l
+            _ -> error $ "BUG: invalid mode " <> show mode <> " in onEventSaveAttachmentWindow"
+        fId = case link^.linkTarget of
+            LinkFileId i -> i
+            _ -> error $ "BUG: invalid link target " <> show (link^.linkTarget) <> " in onEventSaveAttachmentWindow"
         save = do
             ed <- use (csTeam(tId).tsSaveAttachmentDialog.attachmentPathEditor)
             let path = T.unpack $ T.strip $ T.concat $ getEditContents ed

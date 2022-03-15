@@ -25,6 +25,7 @@ import           Data.Sequence ( ViewL(..)
                                , viewr)
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import           Data.Maybe ( fromJust )
 import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ( (.~), to )
 import           Network.Mattermost.Lenses ( postEditAtL, postCreateAtL )
@@ -263,7 +264,7 @@ renderMessageSeq :: (SeqDirection dir)
 renderMessageSeq remainingHeight renderFunc limitFunc ms
     | messagesLength ms == 0 = return []
     | otherwise = do
-        let Just (m, threadState) = messagesHead ms
+        let (m, threadState) = fromJust $ messagesHead ms
             maybeCache = case m^.mMessageId of
                 Nothing -> id
                 Just i -> cached (RenderedMessage i)
@@ -290,7 +291,7 @@ renderLastMessages st hs editCutoff msgs =
             go :: Int -> DirectionalSeq Retrograde (Message, ThreadState) -> RenderM Name [Result Name]
             go _ ms | messagesLength ms == 0 = return []
             go remainingHeight ms = do
-                let Just (m, threadState) = messagesHead ms
+                let (m, threadState) = fromJust $ messagesHead ms
                     newMessagesAbove = maybe False (isBelow m) newMessageTransition
 
                 result <- render $ render1 doMsgRender m threadState

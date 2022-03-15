@@ -394,6 +394,7 @@ import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
 import           Data.Function ( on )
 import qualified Data.Kind as K
+import           Data.Maybe ( fromJust )
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( sortBy, nub, elemIndex, partition )
@@ -813,7 +814,7 @@ dmChannelShouldAppear now config prefs c =
         localCutoff = addUTCTime (nominalDay * (-(fromIntegral ndays))) now
         cutoff = ServerTime localCutoff
         updated = c^.ccInfo.cdUpdated
-        Just uId = c^.ccInfo.cdDMUserId
+        uId = fromJust $ c^.ccInfo.cdDMUserId
         cId = c^.ccInfo.cdChannelId
     in if isFavorite prefs cId
        then True
@@ -1326,7 +1327,7 @@ data HelpScreen =
     | ThemeHelp
     | SyntaxHighlightHelp
     | KeybindingHelp
-    deriving (Eq)
+    deriving (Eq, Show)
 
 -- | Help topics
 data HelpTopic =
@@ -1335,14 +1336,14 @@ data HelpTopic =
               , helpTopicScreen       :: HelpScreen
               , helpTopicViewportName :: Name
               }
-              deriving (Eq)
+              deriving (Eq, Show)
 
 -- | Mode type for the current contents of the post list overlay
 data PostListContents =
     PostListFlagged
     | PostListPinned ChannelId
     | PostListSearch Text Bool -- for the query and search status
-    deriving (Eq)
+    deriving (Eq, Show)
 
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
@@ -1365,7 +1366,7 @@ data Mode =
     | EditNotifyPrefs
     | ChannelTopicWindow
     | SaveAttachmentWindow LinkChoice
-    deriving (Eq)
+    deriving (Eq, Show)
 
 -- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
@@ -2060,7 +2061,7 @@ instance MHF.MonadFail MH where
     fail = MH . MHF.fail
 
 instance Monad MH where
-    return x = MH (return x)
+    return = pure
     MH x >>= f = MH (x >>= \ x' -> fromMH (f x'))
 
 -- We want to pretend that the state is only the ChatState, rather
