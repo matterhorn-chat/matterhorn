@@ -285,19 +285,18 @@ canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 
 -- ** Manage the collection of all Channels
 
--- | Define a binary kinded type to allow derivation of functor.
-data AllMyChannels a =
-    AllChannels { _chanMap :: HashMap ChannelId a
-                , _channelNameSet :: HashMap TeamId (S.Set Text)
-                , _userChannelMap :: HashMap UserId ChannelId
-                }
-                deriving (Functor, Foldable, Traversable)
+data ChannelCollection a =
+    ChannelCollection { _chanMap :: HashMap ChannelId a
+                      , _channelNameSet :: HashMap TeamId (S.Set Text)
+                      , _userChannelMap :: HashMap UserId ChannelId
+                      }
+                      deriving (Functor, Foldable, Traversable)
 
 -- | Define the exported typename which universally binds the
 -- collection to the ChannelInfo type.
-type ClientChannels = AllMyChannels ClientChannel
+type ClientChannels = ChannelCollection ClientChannel
 
-makeLenses ''AllMyChannels
+makeLenses ''ChannelCollection
 
 getChannelNameSet :: TeamId -> ClientChannels -> S.Set Text
 getChannelNameSet tId cs = case cs^.channelNameSet.at tId of
@@ -306,7 +305,11 @@ getChannelNameSet tId cs = case cs^.channelNameSet.at tId of
 
 -- | Initial collection of Channels with no members
 noChannels :: ClientChannels
-noChannels = AllChannels HM.empty HM.empty HM.empty
+noChannels =
+    ChannelCollection { _chanMap = HM.empty
+                      , _channelNameSet = HM.empty
+                      , _userChannelMap = HM.empty
+                      }
 
 -- | Add a channel to the existing collection.
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
@@ -335,12 +338,12 @@ removeChannel cId cs =
           & removeChannelName
           & userChannelMap %~ HM.filter (/= cId)
 
-instance Semigroup (AllMyChannels ClientChannel) where
+instance Semigroup (ChannelCollection ClientChannel) where
     a <> b =
         let pairs = HM.toList $ _chanMap a
         in foldr (uncurry addChannel) b pairs
 
-instance Monoid (AllMyChannels ClientChannel) where
+instance Monoid (ChannelCollection ClientChannel) where
     mempty = noChannels
 #if !MIN_VERSION_base(4,11,0)
     mappend = (<>)
