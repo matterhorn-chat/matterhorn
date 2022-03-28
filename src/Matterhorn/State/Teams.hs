@@ -167,6 +167,7 @@ buildTeamState :: ChatResources -> User -> Team -> IO (TeamState, ClientChannels
 buildTeamState cr me team = do
     let tId = teamId team
         session = getResourceSession cr
+        config = cr^.crConfiguration
 
     -- Create a predicate to find the last selected channel by reading
     -- the run state file. If unable to read or decode or validate the
@@ -197,16 +198,16 @@ buildTeamState cr me team = do
         return (getId c, cChannel)
 
     -- Start the spell checker and spell check timer, if configured
-    spResult <- maybeStartSpellChecker tId (cr^.crConfiguration) (cr^.crEventQueue)
+    spResult <- maybeStartSpellChecker tId config (cr^.crEventQueue)
 
     now <- getCurrentTime
-    let chanIds = mkChannelZipperList now (cr^.crConfiguration) tId
+    let chanIds = mkChannelZipperList (config^.configChannelListSortingL) now config tId
                                           Nothing (cr^.crUserPreferences)
                                           mempty clientChans noUsers
         chanZip = Z.fromList chanIds
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
 
-    return (newTeamState team chanZip spResult, clientChans)
+    return (newTeamState config team chanZip spResult, clientChans)
 
 -- | Add a new 'TeamState' and corresponding channels to the application
 -- state.

@@ -50,6 +50,7 @@ module Matterhorn.State.Channels
   , toggleChannelListGroupVisibility
   , toggleCurrentChannelChannelListGroup
   , toggleCurrentChannelChannelListGroupByName
+  , cycleChannelListSortingMode
   )
 where
 
@@ -1163,3 +1164,26 @@ toggleCurrentChannelChannelListGroupByName name tId = do
         case lookup (T.toLower $ T.strip name) channelListGroupNames of
             Nothing -> postErrorMessage' $ "Invalid group name: " <> name
             Just l -> toggleChannelListGroupVisibility l
+
+channelListSortingModes :: [(ChannelListSorting, T.Text)]
+channelListSortingModes =
+    [ (ChannelListSortDefault, "alphabetic")
+    , (ChannelListSortUnreadFirst, "alphabetic with unread channels first")
+    ]
+
+cycleChannelListSortingMode :: TeamId -> MH ()
+cycleChannelListSortingMode tId = do
+    curMode <- use (csTeam(tId).tsChannelListSorting)
+
+    when (curMode `notElem` (fst <$> channelListSortingModes)) $
+        error $ "BUG: active channel list sorting mode unknown (" <> show curMode <> ")"
+
+    let (newMode, newModeDesc) = sortingModeAfter curMode
+        sortingModeAfter m = head $ drop 1 $ snd $ span ((/= m) . fst) $
+                             cycle channelListSortingModes
+
+    postInfoMessage $ "Sorting channel list: " <> newModeDesc
+
+    csTeam(tId).tsChannelListSorting .= newMode
+
+    updateSidebar $ Just tId

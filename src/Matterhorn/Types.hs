@@ -38,6 +38,7 @@ module Matterhorn.Types
   , clearChannelUnreadStatus
   , ChannelListEntry(..)
   , ChannelListEntryType(..)
+  , ChannelListSorting(..)
   , ChannelListOrientation(..)
   , channelListEntryUserId
   , userIdsFromZipper
@@ -82,6 +83,7 @@ module Matterhorn.Types
   , configActivityNotifyVersionL
   , configActivityBellL
   , configTruncateVerbatimBlocksL
+  , configChannelListSortingL
   , configShowMessageTimestampsL
   , configShowBackgroundL
   , configShowMessagePreviewL
@@ -160,6 +162,7 @@ module Matterhorn.Types
   , tsReactionEmojiListOverlay
   , tsThemeListOverlay
   , tsSaveAttachmentDialog
+  , tsChannelListSorting
 
   , ChatState
   , newState
@@ -507,6 +510,11 @@ data ChannelListEntryType =
     -- ^ A multi-user DM entry
     deriving (Eq, Show, Ord)
 
+data ChannelListSorting =
+    ChannelListSortDefault
+    | ChannelListSortUnreadFirst
+    deriving (Eq, Show, Ord)
+
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
 -- are for internal book-keeping purposes only.
@@ -577,6 +585,8 @@ data Config =
            , configShowOlderEdits :: Bool
            -- ^ Whether to highlight the edit indicator on edits made
            -- prior to the beginning of the current session.
+           , configChannelListSorting :: ChannelListSorting
+           -- ^ How to sort channels in each channel list group
            , configShowTypingIndicator :: Bool
            -- ^ Whether to show the typing indicator for other users,
            -- and whether to send typing notifications to other users.
@@ -646,7 +656,8 @@ hasUnread' chan = fromMaybe False $ do
               (((_cdUpdated info) > lastViewTime) ||
                (isJust $ _cdEditedMessageThreshold info)))
 
-mkChannelZipperList :: UTCTime
+mkChannelZipperList :: ChannelListSorting
+                    -> UTCTime
                     -> Config
                     -> TeamId
                     -> Maybe ClientConfig
@@ -655,7 +666,7 @@ mkChannelZipperList :: UTCTime
                     -> ClientChannels
                     -> Users
                     -> [(ChannelListGroup, [ChannelListEntry])]
-mkChannelZipperList now config tId cconfig prefs hidden cs us =
+mkChannelZipperList sorting now config tId cconfig prefs hidden cs us =
     let (privFavs, privEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Private
         (normFavs, normEntries) = partitionFavorites $ getChannelEntriesByType tId prefs cs Ordinary
         (dmFavs,   dmEntries)   = partitionFavorites $ getDMChannelEntries now config cconfig prefs us cs
@@ -667,17 +678,17 @@ mkChannelZipperList now config tId cconfig prefs hidden cs us =
     in [ let unread = length $ filter channelListEntryUnread favEntries
              coll = isHidden ChannelGroupFavoriteChannels
          in ( ChannelListGroup ChannelGroupFavoriteChannels unread coll (length favEntries)
-            , if coll then mempty else sortChannelListEntries favEntries
+            , if coll then mempty else sortChannelListEntries sorting favEntries
             )
        , let unread = length $ filter channelListEntryUnread normEntries
              coll = isHidden ChannelGroupPublicChannels
          in ( ChannelListGroup ChannelGroupPublicChannels unread coll (length normEntries)
-            , if coll then mempty else sortChannelListEntries normEntries
+            , if coll then mempty else sortChannelListEntries sorting normEntries
             )
        , let unread = length $ filter channelListEntryUnread privEntries
              coll = isHidden ChannelGroupPrivateChannels
          in ( ChannelListGroup ChannelGroupPrivateChannels unread coll (length privEntries)
-            , if coll then mempty else sortChannelListEntries privEntries
+            , if coll then mempty else sortChannelListEntries sorting privEntries
             )
        , let unread = length $ filter channelListEntryUnread dmEntries
              coll = isHidden ChannelGroupDirectMessages
@@ -686,8 +697,12 @@ mkChannelZipperList now config tId cconfig prefs hidden cs us =
             )
        ]
 
-sortChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
-sortChannelListEntries = sortBy (comparing (\c -> (channelListEntryMuted c, channelListEntrySortValue c)))
+sortChannelListEntries :: ChannelListSorting -> [ChannelListEntry] -> [ChannelListEntry]
+sortChannelListEntries ChannelListSortDefault =
+    sortBy (comparing (\c -> (channelListEntryMuted c, channelListEntrySortValue c)))
+sortChannelListEntries ChannelListSortUnreadFirst =
+    sortBy (comparing (not . channelListEntryUnread)) .
+    sortChannelListEntries ChannelListSortDefault
 
 sortDMChannelListEntries :: [ChannelListEntry] -> [ChannelListEntry]
 sortDMChannelListEntries = sortBy compareDMChannelListEntries
@@ -1671,6 +1686,9 @@ data TeamState =
               , _tsSaveAttachmentDialog :: SaveAttachmentDialogState
               -- ^ The state for the interactive attachment-saving
               -- editor window.
+              , _tsChannelListSorting :: ChannelListSorting
+              -- ^ How to sort channels in this team's channel list
+              -- groups
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1734,11 +1752,12 @@ mkTeamZipperFromIds tIds = Z.fromList [((), tIds)]
 teamZipperIds :: Z.Zipper () TeamId -> [TeamId]
 teamZipperIds = concat . fmap snd . Z.toList
 
-newTeamState :: Team
+newTeamState :: Config
+             -> Team
              -> Z.Zipper ChannelListGroup ChannelListEntry
              -> Maybe (Aspell, IO ())
              -> TeamState
-newTeamState team chanList spellChecker =
+newTeamState config team chanList spellChecker =
     let tId = teamId team
     in TeamState { _tsMode                     = Main
                  , _tsFocus                    = chanList
@@ -1759,6 +1778,7 @@ newTeamState team chanList spellChecker =
                  , _tsThemeListOverlay         = nullThemeListOverlayState tId
                  , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
                  , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
+                 , _tsChannelListSorting       = configChannelListSorting config
                  }
 
 -- | Make a new channel topic editor window state.

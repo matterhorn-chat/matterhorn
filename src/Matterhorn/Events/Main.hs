@@ -80,6 +80,11 @@ mainKeyHandlers tId =
             mh $ vScrollBy vp 1
 
     , mkKb
+        CycleChannelListSorting
+        "Cycle through channel list sorting modes" $
+        cycleChannelListSortingMode tId
+
+    , mkKb
         ScrollUpEvent
         "Scroll up in the channel input history" $ do
              -- Up in multiline mode does the usual thing; otherwise we

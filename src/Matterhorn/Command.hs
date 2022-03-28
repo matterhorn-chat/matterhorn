@@ -237,6 +237,9 @@ commandList =
   , Cmd "toggle-expanded-topics" "Toggle expanded channel topics" NoArg $ \_ ->
         toggleExpandedChannelTopics
 
+  , Cmd "cycle-channel-list-sorting" "Cycle through channel list sorting modes for this team" NoArg $ \_ ->
+        withCurrentTeam cycleChannelListSortingMode
+
   , Cmd "focus" "Focus on a channel or user"
     (ChannelArg NoArg) $ \ (name, ()) -> do
         withCurrentTeam $ \tId ->

@@ -120,6 +120,8 @@ fromIni = do
       (configActivityBell defaultConfig)
     configTruncateVerbatimBlocksInt <- fieldDefOf "truncateVerbatimBlockHeight" number
       (maybe 0 id $ configTruncateVerbatimBlocks defaultConfig)
+    configChannelListSorting <- fieldDefOf "channelListSorting"
+      parseChannelListSorting (configChannelListSorting defaultConfig)
     let configTruncateVerbatimBlocks = case configTruncateVerbatimBlocksInt of
             i | i <= 0 -> Nothing
               | otherwise -> Just i
@@ -215,6 +217,16 @@ notifyVersion t =
         _ -> Left ("Invalid value " <> show t
                   <> "; must be one of NotifyV1, NotifyV2")
 
+parseChannelListSorting :: Text -> Either String ChannelListSorting
+parseChannelListSorting t =
+    let validValues = [ ("default", ChannelListSortDefault)
+                      , ("unread-first", ChannelListSortUnreadFirst)
+                      ]
+    in case lookup (T.unpack $ T.toLower t) validValues of
+        Just s -> Right s
+        Nothing ->
+            Left ("Invalid value " <> show t <> "; must be one of " <> intercalate ", " (fst <$> validValues))
+
 cpuUsagePolicy :: Text -> Either String CPUUsagePolicy
 cpuUsagePolicy t =
     case T.toLower t of
@@ -288,6 +300,7 @@ defaultConfig =
            , configDefaultAttachmentPath       = Nothing
            , configChannelListOrientation      = ChannelListLeft
            , configMouseMode                   = False
+           , configChannelListSorting          = ChannelListSortDefault
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))

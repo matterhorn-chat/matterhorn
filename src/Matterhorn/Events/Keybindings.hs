@@ -186,6 +186,7 @@ defaultBindings ev =
         EnterFlaggedPostsEvent        -> [ meta (key '8') ]
         ToggleChannelListVisibleEvent -> [ fn 2 ]
         ToggleExpandedChannelTopicsEvent -> [ fn 3 ]
+        CycleChannelListSorting       -> [ fn 4 ]
         SelectNextTabEvent            -> [ key '\t' ]
         SelectPreviousTabEvent        -> [ kb Vty.KBackTab ]
         SaveAttachmentEvent           -> [ key 's' ]

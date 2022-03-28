@@ -72,6 +72,8 @@ data KeyEvent
   | EditorEndEvent
   | EditorYankEvent
 
+  | CycleChannelListSorting
+
   | SelectNextTabEvent
   | SelectPreviousTabEvent
 
@@ -194,6 +196,8 @@ allEvents =
   , EditorHomeEvent
   , EditorEndEvent
   , EditorYankEvent
+
+  , CycleChannelListSorting
 
   , EnterFlaggedPostsEvent
   , ToggleChannelListVisibleEvent
@@ -438,6 +442,8 @@ keyEventName ev = case ev of
   EditorHomeEvent             -> "editor-home"
   EditorEndEvent              -> "editor-end"
   EditorYankEvent             -> "editor-yank"
+
+  CycleChannelListSorting     -> "cycle-channel-list-sorting"
 
   NextTeamEvent               -> "next-team"
   PrevTeamEvent               -> "prev-team"

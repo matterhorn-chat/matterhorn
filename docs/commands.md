@@ -7,6 +7,7 @@
 | `/attach <path>` | Attach a given file without browsing |
 | `/create-channel <channel name>` | Create a new public channel |
 | `/create-private-channel <channel name>` | Create a new private channel |
+| `/cycle-channel-list-sorting` | Cycle through channel list sorting modes for this team |
 | `/delete-channel` | Delete the current channel |
 | `/flags` | Open a window of your flagged posts |
 | `/focus <~channel>` | Focus on a channel or user |
