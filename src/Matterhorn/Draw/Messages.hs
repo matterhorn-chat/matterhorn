@@ -9,6 +9,7 @@ module Matterhorn.Draw.Messages
   , unsafeRenderMessageSelection
   , renderLastMessages
   , addEllipsis
+  , mkClickableInline
   )
 where
 
@@ -454,7 +455,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                          , hBox [txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
                                                  mdWrapNonhighlightedCodeBlocks
                                                  mdTruncateVerbatimBlocks
-                                                 (Just mkClickableNames) (Blocks bs)]
+                                                 (Just (mkClickableInline (msg^.mMessageId) Nothing)) (Blocks bs)]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -466,20 +467,24 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                               , renderRichText mdMyUsername hs newW
                                   mdWrapNonhighlightedCodeBlocks
                                   mdTruncateVerbatimBlocks
-                                  (Just mkClickableNames) (Blocks bs)
+                                  (Just (mkClickableInline (msg^.mMessageId) Nothing)) (Blocks bs)
                               ]
 
         isBreak i = i `elem` [ELineBreak, ESoftBreak]
 
-        mkClickableNames i (EHyperlink u _) =
-            case msg^.mMessageId of
-                Just mId -> Just $ ClickableURLInMessage mId i $ LinkURL u
-                Nothing -> Nothing
-        mkClickableNames i (EUser name) =
-            case msg^.mMessageId of
-                Just mId -> Just $ ClickableUsernameInMessage mId i name
-                Nothing -> Nothing
-        mkClickableNames _ _ = Nothing
+mkClickableInline :: Maybe MessageId -> Maybe Name -> Int -> Inline -> Maybe Name
+mkClickableInline mmId _ i (EHyperlink u _) = do
+    mId <- mmId
+    return $ ClickableURLInMessage mId i $ LinkURL u
+mkClickableInline mmId _ i (EUser name) = do
+    mId <- mmId
+    return $ ClickableUsernameInMessage mId i name
+mkClickableInline (Just mId) _ i (EPermalink teamUrlName pId _) =
+    return $ ClickableURLInMessage mId i $ LinkPermalink teamUrlName pId
+mkClickableInline Nothing (Just scope) i (EPermalink teamUrlName pId _) =
+    return $ ClickableURL scope i $ LinkPermalink teamUrlName pId
+mkClickableInline _ _ _ _ =
+    Nothing
 
 messageReactions :: MessageData -> Maybe (Widget Name)
 messageReactions MessageData { mdMessage = msg, .. } =

@@ -921,7 +921,7 @@ data Name =
     | ChannelTopicSaveButton TeamId
     | ChannelTopicCancelButton TeamId
     | ChannelTopicEditorPreview TeamId
-    | ChannelTopic
+    | ChannelTopic ChannelId
     | TeamList
     | ClickableChannelListEntry ChannelId
     | ClickableTeamListEntry TeamId
