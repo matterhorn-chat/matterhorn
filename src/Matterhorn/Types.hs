@@ -150,6 +150,7 @@ module Matterhorn.Types
   , tsRecentChannel
   , tsReturnChannel
   , tsEditState
+  , tsGlobalEditState
   , tsMessageSelect
   , tsTeam
   , tsChannelSelectState
@@ -202,8 +203,6 @@ module Matterhorn.Types
   , cedAttachmentList
   , cedFileBrowser
   , unsafeCedFileBrowser
-  , cedYankBuffer
-  , cedSpellChecker
   , cedMisspellings
   , cedEditMode
   , cedEphemeral
@@ -211,6 +210,11 @@ module Matterhorn.Types
   , cedAutocomplete
   , cedAutocompletePending
   , cedJustCompleted
+
+  , GlobalEditState
+  , emptyGlobalEditState
+  , gedYankBuffer
+  , gedSpellChecker
 
   , AutocompleteState(..)
   , acPreviousSearchString
@@ -1280,8 +1284,6 @@ data ChatEditState =
     ChatEditState { _cedEditor :: Editor Text Name
                   , _cedEditMode :: EditMode
                   , _cedEphemeral :: EphemeralEditState
-                  , _cedYankBuffer :: Text
-                  , _cedSpellChecker :: Maybe (Aspell, IO ())
                   , _cedMisspellings :: Set Text
                   , _cedAutocomplete :: Maybe AutocompleteState
                   -- ^ The autocomplete state. The autocompletion UI is
@@ -1309,6 +1311,13 @@ data ChatEditState =
                   -- the smart trailing space handling.
                   }
 
+-- | The 'GlobalEditState' value contains state not specific to any
+-- single editor.
+data GlobalEditState =
+    GlobalEditState { _gedYankBuffer :: Text
+                    , _gedSpellChecker :: Maybe (Aspell, IO ())
+                    }
+
 -- | An attachment.
 data AttachmentData =
     AttachmentData { attachmentDataFileInfo :: FB.FileInfo
@@ -1323,8 +1332,6 @@ emptyEditState tId =
     ChatEditState { _cedEditor               = editor (MessageInput tId) Nothing ""
                   , _cedEphemeral            = defaultEphemeralEditState
                   , _cedEditMode             = NewPost
-                  , _cedYankBuffer           = ""
-                  , _cedSpellChecker         = Nothing
                   , _cedMisspellings         = mempty
                   , _cedAutocomplete         = Nothing
                   , _cedAutocompletePending  = Nothing
@@ -1332,6 +1339,12 @@ emptyEditState tId =
                   , _cedFileBrowser          = Nothing
                   , _cedJustCompleted        = False
                   }
+
+emptyGlobalEditState :: GlobalEditState
+emptyGlobalEditState =
+    GlobalEditState { _gedYankBuffer   = ""
+                    , _gedSpellChecker = Nothing
+                    }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
 -- background to avoid blocking on the main loop
@@ -1644,6 +1657,8 @@ data TeamState =
               , _tsEditState :: ChatEditState
               -- ^ The state of the input box used for composing and
               -- editing messages and commands.
+              , _tsGlobalEditState :: GlobalEditState
+              -- ^ Bits of global state common to all editors.
               , _tsMessageSelect :: MessageSelectState
               -- ^ The state of message selection mode.
               , _tsTeam :: Team
@@ -1764,7 +1779,8 @@ newTeamState config team chanList spellChecker =
     let tId = teamId team
     in TeamState { _tsMode                     = Main
                  , _tsFocus                    = chanList
-                 , _tsEditState                = (emptyEditState tId) { _cedSpellChecker = spellChecker }
+                 , _tsEditState                = emptyEditState tId
+                 , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
                  , _tsTeam                     = team
                  , _tsUrlList                  = list (UrlList tId) mempty 2
                  , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
@@ -2181,6 +2197,7 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''TeamState
 makeLenses ''ChatEditState
+makeLenses ''GlobalEditState
 makeLenses ''AutocompleteState
 makeLenses ''PostListOverlayState
 makeLenses ''ListOverlayState
@@ -2270,9 +2287,9 @@ setMode tId m = do
 setMode' :: TeamId -> Mode -> ChatState -> ChatState
 setMode' tId m = csTeam(tId).tsMode .~ m
 
-resetSpellCheckTimer :: ChatEditState -> IO ()
+resetSpellCheckTimer :: GlobalEditState -> IO ()
 resetSpellCheckTimer s =
-    case s^.cedSpellChecker of
+    case s^.gedSpellChecker of
         Nothing -> return ()
         Just (_, reset) -> reset
 

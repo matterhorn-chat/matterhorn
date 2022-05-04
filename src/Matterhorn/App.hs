@@ -95,7 +95,7 @@ runMatterhorn opts config = do
     finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
 
     forM_ (HM.elems $ finalSt^.csTeams) $ \ts ->
-        case ts^.tsEditState.cedSpellChecker of
+        case ts^.tsGlobalEditState.gedSpellChecker of
             Nothing -> return ()
             Just (s, _) -> stopAspell s
 

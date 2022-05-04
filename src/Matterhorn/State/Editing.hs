@@ -167,7 +167,7 @@ editingKeyHandlers tId editor =
     "Kill the line to the right of the current position and copy it" $ do
       z <- use (editor.editContentsL)
       let restOfLine = Z.currentLine (Z.killToBOL z)
-      csTeam(tId).tsEditState.cedYankBuffer .= restOfLine
+      csTeam(tId).tsGlobalEditState.gedYankBuffer .= restOfLine
       editor %= applyEdit Z.killToEOL
   , mkKb EditorNextCharEvent
     "Move one character to the right"
@@ -195,7 +195,7 @@ editingKeyHandlers tId editor =
     editor %= applyEdit gotoEnd
   , mkKb EditorYankEvent
     "Paste the current buffer contents at the cursor" $ do
-      buf <- use (csTeam(tId).tsEditState.cedYankBuffer)
+      buf <- use (csTeam(tId).tsGlobalEditState.gedYankBuffer)
       editor %= applyEdit (Z.insertMany buf)
   ]
 
@@ -355,7 +355,7 @@ handleEditingInput tId e = do
                                   , autocompleteFirstMatch = False
                                   }
     checkForAutocompletion tId ctx
-    liftIO $ resetSpellCheckTimer $ st^.csTeam(tId).tsEditState
+    liftIO $ resetSpellCheckTimer $ st^.csTeam(tId).tsGlobalEditState
 
     -- If the preview is enabled and multi-line editing is enabled and
     -- the line count changed, we need to invalidate the rendering cache
@@ -397,7 +397,7 @@ sendUserTypingAction tId = do
 requestSpellCheck :: TeamId -> MH ()
 requestSpellCheck tId = do
     st <- use id
-    case st^.csTeam(tId).tsEditState.cedSpellChecker of
+    case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
         Nothing -> return ()
         Just (checker, _) -> do
             -- Get the editor contents.

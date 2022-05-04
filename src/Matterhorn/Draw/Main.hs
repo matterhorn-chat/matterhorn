@@ -100,7 +100,7 @@ data Token =
 drawEditorContents :: ChatState -> TeamId -> HighlightSet -> [Text] -> Widget Name
 drawEditorContents st tId hs =
     let noHighlight = txt . T.unlines
-    in case st^.csTeam(tId).tsEditState.cedSpellChecker of
+    in case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
             case S.null (st^.csTeam(tId).tsEditState.cedMisspellings) of
