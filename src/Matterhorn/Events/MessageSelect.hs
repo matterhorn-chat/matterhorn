@@ -25,73 +25,73 @@ import           Matterhorn.Types
 messagesPerPageOperation :: Int
 messagesPerPageOperation = 10
 
-onEventMessageSelect :: TeamId -> Lens' ChatState EditState -> Vty.Event -> MH ()
-onEventMessageSelect tId which =
-  void . handleKeyboardEvent (messageSelectKeybindings tId which) (const $ return ())
+onEventMessageSelect :: TeamId -> Lens' ChatState MessageSelectState -> Lens' ChatState EditState -> Vty.Event -> MH ()
+onEventMessageSelect tId selWhich editWhich =
+  void . handleKeyboardEvent (messageSelectKeybindings tId selWhich editWhich) (const $ return ())
 
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
-    deleteSelectedMessage tId (csTeam(tId).tsEditState)
+    deleteSelectedMessage tId (csTeam(tId).tsMessageSelect) (csTeam(tId).tsEditState)
     setMode tId Main
 onEventMessageSelectDeleteConfirm tId _ = do
     setMode tId Main
 
-messageSelectKeybindings :: TeamId -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
-messageSelectKeybindings tId which = mkKeybindings (messageSelectKeyHandlers tId which)
+messageSelectKeybindings :: TeamId -> Lens' ChatState MessageSelectState -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
+messageSelectKeybindings tId selWhich editWhich = mkKeybindings (messageSelectKeyHandlers tId selWhich editWhich)
 
-messageSelectKeyHandlers :: TeamId -> Lens' ChatState EditState -> [KeyEventHandler]
-messageSelectKeyHandlers tId which =
+messageSelectKeyHandlers :: TeamId -> Lens' ChatState MessageSelectState -> Lens' ChatState EditState -> [KeyEventHandler]
+messageSelectKeyHandlers tId selWhich editWhich =
     [ mkKb CancelEvent "Cancel message selection" $ do
         setMode tId Main
 
-    , mkKb SelectUpEvent "Select the previous message" $ messageSelectUp tId
-    , mkKb SelectDownEvent "Select the next message" $ messageSelectDown tId
+    , mkKb SelectUpEvent "Select the previous message" $ messageSelectUp tId selWhich
+    , mkKb SelectDownEvent "Select the next message" $ messageSelectDown tId selWhich
     , mkKb ScrollTopEvent "Scroll to top and select the oldest message" $
-        messageSelectFirst tId
+        messageSelectFirst tId selWhich
     , mkKb ScrollBottomEvent "Scroll to bottom and select the latest message" $
-        messageSelectLast tId
+        messageSelectLast tId selWhich
     , mkKb
         PageUpEvent
         (T.pack $ "Move the cursor up by " <> show messagesPerPageOperation <> " messages")
-        (messageSelectUpBy tId messagesPerPageOperation)
+        (messageSelectUpBy tId selWhich messagesPerPageOperation)
     , mkKb
         PageDownEvent
         (T.pack $ "Move the cursor down by " <> show messagesPerPageOperation <> " messages")
-        (messageSelectDownBy tId messagesPerPageOperation)
+        (messageSelectDownBy tId selWhich messagesPerPageOperation)
 
     , mkKb OpenMessageURLEvent "Open all URLs in the selected message" $
-        openSelectedMessageURLs tId
+        openSelectedMessageURLs tId selWhich
 
     , mkKb ReplyMessageEvent "Begin composing a reply to the selected message" $
-         beginReplyCompose tId which
+         beginReplyCompose tId selWhich editWhich
 
     , mkKb EditMessageEvent "Begin editing the selected message" $
-         beginEditMessage tId which
+         beginEditMessage tId selWhich editWhich
 
     , mkKb DeleteMessageEvent "Delete the selected message (with confirmation)" $
-         beginConfirmDeleteSelectedMessage tId
+         beginConfirmDeleteSelectedMessage tId selWhich
 
     , mkKb YankMessageEvent "Copy a verbatim section or message to the clipboard" $
-         yankSelectedMessageVerbatim tId
+         yankSelectedMessageVerbatim tId selWhich
 
     , mkKb YankWholeMessageEvent "Copy an entire message to the clipboard" $
-         yankSelectedMessage tId
+         yankSelectedMessage tId selWhich
 
     , mkKb PinMessageEvent "Toggle whether the selected message is pinned" $
-         pinSelectedMessage tId
+         pinSelectedMessage tId selWhich
 
     , mkKb FlagMessageEvent "Flag the selected message" $
-         flagSelectedMessage tId
+         flagSelectedMessage tId selWhich
 
     , mkKb ViewMessageEvent "View the selected message" $
-         viewSelectedMessage tId
+         viewSelectedMessage tId selWhich
 
     , mkKb FillGapEvent "Fetch messages for the selected gap" $
-         fillSelectedGap tId
+         fillSelectedGap tId selWhich
 
     , mkKb ReactToMessageEvent "Post a reaction to the selected message" $
-         enterReactionEmojiListOverlayMode tId
+         enterReactionEmojiListOverlayMode tId selWhich
 
     , mkKb CopyPostLinkEvent "Copy a post's link to the clipboard" $
-         copyPostLink tId
+         copyPostLink tId selWhich
     ]

@@ -43,7 +43,7 @@ mainKeyHandlers tId =
 
     , mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
-        beginMessageSelect tId
+        beginMessageSelect tId (csTeam(tId).tsMessageSelect)
 
     , mkKb ReplyRecentEvent
         "Reply to the most recent message" $
@@ -107,11 +107,11 @@ mainKeyHandlers tId =
                  False -> channelHistoryForward tId
 
     , mkKb PageUpEvent "Page up in the channel message list (enters message select mode)" $ do
-             beginMessageSelect tId
+             beginMessageSelect tId (csTeam(tId).tsMessageSelect)
 
     , mkKb SelectOldestMessageEvent "Scroll to top of channel message list" $ do
-             beginMessageSelect tId
-             messageSelectFirst tId
+             beginMessageSelect tId (csTeam(tId).tsMessageSelect)
+             messageSelectFirst tId (csTeam(tId).tsMessageSelect)
 
     , mkKb NextChannelEvent "Change to the next channel in the channel list" $
          nextChannel tId

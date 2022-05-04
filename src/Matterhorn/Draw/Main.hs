@@ -603,7 +603,7 @@ urlSelectBottomBar st tId =
 
 messageSelectBottomBar :: ChatState -> TeamId -> Widget Name
 messageSelectBottomBar st tId =
-    case getSelectedMessage tId st of
+    case getSelectedMessage tId (csTeam(tId).tsMessageSelect) st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
@@ -619,7 +619,7 @@ messageSelectBottomBar st tId =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId (csTeam(tId).tsEditState))
+                ev = keyEventBindings st (messageSelectKeybindings tId (csTeam(tId).tsMessageSelect) (csTeam(tId).tsEditState))
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent

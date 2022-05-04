@@ -223,7 +223,7 @@ teamEventHandlerByMode tId mode =
         ChannelSelect              -> void . onEventChannelSelect tId
         UrlSelect                  -> void . onEventUrlSelect tId
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId
-        MessageSelect              -> onEventMessageSelect tId (csTeam(tId).tsEditState)
+        MessageSelect              -> onEventMessageSelect tId (csTeam(tId).tsMessageSelect) (csTeam(tId).tsEditState)
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId
         ThemeListOverlay           -> onEventThemeListOverlay tId
