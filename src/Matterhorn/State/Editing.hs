@@ -394,14 +394,14 @@ sendUserTypingAction tId = do
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
-requestSpellCheck :: TeamId -> MH ()
-requestSpellCheck tId = do
+requestSpellCheck :: TeamId -> Lens' ChatState EditState -> MH ()
+requestSpellCheck tId which = do
     st <- use id
     case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
         Nothing -> return ()
         Just (checker, _) -> do
             -- Get the editor contents.
-            contents <- getEditContents <$> use (csTeam(tId).tsEditState.cedEditor)
+            contents <- getEditContents <$> use (which.cedEditor)
             doAsyncWith Preempt $ do
                 -- For each line in the editor, submit an aspell request.
                 let query = concat <$> mapM (askAspell checker) contents
@@ -410,7 +410,7 @@ requestSpellCheck tId = do
                         let getMistakes AllCorrect = []
                             getMistakes (Mistakes ms) = mistakeWord <$> ms
                             allMistakes = S.fromList $ concat $ getMistakes <$> responses
-                        csTeam(tId).tsEditState.cedMisspellings .= allMistakes
+                        which.cedMisspellings .= allMistakes
 
                 tryMM query (return . Just . postMistakes)
 
