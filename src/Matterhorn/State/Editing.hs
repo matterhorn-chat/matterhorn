@@ -380,7 +380,7 @@ sendUserTypingAction :: TeamId -> MH ()
 sendUserTypingAction tId = do
     withCurrentChannel tId $ \cId _ -> do
         st <- use id
-        when (configShowTypingIndicator (st^.csResources.crConfiguration)) $
+        when (configSendTypingNotifications (st^.csResources.crConfiguration)) $
           case st^.csConnectionStatus of
             Connected -> do
               let pId = case st^.csTeam(tId).tsEditState.cedEditMode of

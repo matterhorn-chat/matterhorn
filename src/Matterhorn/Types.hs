@@ -97,6 +97,7 @@ module Matterhorn.Types
   , configLogMaxBufferSizeL
   , configShowOlderEditsL
   , configShowTypingIndicatorL
+  , configSendTypingNotificationsL
   , configAbsPathL
   , configUserKeysL
   , configHyperlinkingModeL
@@ -588,8 +589,10 @@ data Config =
            , configChannelListSorting :: ChannelListSorting
            -- ^ How to sort channels in each channel list group
            , configShowTypingIndicator :: Bool
-           -- ^ Whether to show the typing indicator for other users,
-           -- and whether to send typing notifications to other users.
+           -- ^ Whether to show the typing indicator when other users
+           -- are typing
+           , configSendTypingNotifications :: Bool
+           -- Whether to send typing notifications to other users.
            , configAbsPath :: Maybe FilePath
            -- ^ A book-keeping field for the absolute path to the
            -- configuration. (Not a user setting.)

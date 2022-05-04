@@ -108,6 +108,8 @@ fromIni = do
       (configShowExpandedChannelTopics defaultConfig)
     configShowTypingIndicator <- fieldFlagDef "showTypingIndicator"
       (configShowTypingIndicator defaultConfig)
+    configSendTypingNotifications <- fieldFlagDef "sendTypingNotifications"
+      (configSendTypingNotifications defaultConfig)
     configEnableAspell <- fieldFlagDef "enableAspell"
       (configEnableAspell defaultConfig)
     configSyntaxDirs <- fieldDefOf "syntaxDirectories" syntaxDirsField []
@@ -293,6 +295,7 @@ defaultConfig =
            , configShowOlderEdits              = True
            , configUserKeys                    = mempty
            , configShowTypingIndicator         = False
+           , configSendTypingNotifications     = False
            , configHyperlinkingMode            = True
            , configSyntaxDirs                  = []
            , configDirectChannelExpirationDays = 7
