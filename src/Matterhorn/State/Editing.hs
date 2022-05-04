@@ -5,7 +5,6 @@ module Matterhorn.State.Editing
   ( requestSpellCheck
   , editingKeybindings
   , editingKeyHandlers
-  , messageEditingKeybindings
   , toggleMultilineEditing
   , invokeExternalEditor
   , handlePaste
@@ -32,7 +31,6 @@ import qualified Control.Concurrent.STM as STM
 import qualified Data.ByteString as BS
 import           Data.Char ( isSpace )
 import qualified Data.Foldable as F
-import qualified Data.Map as M
 import           Data.Maybe ( fromJust )
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -128,20 +126,6 @@ editingPermitted :: ChatState -> TeamId -> Bool
 editingPermitted st tId =
     (length (getEditContents $ st^.csTeam(tId).tsEditState.cedEditor) == 1) ||
     st^.csTeam(tId).tsEditState.cedEphemeral.eesMultiline
-
-messageEditingKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
-messageEditingKeybindings tId kc =
-    let KeyHandlerMap m = editingKeybindings tId (csTeam(tId).tsEditState.cedEditor) kc
-    in KeyHandlerMap $ M.map (withUserTypingAction tId) m
-
-withUserTypingAction :: TeamId -> KeyHandler -> KeyHandler
-withUserTypingAction tId kh =
-    kh { khHandler = newH }
-    where
-        oldH = khHandler kh
-        newH = oldH { kehHandler = newKEH }
-        oldKEH = kehHandler oldH
-        newKEH = oldKEH { ehAction = ehAction oldKEH >> sendUserTypingAction tId }
 
 editingKeybindings :: TeamId -> Lens' ChatState (Editor T.Text Name) -> KeyConfig -> KeyHandlerMap
 editingKeybindings tId editor = mkKeybindings $ editingKeyHandlers tId editor
