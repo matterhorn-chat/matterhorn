@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Main (drawMain) where
 
 import           Prelude ()
@@ -23,7 +24,7 @@ import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL
 import           Data.Time.Calendar ( fromGregorian )
 import           Data.Time.Clock ( UTCTime(..) )
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding )
+import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding, Lens' )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
                                           , ServerTime(..), UserId, TeamId, teamDisplayName
@@ -601,9 +602,9 @@ urlSelectBottomBar st tId =
                     , hBorder
                     ]
 
-messageSelectBottomBar :: ChatState -> TeamId -> Widget Name
-messageSelectBottomBar st tId =
-    case getSelectedMessage tId (csTeam(tId).tsMessageSelect) st of
+messageSelectBottomBar :: ChatState -> TeamId -> Lens' ChatState MessageSelectState -> Widget Name
+messageSelectBottomBar st tId which =
+    case getSelectedMessage tId which st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
@@ -619,7 +620,7 @@ messageSelectBottomBar st tId =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId (csTeam(tId).tsMessageSelect) (csTeam(tId).tsEditState))
+                ev = keyEventBindings st (messageSelectKeybindings tId which (csTeam(tId).tsEditState))
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent
@@ -834,7 +835,7 @@ mainInterface st mtId =
 
     bottomBorder tId hs =
         case st^.csTeam(tId).tsMode of
-            MessageSelect -> messageSelectBottomBar st tId
+            MessageSelect -> messageSelectBottomBar st tId (csTeam(tId).tsMessageSelect)
             UrlSelect -> urlSelectBottomBar st tId
             SaveAttachmentWindow {} -> urlSelectBottomBar st tId
             _ -> maybeSubdue tId $ hBox
