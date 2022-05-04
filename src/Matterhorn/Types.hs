@@ -198,8 +198,8 @@ module Matterhorn.Types
   , setMode
   , setMode'
 
-  , ChatEditState
-  , emptyEditState
+  , EditState
+  , emptyEditStateForTeam
   , cedAttachmentList
   , cedFileBrowser
   , unsafeCedFileBrowser
@@ -1278,38 +1278,37 @@ data AutocompleteState =
                       -- on, so this cache does not live very long.
                       }
 
--- | The 'ChatEditState' value contains the editor widget itself as well
--- as history and metadata we need for editing-related operations.
-data ChatEditState =
-    ChatEditState { _cedEditor :: Editor Text Name
-                  , _cedEditMode :: EditMode
-                  , _cedEphemeral :: EphemeralEditState
-                  , _cedMisspellings :: Set Text
-                  , _cedAutocomplete :: Maybe AutocompleteState
-                  -- ^ The autocomplete state. The autocompletion UI is
-                  -- showing only when this state is present.
-                  , _cedAutocompletePending :: Maybe Text
-                  -- ^ The search string associated with the latest
-                  -- in-flight autocompletion request. This is used to
-                  -- determine whether any (potentially late-arriving)
-                  -- API responses are for stale queries since the user
-                  -- can type more quickly than the server can get us
-                  -- the results, and we wouldn't want to show results
-                  -- associated with old editor states.
-                  , _cedAttachmentList :: List Name AttachmentData
-                  -- ^ The list of attachments to be uploaded with the
-                  -- post being edited.
-                  , _cedFileBrowser :: Maybe (FB.FileBrowser Name)
-                  -- ^ The browser for selecting attachment files.
-                  -- This is a Maybe because the instantiation of the
-                  -- FileBrowser causes it to read and ingest the
-                  -- target directory, so this action is deferred
-                  -- until the browser is needed.
-                  , _cedJustCompleted :: Bool
-                  -- A flag that indicates whether the most recent
-                  -- editing event was a tab-completion. This is used by
-                  -- the smart trailing space handling.
-                  }
+-- | The 'EditState' value contains the editor widget itself as well as
+-- history and metadata we need for editing-related operations.
+data EditState =
+    EditState { _cedEditor :: Editor Text Name
+              , _cedEditMode :: EditMode
+              , _cedEphemeral :: EphemeralEditState
+              , _cedMisspellings :: Set Text
+              , _cedAutocomplete :: Maybe AutocompleteState
+              -- ^ The autocomplete state. The autocompletion UI is
+              -- showing only when this state is present.
+              , _cedAutocompletePending :: Maybe Text
+              -- ^ The search string associated with the latest
+              -- in-flight autocompletion request. This is used to
+              -- determine whether any (potentially late-arriving) API
+              -- responses are for stale queries since the user can type
+              -- more quickly than the server can get us the results,
+              -- and we wouldn't want to show results associated with
+              -- old editor states.
+              , _cedAttachmentList :: List Name AttachmentData
+              -- ^ The list of attachments to be uploaded with the post
+              -- being edited.
+              , _cedFileBrowser :: Maybe (FB.FileBrowser Name)
+              -- ^ The browser for selecting attachment files. This is
+              -- a Maybe because the instantiation of the FileBrowser
+              -- causes it to read and ingest the target directory, so
+              -- this action is deferred until the browser is needed.
+              , _cedJustCompleted :: Bool
+              -- A flag that indicates whether the most recent editing
+              -- event was a tab-completion. This is used by the smart
+              -- trailing space handling.
+              }
 
 -- | The 'GlobalEditState' value contains state not specific to any
 -- single editor.
@@ -1325,20 +1324,20 @@ data AttachmentData =
                    }
                    deriving (Eq, Show)
 
--- | We can initialize a new 'ChatEditState' value with just an edit
+-- | We can initialize a new 'EditState' value with just an edit
 -- history, which we save locally.
-emptyEditState :: TeamId -> ChatEditState
-emptyEditState tId =
-    ChatEditState { _cedEditor               = editor (MessageInput tId) Nothing ""
-                  , _cedEphemeral            = defaultEphemeralEditState
-                  , _cedEditMode             = NewPost
-                  , _cedMisspellings         = mempty
-                  , _cedAutocomplete         = Nothing
-                  , _cedAutocompletePending  = Nothing
-                  , _cedAttachmentList       = list (AttachmentList tId) mempty 1
-                  , _cedFileBrowser          = Nothing
-                  , _cedJustCompleted        = False
-                  }
+emptyEditStateForTeam :: TeamId -> EditState
+emptyEditStateForTeam tId =
+    EditState { _cedEditor               = editor (MessageInput tId) Nothing ""
+              , _cedEphemeral            = defaultEphemeralEditState
+              , _cedEditMode             = NewPost
+              , _cedMisspellings         = mempty
+              , _cedAutocomplete         = Nothing
+              , _cedAutocompletePending  = Nothing
+              , _cedAttachmentList       = list (AttachmentList tId) mempty 1
+              , _cedFileBrowser          = Nothing
+              , _cedJustCompleted        = False
+              }
 
 emptyGlobalEditState :: GlobalEditState
 emptyGlobalEditState =
@@ -1654,7 +1653,7 @@ data TeamState =
               , _tsReturnChannel :: Maybe ChannelId
               -- ^ The channel to return to after visiting one or more
               -- unread channels.
-              , _tsEditState :: ChatEditState
+              , _tsEditState :: EditState
               -- ^ The state of the input box used for composing and
               -- editing messages and commands.
               , _tsGlobalEditState :: GlobalEditState
@@ -1779,7 +1778,7 @@ newTeamState config team chanList spellChecker =
     let tId = teamId team
     in TeamState { _tsMode                     = Main
                  , _tsFocus                    = chanList
-                 , _tsEditState                = emptyEditState tId
+                 , _tsEditState                = emptyEditStateForTeam tId
                  , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
                  , _tsTeam                     = team
                  , _tsUrlList                  = list (UrlList tId) mempty 2
@@ -2196,7 +2195,7 @@ data MHError =
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''TeamState
-makeLenses ''ChatEditState
+makeLenses ''EditState
 makeLenses ''GlobalEditState
 makeLenses ''AutocompleteState
 makeLenses ''PostListOverlayState
@@ -2263,7 +2262,7 @@ serverBaseUrl st tId =
         tName = teamName $ st^.csTeam(tId).tsTeam
     in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
 
-unsafeCedFileBrowser :: Lens' ChatEditState (FB.FileBrowser Name)
+unsafeCedFileBrowser :: Lens' EditState (FB.FileBrowser Name)
 unsafeCedFileBrowser =
      lens (\st   -> st^.cedFileBrowser ^?! _Just)
           (\st t -> st & cedFileBrowser .~ Just t)
