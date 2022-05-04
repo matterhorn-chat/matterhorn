@@ -619,7 +619,7 @@ messageSelectBottomBar st tId =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId)
+                ev = keyEventBindings st (messageSelectKeybindings tId (csTeam(tId).tsEditState))
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent

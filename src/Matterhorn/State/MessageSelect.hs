@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.MessageSelect
   (
   -- * Message selection mode
@@ -248,8 +249,8 @@ messageSelectLast tId = do
                       Nothing -> mhLog LogError "No last message found from current message?!"
             _ -> return ()
 
-deleteSelectedMessage :: TeamId -> MH ()
-deleteSelectedMessage tId = do
+deleteSelectedMessage :: TeamId -> Lens' ChatState EditState -> MH ()
+deleteSelectedMessage tId which = do
     withCurrentChannel tId $ \cId _ -> do
         selectedMessage <- use (to (getSelectedMessage tId))
         st <- use id
@@ -260,31 +261,31 @@ deleteSelectedMessage tId = do
                       doAsyncChannelMM Preempt cId
                           (\s _ -> MM.mmDeletePost (postId p) s)
                           (\_ _ -> Just $ do
-                              csTeam(tId).tsEditState.cedEditMode .= NewPost
+                              which.cedEditMode .= NewPost
                               setMode tId Main)
                   Nothing -> return ()
             _ -> return ()
 
-beginReplyCompose :: TeamId -> MH ()
-beginReplyCompose tId = do
+beginReplyCompose :: TeamId -> Lens' ChatState EditState -> MH ()
+beginReplyCompose tId which = do
     selected <- use (to (getSelectedMessage tId))
     case selected of
         Just msg | isReplyable msg -> do
             rootMsg <- getReplyRootMessage msg
             let p = fromJust $ rootMsg^.mOriginalPost
             setMode tId Main
-            csTeam(tId).tsEditState.cedEditMode .= Replying rootMsg p
+            which.cedEditMode .= Replying rootMsg p
         _ -> return ()
 
-beginEditMessage :: TeamId -> MH ()
-beginEditMessage tId = do
+beginEditMessage :: TeamId -> Lens' ChatState EditState -> MH ()
+beginEditMessage tId which = do
     selected <- use (to (getSelectedMessage tId))
     st <- use id
     case selected of
         Just msg | isMine st msg && isEditable msg -> do
             let p = fromJust $ msg^.mOriginalPost
             setMode tId Main
-            csTeam(tId).tsEditState.cedEditMode .= Editing p (msg^.mType)
+            which.cedEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need
             -- to strip the formatting because that's only there to
             -- indicate that the post is an emote. This is annoying and
@@ -296,7 +297,7 @@ beginEditMessage tId = do
             let toEdit = if isEmote msg
                          then removeEmoteFormatting sanitized
                          else sanitized
-            csTeam(tId).tsEditState.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
+            which.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
         _ -> return ()
 
 -- | Tell the server that we have flagged or unflagged a message.

@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.Autocomplete
   ( AutocompleteContext(..)
   , checkForAutocompletion
@@ -19,7 +20,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
 import qualified Data.Vector as V
-import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just )
+import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just, Lens' )
 import qualified Skylighting.Types as Sky
 
 import           Network.Mattermost.Types (userId, channelId, Command(..), TeamId)
@@ -55,13 +56,13 @@ data AutocompleteContext =
 -- should cause an autocompletion UI to appear. If so, initiate a server
 -- query or local cache lookup to present the completion alternatives
 -- for the word at the cursor.
-checkForAutocompletion :: TeamId -> AutocompleteContext -> MH ()
-checkForAutocompletion tId ctx = do
-    result <- getCompleterForInput tId ctx
+checkForAutocompletion :: TeamId -> Lens' ChatState EditState -> AutocompleteContext -> MH ()
+checkForAutocompletion tId which ctx = do
+    result <- getCompleterForInput tId which ctx
     case result of
-        Nothing -> resetAutocomplete tId
+        Nothing -> resetAutocomplete which
         Just (ty, runUpdater, searchString) -> do
-            prevResult <- use (csTeam(tId).tsEditState.cedAutocomplete)
+            prevResult <- use (which.cedAutocomplete)
             -- We should update the completion state if EITHER:
             --
             -- 1) The type changed
@@ -74,14 +75,15 @@ checkForAutocompletion tId ctx = do
                                 (maybe True ((== ty) . _acType) prevResult)) ||
                                (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
-                csTeam(tId).tsEditState.cedAutocompletePending .= Just searchString
+                which.cedAutocompletePending .= Just searchString
                 runUpdater ty ctx searchString
 
 getCompleterForInput :: TeamId
+                     -> Lens' ChatState EditState
                      -> AutocompleteContext
                      -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
-getCompleterForInput tId ctx = do
-    z <- use (csTeam(tId).tsEditState.cedEditor.editContentsL)
+getCompleterForInput tId which ctx = do
+    z <- use (which.cedEditor.editContentsL)
 
     let col = snd $ Z.cursorPosition z
         curLine = Z.currentLine z
@@ -89,38 +91,38 @@ getCompleterForInput tId ctx = do
     return $ case wordAtColumn col curLine of
         Just (startCol, w)
             | userSigil `T.isPrefixOf` w ->
-                Just (ACUsers, doUserAutoCompletion tId, T.tail w)
+                Just (ACUsers, doUserAutoCompletion tId which, T.tail w)
             | normalChannelSigil `T.isPrefixOf` w ->
-                Just (ACChannels, doChannelAutoCompletion tId, T.tail w)
+                Just (ACChannels, doChannelAutoCompletion tId which, T.tail w)
             | ":" `T.isPrefixOf` w && autocompleteManual ctx ->
-                Just (ACEmoji, doEmojiAutoCompletion tId, T.tail w)
+                Just (ACEmoji, doEmojiAutoCompletion tId which, T.tail w)
             | "```" `T.isPrefixOf` w ->
-                Just (ACCodeBlockLanguage, doSyntaxAutoCompletion tId, T.drop 3 w)
+                Just (ACCodeBlockLanguage, doSyntaxAutoCompletion tId which, T.drop 3 w)
             | "/" `T.isPrefixOf` w && startCol == 0 ->
-                Just (ACCommands, doCommandAutoCompletion tId, T.tail w)
+                Just (ACCommands, doCommandAutoCompletion tId which, T.tail w)
         _ -> Nothing
 
 -- Completion implementations
 
-doEmojiAutoCompletion :: TeamId -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
-doEmojiAutoCompletion tId ty ctx searchString = do
+doEmojiAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doEmojiAutoCompletion tId which ty ctx searchString = do
     session <- getSession
     em <- use (csResources.crEmoji)
-    withCachedAutocompleteResults tId ctx ty searchString $
+    withCachedAutocompleteResults tId which ctx ty searchString $
         doAsyncWith Preempt $ do
             results <- getMatchingEmoji session em searchString
             let alts = EmojiCompletion <$> results
-            return $ Just $ setCompletionAlternatives tId ctx searchString alts ty
+            return $ Just $ setCompletionAlternatives tId which ctx searchString alts ty
 
-doSyntaxAutoCompletion :: TeamId -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
-doSyntaxAutoCompletion tId ty ctx searchString = do
+doSyntaxAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doSyntaxAutoCompletion tId which ty ctx searchString = do
     mapping <- use (csResources.crSyntaxMap)
     let allNames = Sky.sShortname <$> M.elems mapping
         (prefixed, notPrefixed) = partition isPrefixed $ filter match allNames
         match = (((T.toLower searchString) `T.isInfixOf`) . T.toLower)
         isPrefixed = (((T.toLower searchString) `T.isPrefixOf`) . T.toLower)
         alts = SyntaxCompletion <$> (sort prefixed <> sort notPrefixed)
-    setCompletionAlternatives tId ctx searchString alts ty
+    setCompletionAlternatives tId which ctx searchString alts ty
 
 -- | This list of server commands should be hidden because they make
 -- assumptions about a web-based client or otherwise just don't make
@@ -169,12 +171,12 @@ hiddenCommand c = (T.toLower $ commandTrigger c) `elem` hiddenServerCommands
 isDeletedCommand :: Command -> Bool
 isDeletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
 
-doCommandAutoCompletion :: TeamId -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
-doCommandAutoCompletion myTid ty ctx searchString = do
+doCommandAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doCommandAutoCompletion myTid which ty ctx searchString = do
     session <- getSession
 
-    mCache <- preuse (csTeam(myTid).tsEditState.cedAutocomplete._Just.acCachedResponses)
-    mActiveTy <- preuse (csTeam(myTid).tsEditState.cedAutocomplete._Just.acType)
+    mCache <- preuse (which.cedAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (which.cedAutocomplete._Just.acType)
 
     -- Command completion works a little differently than the other
     -- modes. To do command autocompletion, we want to query the server
@@ -228,19 +230,19 @@ doCommandAutoCompletion myTid ty ctx searchString = do
 
                 return $ Just $ do
                     -- Store the complete list of alterantives in the cache
-                    setCompletionAlternatives myTid ctx serverResponseKey alts ty
+                    setCompletionAlternatives myTid which ctx serverResponseKey alts ty
 
                     -- Also store the list of alternatives specific to
                     -- this search string
                     let newAlts = sortBy (compareCommandAlts searchString) $
                                   filter matches alts
-                    setCompletionAlternatives myTid ctx searchString newAlts ty
+                    setCompletionAlternatives myTid which ctx searchString newAlts ty
 
        else case entry of
            Just alts | mActiveTy == Just ACCommands ->
                let newAlts = sortBy (compareCommandAlts searchString) $
                              filter matches alts
-               in setCompletionAlternatives myTid ctx searchString newAlts ty
+               in setCompletionAlternatives myTid which ctx searchString newAlts ty
            _ -> return ()
 
 compareCommandAlts :: Text -> AutocompleteAlternative -> AutocompleteAlternative -> Ordering
@@ -255,12 +257,12 @@ compareCommandAlts s (CommandCompletion _ nameA _ _)
             else GT
 compareCommandAlts _ _ _ = LT
 
-doUserAutoCompletion :: TeamId -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
-doUserAutoCompletion tId ty ctx searchString = do
+doUserAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doUserAutoCompletion tId which ty ctx searchString = do
     session <- getSession
     myUid <- gets myUserId
     withCurrentChannel tId $ \cId _ -> do
-        withCachedAutocompleteResults tId ctx ty searchString $
+        withCachedAutocompleteResults tId which ctx ty searchString $
             doAsyncWith Preempt $ do
                 ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) searchString session
 
@@ -277,21 +279,21 @@ doUserAutoCompletion tId ty ctx searchString = do
                              , (T.toLower searchString) `T.isPrefixOf` specialMentionName m
                              ]
 
-                return $ Just $ setCompletionAlternatives tId ctx searchString (alts <> extras) ty
+                return $ Just $ setCompletionAlternatives tId which ctx searchString (alts <> extras) ty
 
-doChannelAutoCompletion :: TeamId -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
-doChannelAutoCompletion tId ty ctx searchString = do
+doChannelAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doChannelAutoCompletion tId which ty ctx searchString = do
     session <- getSession
     cs <- use csChannels
 
-    withCachedAutocompleteResults tId ctx ty searchString $ do
+    withCachedAutocompleteResults tId which ctx ty searchString $ do
         doAsyncWith Preempt $ do
             results <- MM.mmAutocompleteChannels tId searchString session
             let alts = F.toList $ (ChannelCompletion True <$> inChannels) <>
                                   (ChannelCompletion False <$> notInChannels)
                 (inChannels, notInChannels) = Seq.partition isMember results
                 isMember c = isJust $ findChannelById (channelId c) cs
-            return $ Just $ setCompletionAlternatives tId ctx searchString alts ty
+            return $ Just $ setCompletionAlternatives tId which ctx searchString alts ty
 
 -- Utility functions
 
@@ -300,6 +302,7 @@ doChannelAutoCompletion tId ty ctx searchString = do
 -- on search string), run the specified action, which is assumed to be
 -- responsible for fetching the completion results from the server.
 withCachedAutocompleteResults :: TeamId
+                              -> Lens' ChatState EditState
                               -> AutocompleteContext
                               -- ^ The autocomplete context
                               -> AutocompletionType
@@ -311,26 +314,27 @@ withCachedAutocompleteResults :: TeamId
                               -> MH ()
                               -- ^ The action to execute on a cache miss
                               -> MH ()
-withCachedAutocompleteResults tId ctx ty searchString act = do
-    mCache <- preuse (csTeam(tId).tsEditState.cedAutocomplete._Just.acCachedResponses)
-    mActiveTy <- preuse (csTeam(tId).tsEditState.cedAutocomplete._Just.acType)
+withCachedAutocompleteResults tId which ctx ty searchString act = do
+    mCache <- preuse (which.cedAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (which.cedAutocomplete._Just.acType)
 
     case Just ty == mActiveTy of
         True ->
             -- Does the cache have results for this search string? If
             -- so, use them; otherwise invoke the specified action.
             case HM.lookup searchString =<< mCache of
-                Just alts -> setCompletionAlternatives tId ctx searchString alts ty
+                Just alts -> setCompletionAlternatives tId which ctx searchString alts ty
                 Nothing -> act
         False -> act
 
 setCompletionAlternatives :: TeamId
+                          -> Lens' ChatState EditState
                           -> AutocompleteContext
                           -> Text
                           -> [AutocompleteAlternative]
                           -> AutocompletionType
                           -> MH ()
-setCompletionAlternatives tId ctx searchString alts ty = do
+setCompletionAlternatives tId which ctx searchString alts ty = do
     let list = L.list (CompletionList tId) (V.fromList $ F.toList alts) 1
         state = AutocompleteState { _acPreviousSearchString = searchString
                                   , _acCompletionList =
@@ -339,13 +343,13 @@ setCompletionAlternatives tId ctx searchString alts ty = do
                                   , _acType = ty
                                   }
 
-    pending <- use (csTeam(tId).tsEditState.cedAutocompletePending)
+    pending <- use (which.cedAutocompletePending)
     case pending of
         Just val | val == searchString -> do
 
             -- If there is already state, update it, but also cache the
             -- search results.
-            csTeam(tId).tsEditState.cedAutocomplete %= \prev ->
+            which.cedAutocomplete %= \prev ->
                 let newState = case prev of
                         Nothing ->
                             state
@@ -357,7 +361,7 @@ setCompletionAlternatives tId ctx searchString alts ty = do
             mh $ vScrollToBeginning $ viewportScroll $ CompletionList tId
 
             when (autocompleteFirstMatch ctx) $
-                tabComplete tId Forwards
+                tabComplete tId which Forwards
         _ ->
             -- Do not update the state if this result does not
             -- correspond to the search string we used most recently.

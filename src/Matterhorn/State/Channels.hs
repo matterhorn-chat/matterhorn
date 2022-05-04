@@ -473,7 +473,7 @@ setFocusWith tId updatePrev f onChange onNoChange = do
     if newFocus /= oldFocus
        then do
           mh $ invalidateCacheEntry $ ChannelSidebar tId
-          resetAutocomplete tId
+          resetAutocomplete (csTeam(tId).tsEditState)
           preChangeChannelCommon tId
           csTeam(tId).tsFocus .= newZipper
 
@@ -867,7 +867,7 @@ createGroupChannel tId usernameList = do
 channelHistoryForward :: TeamId -> MH ()
 channelHistoryForward tId = do
     withCurrentChannel tId $ \cId _ -> do
-        resetAutocomplete tId
+        resetAutocomplete (csTeam(tId).tsEditState)
 
         inputHistoryPos <- use (csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition)
         case inputHistoryPos of
@@ -895,7 +895,7 @@ loadHistoryEntryToEditor tId cId idx = do
 channelHistoryBackward :: TeamId -> MH ()
 channelHistoryBackward tId = do
     withCurrentChannel tId $ \cId _ -> do
-        resetAutocomplete tId
+        resetAutocomplete (csTeam(tId).tsEditState)
 
         inputHistoryPos <- use (csTeam(tId).tsEditState.cedEphemeral.eesInputHistoryPosition)
         saveCurrentChannelInput tId

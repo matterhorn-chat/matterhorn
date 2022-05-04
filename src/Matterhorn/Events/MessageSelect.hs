@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.Events.MessageSelect
   ( messageSelectKeybindings
   , messageSelectKeyHandlers
@@ -11,6 +12,7 @@ import           Matterhorn.Prelude
 
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
+import           Lens.Micro.Platform ( Lens' )
 
 import           Network.Mattermost.Types ( TeamId )
 
@@ -23,22 +25,22 @@ import           Matterhorn.Types
 messagesPerPageOperation :: Int
 messagesPerPageOperation = 10
 
-onEventMessageSelect :: TeamId -> Vty.Event -> MH ()
-onEventMessageSelect tId =
-  void . handleKeyboardEvent (messageSelectKeybindings tId) (const $ return ())
+onEventMessageSelect :: TeamId -> Lens' ChatState EditState -> Vty.Event -> MH ()
+onEventMessageSelect tId which =
+  void . handleKeyboardEvent (messageSelectKeybindings tId which) (const $ return ())
 
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
-    deleteSelectedMessage tId
+    deleteSelectedMessage tId (csTeam(tId).tsEditState)
     setMode tId Main
 onEventMessageSelectDeleteConfirm tId _ = do
     setMode tId Main
 
-messageSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
-messageSelectKeybindings tId = mkKeybindings (messageSelectKeyHandlers tId)
+messageSelectKeybindings :: TeamId -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
+messageSelectKeybindings tId which = mkKeybindings (messageSelectKeyHandlers tId which)
 
-messageSelectKeyHandlers :: TeamId -> [KeyEventHandler]
-messageSelectKeyHandlers tId =
+messageSelectKeyHandlers :: TeamId -> Lens' ChatState EditState -> [KeyEventHandler]
+messageSelectKeyHandlers tId which =
     [ mkKb CancelEvent "Cancel message selection" $ do
         setMode tId Main
 
@@ -61,10 +63,10 @@ messageSelectKeyHandlers tId =
         openSelectedMessageURLs tId
 
     , mkKb ReplyMessageEvent "Begin composing a reply to the selected message" $
-         beginReplyCompose tId
+         beginReplyCompose tId which
 
     , mkKb EditMessageEvent "Begin editing the selected message" $
-         beginEditMessage tId
+         beginEditMessage tId which
 
     , mkKb DeleteMessageEvent "Delete the selected message (with confirmation)" $
          beginConfirmDeleteSelectedMessage tId

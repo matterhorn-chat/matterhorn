@@ -28,8 +28,8 @@ onEventMain tId =
   void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
       resetReturnChannel tId
       case ev of
-          (Vty.EvPaste bytes) -> handlePaste tId bytes
-          _ -> handleEditingInput tId ev
+          (Vty.EvPaste bytes) -> handlePaste (csTeam(tId).tsEditState) bytes
+          _ -> handleEditingInput tId (csTeam(tId).tsEditState) ev
   )
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -47,12 +47,12 @@ mainKeyHandlers tId =
 
     , mkKb ReplyRecentEvent
         "Reply to the most recent message" $
-        replyToLatestMessage tId
+        replyToLatestMessage tId (csTeam(tId).tsEditState)
 
     , mkKb
         InvokeEditorEvent
         "Invoke `$EDITOR` to edit the current message" $
-        invokeExternalEditor tId
+        invokeExternalEditor (csTeam(tId).tsEditState)
 
     , mkKb
         EnterFastSelectModeEvent
@@ -61,11 +61,11 @@ mainKeyHandlers tId =
 
     , staticKb "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $
-         tabComplete tId Forwards
+         tabComplete tId (csTeam(tId).tsEditState) Forwards
 
     , staticKb "Tab-complete backward"
          (Vty.EvKey (Vty.KBackTab) []) $
-         tabComplete tId Backwards
+         tabComplete tId (csTeam(tId).tsEditState) Backwards
 
     , mkKb
         ChannelListScrollUpEvent
@@ -123,7 +123,7 @@ mainKeyHandlers tId =
          nextUnreadChannel tId
 
     , mkKb ShowAttachmentListEvent "Show the attachment list" $
-         showAttachmentList tId
+         showAttachmentList tId (csTeam(tId).tsEditState) ManageAttachmentsBrowseFiles
 
     , mkKb NextUnreadUserOrChannelEvent
          "Change to the next channel with unread messages preferring direct messages" $
@@ -139,11 +139,11 @@ mainKeyHandlers tId =
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a
                  -- newline instead.
-                 True -> handleEditingInput tId (Vty.EvKey Vty.KEnter [])
+                 True -> handleEditingInput tId (csTeam(tId).tsEditState) (Vty.EvKey Vty.KEnter [])
                  False -> do
                      withCurrentChannel tId $ \cId _ -> do
-                         content <- getEditorContent tId
-                         handleInputSubmission tId cId content
+                         content <- getEditorContent (csTeam(tId).tsEditState)
+                         handleInputSubmission tId (csTeam(tId).tsEditState) cId content
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel" $
            startUrlSelect tId
@@ -153,10 +153,10 @@ mainKeyHandlers tId =
                clearChannelUnreadStatus cId
 
     , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
-           toggleMultilineEditing tId
+           toggleMultilineEditing (csTeam(tId).tsEditState)
 
     , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
-         cancelAutocompleteOrReplyOrEdit tId
+         cancelAutocompleteOrReplyOrEdit tId (csTeam(tId).tsEditState)
 
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts" $
          enterFlaggedPostListMode tId

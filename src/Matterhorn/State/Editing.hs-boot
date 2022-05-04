@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.Editing
   ( Direction(..)
   , tabComplete
@@ -5,7 +6,8 @@ module Matterhorn.State.Editing
 where
 
 import Network.Mattermost.Types ( TeamId )
-import Matterhorn.Types ( MH )
+import Matterhorn.Types ( MH, ChatState, EditState )
+import Lens.Micro.Platform ( Lens' )
 
 data Direction = Forwards | Backwards
-tabComplete :: TeamId -> Direction -> MH ()
+tabComplete :: TeamId -> Lens' ChatState EditState -> Direction -> MH ()

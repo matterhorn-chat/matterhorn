@@ -2475,10 +2475,10 @@ data SidebarUpdate =
     deriving (Eq, Show)
 
 
-resetAutocomplete :: TeamId -> MH ()
-resetAutocomplete tId = do
-    csTeam(tId).tsEditState.cedAutocomplete .= Nothing
-    csTeam(tId).tsEditState.cedAutocompletePending .= Nothing
+resetAutocomplete :: Lens' ChatState EditState -> MH ()
+resetAutocomplete which = do
+    which.cedAutocomplete .= Nothing
+    which.cedAutocompletePending .= Nothing
 
 
 -- * Slash Commands

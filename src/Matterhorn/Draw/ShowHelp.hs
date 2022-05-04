@@ -448,7 +448,7 @@ keybindSections =
     , ("Main Interface", mainKeyHandlers teamIdThunk)
     , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
-    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk)
+    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk whichThunk)
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
@@ -456,8 +456,8 @@ keybindSections =
     , ("Message Viewer: Common", tabbedWindowKeyHandlers teamIdThunk tabbedWinThunk)
     , ("Message Viewer: Message tab", viewMessageKeyHandlers teamIdThunk)
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
-    , ("Attachment List", attachmentListKeyHandlers teamIdThunk)
-    , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk)
+    , ("Attachment List", attachmentListKeyHandlers teamIdThunk whichThunk)
+    , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk whichThunk)
     , ("Flagged Messages", postListOverlayKeyHandlers teamIdThunk)
     , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers teamIdThunk)
     ]
@@ -470,6 +470,9 @@ tabbedWinThunk = error "BUG: should not evaluate tabbedWinThunk"
 
 editorThunk :: Lens' ChatState (Editor Text Name)
 editorThunk = error "BUG: should not evaluate editorThunk"
+
+whichThunk :: Lens' ChatState EditState
+whichThunk = error "BUG: should not evaluate whichThunk"
 
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =
