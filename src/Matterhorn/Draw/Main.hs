@@ -410,10 +410,10 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
                 case st^.csTeam(tId).tsMode of
                 MessageSelect ->
                     freezeBorders $
-                    renderMessagesWithSelect cId (st^.csTeam(tId).tsMessageSelect) (channelMessages cId)
+                    renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
                 MessageSelectDeleteConfirm ->
                     freezeBorders $
-                    renderMessagesWithSelect cId (st^.csTeam(tId).tsMessageSelect) (channelMessages cId)
+                    renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
                 _ ->
                     cached (ChannelMessages cId) $
                     freezeBorders $
@@ -835,7 +835,7 @@ mainInterface st mtId =
 
     bottomBorder tId hs =
         case st^.csTeam(tId).tsMode of
-            MessageSelect -> messageSelectBottomBar st tId (csTeam(tId).tsMessageSelect)
+            MessageSelect -> messageSelectBottomBar st tId (channelMessageSelect(tId))
             UrlSelect -> urlSelectBottomBar st tId
             SaveAttachmentWindow {} -> urlSelectBottomBar st tId
             _ -> maybeSubdue tId $ hBox

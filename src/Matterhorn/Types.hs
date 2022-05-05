@@ -150,7 +150,6 @@ module Matterhorn.Types
   , tsRecentChannel
   , tsReturnChannel
   , tsGlobalEditState
-  , tsMessageSelect
   , tsTeam
   , tsChannelSelectState
   , tsUrlList
@@ -166,6 +165,7 @@ module Matterhorn.Types
   , tsChannelListSorting
 
   , channelEditor
+  , channelMessageSelect
 
   , ChatState
   , newState
@@ -2332,6 +2332,9 @@ csCurrentTeamId = csTeamZipper.to Z.focus
 
 channelEditor :: TeamId -> Lens' ChatState EditState
 channelEditor tId = csTeam(tId).tsEditState
+
+channelMessageSelect :: TeamId -> Lens' ChatState MessageSelectState
+channelMessageSelect tId = csTeam(tId).tsMessageSelect
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
