@@ -95,17 +95,16 @@ data Token =
     -- misspelling list.
     deriving (Show)
 
-drawEditorContents :: ChatState -> TeamId -> HighlightSet -> [Text] -> Widget Name
-drawEditorContents st tId hs =
+drawEditorContents :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> HighlightSet -> [Text] -> Widget Name
+drawEditorContents st editWhich tId hs =
     let noHighlight = txt . T.unlines
     in case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
-            case S.null (st^.channelEditor(tId).cedMisspellings) of
+            let ms = st^.editWhich.cedMisspellings
+            in case S.null ms of
                 True -> noHighlight
-                False -> doHighlightMisspellings
-                           hs
-                           (st^.channelEditor(tId).cedMisspellings)
+                False -> doHighlightMisspellings hs ms
 
 -- | This function takes a set of misspellings from the spell
 -- checker, the editor lines, and builds a rendering of the text with
@@ -227,26 +226,27 @@ doHighlightMisspellings hSet misspellings contents =
 
     in vBox $ handleLine <$> contents
 
-renderUserCommandBox :: ChatState -> TeamId -> HighlightSet -> Widget Name
-renderUserCommandBox st tId hs =
-    let prompt = txt $ case st^.channelEditor(tId).cedEditMode of
+renderUserCommandBox :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> HighlightSet -> Widget Name
+renderUserCommandBox st editWhich tId hs =
+    let prompt = txt $ case st^.editWhich.cedEditMode of
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor (drawEditorContents st tId hs) True (st^.channelEditor(tId).cedEditor)
-        curContents = getEditContents $ st^.channelEditor(tId).cedEditor
+        editor = st^.editWhich.cedEditor
+        inputBox = renderEditor (drawEditorContents st editWhich tId hs) True editor
+        curContents = getEditContents editor
         multilineContent = length curContents > 1
         multilineHints =
             hBox [ borderElem bsHorizontal
                  , str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
-                                        st^.channelEditor(tId).cedEditor.editContentsL) <>
+                                        editor^.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
                    txt $ "In multi-line mode. Press " <> multiLineToggleKey <>
                          " to finish."
                  ]
 
-        replyDisplay = case st^.channelEditor(tId).cedEditMode of
+        replyDisplay = case st^.editWhich.cedEditMode of
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
@@ -274,7 +274,7 @@ renderUserCommandBox st tId hs =
         kc = st^.csResources.crConfiguration.configUserKeysL
         multiLineToggleKey = ppBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
-        commandBox = case st^.channelEditor(tId).cedEphemeral.eesMultiline of
+        commandBox = case st^.editWhich.cedEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
@@ -720,7 +720,7 @@ userInputArea st mode tId hs =
     case mode of
         ChannelSelect ->              renderChannelSelectPrompt st tId
         MessageSelectDeleteConfirm -> renderDeleteConfirm
-        _             ->              renderUserCommandBox st tId hs
+        _             ->              renderUserCommandBox st (channelEditor(tId)) tId hs
 
 renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
