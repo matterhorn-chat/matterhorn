@@ -303,18 +303,18 @@ beginEditMessage tId selWhich editWhich = do
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()
 flagMessage pId f = do
-  session <- getSession
-  myId <- gets myUserId
-  doAsyncWith Normal $ do
-    let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
-    doFlag myId pId session
-    return Nothing
+    session <- getSession
+    myId <- gets myUserId
+    doAsyncWith Normal $ do
+        let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
+        doFlag myId pId session
+        return Nothing
 
 -- | Tell the server that we have pinned or unpinned a message.
 pinMessage :: PostId -> Bool -> MH ()
 pinMessage pId f = do
-  session <- getSession
-  doAsyncWith Normal $ do
-    let doPin = if f then MM.mmPinPostToChannel else MM.mmUnpinPostToChannel
-    void $ doPin pId session
-    return Nothing
+    session <- getSession
+    doAsyncWith Normal $ do
+        let doPin = if f then MM.mmPinPostToChannel else MM.mmUnpinPostToChannel
+        void $ doPin pId session
+        return Nothing
