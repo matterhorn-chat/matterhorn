@@ -76,7 +76,7 @@ messageSelectKeyHandlers tId selWhich msgsWhich editWhich =
         (messageSelectDownBy selWhich msgsWhich messagesPerPageOperation)
 
     , mkKb OpenMessageURLEvent "Open all URLs in the selected message" $
-        openSelectedMessageURLs tId selWhich msgsWhich
+        openSelectedMessageURLs selWhich msgsWhich
 
     , mkKb ReplyMessageEvent "Begin composing a reply to the selected message" $
          beginReplyCompose tId selWhich msgsWhich editWhich
@@ -94,10 +94,10 @@ messageSelectKeyHandlers tId selWhich msgsWhich editWhich =
          yankSelectedMessage tId selWhich msgsWhich
 
     , mkKb PinMessageEvent "Toggle whether the selected message is pinned" $
-         pinSelectedMessage tId selWhich msgsWhich
+         pinSelectedMessage selWhich msgsWhich
 
     , mkKb FlagMessageEvent "Flag the selected message" $
-         flagSelectedMessage tId selWhich msgsWhich
+         flagSelectedMessage selWhich msgsWhich
 
     , mkKb ViewMessageEvent "View the selected message" $
          viewSelectedMessage tId selWhich msgsWhich
@@ -106,7 +106,7 @@ messageSelectKeyHandlers tId selWhich msgsWhich editWhich =
          fillSelectedGap tId selWhich msgsWhich
 
     , mkKb ReactToMessageEvent "Post a reaction to the selected message" $ do
-         mMsg <- use (to (getSelectedMessage tId selWhich msgsWhich))
+         mMsg <- use (to (getSelectedMessage selWhich msgsWhich))
          case mMsg of
              Nothing -> return ()
              Just m -> enterReactionEmojiListOverlayMode tId m

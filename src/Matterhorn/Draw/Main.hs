@@ -342,8 +342,8 @@ renderChannelHeader st tId hs (Just chan) =
          hs (Just (mkClickableInline Nothing (Just $ ChannelTopic $ chan^.ccInfo.cdChannelId)))
          (channelNameString <> maybeTopic)
 
-renderCurrentChannelDisplay :: ChatState -> TeamId -> HighlightSet -> Widget Name
-renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
+renderCurrentChannelDisplay :: ChatState -> Mode -> TeamId -> HighlightSet -> Widget Name
+renderCurrentChannelDisplay st mode tId hs = header <=> hBorder <=> messages
     where
     header =
         if st^.csResources.crConfiguration.configShowChannelListL
@@ -376,7 +376,7 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
                 headerWidget = resultToWidget channelHeaderResult
                 borderWidget = vLimit maxHeight vBorder
 
-            render $ if st^.csTeam(tId).tsMode == ChannelSelect
+            render $ if mode == ChannelSelect
                         then headerWidget
                         else hBox $ case st^.csChannelListOrientation of
                             ChannelListLeft ->
@@ -404,20 +404,20 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
         case mcId of
             Nothing -> fill ' '
             Just cId ->
-                case st^.csTeam(tId).tsMode of
-                MessageSelect _ ->
-                    freezeBorders $
-                    renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
-                MessageSelectDeleteConfirm ->
-                    freezeBorders $
-                    renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
-                _ ->
-                    cached (ChannelMessages cId) $
-                    freezeBorders $
-                    renderLastMessages st hs (getEditedMessageCutoff cId st) $
-                    retrogradeMsgsWithThreadStates $
-                    reverseMessages $
-                    channelMessages cId
+                case mode of
+                    MessageSelect _ ->
+                        freezeBorders $
+                        renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
+                    MessageSelectDeleteConfirm ->
+                        freezeBorders $
+                        renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
+                    _ ->
+                        cached (ChannelMessages cId) $
+                        freezeBorders $
+                        renderLastMessages st hs (getEditedMessageCutoff cId st) $
+                        retrogradeMsgsWithThreadStates $
+                        reverseMessages $
+                        channelMessages cId
 
     renderMessagesWithSelect cId (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
@@ -513,15 +513,12 @@ renderChannelSelectPrompt st tId =
        (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
        (renderEditor (txt . T.concat) True e)
 
-drawMain :: Bool -> ChatState -> [Widget Name]
-drawMain useColor st =
-    let maybeColor = if useColor then id else forceAttr "invalid"
-        mtId = st^.csCurrentTeamId
-    in maybeColor <$>
-           [ connectionLayer st
-           , maybe emptyWidget (autocompleteLayer st) mtId
-           , joinBorders $ mainInterface st mtId
-           ]
+drawMain :: ChatState -> Mode -> [Widget Name]
+drawMain st mode =
+    [ connectionLayer st
+    , maybe emptyWidget (autocompleteLayer st) (st^.csCurrentTeamId)
+    , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
+    ]
 
 teamList :: ChatState -> Widget Name
 teamList st =
@@ -575,7 +572,7 @@ messageSelectBottomBar :: ChatState
                        -> Traversal' ChatState Messages
                        -> Widget Name
 messageSelectBottomBar st tId selWhich msgsWhich =
-    case getSelectedMessage tId selWhich msgsWhich st of
+    case getSelectedMessage selWhich msgsWhich st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
@@ -717,9 +714,9 @@ inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessage
                  in (maybePreviewViewport tId msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
-userInputArea :: ChatState -> TeamId -> HighlightSet -> Widget Name
-userInputArea st tId hs =
-    case st^.csTeam(tId).tsMode of
+userInputArea :: ChatState -> Mode -> TeamId -> HighlightSet -> Widget Name
+userInputArea st mode tId hs =
+    case mode of
         ChannelSelect -> renderChannelSelectPrompt st tId
         MessageSelectDeleteConfirm -> renderDeleteConfirm
         _             -> renderUserCommandBox st tId hs
@@ -728,8 +725,8 @@ renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
     hCenter $ txt "Are you sure you want to delete the selected message? (y/n)"
 
-mainInterface :: ChatState -> Maybe TeamId -> Widget Name
-mainInterface st mtId =
+mainInterface :: ChatState -> Mode -> Maybe TeamId -> Widget Name
+mainInterface st mode mtId =
     vBox [ teamList st
          , body
          ]
@@ -738,7 +735,7 @@ mainInterface st mtId =
         st^.csResources.crConfiguration.configShowChannelListL ||
         case mtId of
             Nothing -> True
-            Just tId -> st^.csTeam(tId).tsMode == ChannelSelect
+            Just {} -> mode == ChannelSelect
     body = if showChannelList
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
@@ -763,17 +760,17 @@ mainInterface st mtId =
                 in vBox [ channelContents tId hs
                         , bottomBorder tId hs
                         , inputPreview st tId hs
-                        , userInputArea st tId hs
+                        , userInputArea st mode tId hs
                         ]
 
     channelContents tId hs =
-        maybeSubdue tId $ renderCurrentChannelDisplay st tId hs
+        maybeSubdue $ renderCurrentChannelDisplay st mode tId hs
 
     bottomBorder tId hs =
-        case st^.csTeam(tId).tsMode of
+        case mode of
             MessageSelect cId ->
                 messageSelectBottomBar st tId (channelMessageSelect(tId)) (csChannelMessages(cId))
-            _ -> maybeSubdue tId $ hBox
+            _ -> maybeSubdue $ hBox
                  [ showAttachmentCount tId
                  , hBorder
                  , showTypingUsers tId hs
@@ -816,8 +813,8 @@ mainInterface st mtId =
                  Just Nothing -> hLimit 2 hBorder <+> txt "*"
                  Nothing -> emptyWidget
 
-    maybeSubdue tId =
-        if st^.csTeam(tId).tsMode == ChannelSelect
+    maybeSubdue =
+        if mode == ChannelSelect
         then forceAttr ""
         else id
 

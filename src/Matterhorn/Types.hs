@@ -146,6 +146,7 @@ module Matterhorn.Types
   , TeamState(..)
   , tsFocus
   , tsMode
+  , tsModeStack
   , tsPendingChannelChange
   , tsRecentChannel
   , tsReturnChannel

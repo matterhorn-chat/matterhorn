@@ -29,32 +29,48 @@ import Matterhorn.Types
 
 draw :: ChatState -> [Widget Name]
 draw st =
-    let mainLayers = drawMain True st
-        mainLayersMonochrome = drawMain False st
-    in case st^.csCurrentTeamId of
+    case st^.csCurrentTeamId of
         Nothing ->
             -- ^ Without a team data structure, we just assume Main mode
             -- and render a skeletal UI.
-            mainLayers
+            drawMain st Main
         Just tId ->
             let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
-            in case st^.csTeam(tId).tsMode of
-                Main                         -> mainLayers
-                ChannelSelect                -> mainLayers
-                MessageSelect _              -> mainLayers
-                MessageSelectDeleteConfirm   -> mainLayers
-                ShowHelp topic               -> drawShowHelp topic st
-                UrlSelect                    -> drawUrlSelectWindow st tId : mainLayersMonochrome
-                ThemeListOverlay             -> drawThemeListOverlay st tId : mainLayers
-                LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
-                DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
-                PostListOverlay contents     -> drawPostListOverlay contents st tId : mainLayersMonochrome
-                UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
-                ChannelListOverlay           -> drawChannelListOverlay st tId : mainLayersMonochrome
-                ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : mainLayersMonochrome
-                ViewMessage                  -> drawTabbedWindow messageViewWindow st tId : mainLayersMonochrome
-                ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome
-                ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome
-                EditNotifyPrefs              -> drawNotifyPrefs st tId : mainLayersMonochrome
-                ChannelTopicWindow           -> drawChannelTopicWindow st tId : mainLayersMonochrome
-                SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : mainLayersMonochrome
+                monochrome = fmap (forceAttr "invalid")
+                drawMode m ms =
+                    let rest = case ms of
+                            (a:as) -> drawMode a as
+                            _ -> []
+                    in case m of
+                        -- For this first section of modes, we only want
+                        -- to draw for the current mode and ignore the
+                        -- mode stack because we expect the current mode
+                        -- to be all we need to draw what should be on
+                        -- the screen.
+                        Main                         -> drawMain st m
+                        ChannelSelect                -> drawMain st m
+                        MessageSelect _              -> drawMain st m
+                        MessageSelectDeleteConfirm   -> drawMain st m
+                        ShowHelp topic               -> drawShowHelp topic st
+
+                        -- For the following modes, we want to draw the
+                        -- whole mode stack since we expect the UI to
+                        -- have layers and we want to show prior modes
+                        -- underneath.
+                        UrlSelect                    -> drawUrlSelectWindow st tId : monochrome rest
+                        ThemeListOverlay             -> drawThemeListOverlay st tId : rest
+                        LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : monochrome rest
+                        DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : monochrome rest
+                        PostListOverlay contents     -> drawPostListOverlay contents st tId : monochrome rest
+                        UserListOverlay              -> drawUserListOverlay st tId : monochrome rest
+                        ChannelListOverlay           -> drawChannelListOverlay st tId : monochrome rest
+                        ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : monochrome rest
+                        ViewMessage                  -> drawTabbedWindow messageViewWindow st tId : monochrome rest
+                        ManageAttachments            -> drawManageAttachments st tId : monochrome rest
+                        ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : monochrome rest
+                        EditNotifyPrefs              -> drawNotifyPrefs st tId : monochrome rest
+                        ChannelTopicWindow           -> drawChannelTopicWindow st tId : monochrome rest
+                        SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : monochrome rest
+                topMode = st^.csTeam(tId).tsMode
+                stack = st^.csTeam(tId).tsModeStack
+            in drawMode topMode stack
