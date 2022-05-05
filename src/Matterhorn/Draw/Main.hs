@@ -516,7 +516,7 @@ renderChannelSelectPrompt st tId =
 drawMain :: ChatState -> Mode -> [Widget Name]
 drawMain st mode =
     [ connectionLayer st
-    , maybe emptyWidget (autocompleteLayer st) (st^.csCurrentTeamId)
+    , maybe emptyWidget (\tId -> autocompleteLayer st (channelEditor(tId))) (st^.csCurrentTeamId)
     , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
     ]
 

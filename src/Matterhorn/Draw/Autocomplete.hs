@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Autocomplete
   ( autocompleteLayer
   )
@@ -12,8 +13,9 @@ import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFoc
                                     , listSelectedElement
                                     )
 import qualified Data.Text as T
+import           Lens.Micro.Platform ( SimpleGetter )
 
-import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
+import           Network.Mattermost.Types ( User(..), Channel(..) )
 
 import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.Draw.Util
@@ -22,13 +24,19 @@ import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 
 
-autocompleteLayer :: ChatState -> TeamId -> Widget Name
-autocompleteLayer st tId =
-    case st^.channelEditor(tId).cedAutocomplete of
+autocompleteLayer :: ChatState -> SimpleGetter ChatState EditState -> Widget Name
+autocompleteLayer st which =
+    case st^.which.cedAutocomplete of
         Nothing ->
             emptyWidget
         Just ac ->
-            renderAutocompleteBox st tId ac
+            let mcId = do
+                    tId <- st^.csCurrentTeamId
+                    st^.csCurrentChannelId(tId)
+                mCurChan = do
+                    cId <- mcId
+                    st^?csChannel(cId)
+            in renderAutocompleteBox st mCurChan which ac
 
 userNotInChannelMarker :: T.Text
 userNotInChannelMarker = "*"
@@ -40,8 +48,8 @@ elementTypeLabel ACCodeBlockLanguage = "Languages"
 elementTypeLabel ACEmoji = "Emoji"
 elementTypeLabel ACCommands = "Commands"
 
-renderAutocompleteBox :: ChatState -> TeamId -> AutocompleteState -> Widget Name
-renderAutocompleteBox st tId ac =
+renderAutocompleteBox :: ChatState -> Maybe ClientChannel -> SimpleGetter ChatState EditState -> AutocompleteState -> Widget Name
+renderAutocompleteBox st mCurChan which ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
@@ -53,8 +61,6 @@ renderAutocompleteBox st tId ac =
                      " (Tab/Shift-Tab to select)"
 
         selElem = snd <$> listSelectedElement matchList
-        mcId = st^.csCurrentChannelId(tId)
-        mCurChan = mcId >>= (\cId -> st^?csChannel(cId))
         footer = case mCurChan of
             Nothing ->
                 hBorder
@@ -69,7 +75,7 @@ renderAutocompleteBox st tId ac =
        else Widget Greedy Greedy $ do
            ctx <- getContext
            let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
-               editorOffset = if st^.channelEditor(tId).cedEphemeral.eesMultiline
+               editorOffset = if st^.which.cedEphemeral.eesMultiline
                               then multilineHeightLimit
                               else 0
            render $ translateBy (Location (0, rowOffset)) $
