@@ -1,5 +1,5 @@
 module Matterhorn.Draw.URLList
-  ( renderUrlList
+  ( drawUrlSelectWindow
   )
 where
 
@@ -7,8 +7,11 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
-import           Brick.Widgets.Border ( hBorder )
-import           Brick.Widgets.List ( renderList )
+import           Brick.Widgets.Border
+import           Brick.Widgets.Border.Style
+import           Brick.Widgets.List ( renderList, listSelectedElement )
+import           Brick.Widgets.Center
+import           Data.List ( intersperse )
 import qualified Data.Sequence as Seq
 import qualified Data.Foldable as F
 import           Lens.Micro.Platform ( to )
@@ -18,10 +21,23 @@ import           Network.Mattermost.Types ( ServerTime(..), TeamId, idString )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
+import           Matterhorn.Events.UrlSelect
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText
+import           Matterhorn.Types.KeyEvents
 
+
+drawUrlSelectWindow :: ChatState -> TeamId -> Widget Name
+drawUrlSelectWindow st tId =
+    centerLayer $
+    hLimit 100 $
+    vLimit 35 $
+    border $
+    vBox [ renderUrlList st tId
+         , urlSelectBottomBar st tId
+         , urlSelectInputArea st tId
+         ]
 
 renderUrlList :: ChatState -> TeamId -> Widget Name
 renderUrlList st tId =
@@ -78,3 +94,42 @@ renderUrlList' st tId chan =
 
         attr True = forceAttr urlListSelectedAttr
         attr False = id
+
+urlSelectBottomBar :: ChatState -> TeamId -> Widget Name
+urlSelectBottomBar st tId =
+    case listSelectedElement $ st^.csTeam(tId).tsUrlList of
+        Nothing -> hBorder
+        Just (_, (_, link)) ->
+            let options = [ ( isFile
+                            , ev SaveAttachmentEvent
+                            , "save attachment"
+                            )
+                          ]
+                ev = keyEventBindings st (urlSelectKeybindings tId)
+                isFile entry = case entry^.linkTarget of
+                    LinkFileId {} -> True
+                    _ -> False
+                optionList = if null usableOptions
+                             then txt "(no actions available for this link)"
+                             else hBox $ intersperse (txt " ") usableOptions
+                usableOptions = catMaybes $ mkOption <$> options
+                mkOption (f, k, desc) = if f link
+                                        then Just $ withDefAttr urlSelectStatusAttr (txt k) <+>
+                                                    txt (":" <> desc)
+                                        else Nothing
+            in hBox [ borderElem bsHorizontal
+                    , txt "["
+                    , txt "Options: "
+                    , optionList
+                    , txt "]"
+                    , hBorder
+                    ]
+
+urlSelectInputArea :: ChatState -> TeamId -> Widget Name
+urlSelectInputArea st tId =
+    let getBinding = keyEventBindings st (urlSelectKeybindings tId)
+    in hCenter $ hBox [ withDefAttr clientEmphAttr $ txt "Enter"
+                      , txt ":open  "
+                      , withDefAttr clientEmphAttr $ txt $ getBinding CancelEvent
+                      , txt ":close"
+                      ]

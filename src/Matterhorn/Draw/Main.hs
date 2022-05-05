@@ -9,14 +9,13 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
 import           Brick.Widgets.Center ( hCenter )
-import           Brick.Widgets.List ( listElements, listSelectedElement )
+import           Brick.Widgets.List ( listElements )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Control.Arrow ( (>>>) )
 import           Data.Char ( isSpace, isPunctuation )
 import qualified Data.Foldable as F
 import           Data.List ( intersperse )
 import           Data.Maybe ( fromJust )
-import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -36,12 +35,10 @@ import           Matterhorn.Constants
 import           Matterhorn.Draw.ChannelList ( renderChannelList, renderChannelListHeader )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Autocomplete
-import           Matterhorn.Draw.URLList
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.MessageSelect
-import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
@@ -572,36 +569,6 @@ connectionLayer st =
                          withDefAttr errorMessageAttr $
                          border $ str msg
 
-urlSelectBottomBar :: ChatState -> TeamId -> Widget Name
-urlSelectBottomBar st tId =
-    case listSelectedElement $ st^.csTeam(tId).tsUrlList of
-        Nothing -> hBorder
-        Just (_, (_, link)) ->
-            let options = [ ( isFile
-                            , ev SaveAttachmentEvent
-                            , "save attachment"
-                            )
-                          ]
-                ev = keyEventBindings st (urlSelectKeybindings tId)
-                isFile entry = case entry^.linkTarget of
-                    LinkFileId {} -> True
-                    _ -> False
-                optionList = if null usableOptions
-                             then txt "(no actions available for this link)"
-                             else hBox $ intersperse (txt " ") usableOptions
-                usableOptions = catMaybes $ mkOption <$> options
-                mkOption (f, k, desc) = if f link
-                                        then Just $ withDefAttr urlSelectStatusAttr (txt k) <+>
-                                                    txt (":" <> desc)
-                                        else Nothing
-            in hBox [ borderElem bsHorizontal
-                    , txt "["
-                    , txt "Options: "
-                    , optionList
-                    , txt "]"
-                    , hBorder
-                    ]
-
 messageSelectBottomBar :: ChatState
                        -> TeamId
                        -> Lens' ChatState MessageSelectState
@@ -691,30 +658,6 @@ messageSelectBottomBar st tId selWhich msgsWhich =
                     , hBorder
                     ]
 
--- | Resolve the specified key event into a pretty-printed
--- representation of the active bindings for that event, using the
--- specified key handler map builder. If the event has more than one
--- active binding, the bindings are comma-delimited in the resulting
--- string.
-keyEventBindings :: ChatState
-                 -- ^ The current application state
-                 -> (KeyConfig -> KeyHandlerMap)
-                 -- ^ The function to obtain the relevant key handler
-                 -- map
-                 -> KeyEvent
-                 -- ^ The key event to look up
-                 -> T.Text
-keyEventBindings st mkBindingsMap e =
-    let keyconf = st^.csResources.crConfiguration.configUserKeysL
-        KeyHandlerMap keymap = mkBindingsMap keyconf
-    in T.intercalate ","
-         [ ppBinding (eventToBinding k)
-         | KH { khKey     = k
-              , khHandler = h
-              } <- M.elems keymap
-         , kehEventTrigger h == ByEvent e
-         ]
-
 maybePreviewViewport :: TeamId -> Widget Name -> Widget Name
 maybePreviewViewport tId w =
     Widget Greedy Fixed $ do
@@ -776,16 +719,8 @@ inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessage
 
 userInputArea :: ChatState -> TeamId -> HighlightSet -> Widget Name
 userInputArea st tId hs =
-    let urlSelectInputArea = hCenter $ hBox [ txt "Press "
-                                            , withDefAttr clientEmphAttr $ txt "Enter"
-                                            , txt " to open the selected URL or "
-                                            , withDefAttr clientEmphAttr $ txt "Escape"
-                                            , txt " to cancel."
-                                            ]
-    in case st^.csTeam(tId).tsMode of
+    case st^.csTeam(tId).tsMode of
         ChannelSelect -> renderChannelSelectPrompt st tId
-        UrlSelect     -> urlSelectInputArea
-        SaveAttachmentWindow {} -> urlSelectInputArea
         MessageSelectDeleteConfirm -> renderDeleteConfirm
         _             -> renderUserCommandBox st tId hs
 
@@ -832,17 +767,12 @@ mainInterface st mtId =
                         ]
 
     channelContents tId hs =
-        case st^.csTeam(tId).tsMode of
-            UrlSelect -> renderUrlList st tId
-            SaveAttachmentWindow {} -> renderUrlList st tId
-            _         -> maybeSubdue tId $ renderCurrentChannelDisplay st tId hs
+        maybeSubdue tId $ renderCurrentChannelDisplay st tId hs
 
     bottomBorder tId hs =
         case st^.csTeam(tId).tsMode of
             MessageSelect cId ->
                 messageSelectBottomBar st tId (channelMessageSelect(tId)) (csChannelMessages(cId))
-            UrlSelect -> urlSelectBottomBar st tId
-            SaveAttachmentWindow {} -> urlSelectBottomBar st tId
             _ -> maybeSubdue tId $ hBox
                  [ showAttachmentCount tId
                  , hBorder

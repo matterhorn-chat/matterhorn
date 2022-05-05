@@ -14,6 +14,7 @@ import Matterhorn.Draw.SaveAttachmentWindow
 import Matterhorn.Draw.DeleteChannelConfirm
 import Matterhorn.Draw.LeaveChannelConfirm
 import Matterhorn.Draw.Main
+import Matterhorn.Draw.URLList
 import Matterhorn.Draw.ThemeListOverlay
 import Matterhorn.Draw.PostListOverlay
 import Matterhorn.Draw.ShowHelp
@@ -39,7 +40,7 @@ draw st =
             let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
             in case st^.csTeam(tId).tsMode of
                 Main                         -> mainLayers
-                UrlSelect                    -> mainLayers
+                UrlSelect                    -> drawUrlSelectWindow st tId : mainLayersMonochrome
                 ChannelSelect                -> mainLayers
                 MessageSelect _              -> mainLayers
                 MessageSelectDeleteConfirm   -> mainLayers
