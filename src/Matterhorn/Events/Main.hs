@@ -87,8 +87,10 @@ mainKeyHandlers tId =
     , mkKb LastChannelEvent "Change to the most recently-focused channel" $
          recentChannel tId
 
-    , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel" $
-           startUrlSelect tId
+    , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
+          withCurrentChannel tId $ \_ chan -> do
+              let msgs = chan^.ccContents.cdMessages
+              startUrlSelect tId msgs
 
     , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
            withCurrentChannel tId $ \cId _ -> do

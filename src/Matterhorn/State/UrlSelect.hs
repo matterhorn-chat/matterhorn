@@ -21,13 +21,12 @@ import           Matterhorn.Types
 import           Matterhorn.Util
 
 
-startUrlSelect :: TeamId -> MH ()
-startUrlSelect tId = do
-    withCurrentChannel tId $ \_ chan -> do
-        let urls = V.fromList $ findUrls $ chan^.ccContents.cdMessages
-            urlsWithIndexes = V.indexed urls
-        pushMode tId UrlSelect
-        csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
+startUrlSelect :: TeamId -> Messages -> MH ()
+startUrlSelect tId msgs = do
+    let urls = V.fromList $ findUrls msgs
+        urlsWithIndexes = V.indexed urls
+    pushMode tId UrlSelect
+    csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
 
 stopUrlSelect :: TeamId -> MH ()
 stopUrlSelect = popMode
