@@ -24,7 +24,7 @@ import           Matterhorn.Util
 startUrlSelect :: TeamId -> MH ()
 startUrlSelect tId = do
     withCurrentChannel tId $ \_ chan -> do
-        let urls = V.fromList $ findUrls chan
+        let urls = V.fromList $ findUrls $ chan^.ccContents.cdMessages
             urlsWithIndexes = V.indexed urls
         pushMode tId UrlSelect
         csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
@@ -40,9 +40,9 @@ openSelectedURL tId = whenMode tId UrlSelect $ do
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)
     popMode tId
 
-findUrls :: ClientChannel -> [LinkChoice]
-findUrls chan =
-    let msgs = filterMessages (not . _mDeleted) $ chan^.ccContents.cdMessages
+findUrls :: Messages -> [LinkChoice]
+findUrls ms =
+    let msgs = filterMessages (not . _mDeleted) ms
     in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
 
 removeDuplicates :: [LinkChoice] -> [LinkChoice]
