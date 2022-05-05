@@ -20,4 +20,4 @@ showHelpScreen tId topic = do
         ShowHelp {} -> return ()
         _ -> do
             mh $ vScrollToBeginning (viewportScroll HelpViewport)
-            setMode tId $ ShowHelp topic curMode
+            pushMode tId $ ShowHelp topic

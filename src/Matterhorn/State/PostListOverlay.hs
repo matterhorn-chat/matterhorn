@@ -38,7 +38,7 @@ enterPostListMode tId contents msgs = do
       pId = mlatest >>= messagePostId
       cId = mlatest >>= \m -> m^.mChannelId
   csTeam(tId).tsPostListOverlay.postListSelected .= pId
-  setMode tId $ PostListOverlay contents
+  pushMode tId $ PostListOverlay contents
   case (pId, cId) of
     (Just p, Just c) -> asyncFetchMessagesSurrounding c p
     _ -> return ()
@@ -48,7 +48,7 @@ exitPostListMode :: TeamId -> MH ()
 exitPostListMode tId = do
   csTeam(tId).tsPostListOverlay.postListPosts .= emptyDirSeq
   csTeam(tId).tsPostListOverlay.postListSelected .= Nothing
-  setMode tId Main
+  popMode tId
 
 createPostList :: TeamId -> PostListContents -> (Session -> IO Posts) -> MH ()
 createPostList tId contentsType fetchOp = do

@@ -53,7 +53,7 @@ app = App
                   PostListOverlay _             -> Nothing
                   ManageAttachments             -> Nothing
                   ViewMessage                   -> Nothing
-                  ShowHelp _ _                  -> Nothing
+                  ShowHelp _                    -> Nothing
                   UrlSelect                     -> Nothing
                   EditNotifyPrefs               -> Nothing
   , appHandleEvent  = Events.onEvent

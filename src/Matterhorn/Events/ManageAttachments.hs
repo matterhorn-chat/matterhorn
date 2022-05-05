@@ -48,7 +48,7 @@ attachmentListKeybindings tId which = mkKeybindings (attachmentListKeyHandlers t
 attachmentListKeyHandlers :: TeamId -> Lens' ChatState EditState -> [KeyEventHandler]
 attachmentListKeyHandlers tId which =
     [ mkKb CancelEvent "Close attachment list" $
-          setMode tId Main
+          popMode tId
     , mkKb SelectUpEvent "Move cursor up" $
           mhHandleEventLensed (which.cedAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
     , mkKb SelectDownEvent "Move cursor down" $
@@ -156,8 +156,8 @@ cancelAttachmentBrowse :: TeamId -> Lens' ChatState EditState -> MH ()
 cancelAttachmentBrowse tId which = do
     es <- use (which.cedAttachmentList.L.listElementsL)
     case length es of
-        0 -> setMode tId Main
-        _ -> setMode tId ManageAttachments
+        0 -> popMode tId
+        _ -> replaceMode tId ManageAttachments
 
 handleFileBrowserEvent :: TeamId -> Lens' ChatState EditState -> V.Event -> MH ()
 handleFileBrowserEvent tId which e = do

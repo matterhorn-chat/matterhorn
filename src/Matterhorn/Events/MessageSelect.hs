@@ -32,9 +32,9 @@ onEventMessageSelect tId selWhich editWhich =
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
     deleteSelectedMessage tId (channelMessageSelect(tId)) (channelEditor(tId))
-    setMode tId Main
+    popMode tId
 onEventMessageSelectDeleteConfirm tId _ = do
-    setMode tId Main
+    popMode tId
 
 messageSelectKeybindings :: TeamId -> Lens' ChatState MessageSelectState -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
 messageSelectKeybindings tId selWhich editWhich = mkKeybindings (messageSelectKeyHandlers tId selWhich editWhich)
@@ -42,7 +42,7 @@ messageSelectKeybindings tId selWhich editWhich = mkKeybindings (messageSelectKe
 messageSelectKeyHandlers :: TeamId -> Lens' ChatState MessageSelectState -> Lens' ChatState EditState -> [KeyEventHandler]
 messageSelectKeyHandlers tId selWhich editWhich =
     [ mkKb CancelEvent "Cancel message selection" $ do
-        setMode tId Main
+        popMode tId
 
     , mkKb SelectUpEvent "Select the previous message" $ messageSelectUp tId selWhich
     , mkKb SelectDownEvent "Select the next message" $ messageSelectDown tId selWhich

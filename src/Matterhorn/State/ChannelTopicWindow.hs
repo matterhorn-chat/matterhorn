@@ -21,4 +21,4 @@ openChannelTopicWindow tId = do
         Nothing -> return ()
         Just topic -> do
             csTeam(tId).tsChannelTopicDialog .= newChannelTopicDialog tId topic
-            setMode tId ChannelTopicWindow
+            pushMode tId ChannelTopicWindow

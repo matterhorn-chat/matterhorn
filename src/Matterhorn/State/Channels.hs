@@ -970,12 +970,11 @@ startLeaveCurrentChannel tId = do
         case ch^.ccInfo.cdType of
             Direct -> hideDMChannel (ch^.ccInfo.cdChannelId)
             Group -> hideDMChannel (ch^.ccInfo.cdChannelId)
-            _ -> setMode tId LeaveChannelConfirm
+            _ -> pushMode tId LeaveChannelConfirm
 
 deleteCurrentChannel :: TeamId -> MH ()
 deleteCurrentChannel tId = do
     withCurrentChannel tId $ \cId _ -> do
-        setMode tId Main
         leaveChannelIfPossible cId True
 
 isCurrentChannel :: ChatState -> TeamId -> ChannelId -> Bool
@@ -1003,7 +1002,6 @@ joinChannel tId chanId = joinChannel' tId chanId Nothing
 
 joinChannel' :: TeamId -> ChannelId -> Maybe (MH ()) -> MH ()
 joinChannel' tId chanId act = do
-    setMode tId Main
     mChan <- preuse (csChannel(chanId))
     case mChan of
         Just _ -> do
@@ -1046,7 +1044,6 @@ changeChannelByName tId name = do
         if (_uiId <$> foundUser) == Just myId
         then return ()
         else do
-            setMode tId Main
             let err = mhError $ AmbiguousName name
             case (mCId, mDMCId) of
               (Nothing, Nothing) ->
@@ -1103,7 +1100,7 @@ beginCurrentChannelDeleteConfirm tId = do
     withCurrentChannel tId $ \_ chan -> do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
-            then setMode tId DeleteChannelConfirm
+            then pushMode tId DeleteChannelConfirm
             else mhError $ GenericError "Direct message channels cannot be deleted."
 
 updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()

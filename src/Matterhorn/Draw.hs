@@ -43,7 +43,7 @@ draw st =
                 ChannelSelect                -> mainLayers
                 MessageSelect                -> mainLayers
                 MessageSelectDeleteConfirm   -> mainLayers
-                ShowHelp topic _             -> drawShowHelp topic st
+                ShowHelp topic               -> drawShowHelp topic st
                 ThemeListOverlay             -> drawThemeListOverlay st tId : mainLayers
                 LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
                 DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome

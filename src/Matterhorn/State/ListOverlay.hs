@@ -44,7 +44,7 @@ listOverlayActivate tId which val = do
     handler <- use (which.listOverlayEnterHandler)
     activated <- handler val
     if activated
-       then setMode tId Main
+       then popMode tId
        else return ()
 
 -- | Get the current search string for the specified overlay.
@@ -67,11 +67,10 @@ exitListOverlay :: TeamId
                 -- ^ Which overlay to reset
                 -> MH ()
 exitListOverlay tId which = do
-    st <- use which
     newList <- use (which.listOverlayNewList)
     which.listOverlaySearchResults .= newList mempty
     which.listOverlayEnterHandler .= (const $ return False)
-    setMode tId (st^.listOverlayReturnMode)
+    popMode tId
 
 -- | Initialize a list overlay with the specified arguments and switch
 -- to the specified mode.
@@ -95,7 +94,7 @@ enterListOverlayMode tId which mode scope enterHandler fetcher = do
     which.listOverlaySearching .= False
     newList <- use (which.listOverlayNewList)
     which.listOverlaySearchResults .= newList mempty
-    setMode tId mode
+    pushMode tId mode
     resetListOverlaySearch which
 
 -- | Reset the overlay's search by initiating a new search request for

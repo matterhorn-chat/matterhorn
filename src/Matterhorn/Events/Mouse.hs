@@ -60,7 +60,6 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             whenMode tId Main $ do
                 resetReturnChannel tId
                 setFocus tId channelId
-                setMode tId Main
         ClickableTeamListEntry teamId ->
             -- We deliberately handle this event in all modes; this
             -- allows us to switch the UI to another team regardless of
@@ -104,7 +103,7 @@ urlListMouseHandler _ =
 
 channelSelectMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
 channelSelectMouseHandler tId (MouseDown (ChannelSelectEntry match) _ _ _) = do
-    setMode tId Main
+    popMode tId
     setFocus tId $ channelListEntryChannelId $ matchEntry match
 channelSelectMouseHandler _ _ =
     return ()

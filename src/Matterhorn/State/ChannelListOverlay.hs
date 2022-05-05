@@ -35,6 +35,7 @@ enterChannelListOverlayMode tId = do
 enterHandler :: TeamId -> Channel -> MH Bool
 enterHandler tId chan = do
     joinChannel tId (getId chan)
+    popMode tId
     return True
 
 fetchResults :: TeamId

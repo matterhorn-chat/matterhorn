@@ -389,7 +389,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
                       -- choice than allowing the user to perform select
                       -- actions on a message that isn't the one they just
                       -- selected.
-                      setMode tId Main
+                      popMode tId
                       channelMessageSelect(tId) .= MessageSelectState Nothing
 
                 -- Add a gap at each end of the newly fetched data, unless:
@@ -994,7 +994,7 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
                       joinChannel' tId cId (Just $ jumpToPost pId)
                   Just _ -> do
                       setFocus tId cId
-                      setMode tId MessageSelect
+                      pushMode tId MessageSelect
                       channelMessageSelect(tId) .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"

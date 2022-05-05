@@ -82,8 +82,7 @@ enterEditNotifyPrefsMode tId =
             let props = chan^.ccInfo.cdNotifyProps
             user <- use csMe
             csTeam(tId).tsNotifyPrefs .= (Just (notifyPrefsForm tId (userNotifyProps user) props))
-            setMode tId EditNotifyPrefs
+            pushMode tId EditNotifyPrefs
 
 exitEditNotifyPrefsMode :: TeamId -> MH ()
-exitEditNotifyPrefsMode tId = do
-    setMode tId Main
+exitEditNotifyPrefsMode = popMode

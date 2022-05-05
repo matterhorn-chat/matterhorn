@@ -34,7 +34,7 @@ openSaveAttachmentWindow tId = do
                         info <- mmGetMetadataForFile fId session
                         return $ Just $ do
                             csTeam(tId).tsSaveAttachmentDialog .= newSaveAttachmentDialog tId (fileInfoName info)
-                            setMode tId $ SaveAttachmentWindow link
+                            pushMode tId $ SaveAttachmentWindow link
                 _ ->
                     -- The selected link is not for an attachment.
                     return ()

@@ -219,7 +219,7 @@ teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode =
     case mode of
         Main                       -> onEventMain tId
-        ShowHelp _ _               -> void . onEventShowHelp tId
+        ShowHelp _                 -> void . onEventShowHelp tId
         ChannelSelect              -> void . onEventChannelSelect tId
         UrlSelect                  -> void . onEventUrlSelect tId
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId

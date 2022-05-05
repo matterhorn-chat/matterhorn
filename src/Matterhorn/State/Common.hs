@@ -241,7 +241,7 @@ openWithOpener getTarget = do
 
                                 return $ case st^.csCurrentTeamId of
                                     Nothing -> st
-                                    Just tId -> setMode' tId Main st
+                                    Just tId -> pushMode' tId Main st
 
 runInteractiveCommand :: String
                       -> [String]

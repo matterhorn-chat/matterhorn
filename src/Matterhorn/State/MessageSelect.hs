@@ -85,7 +85,7 @@ beginMessageSelect tId which = do
             recentMsg = getLatestSelectableMessage chanMsgs
 
         when (isJust recentMsg) $ do
-            setMode tId MessageSelect
+            pushMode tId MessageSelect
             which .= MessageSelectState (recentMsg >>= _mMessageId)
 
 -- | Tell the server that the message we currently have selected
@@ -135,15 +135,15 @@ copyPostLink tId which = do
         baseUrl <- getServerBaseUrl tId
         let pId = fromJust (messageIdPostId =<< _mMessageId msg)
         copyToClipboard $ makePermalink baseUrl pId
-        setMode tId Main
+        popMode tId
     _ -> return ()
 
 viewMessage :: TeamId -> Message -> MH ()
 viewMessage tId m = do
-    let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) MessageSelect (78, 25)
+    let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) (78, 25)
     csTeam(tId).tsViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w
-    setMode tId ViewMessage
+    pushMode tId ViewMessage
 
 yankSelectedMessageVerbatim :: TeamId -> SimpleGetter ChatState MessageSelectState -> MH ()
 yankSelectedMessageVerbatim tId which = do
@@ -151,7 +151,7 @@ yankSelectedMessageVerbatim tId which = do
     case selectedMessage of
         Nothing -> return ()
         Just m -> do
-            setMode tId Main
+            popMode tId
             case findVerbatimChunk (m^.mText) of
                 Just txt -> copyToClipboard txt
                 Nothing  -> return ()
@@ -162,7 +162,7 @@ yankSelectedMessage tId which = do
     case selectedMessage of
         Nothing -> return ()
         Just m -> do
-            setMode tId Main
+            popMode tId
             copyToClipboard $ m^.mMarkdownSource
 
 openSelectedMessageURLs :: TeamId -> SimpleGetter ChatState MessageSelectState -> MH ()
@@ -182,7 +182,7 @@ beginConfirmDeleteSelectedMessage tId which = do
     selected <- use (to (getSelectedMessage tId which))
     case selected of
         Just msg | isDeletable msg && isMine st msg ->
-            setMode tId MessageSelectDeleteConfirm
+            pushMode tId MessageSelectDeleteConfirm
         _ -> return ()
 
 messageSelectUp :: TeamId -> Lens' ChatState MessageSelectState -> MH ()
@@ -262,7 +262,7 @@ deleteSelectedMessage tId selWhich editWhich = do
                           (\s _ -> MM.mmDeletePost (postId p) s)
                           (\_ _ -> Just $ do
                               editWhich.cedEditMode .= NewPost
-                              setMode tId Main)
+                              popMode tId)
                   Nothing -> return ()
             _ -> return ()
 
@@ -273,7 +273,7 @@ beginReplyCompose tId selWhich editWhich = do
         Just msg | isReplyable msg -> do
             rootMsg <- getReplyRootMessage msg
             let p = fromJust $ rootMsg^.mOriginalPost
-            setMode tId Main
+            popMode tId
             editWhich.cedEditMode .= Replying rootMsg p
         _ -> return ()
 
@@ -284,7 +284,7 @@ beginEditMessage tId selWhich editWhich = do
     case selected of
         Just msg | isMine st msg && isEditable msg -> do
             let p = fromJust $ msg^.mOriginalPost
-            setMode tId Main
+            popMode tId
             editWhich.cedEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need
             -- to strip the formatting because that's only there to

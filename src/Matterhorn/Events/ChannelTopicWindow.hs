@@ -30,16 +30,16 @@ onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
             ed <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
             let topic = T.unlines $ getEditContents ed
             setChannelTopic tId topic
-            setMode tId Main
+            popMode tId
         Just (ChannelTopicEditor {}) ->
             mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent e
         Just (ChannelTopicCancelButton {}) ->
-            setMode tId Main
+            popMode tId
         _ ->
-            setMode tId Main
+            popMode tId
 onEventChannelTopicWindow tId (Vty.EvKey Vty.KEsc []) = do
-    setMode tId Main
+    popMode tId
 onEventChannelTopicWindow tId e = do
     f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of

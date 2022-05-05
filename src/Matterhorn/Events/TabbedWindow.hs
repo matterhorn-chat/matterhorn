@@ -47,9 +47,8 @@ tabbedWindowKeyHandlers :: (Show a, Eq a)
                         -> Lens' ChatState (TabbedWindow a)
                         -> [KeyEventHandler]
 tabbedWindowKeyHandlers tId target =
-    [ mkKb CancelEvent "Close window" $ do
-        w <- use target
-        setMode tId (twReturnMode w)
+    [ mkKb CancelEvent "Close window" $
+        popMode tId
 
     , mkKb SelectNextTabEvent "Select next tab" $ do
         w' <- tabbedWindowNextTab =<< use target

@@ -196,8 +196,10 @@ module Matterhorn.Types
   , csMe
   , timeZone
   , whenMode
-  , setMode
-  , setMode'
+  , pushMode
+  , pushMode'
+  , popMode
+  , replaceMode
 
   , EditState
   , emptyEditStateForTeam
@@ -248,7 +250,6 @@ module Matterhorn.Types
   , listOverlayNewList
   , listOverlayFetchResults
   , listOverlayRecordCount
-  , listOverlayReturnMode
 
   , getUsers
 
@@ -414,7 +415,7 @@ import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
-                                     , (%=), (.~), _Just, Traversal', to
+                                     , (%=), (%~), (.~), _Just, Traversal', to
                                      , SimpleGetter
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
@@ -1379,7 +1380,7 @@ data PostListContents =
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
-    | ShowHelp HelpTopic Mode
+    | ShowHelp HelpTopic
     | ChannelSelect
     | UrlSelect
     | LeaveChannelConfirm
@@ -1446,8 +1447,6 @@ data TabbedWindowTemplate a =
 data TabbedWindow a =
     TabbedWindow { twValue :: a
                  -- ^ The handle of the currently-selected tab.
-                 , twReturnMode :: Mode
-                 -- ^ The mode to return to when the tab is closed.
                  , twTemplate :: TabbedWindowTemplate a
                  -- ^ The template to use as a basis for rendering the
                  -- window and handling user input.
@@ -1468,13 +1467,10 @@ tabbedWindow :: (Show a, Eq a)
              -- selected initially.
              -> TabbedWindowTemplate a
              -- ^ The template for the window to construct.
-             -> Mode
-             -- ^ When the window is closed, return to this application
-             -- mode.
              -> (Int, Int)
              -- ^ The window dimensions (width, height).
              -> TabbedWindow a
-tabbedWindow initialVal t retMode (width, height) =
+tabbedWindow initialVal t (width, height) =
     let handles = tweValue <$> twtEntries t
     in if | null handles ->
               error "BUG: tabbed window template must provide at least one entry"
@@ -1486,7 +1482,6 @@ tabbedWindow initialVal t retMode (width, height) =
           | otherwise ->
               TabbedWindow { twTemplate = t
                            , twValue = initialVal
-                           , twReturnMode = retMode
                            , twWindowWidth = width
                            , twWindowHeight = height
                            }
@@ -1697,6 +1692,13 @@ data TeamState =
               -- ^ The current application mode when viewing this team.
               -- This is used to dispatch to different rendering and
               -- event handling routines.
+              , _tsModeStack :: [Mode]
+              -- ^ The rest of the mode stack for this team. The current
+              -- mode is always in tsMode; "popping" off the stack
+              -- means replacing tsMode with the head of this list,
+              -- unless this list is empty, in which case the pop does
+              -- nothing. Pushing means pushing tsMode onto this list
+              -- and replacing tsMode.
               , _tsReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
               -- ^ The state of the reaction emoji list overlay.
               , _tsThemeListOverlay :: ListOverlayState InternalTheme ()
@@ -1778,6 +1780,7 @@ newTeamState :: Config
 newTeamState config team chanList spellChecker =
     let tId = teamId team
     in TeamState { _tsMode                     = Main
+                 , _tsModeStack                = []
                  , _tsFocus                    = chanList
                  , _tsEditState                = emptyEditStateForTeam tId
                  , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
@@ -1832,7 +1835,6 @@ nullChannelListOverlayState tId =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = Main
                         }
 
 nullThemeListOverlayState :: TeamId -> ListOverlayState InternalTheme ()
@@ -1846,7 +1848,6 @@ nullThemeListOverlayState tId =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = Main
                         }
 
 nullUserListOverlayState :: TeamId -> ListOverlayState UserInfo UserSearchScope
@@ -1860,7 +1861,6 @@ nullUserListOverlayState tId =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = Main
                         }
 
 nullEmojiListOverlayState :: TeamId -> ListOverlayState (Bool, T.Text) ()
@@ -1874,7 +1874,6 @@ nullEmojiListOverlayState tId =
                         , _listOverlayNewList        = newList
                         , _listOverlayFetchResults   = const $ const $ const $ return mempty
                         , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = MessageSelect
                         }
 
 -- | The state of channel selection mode.
@@ -1931,8 +1930,6 @@ data ListOverlayState a b =
                      -- to the server.
                      , _listOverlayRecordCount :: Maybe Int
                      -- ^ The total number of available records, if known.
-                     , _listOverlayReturnMode :: Mode
-                     -- ^ The mode to return to when the window closes.
                      }
 
 -- | The scope for searching for users in a user list overlay.
@@ -2279,13 +2276,29 @@ whenMode tId m act = do
     curMode <- use (csTeam(tId).tsMode)
     when (curMode == m) act
 
-setMode :: TeamId -> Mode -> MH ()
-setMode tId m = do
-    csTeam(tId).tsMode .= m
+pushMode :: TeamId -> Mode -> MH ()
+pushMode tId m = do
+    St.modify (pushMode' tId m)
     mh invalidateCache
 
-setMode' :: TeamId -> Mode -> ChatState -> ChatState
-setMode' tId m = csTeam(tId).tsMode .~ m
+replaceMode :: TeamId -> Mode -> MH ()
+replaceMode tId m = popMode tId >> pushMode tId m
+
+popMode :: TeamId -> MH ()
+popMode tId = do
+    curStack <- use (csTeam(tId).tsModeStack)
+    case curStack of
+        [] -> return ()
+        (m:ms) -> do
+            csTeam(tId).tsMode .= m
+            csTeam(tId).tsModeStack .= ms
+            mh invalidateCache
+
+pushMode' :: TeamId -> Mode -> ChatState -> ChatState
+pushMode' tId m st =
+    let cur = st^.csTeam(tId).tsMode
+    in st & csTeam(tId).tsMode .~ m
+          & csTeam(tId).tsModeStack %~ (cur:)
 
 resetSpellCheckTimer :: GlobalEditState -> IO ()
 resetSpellCheckTimer s =

@@ -17,5 +17,5 @@ onEventLeaveChannelConfirm tId (Vty.EvKey k []) = do
         Vty.KChar c | c `elem` ("yY"::String) ->
             leaveCurrentChannel tId
         _ -> return ()
-    setMode tId Main
+    popMode tId
 onEventLeaveChannelConfirm _ _ = return ()

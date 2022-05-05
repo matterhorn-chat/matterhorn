@@ -36,10 +36,10 @@ channelSelectKeyHandlers tId =
              case Z.focus matches of
                  Nothing -> return ()
                  Just match -> do
-                     setMode tId Main
+                     popMode tId
                      setFocus tId $ channelListEntryChannelId $ matchEntry match
 
-    , mkKb CancelEvent "Cancel channel selection" $ setMode tId Main
+    , mkKb CancelEvent "Cancel channel selection" $ popMode tId
     , mkKb NextChannelEvent "Select next match" $ channelSelectNext tId
     , mkKb PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
     , mkKb NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId

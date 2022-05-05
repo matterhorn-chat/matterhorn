@@ -465,7 +465,6 @@ replyToLatestMessage tId which = do
         case findLatestUserMessage isReplyable msgs of
           Just msg | isReplyable msg ->
               do rootMsg <- getReplyRootMessage msg
-                 setMode tId Main
                  mh $ invalidateCacheEntry $ ChannelMessages cId
                  which.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
           _ -> return ()

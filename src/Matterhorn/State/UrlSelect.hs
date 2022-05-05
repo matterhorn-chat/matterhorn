@@ -26,12 +26,11 @@ startUrlSelect tId = do
     withCurrentChannel tId $ \_ chan -> do
         let urls = V.fromList $ findUrls chan
             urlsWithIndexes = V.indexed urls
-        setMode tId UrlSelect
+        pushMode tId UrlSelect
         csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
 
 stopUrlSelect :: TeamId -> MH ()
-stopUrlSelect tId = do
-    setMode tId Main
+stopUrlSelect = popMode
 
 openSelectedURL :: TeamId -> MH ()
 openSelectedURL tId = whenMode tId UrlSelect $ do
@@ -39,7 +38,7 @@ openSelectedURL tId = whenMode tId UrlSelect $ do
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)
-    setMode tId Main
+    popMode tId
 
 findUrls :: ClientChannel -> [LinkChoice]
 findUrls chan =

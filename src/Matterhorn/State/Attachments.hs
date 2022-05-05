@@ -48,7 +48,7 @@ showAttachmentList tId which m = do
     lst <- use (which.cedAttachmentList)
     case length (L.listElements lst) of
         0 -> showAttachmentFileBrowser tId which m
-        _ -> setMode tId ManageAttachments
+        _ -> pushMode tId ManageAttachments
 
 resetAttachmentList :: TeamId -> Lens' ChatState EditState -> MH ()
 resetAttachmentList tId which = do
@@ -62,7 +62,7 @@ showAttachmentFileBrowser tId which m = do
     filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
     which.cedFileBrowser .= browser
-    setMode tId m
+    pushMode tId m
 
 attachFileByPath :: TeamId -> Lens' ChatState EditState -> Text -> MH ()
 attachFileByPath tId which txtPath = do
@@ -101,7 +101,7 @@ tryAddAttachment tId which entries = do
                             which.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
                         Left e -> mhError $ AttachmentException e
 
-    when (not $ null entries) $ setMode tId Main
+    when (not $ null entries) $ popMode tId
 
 tryReadAttachment :: FB.FileInfo -> MH (Either E.SomeException AttachmentData)
 tryReadAttachment fi = do
