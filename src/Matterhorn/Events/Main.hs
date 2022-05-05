@@ -40,7 +40,7 @@ onEventMain tId =
                       fallback2 e
                   Just cId -> do
                       void $ handleKeyboardEvent (messageListingKeybindings tId (channelMessageSelect(tId))
-                                                  (csChannelMessages(cId)) (ChannelMessageSelect cId)) fallback2 e
+                                                  (csChannelMessages(cId)) (Just $ FromChannel tId cId) (ChannelMessageSelect cId)) fallback2 e
       void $ handleKeyboardEvent (channelEditorKeybindings tId (channelEditor(tId))) fallback ev
   )
 
@@ -50,11 +50,12 @@ mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 messageListingKeybindings :: TeamId
                           -> Lens' ChatState MessageSelectState
                           -> Traversal' ChatState Messages
+                          -> Maybe URLListSource
                           -> Mode
                           -> KeyConfig
                           -> KeyHandlerMap
-messageListingKeybindings tId selWhich msgsWhich m =
-    mkKeybindings (messageListingKeyHandlers tId selWhich msgsWhich m)
+messageListingKeybindings tId selWhich msgsWhich urlSrc m =
+    mkKeybindings (messageListingKeyHandlers tId selWhich msgsWhich urlSrc m)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
@@ -184,9 +185,10 @@ channelEditorKeyHandlers tId editWhich =
 messageListingKeyHandlers :: TeamId
                           -> Lens' ChatState MessageSelectState
                           -> Traversal' ChatState Messages
+                          -> Maybe URLListSource
                           -> Mode
                           -> [KeyEventHandler]
-messageListingKeyHandlers tId selWhich msgsWhich m =
+messageListingKeyHandlers tId selWhich msgsWhich urlSrc m =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
         beginMessageSelect tId selWhich msgsWhich m
@@ -199,5 +201,5 @@ messageListingKeyHandlers tId selWhich msgsWhich m =
         messageSelectFirst selWhich msgsWhich
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startUrlSelect tId msgsWhich
+        startUrlSelect tId msgsWhich urlSrc
     ]

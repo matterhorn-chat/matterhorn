@@ -446,7 +446,7 @@ keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk <>
-                         messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk modeThunk)
+                         messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing modeThunk)
     , ("Message Editor", channelEditorKeyHandlers teamIdThunk editWhichThunk)
     , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)

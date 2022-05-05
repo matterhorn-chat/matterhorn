@@ -28,6 +28,10 @@ module Matterhorn.Types
   , runTabShowHandlerFor
   , getServerBaseUrl
   , serverBaseUrl
+  , URLListSource(..)
+  , URLList(..)
+  , ulList
+  , ulSource
   , TabbedWindow(..)
   , TabbedWindowEntry(..)
   , TabbedWindowTemplate(..)
@@ -1628,6 +1632,15 @@ data ChatState =
               -- startup/shutdown disk file management API.
               }
 
+data URLList =
+    URLList { _ulList :: List Name (Int, LinkChoice)
+            , _ulSource :: Maybe URLListSource
+            }
+
+data URLListSource =
+    FromChannel TeamId ChannelId
+    deriving (Show, Eq)
+
 -- | All application state specific to a team, along with state specific
 -- to our user interface's presentation of that team. We include the
 -- UI state relevant to the team so that we can easily switch which
@@ -1663,7 +1676,7 @@ data TeamState =
               , _tsChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
-              , _tsUrlList :: List Name (Int, LinkChoice)
+              , _tsUrlList :: URLList
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
               , _tsViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
@@ -1787,7 +1800,9 @@ newTeamState config team chanList spellChecker =
                  , _tsEditState                = emptyEditStateForTeam tId
                  , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
                  , _tsTeam                     = team
-                 , _tsUrlList                  = list (UrlList tId) mempty 2
+                 , _tsUrlList                  = URLList { _ulList = list (UrlList tId) mempty 2
+                                                         , _ulSource = Nothing
+                                                         }
                  , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
                  , _tsUserListOverlay          = nullUserListOverlayState tId
                  , _tsChannelListOverlay       = nullChannelListOverlayState tId
@@ -2205,6 +2220,7 @@ makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 makeLenses ''SaveAttachmentDialogState
+makeLenses ''URLList
 Brick.suffixLenses ''Config
 
 applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState

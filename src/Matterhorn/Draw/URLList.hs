@@ -41,27 +41,24 @@ drawUrlSelectWindow st tId =
 
 renderUrlList :: ChatState -> TeamId -> Widget Name
 renderUrlList st tId =
-    case st^.csCurrentChannelId(tId) of
-        Nothing -> emptyWidget
-        Just cId ->
-            case st^?csChannel(cId) of
-                Nothing -> emptyWidget
-                Just ch -> renderUrlList' st tId ch
-
-renderUrlList' :: ChatState -> TeamId -> ClientChannel -> Widget Name
-renderUrlList' st tId chan =
     header <=> urlDisplay
     where
-        cName = mkChannelName st (chan^.ccInfo)
-        header = (withDefAttr channelHeaderAttr $ vLimit 1 $
-                 (renderText' Nothing "" hSet Nothing $ "URLs: " <> cName) <+>
-                 fill ' ') <=> hBorder
+        header = maybe emptyWidget headerFromSrc src
+        headerFromSrc (FromChannel _ cId) =
+            case st^?csChannel(cId) of
+                Nothing -> emptyWidget
+                Just chan ->
+                    let cName = mkChannelName st (chan^.ccInfo)
+                    in (withDefAttr channelHeaderAttr $ vLimit 1 $
+                           (renderText' Nothing "" hSet Nothing $ "URLs: " <> cName) <+>
+                           fill ' ') <=> hBorder
 
         urlDisplay = if F.length urls == 0
                      then str "No URLs found in this channel."
                      else renderList renderItem True urls
 
-        urls = st^.csTeam(tId).tsUrlList
+        urls = st^.csTeam(tId).tsUrlList.ulList
+        src = st^.csTeam(tId).tsUrlList.ulSource
 
         me = myUsername st
 
@@ -97,7 +94,7 @@ renderUrlList' st tId chan =
 
 urlSelectBottomBar :: ChatState -> TeamId -> Widget Name
 urlSelectBottomBar st tId =
-    case listSelectedElement $ st^.csTeam(tId).tsUrlList of
+    case listSelectedElement $ st^.csTeam(tId).tsUrlList.ulList of
         Nothing -> hBorder
         Just (_, (_, link)) ->
             let options = [ ( isFile

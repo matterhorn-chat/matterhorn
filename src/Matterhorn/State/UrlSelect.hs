@@ -22,20 +22,22 @@ import           Matterhorn.Types
 import           Matterhorn.Util
 
 
-startUrlSelect :: TeamId -> Traversal' ChatState Messages -> MH ()
-startUrlSelect tId which = do
+startUrlSelect :: TeamId -> Traversal' ChatState Messages -> Maybe URLListSource -> MH ()
+startUrlSelect tId which src = do
     msgs <- use which
     let urls = V.fromList $ findUrls msgs
         urlsWithIndexes = V.indexed urls
     pushMode tId UrlSelect
-    csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
+    csTeam(tId).tsUrlList .= URLList { _ulList = listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2
+                                     , _ulSource = src
+                                     }
 
 stopUrlSelect :: TeamId -> MH ()
 stopUrlSelect = popMode
 
 openSelectedURL :: TeamId -> MH ()
 openSelectedURL tId = whenMode tId UrlSelect $ do
-    selected <- use (csTeam(tId).tsUrlList.to listSelectedElement)
+    selected <- use (csTeam(tId).tsUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)

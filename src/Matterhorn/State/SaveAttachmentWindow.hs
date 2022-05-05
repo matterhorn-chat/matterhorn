@@ -23,7 +23,7 @@ import           Matterhorn.State.Common
 -- otherwise does nothing.
 openSaveAttachmentWindow :: TeamId -> MH ()
 openSaveAttachmentWindow tId = do
-    selected <- use (csTeam(tId).tsUrlList.to listSelectedElement)
+    selected <- use (csTeam(tId).tsUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) ->
