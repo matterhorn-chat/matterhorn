@@ -717,9 +717,9 @@ inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessage
 userInputArea :: ChatState -> Mode -> TeamId -> HighlightSet -> Widget Name
 userInputArea st mode tId hs =
     case mode of
-        ChannelSelect -> renderChannelSelectPrompt st tId
+        ChannelSelect ->              renderChannelSelectPrompt st tId
         MessageSelectDeleteConfirm -> renderDeleteConfirm
-        _             -> renderUserCommandBox st tId hs
+        _             ->              renderUserCommandBox st tId hs
 
 renderDeleteConfirm :: Widget Name
 renderDeleteConfirm =
