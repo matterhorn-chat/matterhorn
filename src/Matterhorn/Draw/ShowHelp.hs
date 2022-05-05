@@ -445,11 +445,12 @@ keybindSections :: [(Text, [KeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
-    , ("Main Interface", mainKeyHandlers teamIdThunk)
-    , ("Message Editor", channelEditorKeyHandlers teamIdThunk selWhichThunk editWhichThunk)
+    , ("Main Interface", mainKeyHandlers teamIdThunk <>
+                         messageSelectStartKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk modeThunk)
+    , ("Message Editor", channelEditorKeyHandlers teamIdThunk editWhichThunk)
     , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
-    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk selWhichThunk editWhichThunk)
+    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk editWhichThunk)
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
@@ -477,6 +478,12 @@ editWhichThunk = error "BUG: should not evaluate editWhichThunk"
 
 selWhichThunk :: Lens' ChatState MessageSelectState
 selWhichThunk = error "BUG: should not evaluate selWhichThunk"
+
+msgsWhichThunk :: Lens' ChatState Messages
+msgsWhichThunk = error "BUG: should not evaluate msgsWhichThunk"
+
+modeThunk :: Mode
+modeThunk = error "BUG: should not evaluate modeThunk"
 
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =

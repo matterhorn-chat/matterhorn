@@ -31,6 +31,12 @@ data SeqDirection dir => DirectionalSeq dir a =
     DSeq { dseq :: Seq a }
          deriving (Show, Functor, Foldable, Traversable)
 
+instance Semigroup (DirectionalSeq dir a) where
+    (DSeq a) <> (DSeq b) = DSeq (a <> b)
+
+instance Monoid (DirectionalSeq dir a) where
+    mempty = DSeq mempty
+
 emptyDirSeq :: DirectionalSeq dir a
 emptyDirSeq = DSeq mempty
 

@@ -24,7 +24,7 @@ import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL
 import           Data.Time.Calendar ( fromGregorian )
 import           Data.Time.Clock ( UTCTime(..) )
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding, Lens' )
+import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding, Lens', Traversal' )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
                                           , ServerTime(..), UserId, TeamId, teamDisplayName
@@ -408,7 +408,7 @@ renderCurrentChannelDisplay st tId hs = header <=> hBorder <=> messages
             Nothing -> fill ' '
             Just cId ->
                 case st^.csTeam(tId).tsMode of
-                MessageSelect ->
+                MessageSelect _ ->
                     freezeBorders $
                     renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
                 MessageSelectDeleteConfirm ->
@@ -602,9 +602,13 @@ urlSelectBottomBar st tId =
                     , hBorder
                     ]
 
-messageSelectBottomBar :: ChatState -> TeamId -> Lens' ChatState MessageSelectState -> Widget Name
-messageSelectBottomBar st tId which =
-    case getSelectedMessage tId which st of
+messageSelectBottomBar :: ChatState
+                       -> TeamId
+                       -> Lens' ChatState MessageSelectState
+                       -> Traversal' ChatState Messages
+                       -> Widget Name
+messageSelectBottomBar st tId selWhich msgsWhich =
+    case getSelectedMessage tId selWhich msgsWhich st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
@@ -620,7 +624,7 @@ messageSelectBottomBar st tId which =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId which (channelEditor(tId)))
+                ev = keyEventBindings st (messageSelectKeybindings tId selWhich msgsWhich (channelEditor(tId)))
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent
@@ -835,7 +839,8 @@ mainInterface st mtId =
 
     bottomBorder tId hs =
         case st^.csTeam(tId).tsMode of
-            MessageSelect -> messageSelectBottomBar st tId (channelMessageSelect(tId))
+            MessageSelect cId ->
+                messageSelectBottomBar st tId (channelMessageSelect(tId)) (csChannelMessages(cId))
             UrlSelect -> urlSelectBottomBar st tId
             SaveAttachmentWindow {} -> urlSelectBottomBar st tId
             _ -> maybeSubdue tId $ hBox

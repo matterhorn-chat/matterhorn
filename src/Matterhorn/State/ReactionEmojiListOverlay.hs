@@ -20,39 +20,29 @@ import qualified Data.Map as M
 import qualified Data.Set as Set
 import           Data.Function ( on )
 import           Data.List ( nubBy )
-import           Lens.Micro.Platform ( to, SimpleGetter )
 
 import           Network.Mattermost.Types
 
 import           Matterhorn.Emoji
 import           Matterhorn.State.ListOverlay
-import           Matterhorn.State.MessageSelect
 import           Matterhorn.Types
 import           Matterhorn.State.Reactions ( updateReaction )
 
 
-enterReactionEmojiListOverlayMode :: TeamId -> SimpleGetter ChatState MessageSelectState -> MH ()
-enterReactionEmojiListOverlayMode tId which = do
-    selectedMessage <- use (to (getSelectedMessage tId which))
-    case selectedMessage of
-        Nothing -> return ()
-        Just msg -> do
-            em <- use (csResources.crEmoji)
-            myId <- gets myUserId
-            enterListOverlayMode tId (csTeam(tId).tsReactionEmojiListOverlay) ReactionEmojiListOverlay
-                () (enterHandler tId which) (fetchResults myId msg em)
+enterReactionEmojiListOverlayMode :: TeamId -> Message -> MH ()
+enterReactionEmojiListOverlayMode tId msg = do
+    em <- use (csResources.crEmoji)
+    myId <- gets myUserId
+    enterListOverlayMode tId (csTeam(tId).tsReactionEmojiListOverlay) ReactionEmojiListOverlay
+        () (enterHandler msg) (fetchResults myId msg em)
 
-enterHandler :: TeamId -> SimpleGetter ChatState MessageSelectState -> (Bool, T.Text) -> MH Bool
-enterHandler tId which (mine, e) = do
-    selectedMessage <- use (to (getSelectedMessage tId which))
-    case selectedMessage of
+enterHandler :: Message -> (Bool, T.Text) -> MH Bool
+enterHandler msg (mine, e) = do
+    case msg^.mOriginalPost of
         Nothing -> return False
-        Just m -> do
-            case m^.mOriginalPost of
-                Nothing -> return False
-                Just p -> do
-                    updateReaction (postId p) e (not mine)
-                    return True
+        Just p -> do
+            updateReaction (postId p) e (not mine)
+            return True
 
 fetchResults :: UserId
              -- ^ My user ID, so we can see which reactions I haven't

@@ -8,7 +8,7 @@ import           Matterhorn.Prelude
 import           Brick.Main ( viewportScroll, vScrollBy )
 import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens' )
+import           Lens.Micro.Platform ( Lens', Traversal' )
 
 import           Network.Mattermost.Types ( TeamId )
 
@@ -29,15 +29,32 @@ onEventMain :: TeamId -> Vty.Event -> MH ()
 onEventMain tId =
   void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
       let fallback e = do
-              resetReturnChannel tId
-              case e of
-                  (Vty.EvPaste bytes) -> handlePaste (channelEditor(tId)) bytes
-                  _ -> handleEditingInput tId (channelEditor(tId)) e
-      void $ handleKeyboardEvent (channelEditorKeybindings tId (channelMessageSelect(tId)) (channelEditor(tId))) fallback ev
+              mCid <- use (csCurrentChannelId(tId))
+              let fallback2 e2 = do
+                      resetReturnChannel tId
+                      case e of
+                          (Vty.EvPaste bytes) -> handlePaste (channelEditor(tId)) bytes
+                          _ -> handleEditingInput tId (channelEditor(tId)) e2
+              case mCid of
+                  Nothing ->
+                      fallback2 e
+                  Just cId -> do
+                      void $ handleKeyboardEvent (messageSelectStartKeybindings tId (channelMessageSelect(tId))
+                                                  (csChannelMessages(cId)) (MessageSelect cId)) fallback2 e
+      void $ handleKeyboardEvent (channelEditorKeybindings tId (channelEditor(tId))) fallback ev
   )
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
+
+messageSelectStartKeybindings :: TeamId
+                              -> Lens' ChatState MessageSelectState
+                              -> Traversal' ChatState Messages
+                              -> Mode
+                              -> KeyConfig
+                              -> KeyHandlerMap
+messageSelectStartKeybindings tId selWhich msgsWhich m =
+    mkKeybindings (messageSelectStartKeyHandlers tId selWhich msgsWhich m)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
@@ -122,11 +139,17 @@ mainKeyHandlers tId =
                  False -> channelHistoryForward tId
     ]
 
-channelEditorKeybindings :: TeamId -> Lens' ChatState MessageSelectState -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
-channelEditorKeybindings tId selWhich editWhich = mkKeybindings (channelEditorKeyHandlers tId selWhich editWhich)
+channelEditorKeybindings :: TeamId
+                         -> Lens' ChatState EditState
+                         -> KeyConfig
+                         -> KeyHandlerMap
+channelEditorKeybindings tId editWhich =
+    mkKeybindings (channelEditorKeyHandlers tId editWhich)
 
-channelEditorKeyHandlers :: TeamId -> Lens' ChatState MessageSelectState -> Lens' ChatState EditState -> [KeyEventHandler]
-channelEditorKeyHandlers tId selWhich editWhich =
+channelEditorKeyHandlers :: TeamId
+                         -> Lens' ChatState EditState
+                         -> [KeyEventHandler]
+channelEditorKeyHandlers tId editWhich =
     [ mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
            toggleMultilineEditing editWhich
 
@@ -161,15 +184,22 @@ channelEditorKeyHandlers tId selWhich editWhich =
                      withCurrentChannel tId $ \cId _ -> do
                          content <- getEditorContent editWhich
                          handleInputSubmission tId editWhich cId content
+    ]
 
-    , mkKb EnterSelectModeEvent
+messageSelectStartKeyHandlers :: TeamId
+                              -> Lens' ChatState MessageSelectState
+                              -> Traversal' ChatState Messages
+                              -> Mode
+                              -> [KeyEventHandler]
+messageSelectStartKeyHandlers tId selWhich msgsWhich m =
+    [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
-        beginMessageSelect tId selWhich
+        beginMessageSelect tId selWhich msgsWhich m
 
     , mkKb PageUpEvent "Page up in the message list (enters message select mode)" $ do
-             beginMessageSelect tId selWhich
+        beginMessageSelect tId selWhich msgsWhich m
 
     , mkKb SelectOldestMessageEvent "Scroll to top of message list" $ do
-             beginMessageSelect tId selWhich
-             messageSelectFirst tId selWhich
+        beginMessageSelect tId selWhich msgsWhich m
+        messageSelectFirst selWhich msgsWhich
     ]

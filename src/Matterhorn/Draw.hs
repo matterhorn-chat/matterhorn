@@ -41,7 +41,7 @@ draw st =
                 Main                         -> mainLayers
                 UrlSelect                    -> mainLayers
                 ChannelSelect                -> mainLayers
-                MessageSelect                -> mainLayers
+                MessageSelect _              -> mainLayers
                 MessageSelectDeleteConfirm   -> mainLayers
                 ShowHelp topic               -> drawShowHelp topic st
                 ThemeListOverlay             -> drawThemeListOverlay st tId : mainLayers

@@ -968,7 +968,7 @@ asyncFetchAttachments p = do
                 | otherwise =
                     m
         return $ Just $ do
-            csChannel(cId).ccContents.cdMessages.traversed %= addAttachment
+            csChannelMessages(cId).traversed %= addAttachment
             mh $ do
                 invalidateCacheEntry $ ChannelMessages cId
                 invalidateCacheEntry $ RenderedMessage $ MessagePostId pId
@@ -994,7 +994,7 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
                       joinChannel' tId cId (Just $ jumpToPost pId)
                   Just _ -> do
                       setFocus tId cId
-                      pushMode tId MessageSelect
+                      pushMode tId $ MessageSelect cId
                       channelMessageSelect(tId) .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"

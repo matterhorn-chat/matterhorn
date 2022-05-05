@@ -190,6 +190,7 @@ module Matterhorn.Types
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
+  , csChannelMessages
   , csChannels
   , csClientConfig
   , csInputHistory
@@ -1385,7 +1386,7 @@ data Mode =
     | UrlSelect
     | LeaveChannelConfirm
     | DeleteChannelConfirm
-    | MessageSelect
+    | MessageSelect ChannelId
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay
@@ -2374,6 +2375,10 @@ entryIsDMEntry e =
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
     csChannels . channelByIdL cId
+
+csChannelMessages :: ChannelId -> Traversal' ChatState Messages
+csChannelMessages cId =
+    csChannel(cId).ccContents.cdMessages
 
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()
