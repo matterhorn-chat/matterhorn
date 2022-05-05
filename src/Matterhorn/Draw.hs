@@ -40,11 +40,11 @@ draw st =
             let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
             in case st^.csTeam(tId).tsMode of
                 Main                         -> mainLayers
-                UrlSelect                    -> drawUrlSelectWindow st tId : mainLayersMonochrome
                 ChannelSelect                -> mainLayers
                 MessageSelect _              -> mainLayers
                 MessageSelectDeleteConfirm   -> mainLayers
                 ShowHelp topic               -> drawShowHelp topic st
+                UrlSelect                    -> drawUrlSelectWindow st tId : mainLayersMonochrome
                 ThemeListOverlay             -> drawThemeListOverlay st tId : mainLayers
                 LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
                 DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
