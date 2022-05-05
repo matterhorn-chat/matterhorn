@@ -40,7 +40,7 @@ onEventMain tId =
                       fallback2 e
                   Just cId -> do
                       void $ handleKeyboardEvent (messageSelectStartKeybindings tId (channelMessageSelect(tId))
-                                                  (csChannelMessages(cId)) (MessageSelect cId)) fallback2 e
+                                                  (csChannelMessages(cId)) (ChannelMessageSelect cId)) fallback2 e
       void $ handleKeyboardEvent (channelEditorKeybindings tId (channelEditor(tId))) fallback ev
   )
 

@@ -994,7 +994,7 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
                       joinChannel' tId cId (Just $ jumpToPost pId)
                   Just _ -> do
                       setFocus tId cId
-                      pushMode tId $ MessageSelect cId
+                      pushMode tId $ ChannelMessageSelect cId
                       channelMessageSelect(tId) .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"

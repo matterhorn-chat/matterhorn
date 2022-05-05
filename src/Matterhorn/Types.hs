@@ -1387,7 +1387,7 @@ data Mode =
     | UrlSelect
     | LeaveChannelConfirm
     | DeleteChannelConfirm
-    | MessageSelect ChannelId
+    | ChannelMessageSelect ChannelId
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay

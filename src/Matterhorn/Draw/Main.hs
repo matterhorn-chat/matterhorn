@@ -405,7 +405,7 @@ renderCurrentChannelDisplay st mode tId hs = header <=> hBorder <=> messages
             Nothing -> fill ' '
             Just cId ->
                 case mode of
-                    MessageSelect _ ->
+                    ChannelMessageSelect _ ->
                         freezeBorders $
                         renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
                     MessageSelectDeleteConfirm ->
@@ -768,7 +768,7 @@ mainInterface st mode mtId =
 
     bottomBorder tId hs =
         case mode of
-            MessageSelect cId ->
+            ChannelMessageSelect cId ->
                 messageSelectBottomBar st tId (channelMessageSelect(tId)) (csChannelMessages(cId))
             _ -> maybeSubdue $ hBox
                  [ showAttachmentCount tId

@@ -49,7 +49,7 @@ draw st =
                         -- the screen.
                         Main                         -> drawMain st m
                         ChannelSelect                -> drawMain st m
-                        MessageSelect _              -> drawMain st m
+                        ChannelMessageSelect _       -> drawMain st m
                         MessageSelectDeleteConfirm   -> drawMain st m
                         ShowHelp topic               -> drawShowHelp topic st
 

@@ -48,7 +48,7 @@ app = App
                   SaveAttachmentWindow _        -> showCursorNamed (AttachmentPathEditor tId) cs
                   LeaveChannelConfirm           -> Nothing
                   DeleteChannelConfirm          -> Nothing
-                  MessageSelect _               -> Nothing
+                  ChannelMessageSelect _        -> Nothing
                   MessageSelectDeleteConfirm    -> Nothing
                   PostListOverlay _             -> Nothing
                   ManageAttachments             -> Nothing
