@@ -23,7 +23,7 @@ import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL
 import           Data.Time.Calendar ( fromGregorian )
 import           Data.Time.Clock ( UTCTime(..) )
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding, Lens', Traversal' )
+import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding, Lens', Traversal', SimpleGetter )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
                                           , ServerTime(..), UserId, TeamId, teamDisplayName
@@ -655,19 +655,20 @@ messageSelectBottomBar st tId selWhich msgsWhich =
                     , hBorder
                     ]
 
-maybePreviewViewport :: TeamId -> Widget Name -> Widget Name
-maybePreviewViewport tId w =
+maybePreviewViewport :: Name -> Widget Name -> Widget Name
+maybePreviewViewport n w =
     Widget Greedy Fixed $ do
         result <- render w
         case (Vty.imageHeight $ result^.imageL) > previewMaxHeight of
             False -> return result
             True ->
-                render $ vLimit previewMaxHeight $ viewport (MessagePreviewViewport tId) Vertical $
+                render $ vLimit previewMaxHeight $ viewport n Vertical $
                          (resultToWidget result)
 
-inputPreview :: ChatState -> TeamId -> HighlightSet -> Widget Name
-inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessagePreviewL = emptyWidget
-                       | otherwise = thePreview
+inputPreview :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> Name -> HighlightSet -> Widget Name
+inputPreview st editWhich tId vpName hs
+    | not $ st^.csResources.crConfiguration.configShowMessagePreviewL = emptyWidget
+    | otherwise = thePreview
     where
     uId = myUserId st
     -- Insert a cursor sentinel into the input text just before
@@ -680,9 +681,9 @@ inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessage
     -- end of whatever line the user is editing, that is very unlikely
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
-                  st^.channelEditor(tId).cedEditor.editContentsL
+                  st^.editWhich.cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    overrideTy = case st^.channelEditor(tId).cedEditMode of
+    overrideTy = case st^.editWhich.cedEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
     baseUrl = serverBaseUrl st tId
@@ -711,7 +712,7 @@ inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessage
                                   , mdWrapNonhighlightedCodeBlocks = True
                                   , mdTruncateVerbatimBlocks = Nothing
                                   }
-                 in (maybePreviewViewport tId msgPreview) <=>
+                 in (maybePreviewViewport vpName msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
 userInputArea :: ChatState -> Mode -> TeamId -> HighlightSet -> Widget Name
@@ -759,7 +760,7 @@ mainInterface st mode mtId =
                 let hs = getHighlightSet st tId
                 in vBox [ channelContents tId hs
                         , bottomBorder tId hs
-                        , inputPreview st tId hs
+                        , inputPreview st (channelEditor(tId)) tId (MessagePreviewViewport tId) hs
                         , userInputArea st mode tId hs
                         ]
 
