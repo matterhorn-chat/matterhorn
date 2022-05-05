@@ -39,7 +39,7 @@ onEventMain tId =
                   Nothing ->
                       fallback2 e
                   Just cId -> do
-                      void $ handleKeyboardEvent (messageSelectStartKeybindings tId (channelMessageSelect(tId))
+                      void $ handleKeyboardEvent (messageListingKeybindings tId (channelMessageSelect(tId))
                                                   (csChannelMessages(cId)) (ChannelMessageSelect cId)) fallback2 e
       void $ handleKeyboardEvent (channelEditorKeybindings tId (channelEditor(tId))) fallback ev
   )
@@ -47,14 +47,14 @@ onEventMain tId =
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
-messageSelectStartKeybindings :: TeamId
-                              -> Lens' ChatState MessageSelectState
-                              -> Traversal' ChatState Messages
-                              -> Mode
-                              -> KeyConfig
-                              -> KeyHandlerMap
-messageSelectStartKeybindings tId selWhich msgsWhich m =
-    mkKeybindings (messageSelectStartKeyHandlers tId selWhich msgsWhich m)
+messageListingKeybindings :: TeamId
+                          -> Lens' ChatState MessageSelectState
+                          -> Traversal' ChatState Messages
+                          -> Mode
+                          -> KeyConfig
+                          -> KeyHandlerMap
+messageListingKeybindings tId selWhich msgsWhich m =
+    mkKeybindings (messageListingKeyHandlers tId selWhich msgsWhich m)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
@@ -103,11 +103,6 @@ mainKeyHandlers tId =
 
     , mkKb LastChannelEvent "Change to the most recently-focused channel" $
          recentChannel tId
-
-    , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-          withCurrentChannel tId $ \_ chan -> do
-              let msgs = chan^.ccContents.cdMessages
-              startUrlSelect tId msgs
 
     , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
            withCurrentChannel tId $ \cId _ -> do
@@ -186,12 +181,12 @@ channelEditorKeyHandlers tId editWhich =
                          handleInputSubmission tId editWhich cId content
     ]
 
-messageSelectStartKeyHandlers :: TeamId
-                              -> Lens' ChatState MessageSelectState
-                              -> Traversal' ChatState Messages
-                              -> Mode
-                              -> [KeyEventHandler]
-messageSelectStartKeyHandlers tId selWhich msgsWhich m =
+messageListingKeyHandlers :: TeamId
+                          -> Lens' ChatState MessageSelectState
+                          -> Traversal' ChatState Messages
+                          -> Mode
+                          -> [KeyEventHandler]
+messageListingKeyHandlers tId selWhich msgsWhich m =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
         beginMessageSelect tId selWhich msgsWhich m
@@ -202,4 +197,7 @@ messageSelectStartKeyHandlers tId selWhich msgsWhich m =
     , mkKb SelectOldestMessageEvent "Scroll to top of message list" $ do
         beginMessageSelect tId selWhich msgsWhich m
         messageSelectFirst selWhich msgsWhich
+
+    , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
+        startUrlSelect tId msgsWhich
     ]
