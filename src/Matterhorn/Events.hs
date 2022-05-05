@@ -223,7 +223,7 @@ teamEventHandlerByMode tId mode =
         ChannelSelect              -> void . onEventChannelSelect tId
         UrlSelect                  -> void . onEventUrlSelect tId
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId
-        MessageSelect              -> onEventMessageSelect tId (csTeam(tId).tsMessageSelect) (csTeam(tId).tsEditState)
+        MessageSelect              -> onEventMessageSelect tId (csTeam(tId).tsMessageSelect) (channelEditor(tId))
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId
         ThemeListOverlay           -> onEventThemeListOverlay tId
@@ -234,8 +234,8 @@ teamEventHandlerByMode tId mode =
         ViewMessage                -> void . (handleTabbedWindowEvent
                                               (csTeam(tId).tsViewedMessage.singular _Just._2)
                                               tId)
-        ManageAttachments          -> onEventManageAttachments tId (csTeam(tId).tsEditState)
-        ManageAttachmentsBrowseFiles -> onEventManageAttachments tId (csTeam(tId).tsEditState)
+        ManageAttachments          -> onEventManageAttachments tId (channelEditor(tId))
+        ManageAttachmentsBrowseFiles -> onEventManageAttachments tId (channelEditor(tId))
         EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
         ChannelTopicWindow         -> onEventChannelTopicWindow tId
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId

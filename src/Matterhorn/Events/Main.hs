@@ -28,8 +28,8 @@ onEventMain tId =
   void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
       resetReturnChannel tId
       case ev of
-          (Vty.EvPaste bytes) -> handlePaste (csTeam(tId).tsEditState) bytes
-          _ -> handleEditingInput tId (csTeam(tId).tsEditState) ev
+          (Vty.EvPaste bytes) -> handlePaste (channelEditor(tId)) bytes
+          _ -> handleEditingInput tId (channelEditor(tId)) ev
   )
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -47,12 +47,12 @@ mainKeyHandlers tId =
 
     , mkKb ReplyRecentEvent
         "Reply to the most recent message" $
-        replyToLatestMessage tId (csTeam(tId).tsEditState)
+        replyToLatestMessage tId (channelEditor(tId))
 
     , mkKb
         InvokeEditorEvent
         "Invoke `$EDITOR` to edit the current message" $
-        invokeExternalEditor (csTeam(tId).tsEditState)
+        invokeExternalEditor (channelEditor(tId))
 
     , mkKb
         EnterFastSelectModeEvent
@@ -61,11 +61,11 @@ mainKeyHandlers tId =
 
     , staticKb "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $
-         tabComplete tId (csTeam(tId).tsEditState) Forwards
+         tabComplete tId (channelEditor(tId)) Forwards
 
     , staticKb "Tab-complete backward"
          (Vty.EvKey (Vty.KBackTab) []) $
-         tabComplete tId (csTeam(tId).tsEditState) Backwards
+         tabComplete tId (channelEditor(tId)) Backwards
 
     , mkKb
         ChannelListScrollUpEvent
@@ -89,9 +89,9 @@ mainKeyHandlers tId =
         "Scroll up in the channel input history" $ do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
-             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (channelEditor(tId).cedEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (channelEditor(tId).cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
                  False -> channelHistoryBackward tId
 
@@ -100,9 +100,9 @@ mainKeyHandlers tId =
         "Scroll down in the channel input history" $ do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
-             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (channelEditor(tId).cedEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (csTeam(tId).tsEditState.cedEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (channelEditor(tId).cedEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward tId
 
@@ -123,7 +123,7 @@ mainKeyHandlers tId =
          nextUnreadChannel tId
 
     , mkKb ShowAttachmentListEvent "Show the attachment list" $
-         showAttachmentList tId (csTeam(tId).tsEditState) ManageAttachmentsBrowseFiles
+         showAttachmentList tId (channelEditor(tId)) ManageAttachmentsBrowseFiles
 
     , mkKb NextUnreadUserOrChannelEvent
          "Change to the next channel with unread messages preferring direct messages" $
@@ -134,16 +134,16 @@ mainKeyHandlers tId =
 
     , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do
-             isMultiline <- use (csTeam(tId).tsEditState.cedEphemeral.eesMultiline)
+             isMultiline <- use (channelEditor(tId).cedEphemeral.eesMultiline)
              case isMultiline of
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a
                  -- newline instead.
-                 True -> handleEditingInput tId (csTeam(tId).tsEditState) (Vty.EvKey Vty.KEnter [])
+                 True -> handleEditingInput tId (channelEditor(tId)) (Vty.EvKey Vty.KEnter [])
                  False -> do
                      withCurrentChannel tId $ \cId _ -> do
-                         content <- getEditorContent (csTeam(tId).tsEditState)
-                         handleInputSubmission tId (csTeam(tId).tsEditState) cId content
+                         content <- getEditorContent (channelEditor(tId))
+                         handleInputSubmission tId (channelEditor(tId)) cId content
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL posted to the current channel" $
            startUrlSelect tId
@@ -153,10 +153,10 @@ mainKeyHandlers tId =
                clearChannelUnreadStatus cId
 
     , mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
-           toggleMultilineEditing (csTeam(tId).tsEditState)
+           toggleMultilineEditing (channelEditor(tId))
 
     , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
-         cancelAutocompleteOrReplyOrEdit tId (csTeam(tId).tsEditState)
+         cancelAutocompleteOrReplyOrEdit tId (channelEditor(tId))
 
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts" $
          enterFlaggedPostListMode tId

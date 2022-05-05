@@ -31,7 +31,7 @@ onEventMessageSelect tId selWhich editWhich =
 
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
-    deleteSelectedMessage tId (csTeam(tId).tsMessageSelect) (csTeam(tId).tsEditState)
+    deleteSelectedMessage tId (csTeam(tId).tsMessageSelect) (channelEditor(tId))
     setMode tId Main
 onEventMessageSelectDeleteConfirm tId _ = do
     setMode tId Main

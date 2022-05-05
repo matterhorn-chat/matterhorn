@@ -104,11 +104,11 @@ drawEditorContents st tId hs =
     in case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
-            case S.null (st^.csTeam(tId).tsEditState.cedMisspellings) of
+            case S.null (st^.channelEditor(tId).cedMisspellings) of
                 True -> noHighlight
                 False -> doHighlightMisspellings
                            hs
-                           (st^.csTeam(tId).tsEditState.cedMisspellings)
+                           (st^.channelEditor(tId).cedMisspellings)
 
 -- | This function takes a set of misspellings from the spell
 -- checker, the editor lines, and builds a rendering of the text with
@@ -232,24 +232,24 @@ doHighlightMisspellings hSet misspellings contents =
 
 renderUserCommandBox :: ChatState -> TeamId -> HighlightSet -> Widget Name
 renderUserCommandBox st tId hs =
-    let prompt = txt $ case st^.csTeam(tId).tsEditState.cedEditMode of
+    let prompt = txt $ case st^.channelEditor(tId).cedEditMode of
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
             NewPost      ->      "> "
-        inputBox = renderEditor (drawEditorContents st tId hs) True (st^.csTeam(tId).tsEditState.cedEditor)
-        curContents = getEditContents $ st^.csTeam(tId).tsEditState.cedEditor
+        inputBox = renderEditor (drawEditorContents st tId hs) True (st^.channelEditor(tId).cedEditor)
+        curContents = getEditContents $ st^.channelEditor(tId).cedEditor
         multilineContent = length curContents > 1
         multilineHints =
             hBox [ borderElem bsHorizontal
                  , str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
-                                        st^.csTeam(tId).tsEditState.cedEditor.editContentsL) <>
+                                        st^.channelEditor(tId).cedEditor.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
                  , hBorderWithLabel $ withDefAttr clientEmphAttr $
                    txt $ "In multi-line mode. Press " <> multiLineToggleKey <>
                          " to finish."
                  ]
 
-        replyDisplay = case st^.csTeam(tId).tsEditState.cedEditMode of
+        replyDisplay = case st^.channelEditor(tId).cedEditMode of
             Replying msg _ ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
@@ -277,7 +277,7 @@ renderUserCommandBox st tId hs =
         kc = st^.csResources.crConfiguration.configUserKeysL
         multiLineToggleKey = ppBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
-        commandBox = case st^.csTeam(tId).tsEditState.cedEphemeral.eesMultiline of
+        commandBox = case st^.channelEditor(tId).cedEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
@@ -620,7 +620,7 @@ messageSelectBottomBar st tId which =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId which (csTeam(tId).tsEditState))
+                ev = keyEventBindings st (messageSelectKeybindings tId which (channelEditor(tId)))
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent
@@ -736,9 +736,9 @@ inputPreview st tId hs | not $ st^.csResources.crConfiguration.configShowMessage
     -- end of whatever line the user is editing, that is very unlikely
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
-                  st^.csTeam(tId).tsEditState.cedEditor.editContentsL
+                  st^.channelEditor(tId).cedEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    overrideTy = case st^.csTeam(tId).tsEditState.cedEditMode of
+    overrideTy = case st^.channelEditor(tId).cedEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
     baseUrl = serverBaseUrl st tId
@@ -847,7 +847,7 @@ mainInterface st mtId =
 
     kc = st^.csResources.crConfiguration.configUserKeysL
     showAttachmentCount tId =
-        let count = length $ listElements $ st^.csTeam(tId).tsEditState.cedAttachmentList
+        let count = length $ listElements $ st^.channelEditor(tId).cedAttachmentList
         in if count == 0
            then emptyWidget
            else hBox [ borderElem bsHorizontal

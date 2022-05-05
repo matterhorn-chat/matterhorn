@@ -183,7 +183,7 @@ commandList =
             withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
                 case foundUser of
                     Just user -> createOrFocusDMChannel tId user $ Just $ \cId -> do
-                        handleInputSubmission tId (csTeam(tId).tsEditState) cId msg
+                        handleInputSubmission tId (channelEditor(tId)) cId msg
                     Nothing -> mhError $ NoSuchUser name
 
   , Cmd "log-start" "Begin logging debug information to the specified path"
@@ -275,7 +275,7 @@ commandList =
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
         withCurrentTeam $ \tId ->
             withCurrentChannel tId $ \cId _ -> do
-                findAndRunScript (csTeam(tId).tsEditState) cId script text
+                findAndRunScript (channelEditor(tId)) cId script text
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
@@ -302,7 +302,7 @@ commandList =
 
   , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
         withCurrentTeam $ \tId ->
-            attachFileByPath tId (csTeam(tId).tsEditState) path
+            attachFileByPath tId (channelEditor(tId)) path
 
   , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
         withCurrentTeam toggleChannelFavoriteStatus
@@ -326,7 +326,7 @@ execMMCommand :: MM.TeamId -> Text -> Text -> MH ()
 execMMCommand tId name rest = do
   withCurrentChannel tId $ \cId _ -> do
       session  <- getSession
-      em       <- use (csTeam(tId).tsEditState.cedEditMode)
+      em       <- use (channelEditor(tId).cedEditMode)
       let mc = MM.MinCommand
                  { MM.minComChannelId = cId
                  , MM.minComCommand   = "/" <> name <> " " <> rest

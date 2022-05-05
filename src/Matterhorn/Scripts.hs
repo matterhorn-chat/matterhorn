@@ -14,7 +14,7 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( Lens' )
 import           System.Exit ( ExitCode(..) )
 
-import           Network.Mattermost.Types ( TeamId, ChannelId )
+import           Network.Mattermost.Types ( ChannelId )
 
 import           Matterhorn.FilePaths ( Script(..), getAllScripts, locateScriptPath )
 import           Matterhorn.State.Common

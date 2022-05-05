@@ -217,7 +217,7 @@ startSpellCheckerThread tId eventChan spellCheckTimeout = do
   -- requests a spell check.
   void $ forkIO $ forever $ do
     STM.atomically $ waitDelay =<< STM.readTChan delayWorkerChan
-    writeBChan eventChan (RespEvent $ requestSpellCheck tId (csTeam(tId).tsEditState))
+    writeBChan eventChan (RespEvent $ requestSpellCheck tId (channelEditor(tId)))
 
   -- The delay manager waits for requests to start a delay timer and
   -- signals the worker to begin waiting.

@@ -42,7 +42,7 @@ drawAttachmentList st tId =
        vLimit 15 $
        joinBorders $
        borderWithLabel (withDefAttr clientEmphAttr $ txt "Attachments") $
-       vBox [ renderList renderAttachmentItem True (st^.csTeam(tId).tsEditState.cedAttachmentList)
+       vBox [ renderList renderAttachmentItem True (st^.channelEditor(tId).cedAttachmentList)
             , hBorder
             , hCenter $ withDefAttr clientMessageAttr $
                         txt $ addBinding <> ":add " <>
@@ -64,4 +64,4 @@ drawFileBrowser st tId =
     -- invariant: cedFileBrowser is not Nothing if appMode is
     -- ManageAttachmentsBrowseFiles, and that is the only way to reach
     -- this code, ergo the fromJust.
-    FB.renderFileBrowser True $ fromJust (st^.csTeam(tId).tsEditState.cedFileBrowser)
+    FB.renderFileBrowser True $ fromJust (st^.channelEditor(tId).cedFileBrowser)
