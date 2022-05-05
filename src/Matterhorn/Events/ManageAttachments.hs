@@ -54,7 +54,7 @@ attachmentListKeyHandlers tId which =
     , mkKb SelectDownEvent "Move cursor down" $
           mhHandleEventLensed (which.cedAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
     , mkKb AttachmentListAddEvent "Add a new attachment to the attachment list" $
-          showAttachmentFileBrowser tId which ManageAttachmentsBrowseFiles
+          showAttachmentFileBrowser tId which
     , mkKb AttachmentOpenEvent "Open the selected attachment using the URL open command" $
           openSelectedAttachment which
     , mkKb AttachmentListDeleteEvent "Delete the selected attachment from the attachment list" $

@@ -170,7 +170,7 @@ channelEditorKeyHandlers tId editWhich =
          tabComplete tId editWhich Backwards
 
     , mkKb ShowAttachmentListEvent "Show the attachment list" $
-         showAttachmentList tId editWhich ManageAttachmentsBrowseFiles
+         showAttachmentList tId editWhich
 
     , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do

@@ -43,11 +43,11 @@ validateAttachmentPath path = bool Nothing (Just path) <$> do
 defaultAttachmentsPath :: Config -> IO (Maybe FilePath)
 defaultAttachmentsPath = maybe (return Nothing) validateAttachmentPath . configDefaultAttachmentPath
 
-showAttachmentList :: TeamId -> Lens' ChatState EditState -> Mode -> MH ()
-showAttachmentList tId which m = do
+showAttachmentList :: TeamId -> Lens' ChatState EditState -> MH ()
+showAttachmentList tId which = do
     lst <- use (which.cedAttachmentList)
     case length (L.listElements lst) of
-        0 -> showAttachmentFileBrowser tId which m
+        0 -> showAttachmentFileBrowser tId which
         _ -> pushMode tId ManageAttachments
 
 resetAttachmentList :: TeamId -> Lens' ChatState EditState -> MH ()
@@ -56,13 +56,13 @@ resetAttachmentList tId which = do
     which.cedAttachmentList .= L.list listName mempty 1
     mh $ vScrollToBeginning $ viewportScroll listName
 
-showAttachmentFileBrowser :: TeamId -> Lens' ChatState EditState -> Mode -> MH ()
-showAttachmentFileBrowser tId which m = do
+showAttachmentFileBrowser :: TeamId -> Lens' ChatState EditState -> MH ()
+showAttachmentFileBrowser tId which = do
     config <- use (csResources.crConfiguration)
     filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
     which.cedFileBrowser .= browser
-    pushMode tId m
+    pushMode tId ManageAttachmentsBrowseFiles
 
 attachFileByPath :: TeamId -> Lens' ChatState EditState -> Text -> MH ()
 attachFileByPath tId which txtPath = do
