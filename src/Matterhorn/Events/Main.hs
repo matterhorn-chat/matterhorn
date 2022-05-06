@@ -45,7 +45,7 @@ onEventMain tId =
                                                                (Just $ FromChannel tId cId)
                                                                (ChannelMessageSelect cId)
                       void $ handleKeyboardEvent bindings fallback2 e
-      void $ handleKeyboardEvent (channelEditorKeybindings tId (channelEditor(tId))) fallback ev
+      void $ handleKeyboardEvent (messageEditorKeybindings tId (channelEditor(tId))) fallback ev
   )
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -139,11 +139,11 @@ mainKeyHandlers tId =
                  False -> channelHistoryForward tId
     ]
 
-channelEditorKeybindings :: TeamId
+messageEditorKeybindings :: TeamId
                          -> Lens' ChatState EditState
                          -> KeyConfig
                          -> KeyHandlerMap
-channelEditorKeybindings tId editWhich =
+messageEditorKeybindings tId editWhich =
     mkKeybindings (channelEditorKeyHandlers tId editWhich)
 
 channelEditorKeyHandlers :: TeamId

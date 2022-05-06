@@ -4,6 +4,7 @@ module Matterhorn.Draw.Main
   ( drawMain
   , drawDeleteMessageConfirm
   , drawChannelSelectPrompt
+  , drawMessageInterface
   )
 where
 
@@ -348,24 +349,18 @@ renderChannelHeader st tId hs (Just chan) =
          hs (Just (mkClickableInline Nothing (ChannelTopic $ chan^.ccInfo.cdChannelId)))
          (channelNameString <> maybeTopic)
 
-renderCurrentChannelDisplay :: ChatState
-                            -> Bool
-                            -> TeamId
-                            -> HighlightSet
-                            -> Traversal' ChatState Messages
-                            -> Lens' ChatState MessageSelectState
-                            -> Name
-                            -> Widget Name
-renderCurrentChannelDisplay st inMsgSelect tId hs getMessages selWhich region =
-    channelHeader <=> hBorder <=> messages
+renderMessageListing :: ChatState
+                     -> Bool
+                     -> TeamId
+                     -> HighlightSet
+                     -> Traversal' ChatState Messages
+                     -> Lens' ChatState MessageSelectState
+                     -> Name
+                     -> Widget Name
+renderMessageListing st inMsgSelect tId hs getMessages selWhich region =
+    messages
     where
     mcId = st^.(csCurrentChannelId tId)
-    mChan = maybe Nothing (\cId -> st^?csChannel(cId)) mcId
-
-    channelHeader =
-        withDefAttr channelHeaderAttr $
-        padRight Max $
-        renderChannelHeader st tId hs mChan
 
     messages = padTop Max chatText
 
@@ -571,6 +566,10 @@ messageSelectBottomBar st tId selWhich editWhich msgsWhich =
                             , ev FlagMessageEvent
                             , "unflag"
                             )
+                          , ( isReplyable
+                            , ev OpenThreadEvent
+                            , "thread"
+                            )
                           , ( isPostMessage
                             , ev CopyPostLinkEvent
                             , "copy-link"
@@ -733,7 +732,15 @@ mainInterface st mode mtId =
                      , vLimit 1 $ fill ' '
                      ]
             Just tId ->
-                let inMsgSelect = case mode of
+                let
+                    hs = getHighlightSet st tId
+
+                    channelHeader mChan =
+                        withDefAttr channelHeaderAttr $
+                        padRight Max $
+                        renderChannelHeader st tId hs mChan
+
+                    inMsgSelect = case mode of
                         ChannelMessageSelect {} -> True
                         _ -> False
                     maybeSubdue = if mode == ChannelSelect
@@ -741,15 +748,22 @@ mainInterface st mode mtId =
                                   else id
                 in case st^.csCurrentChannelId(tId) of
                     Nothing -> fill ' '
-                    Just cId -> maybeSubdue $
-                                drawMessageInterface st (ChannelMessages cId)
-                                                 tId inMsgSelect
-                                                 (channelMessageSelect(tId))
-                                                 (channelEditor(tId))
-                                                 (csChannelMessages(cId))
-                                                 (MessagePreviewViewport tId)
+                    Just cId ->
+                        let ch = st^?csChannel(cId)
+                        in vBox [ channelHeader ch
+                                , hBorder
+                                , maybeSubdue $
+                                  drawMessageInterface st hs
+                                                       (ChannelMessages cId)
+                                                       tId inMsgSelect
+                                                       (channelMessageSelect(tId))
+                                                       (channelEditor(tId))
+                                                       (csChannelMessages(cId))
+                                                       (MessagePreviewViewport tId)
+                                ]
 
 drawMessageInterface :: ChatState
+                     -> HighlightSet
                      -> Name
                      -> TeamId
                      -> Bool
@@ -758,17 +772,15 @@ drawMessageInterface :: ChatState
                      -> Traversal' ChatState Messages
                      -> Name
                      -> Widget Name
-drawMessageInterface st region tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
-    vBox [ channelContents
+drawMessageInterface st hs region tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
+    vBox [ interfaceContents
          , bottomBorder
          , inputPreview st editWhich tId previewVpName hs
          , userInputArea st editWhich tId hs
          ]
     where
-    hs = getHighlightSet st tId
-
-    channelContents =
-        renderCurrentChannelDisplay st inMsgSelect tId hs msgsWhich selWhich region
+    interfaceContents =
+        renderMessageListing st inMsgSelect tId hs msgsWhich selWhich region
 
     bottomBorder =
         if inMsgSelect

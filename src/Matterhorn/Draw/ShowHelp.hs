@@ -39,6 +39,7 @@ import           Matterhorn.Events.ChannelListOverlay
 import           Matterhorn.Events.ReactionEmojiListOverlay
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.TabbedWindow
+import           Matterhorn.Events.ThreadWindow
 import           Matterhorn.Windows.ViewMessage
 import           Matterhorn.HelpTopics ( helpTopics )
 import           Matterhorn.Draw.RichText ( renderText )
@@ -451,6 +452,8 @@ keybindSections =
     , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
     , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk editWhichThunk)
+    , ("Thread Window", threadWindowKeyHandlers teamIdThunk <>
+                        messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing modeThunk)
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)

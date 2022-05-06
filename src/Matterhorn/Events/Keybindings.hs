@@ -213,6 +213,7 @@ defaultBindings ev =
         FillGapEvent                  -> [ kb Vty.KEnter ]
         CopyPostLinkEvent             -> [ key 'l' ]
         FlagMessageEvent              -> [ key 'f' ]
+        OpenThreadEvent               -> [ key 't' ]
         PinMessageEvent               -> [ key 'p' ]
         YankMessageEvent              -> [ key 'y' ]
         YankWholeMessageEvent         -> [ key 'Y' ]

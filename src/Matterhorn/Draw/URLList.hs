@@ -44,6 +44,10 @@ renderUrlList st tId =
     header <=> urlDisplay
     where
         header = maybe emptyWidget headerFromSrc src
+        headerFromSrc (FromThread _) =
+            (withDefAttr channelHeaderAttr $ vLimit 1 $
+                (renderText' Nothing "" hSet Nothing $ "URLs: " <> "TODO FIXME") <+>
+                fill ' ') <=> hBorder
         headerFromSrc (FromChannel _ cId) =
             case st^?csChannel(cId) of
                 Nothing -> emptyWidget

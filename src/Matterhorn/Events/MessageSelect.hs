@@ -104,6 +104,9 @@ messageSelectKeyHandlers tId selWhich msgsWhich editWhich =
     , mkKb ViewMessageEvent "View the selected message" $
          viewSelectedMessage tId selWhich msgsWhich
 
+    , mkKb OpenThreadEvent "Open the selected message's thread in a thread window" $ do
+         openThreadWindow tId selWhich msgsWhich
+
     , mkKb FillGapEvent "Fetch messages for the selected gap" $
          fillSelectedGap tId selWhich msgsWhich
 

@@ -117,6 +117,7 @@ data KeyEvent
   | FillGapEvent
   | CopyPostLinkEvent
   | FlagMessageEvent
+  | OpenThreadEvent
   | PinMessageEvent
   | YankMessageEvent
   | YankWholeMessageEvent
@@ -236,6 +237,7 @@ allEvents =
   , MoveCurrentTeamLeftEvent
   , MoveCurrentTeamRightEvent
 
+  , OpenThreadEvent
   , FlagMessageEvent
   , PinMessageEvent
   , ViewMessageEvent
@@ -484,6 +486,7 @@ keyEventName ev = case ev of
 
   ActivateListItemEvent -> "activate-list-item"
 
+  OpenThreadEvent    -> "open-thread"
   FlagMessageEvent   -> "flag-message"
   PinMessageEvent   -> "pin-message"
   ViewMessageEvent   -> "view-message"

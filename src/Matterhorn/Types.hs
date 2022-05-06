@@ -140,6 +140,14 @@ module Matterhorn.Types
   , nonDMChannelListGroupUnread
   , channelListGroupNames
 
+  , newThreadInterface
+  , ThreadInterface(..)
+  , threadMessages
+  , threadEditor
+  , threadMessageSelect
+  , threadRootPostId
+  , threadParentChannelId
+
   , trimChannelSigil
 
   , ChannelSelectState(..)
@@ -168,6 +176,7 @@ module Matterhorn.Types
   , tsThemeListOverlay
   , tsSaveAttachmentDialog
   , tsChannelListSorting
+  , tsThreadInterface
 
   , channelEditor
   , channelMessageSelect
@@ -937,6 +946,10 @@ data Name =
     | ChannelTopicSaveButton TeamId
     | ChannelTopicCancelButton TeamId
     | ChannelTopicEditorPreview TeamId
+    | ThreadMessageInput TeamId
+    | ThreadWindowEditorPreview TeamId
+    | ThreadEditorAttachmentList TeamId
+    | ThreadWindowMessages TeamId
     | ChannelTopic ChannelId
     | TeamList
     | ClickableChannelListEntry ChannelId
@@ -1348,6 +1361,19 @@ emptyEditStateForTeam tId =
               , _cedJustCompleted        = False
               }
 
+emptyEditStateForThread :: TeamId -> EditState
+emptyEditStateForThread tId =
+    EditState { _cedEditor               = editor (ThreadMessageInput tId) Nothing ""
+              , _cedEphemeral            = defaultEphemeralEditState
+              , _cedEditMode             = NewPost
+              , _cedMisspellings         = mempty
+              , _cedAutocomplete         = Nothing
+              , _cedAutocompletePending  = Nothing
+              , _cedAttachmentList       = list (ThreadEditorAttachmentList tId) mempty 1
+              , _cedFileBrowser          = Nothing
+              , _cedJustCompleted        = False
+              }
+
 emptyGlobalEditState :: GlobalEditState
 emptyGlobalEditState =
     GlobalEditState { _gedYankBuffer   = ""
@@ -1393,6 +1419,8 @@ data Mode =
     | LeaveChannelConfirm
     | DeleteChannelConfirm
     | ChannelMessageSelect ChannelId
+    | ThreadWindow
+    | ThreadWindowMessageSelect
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay
@@ -1461,6 +1489,31 @@ data TabbedWindow a =
                  , twWindowHeight :: Int
                  -- ^ Window dimensions
                  }
+
+-- | A window in which a specific thread is viewed, where the user can
+-- send messages implicitly to that thread.
+data ThreadInterface =
+    ThreadInterface { _threadMessages :: Messages
+                    -- ^ The messages in the thread.
+                    , _threadEditor :: EditState
+                    -- ^ The editor and associated state for composing
+                    -- messages in this thread.
+                    , _threadMessageSelect :: MessageSelectState
+                    -- ^ Message selection state for the thread.
+                    , _threadRootPostId :: PostId
+                    -- ^ The root post ID for this thread.
+                    , _threadParentChannelId :: ChannelId
+                    -- ^ The channel that this thread belongs to.
+                    }
+
+newThreadInterface :: TeamId -> PostId -> ChannelId -> Messages -> ThreadInterface
+newThreadInterface tId pId cId msgs =
+    ThreadInterface { _threadMessages = msgs
+                    , _threadRootPostId = pId
+                    , _threadParentChannelId = cId
+                    , _threadMessageSelect = MessageSelectState Nothing
+                    , _threadEditor = emptyEditStateForThread tId
+                    }
 
 -- | Construct a new tabbed window from a template. This will raise an
 -- exception if the initially-selected tab does not exist in the window
@@ -1640,6 +1693,7 @@ data URLList =
 
 data URLListSource =
     FromChannel TeamId ChannelId
+    | FromThread PostId
     deriving (Show, Eq)
 
 -- | All application state specific to a team, along with state specific
@@ -1725,6 +1779,9 @@ data TeamState =
               , _tsChannelListSorting :: ChannelListSorting
               -- ^ How to sort channels in this team's channel list
               -- groups
+              , _tsThreadInterface :: Maybe ThreadInterface
+              -- ^ The thread interface for this team for participating
+              -- in a single thread
               }
 
 -- | Handles for the View Message window's tabs.
@@ -1819,6 +1876,7 @@ newTeamState config team chanList spellChecker =
                  , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
                  , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
                  , _tsChannelListSorting       = configChannelListSorting config
+                 , _tsThreadInterface          = Nothing
                  }
 
 -- | Make a new channel topic editor window state.
@@ -2222,6 +2280,7 @@ makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 makeLenses ''SaveAttachmentDialogState
 makeLenses ''URLList
+makeLenses ''ThreadInterface
 Brick.suffixLenses ''Config
 
 applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState

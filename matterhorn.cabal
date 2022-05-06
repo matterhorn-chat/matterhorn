@@ -72,6 +72,7 @@ library
                        Matterhorn.Draw.ShowHelp
                        Matterhorn.Draw.TabbedWindow
                        Matterhorn.Draw.ThemeListOverlay
+                       Matterhorn.Draw.ThreadWindow
                        Matterhorn.Draw.URLList
                        Matterhorn.Draw.UserListOverlay
                        Matterhorn.Draw.Util
@@ -95,6 +96,7 @@ library
                        Matterhorn.Events.ShowHelp
                        Matterhorn.Events.TabbedWindow
                        Matterhorn.Events.ThemeListOverlay
+                       Matterhorn.Events.ThreadWindow
                        Matterhorn.Events.UrlSelect
                        Matterhorn.Events.UserListOverlay
                        Matterhorn.Events.Websocket
@@ -134,6 +136,7 @@ library
                        Matterhorn.State.Setup.Threads.Logging
                        Matterhorn.State.Teams
                        Matterhorn.State.ThemeListOverlay
+                       Matterhorn.State.ThreadWindow
                        Matterhorn.State.UrlSelect
                        Matterhorn.State.UserListOverlay
                        Matterhorn.State.Users

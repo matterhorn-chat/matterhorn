@@ -23,6 +23,7 @@ module Matterhorn.State.MessageSelect
   , beginEditMessage
   , flagMessage
   , getSelectedMessage
+  , openThreadWindow
   )
 where
 
@@ -47,6 +48,7 @@ import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( findVerbatimChunk, makePermalink )
 import           Matterhorn.Types.Common
 import           Matterhorn.Windows.ViewMessage
+import qualified Matterhorn.State.ThreadWindow as TW
 
 
 getSelectedMessage :: SimpleGetter ChatState MessageSelectState
@@ -167,6 +169,22 @@ yankSelectedMessageVerbatim tId selWhich msgsWhich =
         case findVerbatimChunk (msg^.mText) of
             Just txt -> copyToClipboard txt
             Nothing  -> return ()
+
+openThreadWindow :: TeamId
+                 -> SimpleGetter ChatState MessageSelectState
+                 -> Traversal' ChatState Messages
+                 -> MH ()
+openThreadWindow tId selWhich msgsWhich =
+    withSelectedMessage selWhich msgsWhich $ \msg -> do
+        when (isPostMessage msg) $ do
+            rootMsg <- getReplyRootMessage msg
+            let p = fromJust $ rootMsg^.mOriginalPost
+            case msg^.mChannelId of
+                Nothing -> return ()
+                Just cId -> do
+                    -- Leave message selection mode
+                    popMode tId
+                    TW.openThreadWindow tId cId (postId p)
 
 yankSelectedMessage :: TeamId
                     -> SimpleGetter ChatState MessageSelectState

@@ -10,7 +10,7 @@ import           Brick
 import qualified Data.Text as T
 import           GHC.Exception ( fromException )
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
+import           Lens.Micro.Platform ( (.=), _2, singular, _Just, Lens' )
 import qualified System.IO.Error as IO
 
 import qualified Network.Mattermost.Types as MM
@@ -43,6 +43,7 @@ import           Matterhorn.Events.UserListOverlay
 import           Matterhorn.Events.ChannelListOverlay
 import           Matterhorn.Events.ReactionEmojiListOverlay
 import           Matterhorn.Events.TabbedWindow
+import           Matterhorn.Events.ThreadWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.Mouse
 import           Matterhorn.Events.EditNotifyPrefs
@@ -63,6 +64,13 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) = do
     csLastMouseDownEvent .= Nothing
+    mTid <- use csCurrentTeamId
+    case mTid of
+        Nothing -> return ()
+        Just tId -> do
+            m <- use (csTeam(tId).tsMode)
+            ms <- use (csTeam(tId).tsModeStack)
+            mhLog LogGeneral $ T.pack $ show (m, ms)
     onVtyEvent e
 onBrickEvent e@(MouseDown n button modifier _) = do
     mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
@@ -239,6 +247,11 @@ teamEventHandlerByMode tId mode =
         EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
         ChannelTopicWindow         -> onEventChannelTopicWindow tId
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId
+        ThreadWindow               -> onEventThreadWindow tId
+        ThreadWindowMessageSelect  ->
+            let ti :: Lens' ChatState ThreadInterface
+                ti = csTeam(tId).tsThreadInterface.singular _Just
+            in onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor)
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the
