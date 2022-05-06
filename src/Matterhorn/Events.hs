@@ -217,34 +217,46 @@ handleTeamModeEvent e =
         teamEventHandlerByMode tId mode e
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
-teamEventHandlerByMode tId mode =
+teamEventHandlerByMode tId mode e =
     case mode of
-        Main                       -> onEventMain tId
-        ShowHelp _                 -> void . onEventShowHelp tId
-        ChannelSelect              -> void . onEventChannelSelect tId
-        UrlSelect                  -> void . onEventUrlSelect tId
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId
-        ChannelMessageSelect cId   -> onEventMessageSelect tId (channelMessageSelect(tId)) (csChannelMessages(cId)) (channelEditor(tId))
-        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId
-        ThemeListOverlay           -> onEventThemeListOverlay tId
-        PostListOverlay _          -> onEventPostListOverlay tId
-        UserListOverlay            -> onEventUserListOverlay tId
-        ChannelListOverlay         -> onEventChannelListOverlay tId
-        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay tId
-        ViewMessage                -> void . (handleTabbedWindowEvent
+        Main                       -> onEventMain tId e
+        ShowHelp _                 -> void $ onEventShowHelp tId e
+        ChannelSelect              -> void $ onEventChannelSelect tId e
+        UrlSelect                  -> void $ onEventUrlSelect tId e
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId e
+        ChannelMessageSelect cId   -> onEventMessageSelect tId (channelMessageSelect(tId)) (csChannelMessages(cId)) (channelEditor(tId)) e
+        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId e
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId e
+        ThemeListOverlay           -> onEventThemeListOverlay tId e
+        PostListOverlay _          -> onEventPostListOverlay tId e
+        UserListOverlay            -> onEventUserListOverlay tId e
+        ChannelListOverlay         -> onEventChannelListOverlay tId e
+        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay tId e
+        ViewMessage                -> void $ (handleTabbedWindowEvent
                                               (csTeam(tId).tsViewedMessage.singular _Just._2)
-                                              tId)
-        ManageAttachments          -> onEventManageAttachments tId (channelEditor(tId))
-        ManageAttachmentsBrowseFiles -> onEventManageAttachments tId (channelEditor(tId))
-        EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
-        ChannelTopicWindow         -> onEventChannelTopicWindow tId
-        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId
-        ThreadWindow               -> onEventThreadWindow tId
+                                              tId e)
+        ManageAttachments -> do
+            st <- use id
+            let ed :: Lens' ChatState EditState
+                ed = case st^.csTeam(tId).tsThreadInterface of
+                         Nothing -> channelEditor(tId)
+                         Just _ -> csTeam(tId).tsThreadInterface.singular _Just.threadEditor
+            onEventManageAttachments tId ed e
+        ManageAttachmentsBrowseFiles -> do
+            st <- use id
+            let ed :: Lens' ChatState EditState
+                ed = case st^.csTeam(tId).tsThreadInterface of
+                         Nothing -> channelEditor(tId)
+                         Just _ -> csTeam(tId).tsThreadInterface.singular _Just.threadEditor
+            onEventManageAttachments tId ed e
+        EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
+        ChannelTopicWindow         -> onEventChannelTopicWindow tId e
+        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId e
+        ThreadWindow               -> onEventThreadWindow tId e
         ThreadWindowMessageSelect  ->
             let ti :: Lens' ChatState ThreadInterface
                 ti = csTeam(tId).tsThreadInterface.singular _Just
-            in onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor)
+            in onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor) e
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the
