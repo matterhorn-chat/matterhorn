@@ -406,9 +406,9 @@ renderCurrentChannelDisplay st inMsgSelect tId hs getMessages selWhich region =
                  unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing) region
 
     buildMessages cId =
-        -- If the channel is empty, add an informative message to the
-        -- message listing to make it explicit that this channel does
-        -- not yet have any messages.
+        -- If the message list is empty, add an informative message to
+        -- the message listing to make it explicit that this listing is
+        -- empty.
         let cutoff = getNewMessageCutoff cId st
             ms = filterMessageListing st getMessages
         in if F.null ms
