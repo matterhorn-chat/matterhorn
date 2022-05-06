@@ -43,6 +43,7 @@ drawThreadWindow st tId =
         messageUI = drawMessageInterface st hs
                             (ThreadWindowMessages tId)
                             tId inMsgSelect
+                            False
                             (ti.threadMessageSelect)
                             (ti.threadEditor)
                             (ti.threadMessages)

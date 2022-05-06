@@ -359,6 +359,7 @@ renderChannelHeader st tId hs (Just chan) =
 
 renderMessageListing :: ChatState
                      -> Bool
+                     -> Bool
                      -> TeamId
                      -> HighlightSet
                      -> Traversal' ChatState Messages
@@ -366,7 +367,7 @@ renderMessageListing :: ChatState
                      -> Bool
                      -> Name
                      -> Widget Name
-renderMessageListing st inMsgSelect tId hs getMessages selWhich renderReplyIndent region =
+renderMessageListing st inMsgSelect showNewMsgLine tId hs getMessages selWhich renderReplyIndent region =
     messages
     where
     mcId = st^.(csCurrentChannelId tId)
@@ -414,7 +415,9 @@ renderMessageListing st inMsgSelect tId hs getMessages selWhich renderReplyInden
         -- If the message list is empty, add an informative message to
         -- the message listing to make it explicit that this listing is
         -- empty.
-        let cutoff = getNewMessageCutoff cId st
+        let cutoff = if showNewMsgLine
+                     then getNewMessageCutoff cId st
+                     else Nothing
             ms = filterMessageListing st getMessages
         in if F.null ms
            then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
@@ -767,6 +770,7 @@ mainInterface st mode mtId =
                                   drawMessageInterface st hs
                                                        (ChannelMessages cId)
                                                        tId inMsgSelect
+                                                       True
                                                        (channelMessageSelect(tId))
                                                        (channelEditor(tId))
                                                        (csChannelMessages(cId))
@@ -779,13 +783,14 @@ drawMessageInterface :: ChatState
                      -> Name
                      -> TeamId
                      -> Bool
+                     -> Bool
                      -> Lens' ChatState MessageSelectState
                      -> Lens' ChatState EditState
                      -> Traversal' ChatState Messages
                      -> Bool
                      -> Name
                      -> Widget Name
-drawMessageInterface st hs region tId inMsgSelect selWhich editWhich msgsWhich renderReplyIndent previewVpName =
+drawMessageInterface st hs region tId inMsgSelect showNewMsgLine selWhich editWhich msgsWhich renderReplyIndent previewVpName =
     vBox [ interfaceContents
          , bottomBorder
          , inputPreview st editWhich tId previewVpName hs
@@ -793,7 +798,7 @@ drawMessageInterface st hs region tId inMsgSelect selWhich editWhich msgsWhich r
          ]
     where
     interfaceContents =
-        renderMessageListing st inMsgSelect tId hs msgsWhich selWhich renderReplyIndent region
+        renderMessageListing st inMsgSelect showNewMsgLine tId hs msgsWhich selWhich renderReplyIndent region
 
     bottomBorder =
         if inMsgSelect
