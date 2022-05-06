@@ -272,6 +272,7 @@ userInputArea st editWhich tId hs =
                           , mdEditThreshold     = Nothing
                           , mdShowOlderEdits    = False
                           , mdRenderReplyParent = True
+                          , mdRenderReplyIndent = True
                           , mdIndentBlocks      = False
                           , mdThreadState       = NoThread
                           , mdShowReactions     = True
@@ -362,9 +363,10 @@ renderMessageListing :: ChatState
                      -> HighlightSet
                      -> Traversal' ChatState Messages
                      -> Lens' ChatState MessageSelectState
+                     -> Bool
                      -> Name
                      -> Widget Name
-renderMessageListing st inMsgSelect tId hs getMessages selWhich region =
+renderMessageListing st inMsgSelect tId hs getMessages selWhich renderReplyIndent region =
     messages
     where
     mcId = st^.(csCurrentChannelId tId)
@@ -380,7 +382,7 @@ renderMessageListing st inMsgSelect tId hs getMessages selWhich region =
                      renderMessagesWithSelect cId (st^.selWhich) (buildMessages cId)
                 else cached (ChannelMessages cId) $
                      freezeBorders $
-                     renderLastMessages st hs (getEditedMessageCutoff cId st) region $
+                     renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region $
                      retrogradeMsgsWithThreadStates $
                      reverseMessages $
                      buildMessages cId
@@ -403,9 +405,10 @@ renderMessageListing st inMsgSelect tId hs getMessages selWhich region =
             msgsWithStates = chronologicalMsgsWithThreadStates msgs
         in case s of
              Nothing ->
-                 renderLastMessages st hs (getEditedMessageCutoff cId st) region before
+                 renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region before
              Just m ->
-                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing) region
+                 unsafeRenderMessageSelection (m, (before, after))
+                     (renderSingleMessage st hs renderReplyIndent Nothing) region
 
     buildMessages cId =
         -- If the message list is empty, add an informative message to
@@ -678,6 +681,7 @@ inputPreview st editWhich tId vpName hs
                                   , mdEditThreshold     = Nothing
                                   , mdShowOlderEdits    = False
                                   , mdRenderReplyParent = True
+                                  , mdRenderReplyIndent = True
                                   , mdIndentBlocks      = True
                                   , mdThreadState       = NoThread
                                   , mdShowReactions     = True
@@ -766,6 +770,7 @@ mainInterface st mode mtId =
                                                        (channelMessageSelect(tId))
                                                        (channelEditor(tId))
                                                        (csChannelMessages(cId))
+                                                       True
                                                        (MessagePreviewViewport tId)
                                 ]
 
@@ -777,9 +782,10 @@ drawMessageInterface :: ChatState
                      -> Lens' ChatState MessageSelectState
                      -> Lens' ChatState EditState
                      -> Traversal' ChatState Messages
+                     -> Bool
                      -> Name
                      -> Widget Name
-drawMessageInterface st hs region tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
+drawMessageInterface st hs region tId inMsgSelect selWhich editWhich msgsWhich renderReplyIndent previewVpName =
     vBox [ interfaceContents
          , bottomBorder
          , inputPreview st editWhich tId previewVpName hs
@@ -787,7 +793,7 @@ drawMessageInterface st hs region tId inMsgSelect selWhich editWhich msgsWhich p
          ]
     where
     interfaceContents =
-        renderMessageListing st inMsgSelect tId hs msgsWhich selWhich region
+        renderMessageListing st inMsgSelect tId hs msgsWhich selWhich renderReplyIndent region
 
     bottomBorder =
         if inMsgSelect

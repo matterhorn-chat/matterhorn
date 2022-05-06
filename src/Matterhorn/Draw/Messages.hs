@@ -69,6 +69,8 @@ data MessageData =
                 -- ^ The thread state of this message.
                 , mdRenderReplyParent :: Bool
                 -- ^ Whether to render the parent message.
+                , mdRenderReplyIndent :: Bool
+                -- ^ Whether to render reply indent decorations
                 , mdHighlightSet :: HighlightSet
                 -- ^ The highlight set to use to highlight usernames,
                 -- channel names, etc.
@@ -122,6 +124,8 @@ renderSingleMessage :: ChatState
                     -> HighlightSet
                     -- ^ The highlight set to use when rendering this
                     -- message
+                    -> Bool
+                    -- ^ Whether to render reply indentations
                     -> Maybe ServerTime
                     -- ^ This specifies an "indicator boundary". Showing
                     -- various indicators (e.g. "edited") is not
@@ -134,8 +138,10 @@ renderSingleMessage :: ChatState
                     -> Name
                     -- ^ Clickable name tag
                     -> Widget Name
-renderSingleMessage st hs ind m threadState tag =
-  renderChatMessage st hs ind threadState tag (withBrackets . renderTime st . withServerTime) m
+renderSingleMessage st hs renderReplyIndent ind m threadState tag =
+  renderChatMessage st hs ind threadState tag
+                    (withBrackets . renderTime st . withServerTime)
+                    renderReplyIndent m
 
 renderChatMessage :: ChatState
                   -- ^ The application state
@@ -154,10 +160,12 @@ renderChatMessage :: ChatState
                   -- rendered (for tagging clickable extents)
                   -> (ServerTime -> Widget Name)
                   -- ^ A function to render server times
+                  -> Bool
+                  -- ^ Whether to render reply indentations
                   -> Message
                   -- ^ The message to render
                   -> Widget Name
-renderChatMessage st hs ind threadState clickableNameTag renderTimeFunc msg =
+renderChatMessage st hs ind threadState clickableNameTag renderTimeFunc renderReplyIndent msg =
     let showOlderEdits = configShowOlderEdits config
         showTimestamp = configShowMessageTimestamps config
         config = st^.csResources.crConfiguration
@@ -173,6 +181,7 @@ renderChatMessage st hs ind threadState clickableNameTag renderTimeFunc msg =
               , mdHighlightSet      = hs
               , mdShowOlderEdits    = showOlderEdits
               , mdRenderReplyParent = True
+              , mdRenderReplyIndent = renderReplyIndent
               , mdIndentBlocks      = True
               , mdThreadState       = threadState
               , mdShowReactions     = True
@@ -288,14 +297,15 @@ renderMessageSeq remainingHeight renderFunc limitFunc tag ms
 renderLastMessages :: ChatState
                    -> HighlightSet
                    -> Maybe ServerTime
+                   -> Bool
                    -> Name
                    -> DirectionalSeq Retrograde (Message, ThreadState)
                    -> Widget Name
-renderLastMessages st hs editCutoff tag msgs =
+renderLastMessages st hs editCutoff renderReplyIndent tag msgs =
     Widget Greedy Greedy $ do
         ctx <- getContext
         let targetHeight = ctx^.availHeightL
-            doMsgRender = renderSingleMessage st hs editCutoff
+            doMsgRender = renderSingleMessage st hs renderReplyIndent editCutoff
 
             newMessagesTransitions = filterMessages (isNewMessagesTransition . fst) msgs
             newMessageTransition = fst <$> (listToMaybe $ F.toList newMessagesTransitions)
@@ -415,9 +425,14 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             ctx <- getContext
             -- NB: The amount subtracted here must be the total padding
             -- added below (pad 1 + vBorder)
-            w <- render $ hLimit (ctx^.availWidthL - 2) msgWidget
-            render $ vLimit (V.imageHeight $ w^.imageL) $
-                padRight (Pad 1) vBorder <+> resultToWidget w
+            w <- case mdRenderReplyIndent of
+                True -> do
+                    w <- render $ hLimit (ctx^.availWidthL - 2) msgWidget
+                    return $ vLimit (V.imageHeight $ w^.imageL) $
+                        padRight (Pad 1) vBorder <+> resultToWidget w
+                False ->
+                    return msgWidget
+            render w
 
         msgAtch = if S.null (msg^.mAttachments)
           then Nothing

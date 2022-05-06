@@ -35,4 +35,5 @@ drawThreadWindow st tId =
                             (ti.threadMessageSelect)
                             (ti.threadEditor)
                             (ti.threadMessages)
+                            False
                             (ThreadWindowEditorPreview tId)

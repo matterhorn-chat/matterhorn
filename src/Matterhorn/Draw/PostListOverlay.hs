@@ -81,7 +81,7 @@ drawPostsBox contents st tId =
 
         -- The render-message function we're using
         renderMessageForOverlay msg tState tag =
-          let renderedMsg = renderSingleMessage st hs Nothing msg tState tag
+          let renderedMsg = renderSingleMessage st hs True Nothing msg tState tag
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later
