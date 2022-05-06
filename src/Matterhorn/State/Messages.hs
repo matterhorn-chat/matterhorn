@@ -35,7 +35,7 @@ import qualified Data.Text as T
 import           Graphics.Vty ( outputIface )
 import           Graphics.Vty.Output.Interface ( ringTerminalBell )
 import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~)
-                                     , to, at, traversed, filtered, ix, _1 )
+                                     , to, at, traversed, filtered, ix, _1, _Just )
 
 import           Network.Mattermost
 import qualified Network.Mattermost.Endpoints as MM
@@ -45,6 +45,7 @@ import           Network.Mattermost.Types
 import           Matterhorn.Constants
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
+import           Matterhorn.State.ThreadWindow
 import           Matterhorn.State.Reactions
 import           Matterhorn.State.Users
 import           Matterhorn.TimeUtils
@@ -181,6 +182,8 @@ editMessage new = do
         mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
         mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
 
+        editPostInOpenThread mTId new msg
+
         fetchMentionedUsers mentionedUsers
 
         when (postUserId new /= Just myId) $
@@ -198,8 +201,31 @@ deleteMessage new = do
         chan = csChannel (new^.postChannelIdL)
     chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
     chan %= adjustUpdated new
+
+    withChannel (new^.postChannelIdL) $ \ch -> do
+        case ch^.ccInfo.cdTeamId of
+            Nothing -> return ()
+            Just tId -> deletePostFromOpenThread tId new
+
     mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
     mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
+
+deletePostFromOpenThread :: TeamId -> Post -> MH ()
+deletePostFromOpenThread tId p = do
+    let isDeletedMessage m = m^.mMessageId == Just (MessagePostId $ p^.postIdL) ||
+                             isReplyTo (p^.postIdL) m
+
+    -- If the post being deleted is in the thread, we just need to
+    -- remove it from the thread view. But if this effectively empties
+    -- the thread, that's because this was the root. In that case we
+    -- need to close down the window.
+    csTeam(tId).tsThreadInterface._Just.threadMessages.traversed.filtered isDeletedMessage %=
+        (& mDeleted .~ True)
+
+    mLen <- preuse (csTeam(tId).tsThreadInterface._Just.threadMessages.to messagesLength)
+    case mLen of
+        Nothing -> return ()
+        Just len -> when (len == 0) $ closeThreadWindow tId
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
@@ -585,6 +611,12 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                               then c & ccInfo.cdMentionCount %~ succ
                               else c)
                       )
+
+                    -- Check for whether the post is part of a thread
+                    -- being viewed. If so, add the post to that thread
+                    -- window as well.
+                    addPostToOpenThread mTId new msg'
+
                     asyncFetchReactionsForPost cId new
                     asyncFetchAttachments new
                     postedChanMessage
@@ -630,6 +662,28 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                               return $ curChannelAction `andProcessWith` originUserAction
 
             doHandleAddedMessage
+
+addPostToOpenThread :: Maybe TeamId -> Post -> Message -> MH ()
+addPostToOpenThread Nothing _ _ = return ()
+addPostToOpenThread (Just tId) new msg =
+    case postRootId new of
+        Nothing -> return ()
+        Just parentId -> do
+            mRoot <- preuse (csTeam(tId).tsThreadInterface._Just.threadRootPostId)
+            when (mRoot == Just parentId) $
+                (csTeam(tId).tsThreadInterface._Just.threadMessages) %= addMessage msg
+
+editPostInOpenThread :: Maybe TeamId -> Post -> Message -> MH ()
+editPostInOpenThread Nothing _ _ = return ()
+editPostInOpenThread (Just tId) new msg =
+     case postRootId new of
+        Nothing -> return ()
+        Just parentId -> do
+            mRoot <- preuse (csTeam(tId).tsThreadInterface._Just.threadRootPostId)
+            when (mRoot == Just parentId) $ do
+                mhLog LogGeneral "editPostInOpenThread: updating message"
+                let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
+                (csTeam(tId).tsThreadInterface._Just.threadMessages.traversed.filtered isEditedMessage) .= msg
 
 -- | PostProcessMessageAdd is an internal value that informs the main
 -- code whether the user should be notified (e.g., ring the bell) or
