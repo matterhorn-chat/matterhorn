@@ -39,7 +39,7 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
 import           Graphics.Vty ( Event(..), Key(..) )
-import           Lens.Micro.Platform ( Lens', (%=), (.=), (.~), to, _Just )
+import           Lens.Micro.Platform ( Lens', (%=), (.=), (.~), to, _Just, SimpleGetter )
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
@@ -202,35 +202,46 @@ getEditorContent which = do
 -- *source* of the text, so it also takes care of clearing the editor,
 -- resetting the edit mode, updating the input history for the specified
 -- channel, etc.
-handleInputSubmission :: TeamId -> Lens' ChatState EditState -> ChannelId -> Text -> MH ()
-handleInputSubmission tId which cId content = do
+handleInputSubmission :: TeamId
+                      -> Lens' ChatState EditState
+                      -> SimpleGetter ChatState (Maybe ChannelId)
+                      -> Text
+                      -> MH ()
+handleInputSubmission tId editWhich getChannelId content = do
+    mCid <- use getChannelId
+
     -- We clean up before dispatching the command or sending the message
     -- since otherwise the command could change the state and then doing
     -- cleanup afterwards could clean up the wrong things.
-    which.cedEditor %= applyEdit Z.clearZipper
-    which.cedEphemeral.eesInputHistoryPosition .= Nothing
+    editWhich.cedEditor %= applyEdit Z.clearZipper
+    editWhich.cedEphemeral.eesInputHistoryPosition .= Nothing
 
-    csInputHistory %= addHistoryEntry content cId
+    case mCid of
+        Nothing -> return ()
+        Just cId -> csInputHistory %= addHistoryEntry content cId
 
     case T.uncons content of
       Just ('/', cmd) ->
           dispatchCommand tId cmd
       _ -> do
-          attachments <- use (which.cedAttachmentList.L.listElementsL)
-          mode <- use (which.cedEditMode)
-          sendMessage cId mode content $ F.toList attachments
+          case mCid of
+              Nothing -> return ()
+              Just cId -> do
+                  attachments <- use (editWhich.cedAttachmentList.L.listElementsL)
+                  mode <- use (editWhich.cedEditMode)
+                  sendMessage cId mode content $ F.toList attachments
 
-          -- Empty the attachment list only if a mesage is actually sent, since
-          -- it's possible to /attach a file before actually sending the
-          -- message
-          resetAttachmentList tId which
+                  -- Empty the attachment list only if a mesage is
+                  -- actually sent, since it's possible to /attach a
+                  -- file before actually sending the message
+                  resetAttachmentList tId editWhich
 
     -- Reset the autocomplete UI
-    resetAutocomplete which
+    resetAutocomplete editWhich
 
     -- Reset the edit mode *after* handling the input so that the input
     -- handler can tell whether we're editing, replying, etc.
-    which.cedEditMode .= NewPost
+    editWhich.cedEditMode .= NewPost
 
 closingPunctuationMarks :: String
 closingPunctuationMarks = ".,'\";:)]!?"

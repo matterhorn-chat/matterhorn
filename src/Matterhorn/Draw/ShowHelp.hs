@@ -19,9 +19,9 @@ import           Brick.Widgets.List ( listSelectedFocusedAttr )
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens' )
+import           Lens.Micro.Platform ( Lens', SimpleGetter )
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, ChannelId )
 import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Matterhorn.Command
@@ -448,7 +448,7 @@ keybindSections =
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk <>
                          messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing modeThunk)
-    , ("Message Editor", channelEditorKeyHandlers teamIdThunk editWhichThunk)
+    , ("Message Editor", channelEditorKeyHandlers teamIdThunk editWhichThunk getChannelIdThunk)
     , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
     , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk editWhichThunk)
@@ -484,6 +484,9 @@ selWhichThunk = error "BUG: should not evaluate selWhichThunk"
 
 msgsWhichThunk :: Lens' ChatState Messages
 msgsWhichThunk = error "BUG: should not evaluate msgsWhichThunk"
+
+getChannelIdThunk :: SimpleGetter ChatState (Maybe ChannelId)
+getChannelIdThunk = error "BUG: should not evaluate getChannelIdThunk"
 
 modeThunk :: Mode
 modeThunk = error "BUG: should not evaluate modeThunk"

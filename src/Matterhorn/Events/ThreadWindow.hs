@@ -8,7 +8,7 @@ import Prelude ()
 import Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform (Lens', _Just, singular)
+import Lens.Micro.Platform (Lens', _Just, singular, to)
 
 import Network.Mattermost.Types (TeamId)
 
@@ -39,7 +39,9 @@ onEventThreadWindow tId ev = do
                                                          (Just $ FromThread $ st^.ti.threadRootPostId)
                                                          ThreadWindowMessageSelect
                 void $ handleKeyboardEvent bindings fallback2 e2
-        void $ handleKeyboardEvent (messageEditorKeybindings tId (ti.threadEditor)) fallback e
+        void $ handleKeyboardEvent (messageEditorKeybindings tId (ti.threadEditor)
+                                       (ti.threadParentChannelId.to Just))
+                                   fallback e
         ) ev
 
 threadWindowKeybindings :: TeamId

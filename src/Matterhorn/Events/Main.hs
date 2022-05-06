@@ -8,9 +8,9 @@ import           Matterhorn.Prelude
 import           Brick.Main ( viewportScroll, vScrollBy )
 import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens', Traversal' )
+import           Lens.Micro.Platform ( Lens', Traversal', SimpleGetter )
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, ChannelId )
 
 import           Matterhorn.HelpTopics
 import           Matterhorn.Events.Keybindings
@@ -45,7 +45,9 @@ onEventMain tId =
                                                                (Just $ FromChannel tId cId)
                                                                (ChannelMessageSelect cId)
                       void $ handleKeyboardEvent bindings fallback2 e
-      void $ handleKeyboardEvent (messageEditorKeybindings tId (channelEditor(tId))) fallback ev
+      void $ handleKeyboardEvent
+                 (messageEditorKeybindings tId (channelEditor(tId)) (csCurrentChannelId(tId)))
+                 fallback ev
   )
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -141,15 +143,17 @@ mainKeyHandlers tId =
 
 messageEditorKeybindings :: TeamId
                          -> Lens' ChatState EditState
+                         -> SimpleGetter ChatState (Maybe ChannelId)
                          -> KeyConfig
                          -> KeyHandlerMap
-messageEditorKeybindings tId editWhich =
-    mkKeybindings (channelEditorKeyHandlers tId editWhich)
+messageEditorKeybindings tId editWhich getChannelId =
+    mkKeybindings (channelEditorKeyHandlers tId editWhich getChannelId)
 
 channelEditorKeyHandlers :: TeamId
                          -> Lens' ChatState EditState
+                         -> SimpleGetter ChatState (Maybe ChannelId)
                          -> [KeyEventHandler]
-channelEditorKeyHandlers tId editWhich =
+channelEditorKeyHandlers tId editWhich getChannelId =
     [ mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
            toggleMultilineEditing editWhich
 
@@ -181,9 +185,8 @@ channelEditorKeyHandlers tId editWhich =
                  -- newline instead.
                  True -> handleEditingInput tId editWhich (Vty.EvKey Vty.KEnter [])
                  False -> do
-                     withCurrentChannel tId $ \cId _ -> do
-                         content <- getEditorContent editWhich
-                         handleInputSubmission tId editWhich cId content
+                     content <- getEditorContent editWhich
+                     handleInputSubmission tId editWhich getChannelId content
     ]
 
 messageListingKeyHandlers :: TeamId

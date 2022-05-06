@@ -182,8 +182,10 @@ commandList =
         withCurrentTeam $ \tId ->
             withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
                 case foundUser of
-                    Just user -> createOrFocusDMChannel tId user $ Just $ \cId -> do
-                        handleInputSubmission tId (channelEditor(tId)) cId msg
+                    Just user -> createOrFocusDMChannel tId user $ Just $ \_ -> do
+                        handleInputSubmission tId (channelEditor(tId))
+                                                  (csCurrentChannelId(tId))
+                                                  msg
                     Nothing -> mhError $ NoSuchUser name
 
   , Cmd "log-start" "Begin logging debug information to the specified path"
