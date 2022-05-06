@@ -43,6 +43,14 @@ addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = do
     mh $ invalidateCacheEntry $ ChannelMessages cId
     csChannelMessages(cId) %= fmap upd
+
+    -- Also update any open thread for the corresponding channel's team
+    withChannel cId $ \chan -> do
+        case chan^.ccInfo.cdTeamId of
+            Nothing -> return ()
+            Just tId ->
+                csTeam(tId).tsThreadInterface._Just.threadMessages %= fmap upd
+
     let mentions = S.fromList $ UserIdMention <$> reactionUserId <$> rs
     fetchMentionedUsers mentions
     invalidateRenderCache
@@ -66,6 +74,14 @@ removeReaction :: Reaction -> ChannelId -> MH ()
 removeReaction r cId = do
     mh $ invalidateCacheEntry $ ChannelMessages cId
     csChannelMessages(cId) %= fmap upd
+
+    -- Also update any open thread for the corresponding channel's team
+    withChannel cId $ \chan -> do
+        case chan^.ccInfo.cdTeamId of
+            Nothing -> return ()
+            Just tId ->
+                csTeam(tId).tsThreadInterface._Just.threadMessages %= fmap upd
+
     invalidateRenderCache
   where upd m | m^.mMessageId == Just (MessagePostId $ r^.reactionPostIdL) =
                   m & mReactions %~ (Map.alter delReaction (r^.reactionEmojiNameL))
