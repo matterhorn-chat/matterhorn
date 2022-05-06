@@ -31,6 +31,7 @@ import           Matterhorn.Prelude
 
 import           Brick ( invalidateCache )
 import           Brick.Widgets.Edit ( applyEdit )
+import           Control.Monad ( replicateM_ )
 import           Data.Text.Zipper ( clearZipper, insertMany )
 import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform
@@ -234,19 +235,15 @@ messageSelectDownBy :: Lens' ChatState MessageSelectState
                     -> Traversal' ChatState Messages
                     -> Int
                     -> MH ()
-messageSelectDownBy selWhich msgsWhich amt
-    | amt <= 0 = return ()
-    | otherwise =
-        messageSelectDown selWhich msgsWhich >> messageSelectDownBy selWhich msgsWhich (amt - 1)
+messageSelectDownBy selWhich msgsWhich amt =
+    replicateM_ amt $ messageSelectDown selWhich msgsWhich
 
 messageSelectUpBy :: Lens' ChatState MessageSelectState
                   -> Traversal' ChatState Messages
                   -> Int
                   -> MH ()
-messageSelectUpBy selWhich msgsWhich amt
-    | amt <= 0 = return ()
-    | otherwise =
-      messageSelectUp selWhich msgsWhich >> messageSelectUpBy selWhich msgsWhich (amt - 1)
+messageSelectUpBy selWhich msgsWhich amt =
+    replicateM_ amt $ messageSelectUp selWhich msgsWhich
 
 messageSelectFirst :: Lens' ChatState MessageSelectState
                    -> Traversal' ChatState Messages
