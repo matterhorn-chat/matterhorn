@@ -48,15 +48,15 @@ draw st =
                         -- to be all we need to draw what should be on
                         -- the screen.
                         Main                         -> drawMain st m
-                        ChannelSelect                -> drawMain st m
                         ChannelMessageSelect _       -> drawMain st m
-                        MessageSelectDeleteConfirm   -> drawMain st m
                         ShowHelp topic               -> drawShowHelp topic st
 
                         -- For the following modes, we want to draw the
                         -- whole mode stack since we expect the UI to
                         -- have layers and we want to show prior modes
                         -- underneath.
+                        ChannelSelect                -> drawChannelSelectPrompt st tId : drawMain st m
+                        MessageSelectDeleteConfirm   -> drawDeleteMessageConfirm : rest
                         UrlSelect                    -> drawUrlSelectWindow st tId : monochrome rest
                         ThemeListOverlay             -> drawThemeListOverlay st tId : rest
                         LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : monochrome rest

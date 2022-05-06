@@ -1,6 +1,11 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
-module Matterhorn.Draw.Main (drawMain) where
+module Matterhorn.Draw.Main
+  ( drawMain
+  , drawDeleteMessageConfirm
+  , drawChannelSelectPrompt
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
@@ -8,7 +13,7 @@ import           Matterhorn.Prelude
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.Center ( hCenter )
+import           Brick.Widgets.Center ( centerLayer, center )
 import           Brick.Widgets.List ( listElements )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Control.Arrow ( (>>>) )
@@ -226,8 +231,8 @@ doHighlightMisspellings hSet misspellings contents =
 
     in vBox $ handleLine <$> contents
 
-renderUserCommandBox :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> HighlightSet -> Widget Name
-renderUserCommandBox st editWhich tId hs =
+userInputArea :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> HighlightSet -> Widget Name
+userInputArea st editWhich tId hs =
     let prompt = txt $ case st^.editWhich.cedEditMode of
             Replying _ _ -> "reply> "
             Editing _ _  ->  "edit> "
@@ -408,9 +413,6 @@ renderCurrentChannelDisplay st mode tId hs = header <=> hBorder <=> messages
                     ChannelMessageSelect _ ->
                         freezeBorders $
                         renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
-                    MessageSelectDeleteConfirm ->
-                        freezeBorders $
-                        renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
                     _ ->
                         cached (ChannelMessages cId) $
                         freezeBorders $
@@ -506,12 +508,16 @@ insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessage
           newMessagesMsg d = newMessageOfType (T.pack "New Messages")
                              (C NewMessagesTransition) d
 
-renderChannelSelectPrompt :: ChatState -> TeamId -> Widget Name
-renderChannelSelectPrompt st tId =
-    let e = st^.csTeam(tId).tsChannelSelectState.channelSelectInput
-    in withDefAttr channelSelectPromptAttr $
-       (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
-       (renderEditor (txt . T.concat) True e)
+drawChannelSelectPrompt :: ChatState -> TeamId -> Widget Name
+drawChannelSelectPrompt st tId =
+    Widget Greedy Greedy $ do
+       ctx <- getContext
+       let rowOffset = ctx^.availHeightL - 1
+           e = st^.csTeam(tId).tsChannelSelectState.channelSelectInput
+       render $ translateBy (Location (0, rowOffset)) $
+                withDefAttr channelSelectPromptAttr $
+                (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
+                (renderEditor (txt . T.concat) True e)
 
 drawMain :: ChatState -> Mode -> [Widget Name]
 drawMain st mode =
@@ -715,16 +721,16 @@ inputPreview st editWhich tId vpName hs
                  in (maybePreviewViewport vpName msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
 
-userInputArea :: ChatState -> Mode -> TeamId -> HighlightSet -> Widget Name
-userInputArea st mode tId hs =
-    case mode of
-        ChannelSelect ->              renderChannelSelectPrompt st tId
-        MessageSelectDeleteConfirm -> renderDeleteConfirm
-        _             ->              renderUserCommandBox st (channelEditor(tId)) tId hs
-
-renderDeleteConfirm :: Widget Name
-renderDeleteConfirm =
-    hCenter $ txt "Are you sure you want to delete the selected message? (y/n)"
+drawDeleteMessageConfirm :: Widget Name
+drawDeleteMessageConfirm =
+    let msg = "Are you sure you want to delete the selected message? (y/n)"
+    in centerLayer $
+       borderWithLabel (withAttr channelListHeaderAttr $ txt "Confirm") $
+       hLimit (T.length msg + 4) $
+       vLimit 3 $
+       center $
+       withDefAttr errorMessageAttr $
+       txt msg
 
 mainInterface :: ChatState -> Mode -> Maybe TeamId -> Widget Name
 mainInterface st mode mtId =
@@ -744,10 +750,16 @@ mainInterface st mode mtId =
                ChannelListRight ->
                    hBox [mainDisplay, vBorder, channelList]
            else mainDisplay
-    channelList = hLimit channelListWidth $ case mtId of
-        Nothing -> fill ' '
-        Just tId -> renderChannelList st tId
+    channelList = channelListMaybeVlimit mode $
+                  hLimit channelListWidth $ case mtId of
+                      Nothing -> fill ' '
+                      Just tId -> renderChannelList st tId
     channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
+    channelListMaybeVlimit ChannelSelect w =
+        Widget (hSize w) (vSize w) $ do
+            ctx <- getContext
+            render $ vLimit (ctx^.availHeightL - 1) w
+    channelListMaybeVlimit _ w = w
 
     mainDisplay =
         case mtId of
@@ -761,7 +773,7 @@ mainInterface st mode mtId =
                 in vBox [ channelContents tId hs
                         , bottomBorder tId hs
                         , inputPreview st (channelEditor(tId)) tId (MessagePreviewViewport tId) hs
-                        , userInputArea st mode tId hs
+                        , userInputArea st (channelEditor(tId)) tId hs
                         ]
 
     channelContents tId hs =
