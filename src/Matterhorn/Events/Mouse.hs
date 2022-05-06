@@ -74,7 +74,7 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             changeChannelByName tId $ addUserSigil username
         ClickableUsername _ _ username ->
             changeChannelByName tId $ addUserSigil username
-        ClickableAttachment fId ->
+        ClickableAttachmentInMessage fId ->
             void $ openLinkTarget $ LinkFileId fId
         ClickableReactionInMessage pId t uIds ->
             void $ toggleReaction pId t uIds

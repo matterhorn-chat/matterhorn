@@ -408,7 +408,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         msgAtch = if S.null (msg^.mAttachments)
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox
-                 [ padLeft (Pad 2) $ clickable (ClickableAttachment (a^.attachmentFileId)) $
+                 [ padLeft (Pad 2) $ clickable (ClickableAttachmentInMessage (a^.attachmentFileId)) $
                                      txt ("[attached: `" <> a^.attachmentName <> "`]")
                  | a <- toList (msg^.mAttachments)
                  ]
