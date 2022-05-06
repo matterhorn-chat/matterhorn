@@ -28,7 +28,7 @@ import           Data.Text.Zipper ( cursorPosition, insertChar, getText, gotoEOL
 import           Data.Time.Calendar ( fromGregorian )
 import           Data.Time.Clock ( UTCTime(..) )
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.~), (^?!), to, view, folding, Lens', Traversal', SimpleGetter )
+import           Lens.Micro.Platform ( (.~), (^?!), to, view, Lens', Traversal', SimpleGetter )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Group)
                                           , ServerTime(..), UserId, TeamId, teamDisplayName
@@ -347,8 +347,15 @@ renderChannelHeader st tId hs (Just chan) =
          hs (Just (mkClickableInline Nothing (Just $ ChannelTopic $ chan^.ccInfo.cdChannelId)))
          (channelNameString <> maybeTopic)
 
-renderCurrentChannelDisplay :: ChatState -> Mode -> TeamId -> HighlightSet -> Widget Name
-renderCurrentChannelDisplay st mode tId hs = channelHeader <=> hBorder <=> messages
+renderCurrentChannelDisplay :: ChatState
+                            -> Mode
+                            -> TeamId
+                            -> HighlightSet
+                            -> Traversal' ChatState Messages
+                            -> Lens' ChatState MessageSelectState
+                            -> Widget Name
+renderCurrentChannelDisplay st mode tId hs getMessages selWhich =
+    channelHeader <=> hBorder <=> messages
     where
     mcId = st^.(csCurrentChannelId tId)
     mChan = maybe Nothing (\cId -> st^?csChannel(cId)) mcId
@@ -367,14 +374,14 @@ renderCurrentChannelDisplay st mode tId hs = channelHeader <=> hBorder <=> messa
                 case mode of
                     ChannelMessageSelect _ ->
                         freezeBorders $
-                        renderMessagesWithSelect cId (st^.channelMessageSelect(tId)) (channelMessages cId)
+                        renderMessagesWithSelect cId (st^.selWhich) (buildMessages cId)
                     _ ->
                         cached (ChannelMessages cId) $
                         freezeBorders $
                         renderLastMessages st hs (getEditedMessageCutoff cId st) $
                         retrogradeMsgsWithThreadStates $
                         reverseMessages $
-                        channelMessages cId
+                        buildMessages cId
 
     renderMessagesWithSelect cId (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
@@ -398,15 +405,15 @@ renderCurrentChannelDisplay st mode tId hs = channelHeader <=> hBorder <=> messa
              Just m ->
                  unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
 
-    channelMessages cId =
+    buildMessages cId =
         -- If the channel is empty, add an informative message to the
         -- message listing to make it explicit that this channel does
         -- not yet have any messages.
         let cutoff = getNewMessageCutoff cId st
-            messageListing = getMessageListing cId st
-        in if F.null messageListing
+            ms = filterMessageListing st getMessages
+        in if F.null ms
            then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
-           else insertTransitions messageListing
+           else insertTransitions ms
                                   cutoff
                                   (getDateFormat st)
                                   (st ^. timeZone)
@@ -440,9 +447,9 @@ emptyChannelFillerMessage st cId =
         groupMsg us = "There are not yet any direct messages in the group " <> us <> "."
         chanMsg cn = "There are not yet any messages in the " <> cn <> " channel."
 
-getMessageListing :: ChannelId -> ChatState -> Messages
-getMessageListing cId st =
-    st ^?! csChannels.folding (findChannelById cId) . ccContents . cdMessages . to (filterMessages isShown)
+filterMessageListing :: ChatState -> Traversal' ChatState Messages -> Messages
+filterMessageListing st msgsWhich =
+    st ^?! msgsWhich . to (filterMessages isShown)
     where isShown m
             | st^.csResources.crUserPreferences.userPrefShowJoinLeave = True
             | otherwise = not $ isJoinLeave m
@@ -725,15 +732,23 @@ mainInterface st mode mtId =
                      , vLimit 1 $ fill ' '
                      ]
             Just tId ->
-                let hs = getHighlightSet st tId
-                in vBox [ channelContents tId hs
-                        , bottomBorder tId hs (channelEditor(tId))
-                        , inputPreview st (channelEditor(tId)) tId (MessagePreviewViewport tId) hs
-                        , userInputArea st (channelEditor(tId)) tId hs
-                        ]
+                case st^.csCurrentChannelId(tId) of
+                    Nothing -> fill ' '
+                    Just cId ->
+                        let hs = getHighlightSet st tId
+                        in vBox [ channelContents tId hs (csChannelMessages(cId)) (channelMessageSelect(tId))
+                                , bottomBorder tId hs (channelEditor(tId))
+                                , inputPreview st (channelEditor(tId)) tId (MessagePreviewViewport tId) hs
+                                , userInputArea st (channelEditor(tId)) tId hs
+                                ]
 
-    channelContents tId hs =
-        maybeSubdue $ renderCurrentChannelDisplay st mode tId hs
+    channelContents :: TeamId
+                    -> HighlightSet
+                    -> Traversal' ChatState Messages
+                    -> Lens' ChatState MessageSelectState
+                    -> Widget Name
+    channelContents tId hs msgsWhich selWhich =
+        maybeSubdue $ renderCurrentChannelDisplay st mode tId hs msgsWhich selWhich
 
     bottomBorder :: TeamId -> HighlightSet -> Lens' ChatState EditState -> Widget Name
     bottomBorder tId hs editWhich =
