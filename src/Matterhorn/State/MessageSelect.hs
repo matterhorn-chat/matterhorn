@@ -126,11 +126,11 @@ viewSelectedMessage tId selWhich msgsWhich =
     withSelectedMessage selWhich msgsWhich $ \msg ->
         when (not (isGap msg)) $ viewMessage tId msg
 
--- TODO: this should only work for channel message selection, since
--- there will never be gap entries in the thread view. But this is
--- generalized enough that it looks like it should work for thread
--- views, but it won't because asyncFetchMessagesForGap only works for
--- channel message selection (and should).
+-- This will only work for channel message selection, not thread message
+-- selection, since there will never be gap entries in the thread view.
+-- But this is generalized enough that it looks like it should work for
+-- thread views, but it won't because asyncFetchMessagesForGap only
+-- works for channel message selection (and should).
 fillSelectedGap :: TeamId
                 -> SimpleGetter ChatState MessageSelectState
                 -> Traversal' ChatState Messages
