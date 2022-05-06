@@ -575,9 +575,10 @@ connectionLayer st =
 messageSelectBottomBar :: ChatState
                        -> TeamId
                        -> Lens' ChatState MessageSelectState
+                       -> Lens' ChatState EditState
                        -> Traversal' ChatState Messages
                        -> Widget Name
-messageSelectBottomBar st tId selWhich msgsWhich =
+messageSelectBottomBar st tId selWhich editWhich msgsWhich =
     case getSelectedMessage selWhich msgsWhich st of
         Nothing -> emptyWidget
         Just postMsg ->
@@ -594,7 +595,7 @@ messageSelectBottomBar st tId selWhich msgsWhich =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId selWhich msgsWhich (channelEditor(tId)))
+                ev = keyEventBindings st (messageSelectKeybindings tId selWhich msgsWhich editWhich)
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent
@@ -779,10 +780,11 @@ mainInterface st mode mtId =
     channelContents tId hs =
         maybeSubdue $ renderCurrentChannelDisplay st mode tId hs
 
+    bottomBorder :: TeamId -> HighlightSet -> Lens' ChatState EditState -> Widget Name
     bottomBorder tId hs editWhich =
         case mode of
             ChannelMessageSelect cId ->
-                messageSelectBottomBar st tId (channelMessageSelect(tId)) (csChannelMessages(cId))
+                messageSelectBottomBar st tId (channelMessageSelect(tId)) editWhich (csChannelMessages(cId))
             _ -> maybeSubdue $ hBox
                  [ showAttachmentCount editWhich
                  , hBorder
