@@ -229,6 +229,7 @@ module Matterhorn.Types
   , cedAutocompletePending
   , cedResetEditMode
   , cedJustCompleted
+  , cedShowReplyPrompt
 
   , GlobalEditState
   , emptyGlobalEditState
@@ -1333,6 +1334,8 @@ data EditState =
               -- A flag that indicates whether the most recent editing
               -- event was a tab-completion. This is used by the smart
               -- trailing space handling.
+              , _cedShowReplyPrompt :: Bool
+              -- ^ Whether to show the reply prompt when replying
               }
 
 -- | The 'GlobalEditState' value contains state not specific to any
@@ -1363,6 +1366,7 @@ emptyEditStateForTeam tId =
               , _cedAttachmentList       = list (AttachmentList tId) mempty 1
               , _cedFileBrowser          = Nothing
               , _cedJustCompleted        = False
+              , _cedShowReplyPrompt      = True
               }
 
 emptyEditStateForThread :: TeamId -> EditMode -> EditState
@@ -1377,6 +1381,7 @@ emptyEditStateForThread tId initialEditMode =
               , _cedAttachmentList       = list (ThreadEditorAttachmentList tId) mempty 1
               , _cedFileBrowser          = Nothing
               , _cedJustCompleted        = False
+              , _cedShowReplyPrompt      = False
               }
 
 emptyGlobalEditState :: GlobalEditState

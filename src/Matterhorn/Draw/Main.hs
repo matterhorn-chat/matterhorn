@@ -234,10 +234,17 @@ doHighlightMisspellings hSet misspellings contents =
 
 userInputArea :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> HighlightSet -> Widget Name
 userInputArea st editWhich tId hs =
-    let prompt = txt $ case st^.editWhich.cedEditMode of
-            Replying _ _ -> "reply> "
-            Editing _ _  ->  "edit> "
-            NewPost      ->      "> "
+    let replyPrompt = "reply> "
+        normalPrompt = "> "
+        editPrompt = "edit> "
+        showReplyPrompt = st^.editWhich.cedShowReplyPrompt
+        prompt = txt $ case st^.editWhich.cedEditMode of
+            Replying {} ->
+                if showReplyPrompt then replyPrompt else normalPrompt
+            Editing {}  ->
+                editPrompt
+            NewPost ->
+                normalPrompt
         editor = st^.editWhich.cedEditor
         inputBox = renderEditor (drawEditorContents st editWhich tId hs) True editor
         curContents = getEditContents editor
@@ -253,7 +260,7 @@ userInputArea st editWhich tId hs =
                  ]
 
         replyDisplay = case st^.editWhich.cedEditMode of
-            Replying msg _ ->
+            Replying msg _ | showReplyPrompt ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
                         , addEllipsis $ renderMessage MessageData
