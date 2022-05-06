@@ -14,14 +14,14 @@ module Matterhorn.Types.Channels
   , NewMessageIndicator(..)
   , EphemeralEditState(..)
   , EditMode(..)
-  , eesMultiline, eesInputHistoryPosition, eesLastInput
+  , eesMultiline, eesInputHistoryPosition, eesLastInput, eesTypingUsers
   , defaultEphemeralEditState
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo, ccEditState
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
-  , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
+  , cdMentionCount, cdDMUserId, cdChannelId
   , cdSidebarShowOverride, cdNotifyProps, cdTeamId
   -- * Lenses created for accessing ChannelContents fields
   , cdMessages, cdFetchPending
@@ -41,7 +41,7 @@ module Matterhorn.Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
-  , addChannelTypingUser
+  , addEphemeralStateTypingUser
   -- * Notification settings
   , notifyPreference
   , isMuted
@@ -127,6 +127,7 @@ data EphemeralEditState =
                        -- ^ The input entered into the text editor last
                        -- time the user was focused on the channel
                        -- associated with this state.
+                       , _eesTypingUsers :: TypingUsers
                        }
 
 -- Get a channel's name, depending on its type
@@ -157,7 +158,6 @@ initialChannelInfo myId chan =
                    , _cdPurpose                = sanitizeUserText $ chan^.channelPurposeL
                    , _cdType                   = chan^.channelTypeL
                    , _cdNotifyProps            = emptyChannelNotifyProps
-                   , _cdTypingUsers            = noTypingUsers
                    , _cdDMUserId               = if chan^.channelTypeL == Direct
                                                  then userIdForDMChannel myId $
                                                       sanitizeUserText $ channelName chan
@@ -234,8 +234,6 @@ data ChannelInfo = ChannelInfo
     -- ^ The type of a channel: public, private, or DM
   , _cdNotifyProps      :: ChannelNotifyProps
     -- ^ The user's notification settings for this channel
-  , _cdTypingUsers      :: TypingUsers
-    -- ^ The users who are currently typing in this channel
   , _cdDMUserId         :: Maybe UserId
     -- ^ The user associated with this channel, if it is a DM channel
   , _cdSidebarShowOverride :: Maybe UTCTime
@@ -251,6 +249,10 @@ makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
 makeLenses ''EphemeralEditState
+
+-- | Add user to the list of users in this state who are currently typing.
+addEphemeralStateTypingUser :: UserId -> UTCTime -> EphemeralEditState -> EphemeralEditState
+addEphemeralStateTypingUser uId ts = eesTypingUsers %~ (addTypingUser uId ts)
 
 isMuted :: ClientChannel -> Bool
 isMuted cc = cc^.ccInfo.cdNotifyProps.channelNotifyPropsMarkUnreadL ==
@@ -278,6 +280,7 @@ defaultEphemeralEditState =
     EphemeralEditState { _eesMultiline = False
                        , _eesInputHistoryPosition = Nothing
                        , _eesLastInput = ("", NewPost)
+                       , _eesTypingUsers = noTypingUsers
                        }
 
 canLeaveChannel :: ChannelInfo -> Bool
@@ -393,10 +396,6 @@ filteredChannels f cc = filter f $ cc^.chanMap.to HM.toList
 
 -- * Channel State management
 
-
--- | Add user to the list of users in this channel who are currently typing.
-addChannelTypingUser :: UserId -> UTCTime -> ClientChannel -> ClientChannel
-addChannelTypingUser uId ts = ccInfo.cdTypingUsers %~ (addTypingUser uId ts)
 
 -- | Clear the new message indicator for the specified channel
 clearNewMessageIndicator :: ClientChannel -> ClientChannel

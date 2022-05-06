@@ -45,7 +45,7 @@ handleTypingUser uId cId = do
     when (configShowTypingIndicator config) $ do
         withFetchedUser (UserFetchById uId) $ const $ do
             ts <- liftIO getCurrentTime
-            csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
+            csChannels %= modifyChannelById cId (\c -> c & ccEditState %~ addEphemeralStateTypingUser uId ts)
 
 -- | Handle the websocket event for when a user is updated, e.g. has changed
 -- their nickname

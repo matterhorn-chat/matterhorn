@@ -89,7 +89,7 @@ startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
       STM.atomically $ STM.writeTChan requestChan $ return $ Just $ do
         now <- liftIO getCurrentTime
         let expiry = addUTCTime (- userTypingExpiryInterval) now
-        let expireUsers c = c & ccInfo.cdTypingUsers %~ expireTypingUsers expiry
+            expireUsers c = c & ccEditState.eesTypingUsers %~ expireTypingUsers expiry
         csChannels . mapped %= expireUsers
 
       threadDelay refreshIntervalMicros
