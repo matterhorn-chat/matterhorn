@@ -13,9 +13,11 @@ import Lens.Micro.Platform ( (.=), _Just )
 import Network.Mattermost.Types (TeamId, PostId, ChannelId)
 import qualified Network.Mattermost.Types as MM
 import qualified Network.Mattermost.Endpoints as MM
+import Network.Mattermost.Lenses
 
 import Matterhorn.Types
 import Matterhorn.State.Common
+import {-# SOURCE #-} Matterhorn.State.Messages
 
 openThreadWindow :: TeamId -> ChannelId -> PostId -> MH ()
 openThreadWindow tId cId pId = do
@@ -33,6 +35,12 @@ openThreadWindow tId cId pId = do
                   when (numPosts > 0) $ do
                       st <- use id
                       msgs <- installMessagesFromPosts (Just tId) posts
+
+                      mapM_ (addMessageToState False False . OldPost)
+                               [ (posts^.postsPostsL) HM.! p
+                               | p <- toList (posts^.postsOrderL)
+                               ]
+
                       let mMsg = getMessageForPostId st pId
                       case mMsg of
                           Just rootMsg | Just rootPost <- rootMsg^.mOriginalPost -> do

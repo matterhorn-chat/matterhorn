@@ -16,6 +16,7 @@ module Matterhorn.State.Messages
   , toggleMessageTimestamps
   , toggleVerbatimBlockTruncation
   , jumpToPost
+  , addMessageToState
   )
 where
 
