@@ -173,6 +173,7 @@ viewMessageBox st tId msg =
                                  , mdMyUserId          = myUserId st
                                  , mdWrapNonhighlightedCodeBlocks = False
                                  , mdTruncateVerbatimBlocks = Nothing
+                                 , mdClickableNameTag  = ViewMessageArea tId
                                  }
             in renderMessage md
 

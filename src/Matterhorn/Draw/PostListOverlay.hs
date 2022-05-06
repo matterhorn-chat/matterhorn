@@ -80,8 +80,8 @@ drawPostsBox contents st tId =
           | otherwise = vBox renderedMessageList
 
         -- The render-message function we're using
-        renderMessageForOverlay msg tState =
-          let renderedMsg = renderSingleMessage st hs Nothing msg tState
+        renderMessageForOverlay msg tState tag =
+          let renderedMsg = renderSingleMessage st hs Nothing msg tState tag
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later
@@ -102,8 +102,9 @@ drawPostsBox contents st tId =
           let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
               matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csTeam(tId).tsPostListOverlay.postListSelected)
               messagesWithStates = (, InThreadShowParent) <$> messages
+              tag = PostList
           in case s of
             Nothing ->
-                map (uncurry renderMessageForOverlay) (toList messagesWithStates)
+                map (\(m, tst) -> renderMessageForOverlay m tst tag) (toList messagesWithStates)
             Just curMsg ->
-              [unsafeRenderMessageSelection (curMsg, (before, after)) renderMessageForOverlay]
+              [unsafeRenderMessageSelection (curMsg, (before, after)) renderMessageForOverlay tag]

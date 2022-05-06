@@ -93,6 +93,9 @@ data MessageData =
                 , mdWrapNonhighlightedCodeBlocks :: Bool
                 -- ^ Whether to wrap text in non-highlighted code
                 -- blocks.
+                , mdClickableNameTag :: Name
+                -- ^ Used to namespace clickable extents produced by
+                -- rendering this message
                 }
 
 maxMessageHeight :: Int
@@ -128,9 +131,11 @@ renderSingleMessage :: ChatState
                     -- ^ The message to render
                     -> ThreadState
                     -- ^ The thread state in which to render the message
+                    -> Name
+                    -- ^ Clickable name tag
                     -> Widget Name
-renderSingleMessage st hs ind m threadState =
-  renderChatMessage st hs ind threadState (withBrackets . renderTime st . withServerTime) m
+renderSingleMessage st hs ind m threadState tag =
+  renderChatMessage st hs ind threadState tag (withBrackets . renderTime st . withServerTime) m
 
 renderChatMessage :: ChatState
                   -- ^ The application state
@@ -144,12 +149,15 @@ renderChatMessage :: ChatState
                   -- value.
                   -> ThreadState
                   -- ^ The thread state in which to render the message
+                  -> Name
+                  -- ^ The UI region in which the message is being
+                  -- rendered (for tagging clickable extents)
                   -> (ServerTime -> Widget Name)
                   -- ^ A function to render server times
                   -> Message
                   -- ^ The message to render
                   -> Widget Name
-renderChatMessage st hs ind threadState renderTimeFunc msg =
+renderChatMessage st hs ind threadState clickableNameTag renderTimeFunc msg =
     let showOlderEdits = configShowOlderEdits config
         showTimestamp = configShowMessageTimestamps config
         config = st^.csResources.crConfiguration
@@ -173,6 +181,7 @@ renderChatMessage st hs ind threadState renderTimeFunc msg =
               , mdMyUserId          = userId $ myUser st
               , mdWrapNonhighlightedCodeBlocks = True
               , mdTruncateVerbatimBlocks = st^.csVerbatimTruncateSetting
+              , mdClickableNameTag  = clickableNameTag
               }
         fullMsg =
           case msg^.mUser of
@@ -212,23 +221,25 @@ unsafeRenderMessageSelection :: (SeqDirection dir1, SeqDirection dir2)
                                 )
                              -- ^ The message to render, the messages
                              -- before it, and after it, respectively
-                             -> (Message -> ThreadState -> Widget Name)
+                             -> (Message -> ThreadState -> Name -> Widget Name)
                              -- ^ A per-message rendering function to
                              -- use
+                             -> Name
+                             -- ^ Clickable name tag
                              -> Widget Name
-unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRender =
+unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRender tag =
   Widget Greedy Greedy $ do
     ctx <- getContext
     curMsgResult <- withReaderT relaxHeight $ render $
                     forceAttr messageSelectAttr $
-                    padRight Max $ doMsgRender curMsg curThreadState
+                    padRight Max $ doMsgRender curMsg curThreadState tag
 
     let targetHeight = ctx^.availHeightL
         upperHeight = targetHeight `div` 2
         lowerHeight = targetHeight - upperHeight
 
-    lowerHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) vLimit after
-    upperHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) cropTopTo before
+    lowerHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) vLimit tag after
+    upperHalfResults <- renderMessageSeq targetHeight (render1 doMsgRender) cropTopTo tag before
 
     let upperHalfResultsHeight = sum $ (V.imageHeight . image) <$> upperHalfResults
         lowerHalfResultsHeight = sum $ (V.imageHeight . image) <$> lowerHalfResults
@@ -258,27 +269,29 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
 
 renderMessageSeq :: (SeqDirection dir)
                  => Int
-                 -> (Message -> ThreadState -> Widget Name)
+                 -> (Message -> ThreadState -> Name -> Widget Name)
                  -> (Int -> Widget Name -> Widget Name)
+                 -> Name
                  -> DirectionalSeq dir (Message, ThreadState)
                  -> RenderM Name [Result Name]
-renderMessageSeq remainingHeight renderFunc limitFunc ms
+renderMessageSeq remainingHeight renderFunc limitFunc tag ms
     | messagesLength ms == 0 = return []
     | otherwise = do
         let (m, threadState) = fromJust $ messagesHead ms
             maybeCache = case m^.mMessageId of
                 Nothing -> id
                 Just i -> cached (RenderedMessage i)
-        result <- render $ limitFunc remainingHeight $ maybeCache $ renderFunc m threadState
-        rest <- renderMessageSeq (remainingHeight - (V.imageHeight $ result^.imageL)) renderFunc limitFunc (messagesDrop 1 ms)
+        result <- render $ limitFunc remainingHeight $ maybeCache $ renderFunc m threadState tag
+        rest <- renderMessageSeq (remainingHeight - (V.imageHeight $ result^.imageL)) renderFunc limitFunc tag (messagesDrop 1 ms)
         return $ result : rest
 
 renderLastMessages :: ChatState
                    -> HighlightSet
                    -> Maybe ServerTime
+                   -> Name
                    -> DirectionalSeq Retrograde (Message, ThreadState)
                    -> Widget Name
-renderLastMessages st hs editCutoff msgs =
+renderLastMessages st hs editCutoff tag msgs =
     Widget Greedy Greedy $ do
         ctx <- getContext
         let targetHeight = ctx^.availHeightL
@@ -295,7 +308,7 @@ renderLastMessages st hs editCutoff msgs =
                 let (m, threadState) = fromJust $ messagesHead ms
                     newMessagesAbove = maybe False (isBelow m) newMessageTransition
 
-                result <- render $ render1 doMsgRender m threadState
+                result <- render $ render1 doMsgRender m threadState tag
 
                 croppedResult <- render $ cropTopTo remainingHeight $ resultToWidget result
 
@@ -327,17 +340,18 @@ renderLastMessages st hs editCutoff msgs =
 relaxHeight :: Context n -> Context n
 relaxHeight c = c & availHeightL .~ (max maxMessageHeight (c^.availHeightL))
 
-render1 :: (Message -> ThreadState -> Widget Name)
+render1 :: (Message -> ThreadState -> Name -> Widget Name)
         -> Message
         -> ThreadState
+        -> Name
         -> Widget Name
-render1 doMsgRender msg threadState = case msg^.mDeleted of
+render1 doMsgRender msg threadState tag = case msg^.mDeleted of
     True -> emptyWidget
     False ->
         Widget Greedy Fixed $ do
             withReaderT relaxHeight $
                 render $ padRight Max $
-                doMsgRender msg threadState
+                doMsgRender msg threadState tag
 
 -- | This performs rendering of the specified message according to
 -- settings in MessageData.
@@ -359,7 +373,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             Nothing -> id
             -- We use the index (-1) since indexes for clickable
             -- usernames elsewhere in this message start at 0.
-            Just i -> clickable (ClickableUsernameInMessage i (-1) un)
+            Just i -> clickable (ClickableUsernameInMessage mdClickableNameTag i (-1) un)
 
         nameElems = case msgUsr of
           Just un
@@ -408,7 +422,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         msgAtch = if S.null (msg^.mAttachments)
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox
-                 [ padLeft (Pad 2) $ clickable (ClickableAttachmentInMessage (a^.attachmentFileId)) $
+                 [ padLeft (Pad 2) $ clickable (ClickableAttachmentInMessage mdClickableNameTag (a^.attachmentFileId)) $
                                      txt ("[attached: `" <> a^.attachmentName <> "`]")
                  | a <- toList (msg^.mAttachments)
                  ]
@@ -455,7 +469,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                          , hBox [txt "  ", renderRichText mdMyUsername hs ((subtract 2) <$> w)
                                                  mdWrapNonhighlightedCodeBlocks
                                                  mdTruncateVerbatimBlocks
-                                                 (Just (mkClickableInline (msg^.mMessageId) Nothing)) (Blocks bs)]
+                                                 (Just (mkClickableInline (msg^.mMessageId) mdClickableNameTag)) (Blocks bs)]
                          ]
                else nameNextToMessage hs w nameElems bs
 
@@ -467,21 +481,21 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                               , renderRichText mdMyUsername hs newW
                                   mdWrapNonhighlightedCodeBlocks
                                   mdTruncateVerbatimBlocks
-                                  (Just (mkClickableInline (msg^.mMessageId) Nothing)) (Blocks bs)
+                                  (Just (mkClickableInline (msg^.mMessageId) mdClickableNameTag)) (Blocks bs)
                               ]
 
         isBreak i = i `elem` [ELineBreak, ESoftBreak]
 
-mkClickableInline :: Maybe MessageId -> Maybe Name -> Int -> Inline -> Maybe Name
-mkClickableInline mmId _ i (EHyperlink u _) = do
+mkClickableInline :: Maybe MessageId -> Name -> Int -> Inline -> Maybe Name
+mkClickableInline mmId scope i (EHyperlink u _) = do
     mId <- mmId
-    return $ ClickableURLInMessage mId i $ LinkURL u
-mkClickableInline mmId _ i (EUser name) = do
+    return $ ClickableURLInMessage scope mId i $ LinkURL u
+mkClickableInline mmId scope i (EUser name) = do
     mId <- mmId
-    return $ ClickableUsernameInMessage mId i name
-mkClickableInline (Just mId) _ i (EPermalink teamUrlName pId _) =
-    return $ ClickableURLInMessage mId i $ LinkPermalink teamUrlName pId
-mkClickableInline Nothing (Just scope) i (EPermalink teamUrlName pId _) =
+    return $ ClickableUsernameInMessage scope mId i name
+mkClickableInline (Just mId) scope i (EPermalink teamUrlName pId _) =
+    return $ ClickableURLInMessage scope mId i $ LinkPermalink teamUrlName pId
+mkClickableInline Nothing scope i (EPermalink teamUrlName pId _) =
     return $ ClickableURL scope i $ LinkPermalink teamUrlName pId
 mkClickableInline _ _ _ _ =
     Nothing
@@ -506,7 +520,7 @@ messageReactions MessageData { mdMessage = msg, .. } =
              hasAnyReactions = not $ null nonEmptyReactions
              makeName e us = do
                  pid <- postId <$> msg^.mOriginalPost
-                 Just $ ClickableReactionInMessage pid e us
+                 Just $ ClickableReactionInMessage mdClickableNameTag pid e us
              reactionWidget = Widget Fixed Fixed $ do
                  ctx <- getContext
                  let lineW = ctx^.availWidthL

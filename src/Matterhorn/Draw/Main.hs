@@ -272,6 +272,7 @@ userInputArea st editWhich tId hs =
                           , mdMyUserId          = myUserId st
                           , mdWrapNonhighlightedCodeBlocks = True
                           , mdTruncateVerbatimBlocks = Nothing
+                          , mdClickableNameTag  = getName editor
                           }
                         ]
             _ -> emptyWidget
@@ -344,7 +345,7 @@ renderChannelHeader st tId hs (Just chan) =
         baseUrl = serverBaseUrl st tId
 
     in renderText' (Just baseUrl) (myUsername st)
-         hs (Just (mkClickableInline Nothing (Just $ ChannelTopic $ chan^.ccInfo.cdChannelId)))
+         hs (Just (mkClickableInline Nothing (ChannelTopic $ chan^.ccInfo.cdChannelId)))
          (channelNameString <> maybeTopic)
 
 renderCurrentChannelDisplay :: ChatState
@@ -353,8 +354,9 @@ renderCurrentChannelDisplay :: ChatState
                             -> HighlightSet
                             -> Traversal' ChatState Messages
                             -> Lens' ChatState MessageSelectState
+                            -> Name
                             -> Widget Name
-renderCurrentChannelDisplay st inMsgSelect tId hs getMessages selWhich =
+renderCurrentChannelDisplay st inMsgSelect tId hs getMessages selWhich region =
     channelHeader <=> hBorder <=> messages
     where
     mcId = st^.(csCurrentChannelId tId)
@@ -376,7 +378,7 @@ renderCurrentChannelDisplay st inMsgSelect tId hs getMessages selWhich =
                      renderMessagesWithSelect cId (st^.selWhich) (buildMessages cId)
                 else cached (ChannelMessages cId) $
                      freezeBorders $
-                     renderLastMessages st hs (getEditedMessageCutoff cId st) $
+                     renderLastMessages st hs (getEditedMessageCutoff cId st) region $
                      retrogradeMsgsWithThreadStates $
                      reverseMessages $
                      buildMessages cId
@@ -399,9 +401,9 @@ renderCurrentChannelDisplay st inMsgSelect tId hs getMessages selWhich =
             msgsWithStates = chronologicalMsgsWithThreadStates msgs
         in case s of
              Nothing ->
-                 renderLastMessages st hs (getEditedMessageCutoff cId st) before
+                 renderLastMessages st hs (getEditedMessageCutoff cId st) region before
              Just m ->
-                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing)
+                 unsafeRenderMessageSelection (m, (before, after)) (renderSingleMessage st hs Nothing) region
 
     buildMessages cId =
         -- If the channel is empty, add an informative message to the
@@ -678,6 +680,7 @@ inputPreview st editWhich tId vpName hs
                                   , mdMyUserId          = myUserId st
                                   , mdWrapNonhighlightedCodeBlocks = True
                                   , mdTruncateVerbatimBlocks = Nothing
+                                  , mdClickableNameTag  = MessagePreviewViewport tId
                                   }
                  in (maybePreviewViewport vpName msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")
@@ -739,13 +742,15 @@ mainInterface st mode mtId =
                 in case st^.csCurrentChannelId(tId) of
                     Nothing -> fill ' '
                     Just cId -> maybeSubdue $
-                                messageInterface st tId inMsgSelect
-                                                        (channelMessageSelect(tId))
-                                                        (channelEditor(tId))
-                                                        (csChannelMessages(cId))
-                                                        (MessagePreviewViewport tId)
+                                messageInterface st (ChannelMessages cId)
+                                                 tId inMsgSelect
+                                                 (channelMessageSelect(tId))
+                                                 (channelEditor(tId))
+                                                 (csChannelMessages(cId))
+                                                 (MessagePreviewViewport tId)
 
 messageInterface :: ChatState
+                 -> Name
                  -> TeamId
                  -> Bool
                  -> Lens' ChatState MessageSelectState
@@ -753,7 +758,7 @@ messageInterface :: ChatState
                  -> Traversal' ChatState Messages
                  -> Name
                  -> Widget Name
-messageInterface st tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
+messageInterface st region tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
     vBox [ channelContents
          , bottomBorder
          , inputPreview st editWhich tId previewVpName hs
@@ -763,7 +768,7 @@ messageInterface st tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
     hs = getHighlightSet st tId
 
     channelContents =
-        renderCurrentChannelDisplay st inMsgSelect tId hs msgsWhich selWhich
+        renderCurrentChannelDisplay st inMsgSelect tId hs msgsWhich selWhich region
 
     bottomBorder =
         if inMsgSelect

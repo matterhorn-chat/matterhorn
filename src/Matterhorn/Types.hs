@@ -902,6 +902,7 @@ data Name =
     | ChannelList TeamId
     | HelpViewport
     | HelpText
+    | PostList
     | ScriptHelpText
     | ThemeHelpText
     | SyntaxHighlightHelpText
@@ -941,13 +942,13 @@ data Name =
     | ClickableChannelListEntry ChannelId
     | ClickableTeamListEntry TeamId
     | ClickableURL Name Int LinkTarget
-    | ClickableURLInMessage MessageId Int LinkTarget
-    | ClickableUsernameInMessage MessageId Int Text
+    | ClickableURLInMessage Name MessageId Int LinkTarget
+    | ClickableUsernameInMessage Name MessageId Int Text
+    | ClickableReactionInMessage Name PostId Text (Set UserId)
+    | ClickableAttachmentInMessage Name FileId
     | ClickableUsername Name Int Text
     | ClickableURLListEntry Int LinkTarget
-    | ClickableReactionInMessage PostId Text (Set UserId)
     | ClickableReaction PostId Text (Set UserId)
-    | ClickableAttachmentInMessage FileId
     | ClickableChannelListGroupHeading ChannelListGroupLabel
     | AttachmentPathEditor TeamId
     | AttachmentPathSaveButton TeamId
@@ -966,8 +967,8 @@ class (Show a, Eq a, Ord a) => SemEq a where
     semeq :: a -> a -> Bool
 
 instance SemEq Name where
-    semeq (ClickableURLInMessage mId1 _ t1) (ClickableURLInMessage mId2 _ t2) = mId1 == mId2 && t1 == t2
-    semeq (ClickableUsernameInMessage mId1 _ n) (ClickableUsernameInMessage mId2 _ n2) = mId1 == mId2 && n == n2
+    semeq (ClickableURLInMessage r1 mId1 _ t1) (ClickableURLInMessage r2 mId2 _ t2) = mId1 == mId2 && t1 == t2 && r1 == r2
+    semeq (ClickableUsernameInMessage r1 mId1 _ n) (ClickableUsernameInMessage r2 mId2 _ n2) = mId1 == mId2 && n == n2 && r1 == r2
     semeq a b = a == b
 
 instance SemEq a => SemEq (Maybe a) where
