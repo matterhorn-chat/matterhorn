@@ -771,7 +771,7 @@ mainInterface st mode mtId =
             Just tId ->
                 let hs = getHighlightSet st tId
                 in vBox [ channelContents tId hs
-                        , bottomBorder tId hs
+                        , bottomBorder tId hs (channelEditor(tId))
                         , inputPreview st (channelEditor(tId)) tId (MessagePreviewViewport tId) hs
                         , userInputArea st (channelEditor(tId)) tId hs
                         ]
@@ -779,20 +779,20 @@ mainInterface st mode mtId =
     channelContents tId hs =
         maybeSubdue $ renderCurrentChannelDisplay st mode tId hs
 
-    bottomBorder tId hs =
+    bottomBorder tId hs editWhich =
         case mode of
             ChannelMessageSelect cId ->
                 messageSelectBottomBar st tId (channelMessageSelect(tId)) (csChannelMessages(cId))
             _ -> maybeSubdue $ hBox
-                 [ showAttachmentCount tId
+                 [ showAttachmentCount editWhich
                  , hBorder
                  , showTypingUsers tId hs
                  , showBusy
                  ]
 
     kc = st^.csResources.crConfiguration.configUserKeysL
-    showAttachmentCount tId =
-        let count = length $ listElements $ st^.channelEditor(tId).cedAttachmentList
+    showAttachmentCount editWhich =
+        let count = length $ listElements $ st^.editWhich.cedAttachmentList
         in if count == 0
            then emptyWidget
            else hBox [ borderElem bsHorizontal
