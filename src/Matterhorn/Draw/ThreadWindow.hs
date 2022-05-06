@@ -1,5 +1,5 @@
 module Matterhorn.Draw.ThreadWindow
-  ( drawThreadWindow
+  ( drawThreadWindowLayers
   )
 where
 
@@ -8,11 +8,22 @@ import Matterhorn.Prelude
 
 import Brick
 import Brick.Widgets.Border
-import Lens.Micro.Platform (Lens', _Just, singular)
+import Lens.Micro.Platform (Lens', _Just, singular, SimpleGetter)
 import Network.Mattermost.Types (TeamId)
 
 import Matterhorn.Types
 import Matterhorn.Draw.Main
+import Matterhorn.Draw.Autocomplete
+
+drawThreadWindowLayers :: ChatState -> TeamId -> [Widget Name]
+drawThreadWindowLayers st tId =
+    let ti :: Lens' ChatState ThreadInterface
+        ti = csTeam(tId).tsThreadInterface.singular _Just
+        ed :: SimpleGetter ChatState EditState
+        ed = ti.threadEditor
+    in [ autocompleteLayer st ed
+       , drawThreadWindow st tId
+       ]
 
 drawThreadWindow :: ChatState -> TeamId -> Widget Name
 drawThreadWindow st tId =
