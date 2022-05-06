@@ -37,7 +37,7 @@ import           Network.Mattermost.Types ( ChannelId, Type(Direct, Private, Gro
 
 
 import           Matterhorn.Constants
-import           Matterhorn.Draw.ChannelList ( renderChannelList, renderChannelListHeader )
+import           Matterhorn.Draw.ChannelList ( renderChannelList )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.Autocomplete
 import           Matterhorn.Draw.Util
@@ -348,53 +348,8 @@ renderChannelHeader st tId hs (Just chan) =
          (channelNameString <> maybeTopic)
 
 renderCurrentChannelDisplay :: ChatState -> Mode -> TeamId -> HighlightSet -> Widget Name
-renderCurrentChannelDisplay st mode tId hs = header <=> hBorder <=> messages
+renderCurrentChannelDisplay st mode tId hs = channelHeader <=> hBorder <=> messages
     where
-    header =
-        if st^.csResources.crConfiguration.configShowChannelListL
-        then channelHeader
-        else headerWithStatus
-
-    headerWithStatus =
-        -- Render the channel list header next to the channel header
-        -- itself. We want them to be separated by a vertical border,
-        -- but we want the border to be as high as the tallest of the
-        -- two. To make that work we need to render the two and then
-        -- render a border between them that is the same height as the
-        -- taller of the two. We can't do that without making a custom
-        -- widget which is why we take this approach here rather than
-        -- just putting them all in an hBox.
-        Widget Fixed Fixed $ do
-            ctx <- getContext
-            statusBox <- render $
-                hLimit (configChannelListWidth $ st^.csResources.crConfiguration) $
-                       (renderChannelListHeader st tId)
-
-            let channelHeaderWidth = ctx^.availWidthL -
-                                     (Vty.imageWidth $ statusBox^.imageL) - 1
-
-            channelHeaderResult <- render $ hLimit channelHeaderWidth channelHeader
-
-            let maxHeight = max (Vty.imageHeight $ statusBox^.imageL)
-                                (Vty.imageHeight $ channelHeaderResult^.imageL)
-                statusBoxWidget = resultToWidget statusBox
-                headerWidget = resultToWidget channelHeaderResult
-                borderWidget = vLimit maxHeight vBorder
-
-            render $ if mode == ChannelSelect
-                        then headerWidget
-                        else hBox $ case st^.csChannelListOrientation of
-                            ChannelListLeft ->
-                                [ statusBoxWidget
-                                , borderWidget
-                                , headerWidget
-                                ]
-                            ChannelListRight ->
-                                [ headerWidget
-                                , borderWidget
-                                , statusBoxWidget
-                                ]
-
     mcId = st^.(csCurrentChannelId tId)
     mChan = maybe Nothing (\cId -> st^?csChannel(cId)) mcId
 
