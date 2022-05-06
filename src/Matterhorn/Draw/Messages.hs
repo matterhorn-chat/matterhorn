@@ -423,10 +423,10 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
 
         replyIndent = Widget Fixed Fixed $ do
             ctx <- getContext
-            -- NB: The amount subtracted here must be the total padding
-            -- added below (pad 1 + vBorder)
             w <- case mdRenderReplyIndent of
                 True -> do
+                    -- NB: The amount subtracted here must be the total
+                    -- padding added below (pad 1 + vBorder)
                     w <- render $ hLimit (ctx^.availWidthL - 2) msgWidget
                     return $ vLimit (V.imageHeight $ w^.imageL) $
                         padRight (Pad 1) vBorder <+> resultToWidget w
