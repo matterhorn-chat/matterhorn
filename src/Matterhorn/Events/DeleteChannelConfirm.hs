@@ -18,5 +18,7 @@ onEventDeleteChannelConfirm tId (Vty.EvKey k []) = do
             deleteCurrentChannel tId
         _ -> return ()
     popMode tId
+onEventDeleteChannelConfirm _ (Vty.EvResize {}) = do
+    return ()
 onEventDeleteChannelConfirm tId _ = do
     popMode tId
