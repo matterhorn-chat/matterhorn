@@ -742,23 +742,23 @@ mainInterface st mode mtId =
                 in case st^.csCurrentChannelId(tId) of
                     Nothing -> fill ' '
                     Just cId -> maybeSubdue $
-                                messageInterface st (ChannelMessages cId)
+                                drawMessageInterface st (ChannelMessages cId)
                                                  tId inMsgSelect
                                                  (channelMessageSelect(tId))
                                                  (channelEditor(tId))
                                                  (csChannelMessages(cId))
                                                  (MessagePreviewViewport tId)
 
-messageInterface :: ChatState
-                 -> Name
-                 -> TeamId
-                 -> Bool
-                 -> Lens' ChatState MessageSelectState
-                 -> Lens' ChatState EditState
-                 -> Traversal' ChatState Messages
-                 -> Name
-                 -> Widget Name
-messageInterface st region tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
+drawMessageInterface :: ChatState
+                     -> Name
+                     -> TeamId
+                     -> Bool
+                     -> Lens' ChatState MessageSelectState
+                     -> Lens' ChatState EditState
+                     -> Traversal' ChatState Messages
+                     -> Name
+                     -> Widget Name
+drawMessageInterface st region tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
     vBox [ channelContents
          , bottomBorder
          , inputPreview st editWhich tId previewVpName hs
