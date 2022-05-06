@@ -251,8 +251,12 @@ isSmartClosingPunctuation :: Event -> Bool
 isSmartClosingPunctuation (EvKey (KChar c) []) = c `elem` closingPunctuationMarks
 isSmartClosingPunctuation _ = False
 
-handleEditingInput :: TeamId -> Lens' ChatState EditState -> Event -> MH ()
-handleEditingInput tId which e = do
+handleEditingInput :: TeamId
+                   -> SimpleGetter ChatState (Maybe ChannelId)
+                   -> Lens' ChatState EditState
+                   -> Event
+                   -> MH ()
+handleEditingInput tId getChannelId which e = do
     -- Only handle input events to the editor if we permit editing:
     -- if multiline mode is off, or if there is only one line of text
     -- in the editor. This means we skip input this catch-all handler
@@ -303,7 +307,7 @@ handleEditingInput tId which e = do
               -- Smart char insertion:
               let doInsertChar = do
                     which.cedEditor %= applyEdit (Z.insertChar ch)
-                    sendUserTypingAction tId which
+                    sendUserTypingAction getChannelId which
                   curLine = Z.currentLine $ st^.which.cedEditor.editContentsL
               -- First case: if the cursor is at the end of the current
               -- line and it contains "``" and the user entered a third
@@ -341,10 +345,10 @@ handleEditingInput tId which e = do
                   which.cedEditor %= applyEdit Z.deletePrevChar
 
               which.cedEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
-              sendUserTypingAction tId which
+              sendUserTypingAction getChannelId which
           _ | editingPermitted st which -> do
               mhHandleEventLensed (which.cedEditor) handleEditorEvent e
-              sendUserTypingAction tId which
+              sendUserTypingAction getChannelId which
             | otherwise -> return ()
 
     let ctx = AutocompleteContext { autocompleteManual = False
@@ -372,21 +376,26 @@ handleEditingInput tId which e = do
 -- | Send the user_typing action to the server asynchronously, over the
 -- connected websocket. If the websocket is not connected, drop the
 -- action silently.
-sendUserTypingAction :: TeamId -> Lens' ChatState EditState -> MH ()
-sendUserTypingAction tId which = do
-    withCurrentChannel tId $ \cId _ -> do
-        st <- use id
-        when (configSendTypingNotifications (st^.csResources.crConfiguration)) $
-          case st^.csConnectionStatus of
-            Connected -> do
-              let pId = case st^.which.cedEditMode of
-                          Replying _ post -> Just $ postId post
-                          _               -> Nothing
-              liftIO $ do
-                now <- getCurrentTime
-                let action = UserTyping now cId pId
-                STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
-            Disconnected -> return ()
+sendUserTypingAction :: SimpleGetter ChatState (Maybe ChannelId)
+                     -> Lens' ChatState EditState
+                     -> MH ()
+sendUserTypingAction getChannelId which = do
+    mCId <- use getChannelId
+    case mCId of
+        Nothing -> return ()
+        Just cId -> do
+            st <- use id
+            when (configSendTypingNotifications (st^.csResources.crConfiguration)) $
+              case st^.csConnectionStatus of
+                Connected -> do
+                  let pId = case st^.which.cedEditMode of
+                              Replying _ post -> Just $ postId post
+                              _               -> Nothing
+                  liftIO $ do
+                    now <- getCurrentTime
+                    let action = UserTyping now cId pId
+                    STM.atomically $ STM.writeTChan (st^.csResources.crWebsocketActionChan) action
+                Disconnected -> return ()
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.

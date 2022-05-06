@@ -34,7 +34,7 @@ onEventMain tId =
                       resetReturnChannel tId
                       case e of
                           (Vty.EvPaste bytes) -> handlePaste (channelEditor(tId)) bytes
-                          _ -> handleEditingInput tId (channelEditor(tId)) e2
+                          _ -> handleEditingInput tId (csCurrentChannelId(tId)) (channelEditor(tId)) e2
               case mCid of
                   Nothing ->
                       fallback2 e
@@ -183,7 +183,7 @@ channelEditorKeyHandlers tId editWhich getChannelId =
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a
                  -- newline instead.
-                 True -> handleEditingInput tId editWhich (Vty.EvKey Vty.KEnter [])
+                 True -> handleEditingInput tId getChannelId editWhich (Vty.EvKey Vty.KEnter [])
                  False -> do
                      content <- getEditorContent editWhich
                      handleInputSubmission tId editWhich getChannelId content

@@ -32,7 +32,7 @@ onEventThreadWindow tId ev = do
                 let fallback2 e3 = do
                         case e3 of
                             (Vty.EvPaste bytes) -> handlePaste (ti.threadEditor) bytes
-                            _ -> handleEditingInput tId (ti.threadEditor) e3
+                            _ -> handleEditingInput tId (ti.threadParentChannelId.to Just) (ti.threadEditor) e3
                     bindings = messageListingKeybindings tId
                                                          (ti.threadMessageSelect)
                                                          (ti.threadMessages)
