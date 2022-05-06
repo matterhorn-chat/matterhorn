@@ -64,13 +64,6 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
     liftIO $ Vty.refresh vty
 onBrickEvent (VtyEvent e) = do
     csLastMouseDownEvent .= Nothing
-    mTid <- use csCurrentTeamId
-    case mTid of
-        Nothing -> return ()
-        Just tId -> do
-            m <- use (csTeam(tId).tsMode)
-            ms <- use (csTeam(tId).tsModeStack)
-            mhLog LogGeneral $ T.pack $ show (m, ms)
     onVtyEvent e
 onBrickEvent e@(MouseDown n button modifier _) = do
     mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
