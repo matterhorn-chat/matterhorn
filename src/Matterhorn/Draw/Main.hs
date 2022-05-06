@@ -348,13 +348,13 @@ renderChannelHeader st tId hs (Just chan) =
          (channelNameString <> maybeTopic)
 
 renderCurrentChannelDisplay :: ChatState
-                            -> Mode
+                            -> Bool
                             -> TeamId
                             -> HighlightSet
                             -> Traversal' ChatState Messages
                             -> Lens' ChatState MessageSelectState
                             -> Widget Name
-renderCurrentChannelDisplay st mode tId hs getMessages selWhich =
+renderCurrentChannelDisplay st inMsgSelect tId hs getMessages selWhich =
     channelHeader <=> hBorder <=> messages
     where
     mcId = st^.(csCurrentChannelId tId)
@@ -371,17 +371,15 @@ renderCurrentChannelDisplay st mode tId hs getMessages selWhich =
         case mcId of
             Nothing -> fill ' '
             Just cId ->
-                case mode of
-                    ChannelMessageSelect _ ->
-                        freezeBorders $
-                        renderMessagesWithSelect cId (st^.selWhich) (buildMessages cId)
-                    _ ->
-                        cached (ChannelMessages cId) $
-                        freezeBorders $
-                        renderLastMessages st hs (getEditedMessageCutoff cId st) $
-                        retrogradeMsgsWithThreadStates $
-                        reverseMessages $
-                        buildMessages cId
+                if inMsgSelect
+                then freezeBorders $
+                     renderMessagesWithSelect cId (st^.selWhich) (buildMessages cId)
+                else cached (ChannelMessages cId) $
+                     freezeBorders $
+                     renderLastMessages st hs (getEditedMessageCutoff cId st) $
+                     retrogradeMsgsWithThreadStates $
+                     reverseMessages $
+                     buildMessages cId
 
     renderMessagesWithSelect cId (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
@@ -732,51 +730,56 @@ mainInterface st mode mtId =
                      , vLimit 1 $ fill ' '
                      ]
             Just tId ->
-                case st^.csCurrentChannelId(tId) of
+                let inMsgSelect = case mode of
+                        ChannelMessageSelect {} -> True
+                        _ -> False
+                    maybeSubdue = if mode == ChannelSelect
+                                  then forceAttr ""
+                                  else id
+                in case st^.csCurrentChannelId(tId) of
                     Nothing -> fill ' '
-                    Just cId ->
-                        let hs = getHighlightSet st tId
-                        in vBox [ channelContents tId hs (csChannelMessages(cId)) (channelMessageSelect(tId))
-                                , bottomBorder tId hs (channelEditor(tId))
-                                , inputPreview st (channelEditor(tId)) tId (MessagePreviewViewport tId) hs
-                                , userInputArea st (channelEditor(tId)) tId hs
-                                ]
+                    Just cId -> maybeSubdue $
+                                messageInterface st tId inMsgSelect
+                                                        (channelMessageSelect(tId))
+                                                        (channelEditor(tId))
+                                                        (csChannelMessages(cId))
+                                                        (MessagePreviewViewport tId)
 
-    channelContents :: TeamId
-                    -> HighlightSet
-                    -> Traversal' ChatState Messages
-                    -> Lens' ChatState MessageSelectState
-                    -> Widget Name
-    channelContents tId hs msgsWhich selWhich =
-        maybeSubdue $ renderCurrentChannelDisplay st mode tId hs msgsWhich selWhich
+messageInterface :: ChatState
+                 -> TeamId
+                 -> Bool
+                 -> Lens' ChatState MessageSelectState
+                 -> Lens' ChatState EditState
+                 -> Traversal' ChatState Messages
+                 -> Name
+                 -> Widget Name
+messageInterface st tId inMsgSelect selWhich editWhich msgsWhich previewVpName =
+    vBox [ channelContents
+         , bottomBorder
+         , inputPreview st editWhich tId previewVpName hs
+         , userInputArea st editWhich tId hs
+         ]
+    where
+    hs = getHighlightSet st tId
 
-    bottomBorder :: TeamId -> HighlightSet -> Lens' ChatState EditState -> Widget Name
-    bottomBorder tId hs editWhich =
-        case mode of
-            ChannelMessageSelect cId ->
-                messageSelectBottomBar st tId (channelMessageSelect(tId)) editWhich (csChannelMessages(cId))
-            _ -> maybeSubdue $ hBox
-                 [ showAttachmentCount editWhich
-                 , hBorder
-                 , showTypingUsers tId hs
-                 , showBusy
-                 ]
+    channelContents =
+        renderCurrentChannelDisplay st inMsgSelect tId hs msgsWhich selWhich
 
-    kc = st^.csResources.crConfiguration.configUserKeysL
-    showAttachmentCount editWhich =
-        let count = length $ listElements $ st^.editWhich.cedAttachmentList
-        in if count == 0
-           then emptyWidget
-           else hBox [ borderElem bsHorizontal
-                     , withDefAttr clientMessageAttr $
-                       txt $ "(" <> (T.pack $ show count) <> " attachment" <>
-                             (if count == 1 then "" else "s") <> "; "
-                     , withDefAttr clientEmphAttr $
-                       txt $ ppBinding (firstActiveBinding kc ShowAttachmentListEvent)
-                     , txt " to manage)"
-                     ]
+    bottomBorder =
+        if inMsgSelect
+        then messageSelectBottomBar st tId selWhich editWhich msgsWhich
+        else hBox [ showAttachmentCount
+                  , hBorder
+                  , showTypingUsers
+                  , showBusy
+                  ]
 
-    showTypingUsers tId hs =
+    showBusy = case st^.csWorkerIsBusy of
+                 Just (Just n) -> hLimit 2 hBorder <+> txt (T.pack $ "*" <> show n)
+                 Just Nothing -> hLimit 2 hBorder <+> txt "*"
+                 Nothing -> emptyWidget
+
+    showTypingUsers =
         case st^.csCurrentChannelId(tId) of
             Nothing -> emptyWidget
             Just cId ->
@@ -793,15 +796,19 @@ mainInterface st mode mtId =
                                format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
                             _ -> format "[several people are typing]"
 
-    showBusy = case st^.csWorkerIsBusy of
-                 Just (Just n) -> hLimit 2 hBorder <+> txt (T.pack $ "*" <> show n)
-                 Just Nothing -> hLimit 2 hBorder <+> txt "*"
-                 Nothing -> emptyWidget
-
-    maybeSubdue =
-        if mode == ChannelSelect
-        then forceAttr ""
-        else id
+    kc = st^.csResources.crConfiguration.configUserKeysL
+    showAttachmentCount =
+        let count = length $ listElements $ st^.editWhich.cedAttachmentList
+        in if count == 0
+           then emptyWidget
+           else hBox [ borderElem bsHorizontal
+                     , withDefAttr clientMessageAttr $
+                       txt $ "(" <> (T.pack $ show count) <> " attachment" <>
+                             (if count == 1 then "" else "s") <> "; "
+                     , withDefAttr clientEmphAttr $
+                       txt $ ppBinding (firstActiveBinding kc ShowAttachmentListEvent)
+                     , txt " to manage)"
+                     ]
 
 replyArrow :: Widget a
 replyArrow =
