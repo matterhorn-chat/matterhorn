@@ -487,6 +487,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
         isBreak i = i `elem` [ELineBreak, ESoftBreak]
 
 mkClickableInline :: Maybe MessageId -> Name -> Int -> Inline -> Maybe Name
+mkClickableInline Nothing scope i (EHyperlink u _) = do
+    return $ ClickableURL scope i $ LinkURL u
 mkClickableInline mmId scope i (EHyperlink u _) = do
     mId <- mmId
     return $ ClickableURLInMessage scope mId i $ LinkURL u
