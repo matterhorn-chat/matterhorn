@@ -529,7 +529,8 @@ preChangeChannelCommon tId = do
 
 resetEditorState :: TeamId -> MH ()
 resetEditorState tId = do
-    channelEditor(tId).cedEditMode .= NewPost
+    m <- use (channelEditor(tId).cedResetEditMode)
+    channelEditor(tId).cedEditMode .= m
     channelEditor(tId).cedEditor %= applyEdit clearZipper
 
 saveCurrentEdit :: TeamId -> MH ()

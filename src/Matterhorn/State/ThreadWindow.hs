@@ -31,11 +31,16 @@ openThreadWindow tId cId pId = do
                   let numPosts = HM.size (MM.postsPosts posts)
 
                   when (numPosts > 0) $ do
+                      st <- use id
                       msgs <- installMessagesFromPosts (Just tId) posts
-                      let ti = newThreadInterface tId pId cId msgs
-                      csTeam(tId).tsThreadInterface .= Just ti
-                      when (m /= ThreadWindow) $
-                          pushMode tId ThreadWindow
+                      let mMsg = getMessageForPostId st pId
+                      case mMsg of
+                          Just rootMsg | Just rootPost <- rootMsg^.mOriginalPost -> do
+                              let ti = newThreadInterface tId cId rootMsg rootPost msgs
+                              csTeam(tId).tsThreadInterface .= Just ti
+                              when (m /= ThreadWindow) $
+                                  pushMode tId ThreadWindow
+                          _ -> error "BUG: openThreadWindow failed to find the root message"
 
 closeThreadWindow :: TeamId -> MH ()
 closeThreadWindow tId = do

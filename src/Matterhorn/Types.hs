@@ -227,6 +227,7 @@ module Matterhorn.Types
   , cedEditor
   , cedAutocomplete
   , cedAutocompletePending
+  , cedResetEditMode
   , cedJustCompleted
 
   , GlobalEditState
@@ -1310,6 +1311,8 @@ data EditState =
               , _cedAutocomplete :: Maybe AutocompleteState
               -- ^ The autocomplete state. The autocompletion UI is
               -- showing only when this state is present.
+              , _cedResetEditMode :: EditMode
+              -- ^ The editing mode to reset to after input is handled.
               , _cedAutocompletePending :: Maybe Text
               -- ^ The search string associated with the latest
               -- in-flight autocompletion request. This is used to
@@ -1355,19 +1358,21 @@ emptyEditStateForTeam tId =
               , _cedEditMode             = NewPost
               , _cedMisspellings         = mempty
               , _cedAutocomplete         = Nothing
+              , _cedResetEditMode        = NewPost
               , _cedAutocompletePending  = Nothing
               , _cedAttachmentList       = list (AttachmentList tId) mempty 1
               , _cedFileBrowser          = Nothing
               , _cedJustCompleted        = False
               }
 
-emptyEditStateForThread :: TeamId -> EditState
-emptyEditStateForThread tId =
+emptyEditStateForThread :: TeamId -> EditMode -> EditState
+emptyEditStateForThread tId initialEditMode =
     EditState { _cedEditor               = editor (ThreadMessageInput tId) Nothing ""
               , _cedEphemeral            = defaultEphemeralEditState
-              , _cedEditMode             = NewPost
+              , _cedEditMode             = initialEditMode
               , _cedMisspellings         = mempty
               , _cedAutocomplete         = Nothing
+              , _cedResetEditMode        = initialEditMode
               , _cedAutocompletePending  = Nothing
               , _cedAttachmentList       = list (ThreadEditorAttachmentList tId) mempty 1
               , _cedFileBrowser          = Nothing
@@ -1506,13 +1511,13 @@ data ThreadInterface =
                     -- ^ The channel that this thread belongs to.
                     }
 
-newThreadInterface :: TeamId -> PostId -> ChannelId -> Messages -> ThreadInterface
-newThreadInterface tId pId cId msgs =
+newThreadInterface :: TeamId -> ChannelId -> Message -> Post -> Messages -> ThreadInterface
+newThreadInterface tId cId rootMsg rootPost msgs =
     ThreadInterface { _threadMessages = msgs
-                    , _threadRootPostId = pId
+                    , _threadRootPostId = postId rootPost
                     , _threadParentChannelId = cId
                     , _threadMessageSelect = MessageSelectState Nothing
-                    , _threadEditor = emptyEditStateForThread tId
+                    , _threadEditor = emptyEditStateForThread tId (Replying rootMsg rootPost)
                     }
 
 -- | Construct a new tabbed window from a template. This will raise an

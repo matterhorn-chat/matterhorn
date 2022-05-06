@@ -286,7 +286,8 @@ deleteSelectedMessage tId selWhich msgsWhich editWhich = do
                     doAsyncMM Preempt
                         (\s -> MM.mmDeletePost (postId p) s)
                         (\_ -> Just $ do
-                            editWhich.cedEditMode .= NewPost
+                            m <- use (editWhich.cedResetEditMode)
+                            editWhich.cedEditMode .= m
                             popMode tId)
                 Nothing -> return ()
 

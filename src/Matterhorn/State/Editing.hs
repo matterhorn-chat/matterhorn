@@ -241,7 +241,8 @@ handleInputSubmission tId editWhich getChannelId content = do
 
     -- Reset the edit mode *after* handling the input so that the input
     -- handler can tell whether we're editing, replying, etc.
-    editWhich.cedEditMode .= NewPost
+    resetEditMode <- use (editWhich.cedResetEditMode)
+    editWhich.cedEditMode .= resetEditMode
 
 closingPunctuationMarks :: String
 closingPunctuationMarks = ".,'\";:)]!?"
@@ -461,13 +462,10 @@ cancelAutocompleteOrReplyOrEdit tId which = do
             Just _ -> do
                 resetAutocomplete which
             Nothing -> do
-                mode <- use (which.cedEditMode)
-                case mode of
-                    NewPost -> return ()
-                    _ -> do
-                        which.cedEditMode .= NewPost
-                        which.cedEditor %= applyEdit Z.clearZipper
-                        resetAttachmentList tId which
+                resetEditMode <- use (which.cedResetEditMode)
+                which.cedEditMode .= resetEditMode
+                which.cedEditor %= applyEdit Z.clearZipper
+                resetAttachmentList tId which
 
 replyToLatestMessage :: TeamId -> Lens' ChatState EditState -> MH ()
 replyToLatestMessage tId which = do
