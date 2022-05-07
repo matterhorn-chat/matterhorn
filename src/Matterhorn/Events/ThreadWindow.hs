@@ -36,7 +36,7 @@ onEventThreadWindow tId ev = do
                     bindings = messageListingKeybindings tId
                                                          (ti.threadMessageSelect)
                                                          (ti.threadMessages)
-                                                         (Just $ FromThread $ st^.ti.threadRootPostId)
+                                                         (Just $ FromThreadIn $ st^.ti.threadParentChannelId)
                                                          ThreadWindowMessageSelect
                 void $ handleKeyboardEvent bindings fallback2 e2
         void $ handleKeyboardEvent (messageEditorKeybindings tId (ti.threadEditor)

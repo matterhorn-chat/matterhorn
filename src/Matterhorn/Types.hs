@@ -1703,7 +1703,7 @@ data URLList =
 
 data URLListSource =
     FromChannel TeamId ChannelId
-    | FromThread PostId
+    | FromThreadIn ChannelId
     deriving (Show, Eq)
 
 -- | All application state specific to a team, along with state specific

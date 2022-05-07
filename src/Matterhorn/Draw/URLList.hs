@@ -33,6 +33,7 @@ drawUrlSelectWindow st tId =
     centerLayer $
     hLimit 100 $
     vLimit 35 $
+    joinBorders $
     border $
     vBox [ renderUrlList st tId
          , urlSelectBottomBar st tId
@@ -43,22 +44,26 @@ renderUrlList :: ChatState -> TeamId -> Widget Name
 renderUrlList st tId =
     header <=> urlDisplay
     where
-        header = maybe emptyWidget headerFromSrc src
-        headerFromSrc (FromThread _) =
-            (withDefAttr channelHeaderAttr $ vLimit 1 $
-                (renderText' Nothing "" hSet Nothing $ "URLs: " <> "TODO FIXME") <+>
-                fill ' ') <=> hBorder
-        headerFromSrc (FromChannel _ cId) =
-            case st^?csChannel(cId) of
-                Nothing -> emptyWidget
-                Just chan ->
-                    let cName = mkChannelName st (chan^.ccInfo)
-                    in (withDefAttr channelHeaderAttr $ vLimit 1 $
-                           (renderText' Nothing "" hSet Nothing $ "URLs: " <> cName) <+>
-                           fill ' ') <=> hBorder
+        header = fromMaybe emptyWidget headerFromSrc
+
+        headerFromSrc = do
+            title <- headerTitleFromSrc =<< src
+            return $ (withDefAttr channelHeaderAttr $
+                     (vLimit 1 (renderText' Nothing "" hSet Nothing title <+> fill ' '))) <=> hBorder
+
+        headerTitleFromSrc (FromThreadIn cId) = do
+            cName <- channelNameFor cId
+            return $ "Links from thread in " <> cName
+        headerTitleFromSrc (FromChannel _ cId) = do
+            cName <- channelNameFor cId
+            return $ "Links from " <> cName
+
+        channelNameFor cId = do
+            chan <- st^?csChannel(cId)
+            return $ mkChannelName st (chan^.ccInfo)
 
         urlDisplay = if F.length urls == 0
-                     then str "No URLs found in this channel."
+                     then str "No links found."
                      else renderList renderItem True urls
 
         urls = st^.csTeam(tId).tsUrlList.ulList
