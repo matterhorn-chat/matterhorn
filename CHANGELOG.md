@@ -1,4 +1,54 @@
 
+50200.16.0
+==========
+
+New features:
+ * Matterhorn now provides two configuration file settings to control
+   how typing notifications are used:
+   * `showTypingIndicator`, which now controls only whether an indicator
+     is shown when other users are typing, and
+   * `sendTypingNotifications` (default: `False`), which controls
+     whether Matterhorn sends typing notifications to the server.
+ * The channel list sorting mode can now be configured and changed at
+   runtime. The sorting modes are:
+   * `default` - sort alphabetically with muted channels at the bottom
+     of each group, and
+   * `unread-first` - same as default except that unread channels are
+     displayed at the top of each group.
+   The behavior can be configured by setting `channelListSorting` in the
+   configuration file to one of the above values. In addition, a new key
+   event and key binding can cycle through the available sorting modes:
+   `cycle-channel-list-sorting` (default: `F4`).
+ * The channel list now displays a scroll bar and can be scrolled
+   independently of the selected channel with these key key events and
+   bindings:
+   * `C-Up` / `channel-list-scroll-up` - Scroll up in the channel list
+   * `C-Down` / `channel-list-scroll-down` - Scroll down in the channel
+     list
+   In addition, the appearance of the scroll bar itself can be customized in
+   the them using the following attributes:
+   * `scrollbar` - the base scroll bar attribute
+   * `scrollbar.handle` - the attribute for the ends (handles) of the
+     scroll bar
+   * `scrollbar.trough` - the attribute for the trough (unfilled
+     portion) of the scroll bar
+ * Channel list categories can now be collapsed to hide their entries
+   from view. Matterhorn offers two options for doing this:
+   * Mouse mode, if enabled, makes the channel list group headings
+     clickable to toggle their visibility.
+   * The new `/toggle-sidebar-group` command toggles the visibility of
+     a specified channel list group.
+ * The login interface got support for 2FA (second factor
+   authentication) support. The UI automatically asks for a second
+   factor if the server requires it. (Thanks msm@tailcall.net!)
+
+Other enhancements:
+ * Post links in channel headers can now be clicked if mouse support is
+   enabled.
+ * Matterhorn can now be built with GHC up to 9.2.
+ * The header at the top of the channel list now remains in place while
+   the channel list is scrolled.
+
 50200.15.0
 ==========
 
