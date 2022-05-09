@@ -1,5 +1,5 @@
 name:                matterhorn
-version:             50200.15.0
+version:             50200.16.0
 synopsis:            Terminal client for the Mattermost chat system
 description:         This is a terminal client for the Mattermost chat
                      system. Please see the README for a list of
@@ -11,7 +11,7 @@ maintainer:          matterhorn@galois.com
 copyright:           ©2016-2019 docs/AUTHORS.txt
 category:            Chat
 build-type:          Simple
-cabal-version:       >= 1.18
+cabal-version:       1.18
 tested-with:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.5, GHC == 8.8.3
 
 data-files:          syntax/*.xml
@@ -164,7 +164,7 @@ library
     ghc-options: -fhide-source-paths
 
   build-depends:       base                 >=4.8      && <5
-                     , mattermost-api       == 50200.11.0
+                     , mattermost-api       == 50200.12.0
                      , base-compat          >= 0.9     && < 0.13
                      , unordered-containers >= 0.2     && < 0.3
                      , containers           >= 0.5.7   && < 0.7
