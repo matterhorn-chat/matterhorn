@@ -20,7 +20,7 @@ New features:
    * `unread-first` - same as default except that unread channels are
      displayed at the top of each group.
  * The channel list now displays a scroll bar and can be scrolled
-   independently of the selected channel with these key key events and
+   independently of the selected channel with these key events and
    bindings:
    * `C-Up` / `channel-list-scroll-up` - Scroll up in the channel list
    * `C-Down` / `channel-list-scroll-down` - Scroll down in the channel
