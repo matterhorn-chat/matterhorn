@@ -40,7 +40,7 @@ New features:
    * The new `/toggle-sidebar-group` command toggles the visibility of
      a specified channel list group.
  * The login interface got support for 2FA (second factor
-   authentication) support. The UI automatically asks for a second
+   authentication). The UI automatically asks for a second
    factor if the server requires it. (Thanks msm@tailcall.net!)
 
 Other enhancements:
