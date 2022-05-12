@@ -670,7 +670,7 @@ addPostToOpenThread (Just tId) new msg =
         Just parentId -> do
             mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
             when (mRoot == Just parentId) $
-                (maybeThreadInterface(tId)._Just.threadMessages) %= addMessage msg
+                modifyThreadMessages tId (addMessage msg)
 
 editPostInOpenThread :: Maybe TeamId -> Post -> Message -> MH ()
 editPostInOpenThread Nothing _ _ = return ()
@@ -682,7 +682,7 @@ editPostInOpenThread (Just tId) new msg =
             when (mRoot == Just parentId) $ do
                 mhLog LogGeneral "editPostInOpenThread: updating message"
                 let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-                (maybeThreadInterface(tId)._Just.threadMessages.traversed.filtered isEditedMessage) .= msg
+                modifyEachThreadMessage tId (\m -> if isEditedMessage m then msg else m)
 
 -- | PostProcessMessageAdd is an internal value that informs the main
 -- code whether the user should be notified (e.g., ring the bell) or
@@ -1032,8 +1032,8 @@ asyncFetchAttachments p = do
                            Nothing -> return ()
                            Just tId -> do
                                mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
-                               when (mRoot == Just parentId) $ do
-                                   maybeThreadInterface(tId)._Just.threadMessages.traversed %= addAttachment
+                               when (mRoot == Just parentId) $
+                                   modifyEachThreadMessage tId addAttachment
 
             invalidateChannelRenderingCache cId
             invalidateMessageRenderingCacheByPostId pId

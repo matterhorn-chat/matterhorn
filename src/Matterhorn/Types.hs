@@ -150,6 +150,8 @@ module Matterhorn.Types
   , maybeThreadInterface
   , threadInterfaceEmpty
   , threadInterfaceDeleteWhere
+  , modifyThreadMessages
+  , modifyEachThreadMessage
 
   , trimChannelSigil
 
@@ -2762,3 +2764,11 @@ threadInterfaceDeleteWhere :: TeamId -> (Message -> Bool) -> MH ()
 threadInterfaceDeleteWhere tId f =
     maybeThreadInterface(tId)._Just.threadMessages.traversed.filtered f %=
         (& mDeleted .~ True)
+
+modifyThreadMessages :: TeamId -> (Messages -> Messages) -> MH ()
+modifyThreadMessages tId f = do
+    maybeThreadInterface(tId)._Just.threadMessages %= f
+
+modifyEachThreadMessage :: TeamId -> (Message -> Message) -> MH ()
+modifyEachThreadMessage tId f = do
+    maybeThreadInterface(tId)._Just.threadMessages.traversed %= f
