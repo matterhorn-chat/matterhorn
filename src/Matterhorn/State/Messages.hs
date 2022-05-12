@@ -221,8 +221,7 @@ deletePostFromOpenThread tId p = do
     -- remove it from the thread view. But if this effectively empties
     -- the thread, that's because this was the root. In that case we
     -- need to close down the window.
-    csTeam(tId).tsThreadInterface._Just.threadMessages.traversed.filtered isDeletedMessage %=
-        (& mDeleted .~ True)
+    threadInterfaceDeleteWhere tId isDeletedMessage
 
     isEmpty <- threadInterfaceEmpty tId
     when isEmpty $ closeThreadWindow tId

@@ -147,6 +147,7 @@ module Matterhorn.Types
   , threadParentChannelId
 
   , threadInterfaceEmpty
+  , threadInterfaceDeleteWhere
 
   , trimChannelSigil
 
@@ -433,7 +434,7 @@ import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
                                      , (%=), (%~), (.~), _Just, Traversal', to
-                                     , SimpleGetter
+                                     , SimpleGetter, filtered, traversed
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
 import           Skylighting.Types ( SyntaxMap )
@@ -2743,3 +2744,8 @@ threadInterfaceEmpty tId = do
     case mLen of
         Nothing -> return True
         Just len -> return $ len == 0
+
+threadInterfaceDeleteWhere :: TeamId -> (Message -> Bool) -> MH ()
+threadInterfaceDeleteWhere tId f =
+    csTeam(tId).tsThreadInterface._Just.threadMessages.traversed.filtered f %=
+        (& mDeleted .~ True)
