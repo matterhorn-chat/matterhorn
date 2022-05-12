@@ -146,6 +146,8 @@ module Matterhorn.Types
   , threadRootPostId
   , threadParentChannelId
 
+  , threadInterfaceEmpty
+
   , trimChannelSigil
 
   , ChannelSelectState(..)
@@ -2734,3 +2736,10 @@ moveRight v as =
 
 resultToWidget :: Result n -> Widget n
 resultToWidget = Widget Fixed Fixed . return
+
+threadInterfaceEmpty :: TeamId -> MH Bool
+threadInterfaceEmpty tId = do
+    mLen <- preuse (csTeam(tId).tsThreadInterface._Just.threadMessages.to messagesLength)
+    case mLen of
+        Nothing -> return True
+        Just len -> return $ len == 0

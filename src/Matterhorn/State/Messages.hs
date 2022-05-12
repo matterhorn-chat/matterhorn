@@ -224,10 +224,8 @@ deletePostFromOpenThread tId p = do
     csTeam(tId).tsThreadInterface._Just.threadMessages.traversed.filtered isDeletedMessage %=
         (& mDeleted .~ True)
 
-    mLen <- preuse (csTeam(tId).tsThreadInterface._Just.threadMessages.to messagesLength)
-    case mLen of
-        Nothing -> return ()
-        Just len -> when (len == 0) $ closeThreadWindow tId
+    isEmpty <- threadInterfaceEmpty tId
+    when isEmpty $ closeThreadWindow tId
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
