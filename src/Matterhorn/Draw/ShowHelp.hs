@@ -476,7 +476,7 @@ tabbedWinThunk = error "BUG: should not evaluate tabbedWinThunk"
 editorThunk :: Lens' ChatState (Editor Text Name)
 editorThunk = error "BUG: should not evaluate editorThunk"
 
-editWhichThunk :: Lens' ChatState EditState
+editWhichThunk :: Lens' ChatState (EditState Name)
 editWhichThunk = error "BUG: should not evaluate editWhichThunk"
 
 selWhichThunk :: Lens' ChatState MessageSelectState

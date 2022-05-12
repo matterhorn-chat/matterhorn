@@ -1284,13 +1284,13 @@ data AutocompletionType =
     | ACCommands
     deriving (Eq, Show)
 
-data AutocompleteState =
+data AutocompleteState n =
     AutocompleteState { _acPreviousSearchString :: Text
                       -- ^ The search string used for the
                       -- currently-displayed autocomplete results, for
                       -- use in deciding whether to issue another server
                       -- query
-                      , _acCompletionList :: List Name AutocompleteAlternative
+                      , _acCompletionList :: List n AutocompleteAlternative
                       -- ^ The list of alternatives that the user
                       -- selects from
                       , _acType :: AutocompletionType
@@ -1309,12 +1309,12 @@ data AutocompleteState =
 
 -- | The 'EditState' value contains the editor widget itself as well as
 -- history and metadata we need for editing-related operations.
-data EditState =
-    EditState { _esEditor :: Editor Text Name
+data EditState n =
+    EditState { _esEditor :: Editor Text n
               , _esEditMode :: EditMode
               , _esEphemeral :: EphemeralEditState
               , _esMisspellings :: Set Text
-              , _esAutocomplete :: Maybe AutocompleteState
+              , _esAutocomplete :: Maybe (AutocompleteState n)
               -- ^ The autocomplete state. The autocompletion UI is
               -- showing only when this state is present.
               , _esResetEditMode :: EditMode
@@ -1327,10 +1327,10 @@ data EditState =
               -- more quickly than the server can get us the results,
               -- and we wouldn't want to show results associated with
               -- old editor states.
-              , _esAttachmentList :: List Name AttachmentData
+              , _esAttachmentList :: List n AttachmentData
               -- ^ The list of attachments to be uploaded with the post
               -- being edited.
-              , _esFileBrowser :: Maybe (FB.FileBrowser Name)
+              , _esFileBrowser :: Maybe (FB.FileBrowser n)
               -- ^ The browser for selecting attachment files. This is
               -- a Maybe because the instantiation of the FileBrowser
               -- causes it to read and ingest the target directory, so
@@ -1359,7 +1359,7 @@ data AttachmentData =
 
 -- | We can initialize a new 'EditState' value with just an edit
 -- history, which we save locally.
-emptyEditStateForTeam :: TeamId -> EditState
+emptyEditStateForTeam :: TeamId -> EditState Name
 emptyEditStateForTeam tId =
     EditState { _esEditor               = editor (MessageInput tId) Nothing ""
               , _esEphemeral            = defaultEphemeralEditState
@@ -1374,7 +1374,7 @@ emptyEditStateForTeam tId =
               , _esShowReplyPrompt      = True
               }
 
-emptyEditStateForThread :: TeamId -> ChannelId -> EditMode -> EditState
+emptyEditStateForThread :: TeamId -> ChannelId -> EditMode -> EditState Name
 emptyEditStateForThread tId cId initialEditMode =
     EditState { _esEditor               = editor (ThreadMessageInput tId cId) Nothing ""
               , _esEphemeral            = defaultEphemeralEditState
@@ -1507,10 +1507,10 @@ data TabbedWindow a =
 
 -- | A window in which a specific thread is viewed, where the user can
 -- send messages implicitly to that thread.
-data ThreadInterface =
+data ThreadInterface n =
     ThreadInterface { _threadMessages :: Messages
                     -- ^ The messages in the thread.
-                    , _threadEditor :: EditState
+                    , _threadEditor :: EditState n
                     -- ^ The editor and associated state for composing
                     -- messages in this thread.
                     , _threadMessageSelect :: MessageSelectState
@@ -1521,7 +1521,7 @@ data ThreadInterface =
                     -- ^ The channel that this thread belongs to.
                     }
 
-newThreadInterface :: TeamId -> ChannelId -> Message -> Post -> Messages -> ThreadInterface
+newThreadInterface :: TeamId -> ChannelId -> Message -> Post -> Messages -> ThreadInterface Name
 newThreadInterface tId cId rootMsg rootPost msgs =
     ThreadInterface { _threadMessages = msgs
                     , _threadRootPostId = postId rootPost
@@ -1735,7 +1735,7 @@ data TeamState =
               , _tsReturnChannel :: Maybe ChannelId
               -- ^ The channel to return to after visiting one or more
               -- unread channels.
-              , _tsEditState :: EditState
+              , _tsEditState :: EditState Name
               -- ^ The state of the input box used for composing and
               -- editing messages and commands.
               , _tsGlobalEditState :: GlobalEditState
@@ -1795,7 +1795,7 @@ data TeamState =
               , _tsChannelListSorting :: ChannelListSorting
               -- ^ How to sort channels in this team's channel list
               -- groups
-              , _tsThreadInterface :: Maybe ThreadInterface
+              , _tsThreadInterface :: Maybe (ThreadInterface Name)
               -- ^ The thread interface for this team for participating
               -- in a single thread
               }
@@ -2354,7 +2354,7 @@ serverBaseUrl st tId =
         tName = teamName $ st^.csTeam(tId).tsTeam
     in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
 
-unsafeEsFileBrowser :: Lens' EditState (FB.FileBrowser Name)
+unsafeEsFileBrowser :: Lens' (EditState n) (FB.FileBrowser n)
 unsafeEsFileBrowser =
      lens (\st   -> st^.esFileBrowser ^?! _Just)
           (\st t -> st & esFileBrowser .~ Just t)
@@ -2437,7 +2437,7 @@ withCurrentChannel' tId f = do
 csCurrentTeamId :: SimpleGetter ChatState (Maybe TeamId)
 csCurrentTeamId = csTeamZipper.to Z.focus
 
-channelEditor :: TeamId -> Lens' ChatState EditState
+channelEditor :: TeamId -> Lens' ChatState (EditState Name)
 channelEditor tId = csTeam(tId).tsEditState
 
 channelMessageSelect :: TeamId -> Lens' ChatState MessageSelectState
@@ -2593,7 +2593,7 @@ data SidebarUpdate =
     deriving (Eq, Show)
 
 
-resetAutocomplete :: Lens' ChatState EditState -> MH ()
+resetAutocomplete :: Lens' ChatState (EditState n) -> MH ()
 resetAutocomplete which = do
     which.esAutocomplete .= Nothing
     which.esAutocompletePending .= Nothing
@@ -2747,11 +2747,11 @@ resultToWidget = Widget Fixed Fixed . return
 -- the interface is present; if not, this crashes. Intended for places
 -- where you know the interface will be present due to other state and
 -- don't want to deal with Maybe.
-threadInterface :: TeamId -> Lens' ChatState ThreadInterface
+threadInterface :: TeamId -> Lens' ChatState (ThreadInterface Name)
 threadInterface tId = maybeThreadInterface(tId).singular _Just
 
 -- A safe version of threadInterface.
-maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe ThreadInterface)
+maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe (ThreadInterface Name))
 maybeThreadInterface tId = csTeam(tId).tsThreadInterface
 
 threadInterfaceEmpty :: TeamId -> MH Bool

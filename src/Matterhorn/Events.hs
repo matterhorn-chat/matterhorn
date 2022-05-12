@@ -218,7 +218,7 @@ handleTeamModeEvent e =
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode e =
-    let ti :: Lens' ChatState ThreadInterface
+    let ti :: Lens' ChatState (ThreadInterface Name)
         ti = threadInterface tId
     in case mode of
         Main                       -> onEventMain tId e
@@ -239,14 +239,14 @@ teamEventHandlerByMode tId mode e =
                                               tId e)
         ManageAttachments -> do
             st <- use id
-            let ed :: Lens' ChatState EditState
+            let ed :: Lens' ChatState (EditState Name)
                 ed = case st^.csTeam(tId).tsThreadInterface of
                          Nothing -> channelEditor(tId)
                          Just _ -> ti.threadEditor
             onEventManageAttachments tId ed e
         ManageAttachmentsBrowseFiles -> do
             st <- use id
-            let ed :: Lens' ChatState EditState
+            let ed :: Lens' ChatState (EditState Name)
                 ed = case st^.csTeam(tId).tsThreadInterface of
                          Nothing -> channelEditor(tId)
                          Just _ -> ti.threadEditor

@@ -101,7 +101,12 @@ data Token =
     -- misspelling list.
     deriving (Show)
 
-drawEditorContents :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> HighlightSet -> [Text] -> Widget Name
+drawEditorContents :: ChatState
+                   -> SimpleGetter ChatState (EditState Name)
+                   -> TeamId
+                   -> HighlightSet
+                   -> [Text]
+                   -> Widget Name
 drawEditorContents st editWhich tId hs =
     let noHighlight = txt . T.unlines
     in case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
@@ -232,7 +237,11 @@ doHighlightMisspellings hSet misspellings contents =
 
     in vBox $ handleLine <$> contents
 
-userInputArea :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> HighlightSet -> Widget Name
+userInputArea :: ChatState
+              -> SimpleGetter ChatState (EditState Name)
+              -> TeamId
+              -> HighlightSet
+              -> Widget Name
 userInputArea st editWhich tId hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "
@@ -545,7 +554,7 @@ connectionLayer st =
 messageSelectBottomBar :: ChatState
                        -> TeamId
                        -> Lens' ChatState MessageSelectState
-                       -> Lens' ChatState EditState
+                       -> Lens' ChatState (EditState Name)
                        -> Traversal' ChatState Messages
                        -> Widget Name
 messageSelectBottomBar st tId selWhich editWhich msgsWhich =
@@ -646,7 +655,12 @@ maybePreviewViewport n w =
                 render $ vLimit previewMaxHeight $ viewport n Vertical $
                          (resultToWidget result)
 
-inputPreview :: ChatState -> SimpleGetter ChatState EditState -> TeamId -> Name -> HighlightSet -> Widget Name
+inputPreview :: ChatState
+             -> SimpleGetter ChatState (EditState Name)
+             -> TeamId
+             -> Name
+             -> HighlightSet
+             -> Widget Name
 inputPreview st editWhich tId vpName hs
     | not $ st^.csResources.crConfiguration.configShowMessagePreviewL = emptyWidget
     | otherwise = thePreview
@@ -785,7 +799,7 @@ drawMessageInterface :: ChatState
                      -> Bool
                      -> Bool
                      -> Lens' ChatState MessageSelectState
-                     -> Lens' ChatState EditState
+                     -> Lens' ChatState (EditState Name)
                      -> Traversal' ChatState Messages
                      -> Bool
                      -> Name

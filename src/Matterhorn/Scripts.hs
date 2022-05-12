@@ -22,7 +22,7 @@ import           Matterhorn.State.Messages ( sendMessage )
 import           Matterhorn.Types
 
 
-findAndRunScript :: Lens' ChatState EditState -> ChannelId -> Text -> Text -> MH ()
+findAndRunScript :: Lens' ChatState (EditState Name) -> ChannelId -> Text -> Text -> MH ()
 findAndRunScript which cId scriptName input = do
     fpMb <- liftIO $ locateScriptPath (T.unpack scriptName)
     outputChan <- use (csResources.crSubprocessLog)
@@ -40,7 +40,12 @@ findAndRunScript which cId scriptName input = do
       ScriptNotFound -> do
         mhError $ NoSuchScript scriptName
 
-runScript :: Lens' ChatState EditState -> ChannelId -> STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
+runScript :: Lens' ChatState (EditState Name)
+          -> ChannelId
+          -> STM.TChan ProgramOutput
+          -> FilePath
+          -> Text
+          -> IO (Maybe (MH ()))
 runScript which cId outputChan fp text = do
   outputVar <- newEmptyMVar
   runLoggedCommand outputChan fp [] (Just $ T.unpack text) (Just outputVar)

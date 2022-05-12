@@ -56,7 +56,10 @@ data AutocompleteContext =
 -- should cause an autocompletion UI to appear. If so, initiate a server
 -- query or local cache lookup to present the completion alternatives
 -- for the word at the cursor.
-checkForAutocompletion :: TeamId -> Lens' ChatState EditState -> AutocompleteContext -> MH ()
+checkForAutocompletion :: TeamId
+                       -> Lens' ChatState (EditState Name)
+                       -> AutocompleteContext
+                       -> MH ()
 checkForAutocompletion tId which ctx = do
     result <- getCompleterForInput tId which ctx
     case result of
@@ -79,7 +82,7 @@ checkForAutocompletion tId which ctx = do
                 runUpdater ty ctx searchString
 
 getCompleterForInput :: TeamId
-                     -> Lens' ChatState EditState
+                     -> Lens' ChatState (EditState Name)
                      -> AutocompleteContext
                      -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput tId which ctx = do
@@ -104,7 +107,12 @@ getCompleterForInput tId which ctx = do
 
 -- Completion implementations
 
-doEmojiAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doEmojiAutoCompletion :: TeamId
+                      -> Lens' ChatState (EditState Name)
+                      -> AutocompletionType
+                      -> AutocompleteContext
+                      -> Text
+                      -> MH ()
 doEmojiAutoCompletion tId which ty ctx searchString = do
     session <- getSession
     em <- use (csResources.crEmoji)
@@ -114,7 +122,12 @@ doEmojiAutoCompletion tId which ty ctx searchString = do
             let alts = EmojiCompletion <$> results
             return $ Just $ setCompletionAlternatives tId which ctx searchString alts ty
 
-doSyntaxAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doSyntaxAutoCompletion :: TeamId
+                       -> Lens' ChatState (EditState Name)
+                       -> AutocompletionType
+                       -> AutocompleteContext
+                       -> Text
+                       -> MH ()
 doSyntaxAutoCompletion tId which ty ctx searchString = do
     mapping <- use (csResources.crSyntaxMap)
     let allNames = Sky.sShortname <$> M.elems mapping
@@ -171,7 +184,12 @@ hiddenCommand c = (T.toLower $ commandTrigger c) `elem` hiddenServerCommands
 isDeletedCommand :: Command -> Bool
 isDeletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
 
-doCommandAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doCommandAutoCompletion :: TeamId
+                        -> Lens' ChatState (EditState Name)
+                        -> AutocompletionType
+                        -> AutocompleteContext
+                        -> Text
+                        -> MH ()
 doCommandAutoCompletion myTid which ty ctx searchString = do
     session <- getSession
 
@@ -257,7 +275,12 @@ compareCommandAlts s (CommandCompletion _ nameA _ _)
             else GT
 compareCommandAlts _ _ _ = LT
 
-doUserAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doUserAutoCompletion :: TeamId
+                     -> Lens' ChatState (EditState Name)
+                     -> AutocompletionType
+                     -> AutocompleteContext
+                     -> Text
+                     -> MH ()
 doUserAutoCompletion tId which ty ctx searchString = do
     session <- getSession
     myUid <- gets myUserId
@@ -281,7 +304,12 @@ doUserAutoCompletion tId which ty ctx searchString = do
 
                 return $ Just $ setCompletionAlternatives tId which ctx searchString (alts <> extras) ty
 
-doChannelAutoCompletion :: TeamId -> Lens' ChatState EditState -> AutocompletionType -> AutocompleteContext -> Text -> MH ()
+doChannelAutoCompletion :: TeamId
+                        -> Lens' ChatState (EditState Name)
+                        -> AutocompletionType
+                        -> AutocompleteContext
+                        -> Text
+                        -> MH ()
 doChannelAutoCompletion tId which ty ctx searchString = do
     session <- getSession
     cs <- use csChannels
@@ -302,7 +330,7 @@ doChannelAutoCompletion tId which ty ctx searchString = do
 -- on search string), run the specified action, which is assumed to be
 -- responsible for fetching the completion results from the server.
 withCachedAutocompleteResults :: TeamId
-                              -> Lens' ChatState EditState
+                              -> Lens' ChatState (EditState Name)
                               -> AutocompleteContext
                               -- ^ The autocomplete context
                               -> AutocompletionType
@@ -328,7 +356,7 @@ withCachedAutocompleteResults tId which ctx ty searchString act = do
         False -> act
 
 setCompletionAlternatives :: TeamId
-                          -> Lens' ChatState EditState
+                          -> Lens' ChatState (EditState Name)
                           -> AutocompleteContext
                           -> Text
                           -> [AutocompleteAlternative]

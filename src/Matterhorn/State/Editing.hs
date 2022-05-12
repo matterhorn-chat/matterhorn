@@ -61,12 +61,12 @@ import           Matterhorn.Types hiding ( newState )
 import           Matterhorn.Types.Common ( sanitizeUserText' )
 
 
-startMultilineEditing :: Lens' ChatState EditState -> MH ()
+startMultilineEditing :: Lens' ChatState (EditState Name) -> MH ()
 startMultilineEditing which = do
     mh invalidateCache
     which.esEphemeral.eesMultiline .= True
 
-toggleMultilineEditing :: Lens' ChatState EditState -> MH ()
+toggleMultilineEditing :: Lens' ChatState (EditState Name) -> MH ()
 toggleMultilineEditing which = do
     mh invalidateCache
     which.esEphemeral.eesMultiline %= not
@@ -80,7 +80,7 @@ toggleMultilineEditing which = do
     numLines <- use (which.esEditor.to getEditContents.to length)
     when (not multiline && numLines > 1) (resetAutocomplete which)
 
-invokeExternalEditor :: Lens' ChatState EditState -> MH ()
+invokeExternalEditor :: Lens' ChatState (EditState Name) -> MH ()
 invokeExternalEditor which = do
     -- If EDITOR is in the environment, write the current message to a
     -- temp file, invoke EDITOR on it, read the result, remove the temp
@@ -113,7 +113,7 @@ invokeExternalEditor which = do
                         return $ st & which.esEditor.editContentsL .~ (Z.textZipper tmpLines Nothing)
             Sys.ExitFailure _ -> return st
 
-handlePaste :: Lens' ChatState EditState -> BS.ByteString -> MH ()
+handlePaste :: Lens' ChatState (EditState Name) -> BS.ByteString -> MH ()
 handlePaste which bytes = do
   let pasteStr = T.pack (UTF8.toString bytes)
   which.esEditor %= applyEdit (Z.insertMany (sanitizeUserText' pasteStr))
@@ -122,7 +122,7 @@ handlePaste which bytes = do
       True -> startMultilineEditing which
       False -> return ()
 
-editingPermitted :: ChatState -> Lens' ChatState EditState -> Bool
+editingPermitted :: ChatState -> Lens' ChatState (EditState Name) -> Bool
 editingPermitted st which =
     (length (getEditContents $ st^.which.esEditor) == 1) ||
     st^.which.esEphemeral.eesMultiline
@@ -183,7 +183,7 @@ editingKeyHandlers tId editor =
       editor %= applyEdit (Z.insertMany buf)
   ]
 
-getEditorContent :: Lens' ChatState EditState -> MH Text
+getEditorContent :: Lens' ChatState (EditState Name) -> MH Text
 getEditorContent which = do
     cmdLine <- use (which.esEditor)
     let (line, rest) = case getEditContents cmdLine of
@@ -203,7 +203,7 @@ getEditorContent which = do
 -- resetting the edit mode, updating the input history for the specified
 -- channel, etc.
 handleInputSubmission :: TeamId
-                      -> Lens' ChatState EditState
+                      -> Lens' ChatState (EditState Name)
                       -> SimpleGetter ChatState (Maybe ChannelId)
                       -> Text
                       -> MH ()
@@ -253,7 +253,7 @@ isSmartClosingPunctuation _ = False
 
 handleEditingInput :: TeamId
                    -> SimpleGetter ChatState (Maybe ChannelId)
-                   -> Lens' ChatState EditState
+                   -> Lens' ChatState (EditState Name)
                    -> Event
                    -> MH ()
 handleEditingInput tId getChannelId which e = do
@@ -377,7 +377,7 @@ handleEditingInput tId getChannelId which e = do
 -- connected websocket. If the websocket is not connected, drop the
 -- action silently.
 sendUserTypingAction :: SimpleGetter ChatState (Maybe ChannelId)
-                     -> Lens' ChatState EditState
+                     -> Lens' ChatState (EditState Name)
                      -> MH ()
 sendUserTypingAction getChannelId which = do
     mCId <- use getChannelId
@@ -399,7 +399,7 @@ sendUserTypingAction getChannelId which = do
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
-requestSpellCheck :: TeamId -> Lens' ChatState EditState -> MH ()
+requestSpellCheck :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 requestSpellCheck tId which = do
     st <- use id
     case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
@@ -462,7 +462,7 @@ gotoEnd z =
        then Z.moveCursor (numLines - 1, lastLineLength) z
        else z
 
-cancelAutocompleteOrReplyOrEdit :: TeamId -> Lens' ChatState EditState -> MH ()
+cancelAutocompleteOrReplyOrEdit :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 cancelAutocompleteOrReplyOrEdit tId which = do
     withCurrentChannel tId $ \cId _ -> do
         invalidateChannelRenderingCache cId
@@ -476,7 +476,7 @@ cancelAutocompleteOrReplyOrEdit tId which = do
                 which.esEditor %= applyEdit Z.clearZipper
                 resetAttachmentList tId which
 
-replyToLatestMessage :: TeamId -> Lens' ChatState EditState -> MH ()
+replyToLatestMessage :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 replyToLatestMessage tId which = do
     withCurrentChannel tId $ \cId chan -> do
         let msgs = chan^. ccContents . cdMessages
@@ -489,7 +489,7 @@ replyToLatestMessage tId which = do
 
 data Direction = Forwards | Backwards
 
-tabComplete :: TeamId -> Lens' ChatState EditState -> Direction -> MH ()
+tabComplete :: TeamId -> Lens' ChatState (EditState Name) -> Direction -> MH ()
 tabComplete tId which dir = do
     let transform list =
             let len = list^.L.listElementsL.to length

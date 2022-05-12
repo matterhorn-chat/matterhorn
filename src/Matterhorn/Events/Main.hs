@@ -142,7 +142,7 @@ mainKeyHandlers tId =
     ]
 
 messageEditorKeybindings :: TeamId
-                         -> Lens' ChatState EditState
+                         -> Lens' ChatState (EditState Name)
                          -> SimpleGetter ChatState (Maybe ChannelId)
                          -> KeyConfig
                          -> KeyHandlerMap
@@ -150,7 +150,7 @@ messageEditorKeybindings tId editWhich getChannelId =
     mkKeybindings (channelEditorKeyHandlers tId editWhich getChannelId)
 
 channelEditorKeyHandlers :: TeamId
-                         -> Lens' ChatState EditState
+                         -> Lens' ChatState (EditState Name)
                          -> SimpleGetter ChatState (Maybe ChannelId)
                          -> [KeyEventHandler]
 channelEditorKeyHandlers tId editWhich getChannelId =

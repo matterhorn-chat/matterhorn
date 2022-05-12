@@ -43,20 +43,20 @@ validateAttachmentPath path = bool Nothing (Just path) <$> do
 defaultAttachmentsPath :: Config -> IO (Maybe FilePath)
 defaultAttachmentsPath = maybe (return Nothing) validateAttachmentPath . configDefaultAttachmentPath
 
-showAttachmentList :: TeamId -> Lens' ChatState EditState -> MH ()
+showAttachmentList :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 showAttachmentList tId which = do
     lst <- use (which.esAttachmentList)
     case length (L.listElements lst) of
         0 -> showAttachmentFileBrowser tId which
         _ -> pushMode tId ManageAttachments
 
-resetAttachmentList :: TeamId -> Lens' ChatState EditState -> MH ()
+resetAttachmentList :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 resetAttachmentList tId which = do
     let listName = AttachmentList tId
     which.esAttachmentList .= L.list listName mempty 1
     mh $ vScrollToBeginning $ viewportScroll listName
 
-showAttachmentFileBrowser :: TeamId -> Lens' ChatState EditState -> MH ()
+showAttachmentFileBrowser :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 showAttachmentFileBrowser tId which = do
     config <- use (csResources.crConfiguration)
     filePath <- liftIO $ defaultAttachmentsPath config
@@ -64,7 +64,7 @@ showAttachmentFileBrowser tId which = do
     which.esFileBrowser .= browser
     pushMode tId ManageAttachmentsBrowseFiles
 
-attachFileByPath :: TeamId -> Lens' ChatState EditState -> Text -> MH ()
+attachFileByPath :: TeamId -> Lens' ChatState (EditState Name) -> Text -> MH ()
 attachFileByPath tId which txtPath = do
     let strPath = unpack txtPath
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
@@ -76,7 +76,7 @@ attachFileByPath tId which txtPath = do
 checkPathIsFile :: FB.FileInfo -> MH Bool
 checkPathIsFile = liftIO . doesFileExist . FB.fileInfoFilePath
 
-tryAddAttachment :: TeamId -> Lens' ChatState EditState -> [FB.FileInfo] -> MH ()
+tryAddAttachment :: TeamId -> Lens' ChatState (EditState Name) -> [FB.FileInfo] -> MH ()
 tryAddAttachment tId which entries = do
     forM_ entries $ \entry -> do
         isFile <- checkPathIsFile entry

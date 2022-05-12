@@ -275,7 +275,7 @@ messageSelectLast selWhich msgsWhich =
 deleteSelectedMessage :: TeamId
                       -> SimpleGetter ChatState MessageSelectState
                       -> Traversal' ChatState Messages
-                      -> Lens' ChatState EditState
+                      -> Lens' ChatState (EditState Name)
                       -> MH ()
 deleteSelectedMessage tId selWhich msgsWhich editWhich = do
     st <- use id
@@ -294,7 +294,7 @@ deleteSelectedMessage tId selWhich msgsWhich editWhich = do
 beginReplyCompose :: TeamId
                   -> SimpleGetter ChatState MessageSelectState
                   -> Traversal' ChatState Messages
-                  -> Lens' ChatState EditState
+                  -> Lens' ChatState (EditState Name)
                   -> MH ()
 beginReplyCompose tId selWhich msgsWhich editWhich = do
     withSelectedMessage selWhich msgsWhich $ \msg ->
@@ -307,7 +307,7 @@ beginReplyCompose tId selWhich msgsWhich editWhich = do
 beginEditMessage :: TeamId
                  -> SimpleGetter ChatState MessageSelectState
                  -> Traversal' ChatState Messages
-                 -> Lens' ChatState EditState
+                 -> Lens' ChatState (EditState Name)
                  -> MH ()
 beginEditMessage tId selWhich msgsWhich editWhich = do
     st <- use id

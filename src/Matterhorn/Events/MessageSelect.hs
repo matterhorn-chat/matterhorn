@@ -28,7 +28,7 @@ messagesPerPageOperation = 10
 onEventMessageSelect :: TeamId
                      -> Lens' ChatState MessageSelectState
                      -> Traversal' ChatState Messages
-                     -> Lens' ChatState EditState
+                     -> Lens' ChatState (EditState Name)
                      -> Vty.Event
                      -> MH ()
 onEventMessageSelect tId selWhich msgsWhich editWhich =
@@ -47,7 +47,7 @@ onEventMessageSelectDeleteConfirm tId _ = do
 messageSelectKeybindings :: TeamId
                          -> Lens' ChatState MessageSelectState
                          -> Traversal' ChatState Messages
-                         -> Lens' ChatState EditState
+                         -> Lens' ChatState (EditState Name)
                          -> KeyConfig
                          -> KeyHandlerMap
 messageSelectKeybindings tId selWhich msgsWhich editWhich =
@@ -56,7 +56,7 @@ messageSelectKeybindings tId selWhich msgsWhich editWhich =
 messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState MessageSelectState
                          -> Traversal' ChatState Messages
-                         -> Lens' ChatState EditState
+                         -> Lens' ChatState (EditState Name)
                          -> [KeyEventHandler]
 messageSelectKeyHandlers tId selWhich msgsWhich editWhich =
     [ mkKb CancelEvent "Cancel message selection" $ do

@@ -27,7 +27,7 @@ drawManageAttachments :: ChatState -> TeamId -> Widget Name
 drawManageAttachments st tId =
     topLayer
     where
-        editWhich :: Lens' ChatState EditState
+        editWhich :: Lens' ChatState (EditState Name)
         editWhich = case st^.csTeam(tId).tsThreadInterface of
             Nothing -> channelEditor(tId)
             Just _  -> threadInterface(tId).threadEditor
@@ -36,7 +36,7 @@ drawManageAttachments st tId =
             ManageAttachmentsBrowseFiles -> drawFileBrowser st editWhich
             _ -> error "BUG: drawManageAttachments called in invalid mode"
 
-drawAttachmentList :: ChatState -> Lens' ChatState EditState -> Widget Name
+drawAttachmentList :: ChatState -> Lens' ChatState (EditState Name) -> Widget Name
 drawAttachmentList st editWhich =
     let addBinding = ppBinding $ firstActiveBinding kc AttachmentListAddEvent
         delBinding = ppBinding $ firstActiveBinding kc AttachmentListDeleteEvent
@@ -61,7 +61,7 @@ renderAttachmentItem :: Bool -> AttachmentData -> Widget Name
 renderAttachmentItem _ d =
     padRight Max $ str $ FB.fileInfoSanitizedFilename $ attachmentDataFileInfo d
 
-drawFileBrowser :: ChatState -> Lens' ChatState EditState -> Widget Name
+drawFileBrowser :: ChatState -> Lens' ChatState (EditState Name) -> Widget Name
 drawFileBrowser st editWhich =
     centerLayer $
     hLimit 60 $

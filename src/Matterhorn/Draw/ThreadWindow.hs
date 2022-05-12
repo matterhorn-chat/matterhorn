@@ -19,9 +19,9 @@ import Matterhorn.Draw.Util
 
 drawThreadWindowLayers :: ChatState -> TeamId -> [Widget Name]
 drawThreadWindowLayers st tId =
-    let ti :: Lens' ChatState ThreadInterface
+    let ti :: Lens' ChatState (ThreadInterface Name)
         ti = threadInterface(tId)
-        ed :: SimpleGetter ChatState EditState
+        ed :: SimpleGetter ChatState (EditState Name)
         ed = ti.threadEditor
     in [ autocompleteLayer st ed
        , drawThreadWindow st tId
@@ -31,7 +31,7 @@ drawThreadWindow :: ChatState -> TeamId -> Widget Name
 drawThreadWindow st tId =
     joinBorders body
     where
-        ti :: Lens' ChatState ThreadInterface
+        ti :: Lens' ChatState (ThreadInterface Name)
         ti = threadInterface(tId)
 
         hs = getHighlightSet st tId

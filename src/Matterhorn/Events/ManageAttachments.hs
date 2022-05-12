@@ -29,7 +29,10 @@ import           Matterhorn.State.Attachments
 import           Matterhorn.State.Common
 
 
-onEventManageAttachments :: TeamId -> Lens' ChatState EditState -> V.Event -> MH ()
+onEventManageAttachments :: TeamId
+                         -> Lens' ChatState (EditState Name)
+                         -> V.Event
+                         -> MH ()
 onEventManageAttachments tId which e = do
     mode <- use (csTeam(tId).tsMode)
     case mode of
@@ -37,15 +40,23 @@ onEventManageAttachments tId which e = do
         ManageAttachmentsBrowseFiles -> onEventBrowseFile tId which e
         _ -> error "BUG: onEventManageAttachments called in invalid mode"
 
-onEventAttachmentList :: TeamId -> Lens' ChatState EditState -> V.Event -> MH Bool
+onEventAttachmentList :: TeamId
+                      -> Lens' ChatState (EditState Name)
+                      -> V.Event
+                      -> MH Bool
 onEventAttachmentList tId which =
     handleKeyboardEvent (attachmentListKeybindings tId which) $
         mhHandleEventLensed (which.esAttachmentList) L.handleListEvent
 
-attachmentListKeybindings :: TeamId -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
+attachmentListKeybindings :: TeamId
+                          -> Lens' ChatState (EditState Name)
+                          -> KeyConfig
+                          -> KeyHandlerMap
 attachmentListKeybindings tId which = mkKeybindings (attachmentListKeyHandlers tId which)
 
-attachmentListKeyHandlers :: TeamId -> Lens' ChatState EditState -> [KeyEventHandler]
+attachmentListKeyHandlers :: TeamId
+                          -> Lens' ChatState (EditState Name)
+                          -> [KeyEventHandler]
 attachmentListKeyHandlers tId which =
     [ mkKb CancelEvent "Close attachment list" $
           popMode tId
@@ -61,10 +72,16 @@ attachmentListKeyHandlers tId which =
           deleteSelectedAttachment which
     ]
 
-attachmentBrowseKeybindings :: TeamId -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
-attachmentBrowseKeybindings tId which = mkKeybindings (attachmentBrowseKeyHandlers tId which)
+attachmentBrowseKeybindings :: TeamId
+                            -> Lens' ChatState (EditState Name)
+                            -> KeyConfig
+                            -> KeyHandlerMap
+attachmentBrowseKeybindings tId which =
+    mkKeybindings (attachmentBrowseKeyHandlers tId which)
 
-attachmentBrowseKeyHandlers :: TeamId -> Lens' ChatState EditState -> [KeyEventHandler]
+attachmentBrowseKeyHandlers :: TeamId
+                            -> Lens' ChatState (EditState Name)
+                            -> [KeyEventHandler]
 attachmentBrowseKeyHandlers tId which =
     [ mkKb CancelEvent "Cancel attachment file browse" $
       cancelAttachmentBrowse tId which
@@ -106,7 +123,10 @@ attachmentBrowseKeyHandlers tId which =
         FB.actionFileBrowserListPrev
     ]
 
-withFileBrowser :: TeamId -> Lens' ChatState EditState -> ((FB.FileBrowser Name) -> MH ()) -> MH ()
+withFileBrowser :: TeamId
+                -> Lens' ChatState (EditState Name)
+                -> ((FB.FileBrowser Name) -> MH ())
+                -> MH ()
 withFileBrowser tId which f = do
     use (which.esFileBrowser) >>= \case
         Nothing -> do
@@ -122,7 +142,7 @@ withFileBrowser tId which f = do
             f new_b
         Just b -> f b
 
-openSelectedAttachment :: Lens' ChatState EditState -> MH ()
+openSelectedAttachment :: Lens' ChatState (EditState Name) -> MH ()
 openSelectedAttachment which = do
     cur <- use (which.esAttachmentList.to L.listSelectedElement)
     case cur of
@@ -130,13 +150,13 @@ openSelectedAttachment which = do
         Just (_, entry) -> void $ openFilePath (FB.fileInfoFilePath $
                                                 attachmentDataFileInfo entry)
 
-openSelectedBrowserEntry :: TeamId -> Lens' ChatState EditState -> MH ()
+openSelectedBrowserEntry :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 openSelectedBrowserEntry tId which = withFileBrowser tId which $ \b ->
     case FB.fileBrowserCursor b of
         Nothing -> return ()
         Just entry -> void $ openFilePath (FB.fileInfoFilePath entry)
 
-onEventBrowseFile :: TeamId -> Lens' ChatState EditState -> V.Event -> MH ()
+onEventBrowseFile :: TeamId -> Lens' ChatState (EditState Name) -> V.Event -> MH ()
 onEventBrowseFile tId which e = do
     withFileBrowser tId which $ \b -> do
         case FB.fileBrowserIsSearching b of
@@ -152,14 +172,14 @@ onEventBrowseFile tId which e = do
             Just ex -> do
                 mhLog LogError $ T.pack $ "FileBrowser exception: " <> show ex
 
-cancelAttachmentBrowse :: TeamId -> Lens' ChatState EditState -> MH ()
+cancelAttachmentBrowse :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 cancelAttachmentBrowse tId which = do
     es <- use (which.esAttachmentList.L.listElementsL)
     case length es of
         0 -> popMode tId
         _ -> replaceMode tId ManageAttachments
 
-handleFileBrowserEvent :: TeamId -> Lens' ChatState EditState -> V.Event -> MH ()
+handleFileBrowserEvent :: TeamId -> Lens' ChatState (EditState Name) -> V.Event -> MH ()
 handleFileBrowserEvent tId which e = do
     let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
     mhHandleEventLensed (which.esFileBrowser) fbHandle e
@@ -167,7 +187,7 @@ handleFileBrowserEvent tId which e = do
     withFileBrowser tId which $ \b ->
         tryAddAttachment tId which (FB.fileBrowserSelection b)
 
-deleteSelectedAttachment :: Lens' ChatState EditState -> MH ()
+deleteSelectedAttachment :: Lens' ChatState (EditState Name) -> MH ()
 deleteSelectedAttachment which = do
     es <- use (which.esAttachmentList.L.listElementsL)
     mSel <- use (which.esAttachmentList.to L.listSelectedElement)

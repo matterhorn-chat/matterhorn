@@ -24,7 +24,7 @@ import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 
 
-autocompleteLayer :: ChatState -> SimpleGetter ChatState EditState -> Widget Name
+autocompleteLayer :: ChatState -> SimpleGetter ChatState (EditState Name) -> Widget Name
 autocompleteLayer st which =
     case st^.which.esAutocomplete of
         Nothing ->
@@ -48,7 +48,11 @@ elementTypeLabel ACCodeBlockLanguage = "Languages"
 elementTypeLabel ACEmoji = "Emoji"
 elementTypeLabel ACCommands = "Commands"
 
-renderAutocompleteBox :: ChatState -> Maybe ClientChannel -> SimpleGetter ChatState EditState -> AutocompleteState -> Widget Name
+renderAutocompleteBox :: ChatState
+                      -> Maybe ClientChannel
+                      -> SimpleGetter ChatState (EditState Name)
+                      -> AutocompleteState Name
+                      -> Widget Name
 renderAutocompleteBox st mCurChan which ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5

@@ -24,7 +24,7 @@ onEventThreadWindow _ (Vty.EvResize {}) =
 onEventThreadWindow tId ev = do
     st <- use id
 
-    let ti :: Lens' ChatState ThreadInterface
+    let ti :: Lens' ChatState (ThreadInterface Name)
         ti = threadInterface tId
         cId = st^.ti.threadParentChannelId
 
