@@ -2760,15 +2760,25 @@ threadInterfaceEmpty tId = do
         Nothing -> return True
         Just len -> return $ len == 0
 
-threadInterfaceDeleteWhere :: TeamId -> (Message -> Bool) -> MH ()
-threadInterfaceDeleteWhere tId f =
-    maybeThreadInterface(tId)._Just.threadMessages.traversed.filtered f %=
-        (& mDeleted .~ True)
+withThreadInterface :: TeamId -> ChannelId -> MH () -> MH ()
+withThreadInterface tId cId act = do
+    mCid <- preuse (maybeThreadInterface(tId)._Just.threadParentChannelId)
+    case mCid of
+        Just i | i == cId -> act
+        _ -> return ()
 
-modifyThreadMessages :: TeamId -> (Messages -> Messages) -> MH ()
-modifyThreadMessages tId f = do
-    maybeThreadInterface(tId)._Just.threadMessages %= f
+threadInterfaceDeleteWhere :: TeamId -> ChannelId -> (Message -> Bool) -> MH ()
+threadInterfaceDeleteWhere tId cId f =
+    withThreadInterface tId cId $ do
+        maybeThreadInterface(tId)._Just.threadMessages.traversed.filtered f %=
+            (& mDeleted .~ True)
 
-modifyEachThreadMessage :: TeamId -> (Message -> Message) -> MH ()
-modifyEachThreadMessage tId f = do
-    maybeThreadInterface(tId)._Just.threadMessages.traversed %= f
+modifyThreadMessages :: TeamId -> ChannelId -> (Messages -> Messages) -> MH ()
+modifyThreadMessages tId cId f = do
+    withThreadInterface tId cId $ do
+        maybeThreadInterface(tId)._Just.threadMessages %= f
+
+modifyEachThreadMessage :: TeamId -> ChannelId -> (Message -> Message) -> MH ()
+modifyEachThreadMessage tId cId f = do
+    withThreadInterface tId cId $ do
+        maybeThreadInterface(tId)._Just.threadMessages.traversed %= f

@@ -221,7 +221,7 @@ deletePostFromOpenThread tId p = do
     -- remove it from the thread view. But if this effectively empties
     -- the thread, that's because this was the root. In that case we
     -- need to close down the window.
-    threadInterfaceDeleteWhere tId isDeletedMessage
+    threadInterfaceDeleteWhere tId (p^.postChannelIdL) isDeletedMessage
 
     isEmpty <- threadInterfaceEmpty tId
     when isEmpty $ closeThreadWindow tId
@@ -670,7 +670,7 @@ addPostToOpenThread (Just tId) new msg =
         Just parentId -> do
             mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
             when (mRoot == Just parentId) $
-                modifyThreadMessages tId (addMessage msg)
+                modifyThreadMessages tId (new^.postChannelIdL) (addMessage msg)
 
 editPostInOpenThread :: Maybe TeamId -> Post -> Message -> MH ()
 editPostInOpenThread Nothing _ _ = return ()
@@ -682,7 +682,8 @@ editPostInOpenThread (Just tId) new msg =
             when (mRoot == Just parentId) $ do
                 mhLog LogGeneral "editPostInOpenThread: updating message"
                 let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-                modifyEachThreadMessage tId (\m -> if isEditedMessage m then msg else m)
+                modifyEachThreadMessage tId (new^.postChannelIdL)
+                    (\m -> if isEditedMessage m then msg else m)
 
 -- | PostProcessMessageAdd is an internal value that informs the main
 -- code whether the user should be notified (e.g., ring the bell) or
@@ -1033,7 +1034,7 @@ asyncFetchAttachments p = do
                            Just tId -> do
                                mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
                                when (mRoot == Just parentId) $
-                                   modifyEachThreadMessage tId addAttachment
+                                   modifyEachThreadMessage tId cId addAttachment
 
             invalidateChannelRenderingCache cId
             invalidateMessageRenderingCacheByPostId pId
