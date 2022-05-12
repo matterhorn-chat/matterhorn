@@ -26,7 +26,7 @@ import           Matterhorn.Types.Common ( sanitizeUserText )
 
 autocompleteLayer :: ChatState -> SimpleGetter ChatState EditState -> Widget Name
 autocompleteLayer st which =
-    case st^.which.cedAutocomplete of
+    case st^.which.esAutocomplete of
         Nothing ->
             emptyWidget
         Just ac ->
@@ -75,7 +75,7 @@ renderAutocompleteBox st mCurChan which ac =
        else Widget Greedy Greedy $ do
            ctx <- getContext
            let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
-               editorOffset = if st^.which.cedEphemeral.eesMultiline
+               editorOffset = if st^.which.esEphemeral.eesMultiline
                               then multilineHeightLimit
                               else 0
            render $ translateBy (Location (0, rowOffset)) $

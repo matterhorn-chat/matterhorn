@@ -45,7 +45,7 @@ defaultAttachmentsPath = maybe (return Nothing) validateAttachmentPath . configD
 
 showAttachmentList :: TeamId -> Lens' ChatState EditState -> MH ()
 showAttachmentList tId which = do
-    lst <- use (which.cedAttachmentList)
+    lst <- use (which.esAttachmentList)
     case length (L.listElements lst) of
         0 -> showAttachmentFileBrowser tId which
         _ -> pushMode tId ManageAttachments
@@ -53,7 +53,7 @@ showAttachmentList tId which = do
 resetAttachmentList :: TeamId -> Lens' ChatState EditState -> MH ()
 resetAttachmentList tId which = do
     let listName = AttachmentList tId
-    which.cedAttachmentList .= L.list listName mempty 1
+    which.esAttachmentList .= L.list listName mempty 1
     mh $ vScrollToBeginning $ viewportScroll listName
 
 showAttachmentFileBrowser :: TeamId -> Lens' ChatState EditState -> MH ()
@@ -61,7 +61,7 @@ showAttachmentFileBrowser tId which = do
     config <- use (csResources.crConfiguration)
     filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
-    which.cedFileBrowser .= browser
+    which.esFileBrowser .= browser
     pushMode tId ManageAttachmentsBrowseFiles
 
 attachFileByPath :: TeamId -> Lens' ChatState EditState -> Text -> MH ()
@@ -85,7 +85,7 @@ tryAddAttachment tId which entries = do
             "Error attaching file. It either doesn't exist or is a directory, which is not supported.")
         else do
             -- Is the entry already present? If so, ignore the selection.
-            es <- use (which.cedAttachmentList.L.listElementsL)
+            es <- use (which.esAttachmentList.L.listElementsL)
             let matches = (== FB.fileInfoFilePath entry) .
                               FB.fileInfoFilePath .
                               attachmentDataFileInfo
@@ -94,11 +94,11 @@ tryAddAttachment tId which entries = do
                 Nothing -> do
                     tryReadAttachment entry >>= \case
                         Right a -> do
-                            oldIdx <- use (which.cedAttachmentList.L.listSelectedL)
+                            oldIdx <- use (which.esAttachmentList.L.listSelectedL)
                             let newIdx = if Vector.null es
                                          then Just 0
                                          else oldIdx
-                            which.cedAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
+                            which.esAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
                         Left e -> mhError $ AttachmentException e
 
     when (not $ null entries) $ popMode tId

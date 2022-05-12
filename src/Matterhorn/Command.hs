@@ -328,7 +328,7 @@ execMMCommand :: MM.TeamId -> Text -> Text -> MH ()
 execMMCommand tId name rest = do
   withCurrentChannel tId $ \cId _ -> do
       session  <- getSession
-      em       <- use (channelEditor(tId).cedEditMode)
+      em       <- use (channelEditor(tId).esEditMode)
       let mc = MM.MinCommand
                  { MM.minComChannelId = cId
                  , MM.minComCommand   = "/" <> name <> " " <> rest

@@ -107,7 +107,7 @@ drawEditorContents st editWhich tId hs =
     in case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
         Nothing -> noHighlight
         Just _ ->
-            let ms = st^.editWhich.cedMisspellings
+            let ms = st^.editWhich.esMisspellings
             in case S.null ms of
                 True -> noHighlight
                 False -> doHighlightMisspellings hs ms
@@ -237,15 +237,15 @@ userInputArea st editWhich tId hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "
         editPrompt = "edit> "
-        showReplyPrompt = st^.editWhich.cedShowReplyPrompt
-        prompt = txt $ case st^.editWhich.cedEditMode of
+        showReplyPrompt = st^.editWhich.esShowReplyPrompt
+        prompt = txt $ case st^.editWhich.esEditMode of
             Replying {} ->
                 if showReplyPrompt then replyPrompt else normalPrompt
             Editing {}  ->
                 editPrompt
             NewPost ->
                 normalPrompt
-        editor = st^.editWhich.cedEditor
+        editor = st^.editWhich.esEditor
         inputBox = renderEditor (drawEditorContents st editWhich tId hs) True editor
         curContents = getEditContents editor
         multilineContent = length curContents > 1
@@ -259,7 +259,7 @@ userInputArea st editWhich tId hs =
                          " to finish."
                  ]
 
-        replyDisplay = case st^.editWhich.cedEditMode of
+        replyDisplay = case st^.editWhich.esEditMode of
             Replying msg _ | showReplyPrompt ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
@@ -289,7 +289,7 @@ userInputArea st editWhich tId hs =
         kc = st^.csResources.crConfiguration.configUserKeysL
         multiLineToggleKey = ppBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
-        commandBox = case st^.editWhich.cedEphemeral.eesMultiline of
+        commandBox = case st^.editWhich.esEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
@@ -662,9 +662,9 @@ inputPreview st editWhich tId vpName hs
     -- end of whatever line the user is editing, that is very unlikely
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
-                  st^.editWhich.cedEditor.editContentsL
+                  st^.editWhich.esEditor.editContentsL
     curStr = T.intercalate "\n" curContents
-    overrideTy = case st^.editWhich.cedEditMode of
+    overrideTy = case st^.editWhich.esEditMode of
         Editing _ ty -> Just ty
         _ -> Nothing
     baseUrl = serverBaseUrl st tId
@@ -833,7 +833,7 @@ drawMessageInterface st hs region tId inMsgSelect showNewMsgLine selWhich editWh
 
     kc = st^.csResources.crConfiguration.configUserKeysL
     showAttachmentCount =
-        let count = length $ listElements $ st^.editWhich.cedAttachmentList
+        let count = length $ listElements $ st^.editWhich.esAttachmentList
         in if count == 0
            then emptyWidget
            else hBox [ borderElem bsHorizontal

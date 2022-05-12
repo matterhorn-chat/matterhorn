@@ -223,18 +223,18 @@ module Matterhorn.Types
 
   , EditState
   , emptyEditStateForTeam
-  , cedAttachmentList
-  , cedFileBrowser
-  , unsafeCedFileBrowser
-  , cedMisspellings
-  , cedEditMode
-  , cedEphemeral
-  , cedEditor
-  , cedAutocomplete
-  , cedAutocompletePending
-  , cedResetEditMode
-  , cedJustCompleted
-  , cedShowReplyPrompt
+  , esAttachmentList
+  , esFileBrowser
+  , unsafeEsFileBrowser
+  , esMisspellings
+  , esEditMode
+  , esEphemeral
+  , esEditor
+  , esAutocomplete
+  , esAutocompletePending
+  , esResetEditMode
+  , esJustCompleted
+  , esShowReplyPrompt
 
   , GlobalEditState
   , emptyGlobalEditState
@@ -1310,16 +1310,16 @@ data AutocompleteState =
 -- | The 'EditState' value contains the editor widget itself as well as
 -- history and metadata we need for editing-related operations.
 data EditState =
-    EditState { _cedEditor :: Editor Text Name
-              , _cedEditMode :: EditMode
-              , _cedEphemeral :: EphemeralEditState
-              , _cedMisspellings :: Set Text
-              , _cedAutocomplete :: Maybe AutocompleteState
+    EditState { _esEditor :: Editor Text Name
+              , _esEditMode :: EditMode
+              , _esEphemeral :: EphemeralEditState
+              , _esMisspellings :: Set Text
+              , _esAutocomplete :: Maybe AutocompleteState
               -- ^ The autocomplete state. The autocompletion UI is
               -- showing only when this state is present.
-              , _cedResetEditMode :: EditMode
+              , _esResetEditMode :: EditMode
               -- ^ The editing mode to reset to after input is handled.
-              , _cedAutocompletePending :: Maybe Text
+              , _esAutocompletePending :: Maybe Text
               -- ^ The search string associated with the latest
               -- in-flight autocompletion request. This is used to
               -- determine whether any (potentially late-arriving) API
@@ -1327,19 +1327,19 @@ data EditState =
               -- more quickly than the server can get us the results,
               -- and we wouldn't want to show results associated with
               -- old editor states.
-              , _cedAttachmentList :: List Name AttachmentData
+              , _esAttachmentList :: List Name AttachmentData
               -- ^ The list of attachments to be uploaded with the post
               -- being edited.
-              , _cedFileBrowser :: Maybe (FB.FileBrowser Name)
+              , _esFileBrowser :: Maybe (FB.FileBrowser Name)
               -- ^ The browser for selecting attachment files. This is
               -- a Maybe because the instantiation of the FileBrowser
               -- causes it to read and ingest the target directory, so
               -- this action is deferred until the browser is needed.
-              , _cedJustCompleted :: Bool
+              , _esJustCompleted :: Bool
               -- A flag that indicates whether the most recent editing
               -- event was a tab-completion. This is used by the smart
               -- trailing space handling.
-              , _cedShowReplyPrompt :: Bool
+              , _esShowReplyPrompt :: Bool
               -- ^ Whether to show the reply prompt when replying
               }
 
@@ -1361,32 +1361,32 @@ data AttachmentData =
 -- history, which we save locally.
 emptyEditStateForTeam :: TeamId -> EditState
 emptyEditStateForTeam tId =
-    EditState { _cedEditor               = editor (MessageInput tId) Nothing ""
-              , _cedEphemeral            = defaultEphemeralEditState
-              , _cedEditMode             = NewPost
-              , _cedMisspellings         = mempty
-              , _cedAutocomplete         = Nothing
-              , _cedResetEditMode        = NewPost
-              , _cedAutocompletePending  = Nothing
-              , _cedAttachmentList       = list (AttachmentList tId) mempty 1
-              , _cedFileBrowser          = Nothing
-              , _cedJustCompleted        = False
-              , _cedShowReplyPrompt      = True
+    EditState { _esEditor               = editor (MessageInput tId) Nothing ""
+              , _esEphemeral            = defaultEphemeralEditState
+              , _esEditMode             = NewPost
+              , _esMisspellings         = mempty
+              , _esAutocomplete         = Nothing
+              , _esResetEditMode        = NewPost
+              , _esAutocompletePending  = Nothing
+              , _esAttachmentList       = list (AttachmentList tId) mempty 1
+              , _esFileBrowser          = Nothing
+              , _esJustCompleted        = False
+              , _esShowReplyPrompt      = True
               }
 
 emptyEditStateForThread :: TeamId -> ChannelId -> EditMode -> EditState
 emptyEditStateForThread tId cId initialEditMode =
-    EditState { _cedEditor               = editor (ThreadMessageInput tId cId) Nothing ""
-              , _cedEphemeral            = defaultEphemeralEditState
-              , _cedEditMode             = initialEditMode
-              , _cedMisspellings         = mempty
-              , _cedAutocomplete         = Nothing
-              , _cedResetEditMode        = initialEditMode
-              , _cedAutocompletePending  = Nothing
-              , _cedAttachmentList       = list (ThreadEditorAttachmentList tId cId) mempty 1
-              , _cedFileBrowser          = Nothing
-              , _cedJustCompleted        = False
-              , _cedShowReplyPrompt      = False
+    EditState { _esEditor               = editor (ThreadMessageInput tId cId) Nothing ""
+              , _esEphemeral            = defaultEphemeralEditState
+              , _esEditMode             = initialEditMode
+              , _esMisspellings         = mempty
+              , _esAutocomplete         = Nothing
+              , _esResetEditMode        = initialEditMode
+              , _esAutocompletePending  = Nothing
+              , _esAttachmentList       = list (ThreadEditorAttachmentList tId cId) mempty 1
+              , _esFileBrowser          = Nothing
+              , _esJustCompleted        = False
+              , _esShowReplyPrompt      = False
               }
 
 emptyGlobalEditState :: GlobalEditState
@@ -2354,10 +2354,10 @@ serverBaseUrl st tId =
         tName = teamName $ st^.csTeam(tId).tsTeam
     in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
 
-unsafeCedFileBrowser :: Lens' EditState (FB.FileBrowser Name)
-unsafeCedFileBrowser =
-     lens (\st   -> st^.cedFileBrowser ^?! _Just)
-          (\st t -> st & cedFileBrowser .~ Just t)
+unsafeEsFileBrowser :: Lens' EditState (FB.FileBrowser Name)
+unsafeEsFileBrowser =
+     lens (\st   -> st^.esFileBrowser ^?! _Just)
+          (\st t -> st & esFileBrowser .~ Just t)
 
 getSession :: MH Session
 getSession = use (csResources.crSession)
@@ -2595,8 +2595,8 @@ data SidebarUpdate =
 
 resetAutocomplete :: Lens' ChatState EditState -> MH ()
 resetAutocomplete which = do
-    which.cedAutocomplete .= Nothing
-    which.cedAutocompletePending .= Nothing
+    which.esAutocomplete .= Nothing
+    which.esAutocompletePending .= Nothing
 
 
 -- * Slash Commands

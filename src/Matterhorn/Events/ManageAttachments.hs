@@ -40,7 +40,7 @@ onEventManageAttachments tId which e = do
 onEventAttachmentList :: TeamId -> Lens' ChatState EditState -> V.Event -> MH Bool
 onEventAttachmentList tId which =
     handleKeyboardEvent (attachmentListKeybindings tId which) $
-        mhHandleEventLensed (which.cedAttachmentList) L.handleListEvent
+        mhHandleEventLensed (which.esAttachmentList) L.handleListEvent
 
 attachmentListKeybindings :: TeamId -> Lens' ChatState EditState -> KeyConfig -> KeyHandlerMap
 attachmentListKeybindings tId which = mkKeybindings (attachmentListKeyHandlers tId which)
@@ -50,9 +50,9 @@ attachmentListKeyHandlers tId which =
     [ mkKb CancelEvent "Close attachment list" $
           popMode tId
     , mkKb SelectUpEvent "Move cursor up" $
-          mhHandleEventLensed (which.cedAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
+          mhHandleEventLensed (which.esAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
     , mkKb SelectDownEvent "Move cursor down" $
-          mhHandleEventLensed (which.cedAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
+          mhHandleEventLensed (which.esAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
     , mkKb AttachmentListAddEvent "Add a new attachment to the attachment list" $
           showAttachmentFileBrowser tId which
     , mkKb AttachmentOpenEvent "Open the selected attachment using the URL open command" $
@@ -71,44 +71,44 @@ attachmentBrowseKeyHandlers tId which =
     , mkKb AttachmentOpenEvent "Open the selected file using the URL open command" $
       openSelectedBrowserEntry tId which
     , mkKb FileBrowserBeginSearchEvent "Begin search for name in list" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserBeginSearch
     , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $ do
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectEnter
       withFileBrowser tId which (tryAddAttachment tId which . FB.fileBrowserSelection)
     , mkKb FileBrowserSelectCurrentEvent "Select file" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectCurrent
     , mkKb FileBrowserListPageUpEvent "Move cursor one page up" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListPageUp
     , mkKb FileBrowserListPageDownEvent "Move cursor one page down" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListPageDown
     , mkKb FileBrowserListHalfPageUpEvent "Move cursor one-half page up" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListHalfPageUp
     , mkKb FileBrowserListHalfPageDownEvent "Move cursor one-half page down" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListHalfPageDown
     , mkKb FileBrowserListTopEvent "Move cursor to top of list" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListTop
     , mkKb FileBrowserListBottomEvent "Move cursor to bottom of list" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListBottom
     , mkKb FileBrowserListNextEvent "Move cursor down" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListNext
     , mkKb FileBrowserListPrevEvent "Move cursor up" $
-      mhHandleEventLensed' (which.unsafeCedFileBrowser)
+      mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserListPrev
     ]
 
 withFileBrowser :: TeamId -> Lens' ChatState EditState -> ((FB.FileBrowser Name) -> MH ()) -> MH ()
 withFileBrowser tId which f = do
-    use (which.cedFileBrowser) >>= \case
+    use (which.esFileBrowser) >>= \case
         Nothing -> do
             -- The widget has not been created yet.  This should
             -- normally not occur, because the ManageAttachments
@@ -118,13 +118,13 @@ withFileBrowser tId which f = do
             -- ..."` handler, but the more benign approach is to
             -- simply create an available FileBrowser at this stage.
             new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) Nothing
-            which.cedFileBrowser ?= new_b
+            which.esFileBrowser ?= new_b
             f new_b
         Just b -> f b
 
 openSelectedAttachment :: Lens' ChatState EditState -> MH ()
 openSelectedAttachment which = do
-    cur <- use (which.cedAttachmentList.to L.listSelectedElement)
+    cur <- use (which.esAttachmentList.to L.listSelectedElement)
     case cur of
         Nothing -> return ()
         Just (_, entry) -> void $ openFilePath (FB.fileInfoFilePath $
@@ -154,7 +154,7 @@ onEventBrowseFile tId which e = do
 
 cancelAttachmentBrowse :: TeamId -> Lens' ChatState EditState -> MH ()
 cancelAttachmentBrowse tId which = do
-    es <- use (which.cedAttachmentList.L.listElementsL)
+    es <- use (which.esAttachmentList.L.listElementsL)
     case length es of
         0 -> popMode tId
         _ -> replaceMode tId ManageAttachments
@@ -162,20 +162,20 @@ cancelAttachmentBrowse tId which = do
 handleFileBrowserEvent :: TeamId -> Lens' ChatState EditState -> V.Event -> MH ()
 handleFileBrowserEvent tId which e = do
     let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
-    mhHandleEventLensed (which.cedFileBrowser) fbHandle e
+    mhHandleEventLensed (which.esFileBrowser) fbHandle e
     -- TODO: Check file browser exception state
     withFileBrowser tId which $ \b ->
         tryAddAttachment tId which (FB.fileBrowserSelection b)
 
 deleteSelectedAttachment :: Lens' ChatState EditState -> MH ()
 deleteSelectedAttachment which = do
-    es <- use (which.cedAttachmentList.L.listElementsL)
-    mSel <- use (which.cedAttachmentList.to L.listSelectedElement)
+    es <- use (which.esAttachmentList.L.listElementsL)
+    mSel <- use (which.esAttachmentList.to L.listSelectedElement)
     case mSel of
         Nothing ->
             return ()
         Just (pos, _) -> do
-            oldIdx <- use (which.cedAttachmentList.L.listSelectedL)
+            oldIdx <- use (which.esAttachmentList.L.listSelectedL)
             let idx = if Vector.length es == 1
                       then Nothing
                       else case oldIdx of
@@ -183,7 +183,7 @@ deleteSelectedAttachment which = do
                           Just old -> if pos >= old
                                       then Just $ pos - 1
                                       else Just pos
-            which.cedAttachmentList %= L.listReplace (deleteAt pos es) idx
+            which.esAttachmentList %= L.listReplace (deleteAt pos es) idx
 
 deleteAt :: Int -> Vector.Vector a -> Vector.Vector a
 deleteAt p as | p < 0 || p >= length as = as

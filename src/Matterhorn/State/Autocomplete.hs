@@ -62,7 +62,7 @@ checkForAutocompletion tId which ctx = do
     case result of
         Nothing -> resetAutocomplete which
         Just (ty, runUpdater, searchString) -> do
-            prevResult <- use (which.cedAutocomplete)
+            prevResult <- use (which.esAutocomplete)
             -- We should update the completion state if EITHER:
             --
             -- 1) The type changed
@@ -75,7 +75,7 @@ checkForAutocompletion tId which ctx = do
                                 (maybe True ((== ty) . _acType) prevResult)) ||
                                (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
-                which.cedAutocompletePending .= Just searchString
+                which.esAutocompletePending .= Just searchString
                 runUpdater ty ctx searchString
 
 getCompleterForInput :: TeamId
@@ -83,7 +83,7 @@ getCompleterForInput :: TeamId
                      -> AutocompleteContext
                      -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
 getCompleterForInput tId which ctx = do
-    z <- use (which.cedEditor.editContentsL)
+    z <- use (which.esEditor.editContentsL)
 
     let col = snd $ Z.cursorPosition z
         curLine = Z.currentLine z
@@ -175,8 +175,8 @@ doCommandAutoCompletion :: TeamId -> Lens' ChatState EditState -> Autocompletion
 doCommandAutoCompletion myTid which ty ctx searchString = do
     session <- getSession
 
-    mCache <- preuse (which.cedAutocomplete._Just.acCachedResponses)
-    mActiveTy <- preuse (which.cedAutocomplete._Just.acType)
+    mCache <- preuse (which.esAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (which.esAutocomplete._Just.acType)
 
     -- Command completion works a little differently than the other
     -- modes. To do command autocompletion, we want to query the server
@@ -315,8 +315,8 @@ withCachedAutocompleteResults :: TeamId
                               -- ^ The action to execute on a cache miss
                               -> MH ()
 withCachedAutocompleteResults tId which ctx ty searchString act = do
-    mCache <- preuse (which.cedAutocomplete._Just.acCachedResponses)
-    mActiveTy <- preuse (which.cedAutocomplete._Just.acType)
+    mCache <- preuse (which.esAutocomplete._Just.acCachedResponses)
+    mActiveTy <- preuse (which.esAutocomplete._Just.acType)
 
     case Just ty == mActiveTy of
         True ->
@@ -343,13 +343,13 @@ setCompletionAlternatives tId which ctx searchString alts ty = do
                                   , _acType = ty
                                   }
 
-    pending <- use (which.cedAutocompletePending)
+    pending <- use (which.esAutocompletePending)
     case pending of
         Just val | val == searchString -> do
 
             -- If there is already state, update it, but also cache the
             -- search results.
-            which.cedAutocomplete %= \prev ->
+            which.esAutocomplete %= \prev ->
                 let newState = case prev of
                         Nothing ->
                             state

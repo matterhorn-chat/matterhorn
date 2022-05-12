@@ -286,8 +286,8 @@ deleteSelectedMessage tId selWhich msgsWhich editWhich = do
                     doAsyncMM Preempt
                         (\s -> MM.mmDeletePost (postId p) s)
                         (\_ -> Just $ do
-                            m <- use (editWhich.cedResetEditMode)
-                            editWhich.cedEditMode .= m
+                            m <- use (editWhich.esResetEditMode)
+                            editWhich.esEditMode .= m
                             popMode tId)
                 Nothing -> return ()
 
@@ -302,7 +302,7 @@ beginReplyCompose tId selWhich msgsWhich editWhich = do
             rootMsg <- getReplyRootMessage msg
             let p = fromJust $ rootMsg^.mOriginalPost
             popMode tId
-            editWhich.cedEditMode .= Replying rootMsg p
+            editWhich.esEditMode .= Replying rootMsg p
 
 beginEditMessage :: TeamId
                  -> SimpleGetter ChatState MessageSelectState
@@ -315,7 +315,7 @@ beginEditMessage tId selWhich msgsWhich editWhich = do
         when (isMine st msg && isEditable msg) $ do
             let p = fromJust $ msg^.mOriginalPost
             popMode tId
-            editWhich.cedEditMode .= Editing p (msg^.mType)
+            editWhich.esEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need
             -- to strip the formatting because that's only there to
             -- indicate that the post is an emote. This is annoying and
@@ -327,7 +327,7 @@ beginEditMessage tId selWhich msgsWhich editWhich = do
             let toEdit = if isEmote msg
                          then removeEmoteFormatting sanitized
                          else sanitized
-            editWhich.cedEditor %= applyEdit (insertMany toEdit . clearZipper)
+            editWhich.esEditor %= applyEdit (insertMany toEdit . clearZipper)
 
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()

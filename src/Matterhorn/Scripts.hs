@@ -49,7 +49,7 @@ runScript which cId outputChan fp text = do
     ExitSuccess -> do
         case null $ programStderr po of
             True -> Just $ do
-                mode <- use (which.cedEditMode)
+                mode <- use (which.esEditMode)
                 sendMessage cId mode (T.pack $ programStdout po) []
             False -> Nothing
     ExitFailure _ -> Nothing
