@@ -146,6 +146,7 @@ module Matterhorn.Types
   , threadRootPostId
   , threadParentChannelId
 
+  , threadInterface
   , threadInterfaceEmpty
   , threadInterfaceDeleteWhere
 
@@ -434,7 +435,7 @@ import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
                                      , (%=), (%~), (.~), _Just, Traversal', to
-                                     , SimpleGetter, filtered, traversed
+                                     , SimpleGetter, filtered, traversed, singular
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
 import           Skylighting.Types ( SyntaxMap )
@@ -2737,6 +2738,13 @@ moveRight v as =
 
 resultToWidget :: Result n -> Widget n
 resultToWidget = Widget Fixed Fixed . return
+
+-- An unsafe lens to get the specified team's thread interface. Assumes
+-- the interface is present; if not, this crashes. Intended for places
+-- where you know the interface will be present due to other state and
+-- don't want to deal with Maybe.
+threadInterface :: TeamId -> Lens' ChatState ThreadInterface
+threadInterface tId = csTeam(tId).tsThreadInterface.singular _Just
 
 threadInterfaceEmpty :: TeamId -> MH Bool
 threadInterfaceEmpty tId = do

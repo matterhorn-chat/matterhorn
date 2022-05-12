@@ -8,7 +8,7 @@ import Matterhorn.Prelude
 
 import Brick
 import Brick.Widgets.Border
-import Lens.Micro.Platform (Lens', _Just, singular, SimpleGetter)
+import Lens.Micro.Platform (Lens', SimpleGetter)
 import Network.Mattermost.Types (TeamId, Type(..))
 
 import Matterhorn.Types
@@ -20,7 +20,7 @@ import Matterhorn.Draw.Util
 drawThreadWindowLayers :: ChatState -> TeamId -> [Widget Name]
 drawThreadWindowLayers st tId =
     let ti :: Lens' ChatState ThreadInterface
-        ti = csTeam(tId).tsThreadInterface.singular _Just
+        ti = threadInterface(tId)
         ed :: SimpleGetter ChatState EditState
         ed = ti.threadEditor
     in [ autocompleteLayer st ed
@@ -32,7 +32,7 @@ drawThreadWindow st tId =
     joinBorders body
     where
         ti :: Lens' ChatState ThreadInterface
-        ti = csTeam(tId).tsThreadInterface.singular _Just
+        ti = threadInterface(tId)
 
         hs = getHighlightSet st tId
         inMsgSelect = mode == ThreadWindowMessageSelect

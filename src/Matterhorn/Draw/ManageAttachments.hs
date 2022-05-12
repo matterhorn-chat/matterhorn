@@ -13,7 +13,7 @@ import           Brick.Widgets.Center
 import qualified Brick.Widgets.FileBrowser as FB
 import           Brick.Widgets.List
 import           Data.Maybe ( fromJust )
-import           Lens.Micro.Platform ( Lens', singular, _Just )
+import           Lens.Micro.Platform ( Lens' )
 
 import           Network.Mattermost.Types ( TeamId )
 
@@ -30,7 +30,7 @@ drawManageAttachments st tId =
         editWhich :: Lens' ChatState EditState
         editWhich = case st^.csTeam(tId).tsThreadInterface of
             Nothing -> channelEditor(tId)
-            Just _  -> csTeam(tId).tsThreadInterface.singular _Just.threadEditor
+            Just _  -> threadInterface(tId).threadEditor
         topLayer = case st^.csTeam(tId).tsMode of
             ManageAttachments -> drawAttachmentList st editWhich
             ManageAttachmentsBrowseFiles -> drawFileBrowser st editWhich

@@ -25,7 +25,7 @@ onEventThreadWindow tId ev = do
     st <- use id
 
     let ti :: Lens' ChatState ThreadInterface
-        ti = csTeam(tId).tsThreadInterface.singular _Just
+        ti = threadInterface tId
 
     void $ handleKeyboardEvent (threadWindowKeybindings tId) (\ e -> do
         let fallback e2 = do

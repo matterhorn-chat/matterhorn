@@ -218,7 +218,9 @@ handleTeamModeEvent e =
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode e =
-    case mode of
+    let ti :: Lens' ChatState ThreadInterface
+        ti = threadInterface tId
+    in case mode of
         Main                       -> onEventMain tId e
         ShowHelp _                 -> void $ onEventShowHelp tId e
         ChannelSelect              -> void $ onEventChannelSelect tId e
@@ -240,23 +242,21 @@ teamEventHandlerByMode tId mode e =
             let ed :: Lens' ChatState EditState
                 ed = case st^.csTeam(tId).tsThreadInterface of
                          Nothing -> channelEditor(tId)
-                         Just _ -> csTeam(tId).tsThreadInterface.singular _Just.threadEditor
+                         Just _ -> ti.threadEditor
             onEventManageAttachments tId ed e
         ManageAttachmentsBrowseFiles -> do
             st <- use id
             let ed :: Lens' ChatState EditState
                 ed = case st^.csTeam(tId).tsThreadInterface of
                          Nothing -> channelEditor(tId)
-                         Just _ -> csTeam(tId).tsThreadInterface.singular _Just.threadEditor
+                         Just _ -> ti.threadEditor
             onEventManageAttachments tId ed e
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
         ChannelTopicWindow         -> onEventChannelTopicWindow tId e
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId e
         ThreadWindow               -> onEventThreadWindow tId e
         ThreadWindowMessageSelect  ->
-            let ti :: Lens' ChatState ThreadInterface
-                ti = csTeam(tId).tsThreadInterface.singular _Just
-            in onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor) e
+            onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor) e
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the
