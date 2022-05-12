@@ -668,9 +668,9 @@ addPostToOpenThread (Just tId) new msg =
     case postRootId new of
         Nothing -> return ()
         Just parentId -> do
-            mRoot <- preuse (csTeam(tId).tsThreadInterface._Just.threadRootPostId)
+            mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
             when (mRoot == Just parentId) $
-                (csTeam(tId).tsThreadInterface._Just.threadMessages) %= addMessage msg
+                (maybeThreadInterface(tId)._Just.threadMessages) %= addMessage msg
 
 editPostInOpenThread :: Maybe TeamId -> Post -> Message -> MH ()
 editPostInOpenThread Nothing _ _ = return ()
@@ -678,11 +678,11 @@ editPostInOpenThread (Just tId) new msg =
      case postRootId new of
         Nothing -> return ()
         Just parentId -> do
-            mRoot <- preuse (csTeam(tId).tsThreadInterface._Just.threadRootPostId)
+            mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
             when (mRoot == Just parentId) $ do
                 mhLog LogGeneral "editPostInOpenThread: updating message"
                 let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-                (csTeam(tId).tsThreadInterface._Just.threadMessages.traversed.filtered isEditedMessage) .= msg
+                (maybeThreadInterface(tId)._Just.threadMessages.traversed.filtered isEditedMessage) .= msg
 
 -- | PostProcessMessageAdd is an internal value that informs the main
 -- code whether the user should be notified (e.g., ring the bell) or
@@ -1031,9 +1031,9 @@ asyncFetchAttachments p = do
                        case mTId of
                            Nothing -> return ()
                            Just tId -> do
-                               mRoot <- preuse (csTeam(tId).tsThreadInterface._Just.threadRootPostId)
+                               mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
                                when (mRoot == Just parentId) $ do
-                                   csTeam(tId).tsThreadInterface._Just.threadMessages.traversed %= addAttachment
+                                   maybeThreadInterface(tId)._Just.threadMessages.traversed %= addAttachment
 
             invalidateChannelRenderingCache cId
             invalidateMessageRenderingCacheByPostId pId

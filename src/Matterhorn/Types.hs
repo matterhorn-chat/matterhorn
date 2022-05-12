@@ -147,6 +147,7 @@ module Matterhorn.Types
   , threadParentChannelId
 
   , threadInterface
+  , maybeThreadInterface
   , threadInterfaceEmpty
   , threadInterfaceDeleteWhere
 
@@ -2744,16 +2745,20 @@ resultToWidget = Widget Fixed Fixed . return
 -- where you know the interface will be present due to other state and
 -- don't want to deal with Maybe.
 threadInterface :: TeamId -> Lens' ChatState ThreadInterface
-threadInterface tId = csTeam(tId).tsThreadInterface.singular _Just
+threadInterface tId = maybeThreadInterface(tId).singular _Just
+
+-- A safe version of threadInterface.
+maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe ThreadInterface)
+maybeThreadInterface tId = csTeam(tId).tsThreadInterface
 
 threadInterfaceEmpty :: TeamId -> MH Bool
 threadInterfaceEmpty tId = do
-    mLen <- preuse (csTeam(tId).tsThreadInterface._Just.threadMessages.to messagesLength)
+    mLen <- preuse (maybeThreadInterface(tId)._Just.threadMessages.to messagesLength)
     case mLen of
         Nothing -> return True
         Just len -> return $ len == 0
 
 threadInterfaceDeleteWhere :: TeamId -> (Message -> Bool) -> MH ()
 threadInterfaceDeleteWhere tId f =
-    csTeam(tId).tsThreadInterface._Just.threadMessages.traversed.filtered f %=
+    maybeThreadInterface(tId)._Just.threadMessages.traversed.filtered f %=
         (& mDeleted .~ True)

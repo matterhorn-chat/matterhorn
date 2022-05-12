@@ -48,7 +48,7 @@ addReactions cId rs = do
         case chan^.ccInfo.cdTeamId of
             Nothing -> return ()
             Just tId ->
-                csTeam(tId).tsThreadInterface._Just.threadMessages %= fmap upd
+                maybeThreadInterface(tId)._Just.threadMessages %= fmap upd
 
     let mentions = S.fromList $ UserIdMention <$> reactionUserId <$> rs
     fetchMentionedUsers mentions
@@ -78,7 +78,7 @@ removeReaction r cId = do
         case chan^.ccInfo.cdTeamId of
             Nothing -> return ()
             Just tId ->
-                csTeam(tId).tsThreadInterface._Just.threadMessages %= fmap upd
+                maybeThreadInterface(tId)._Just.threadMessages %= fmap upd
 
     invalidateRenderCache
   where upd m | m^.mMessageId == Just (MessagePostId $ r^.reactionPostIdL) =

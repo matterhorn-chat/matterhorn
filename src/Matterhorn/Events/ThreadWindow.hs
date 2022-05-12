@@ -8,7 +8,7 @@ import Prelude ()
 import Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform (Lens', _Just, singular, to)
+import Lens.Micro.Platform (Lens', to)
 
 import Network.Mattermost.Types (TeamId)
 
