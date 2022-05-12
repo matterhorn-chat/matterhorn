@@ -503,7 +503,7 @@ postChangeChannelCommon tId = do
 loadLastEdit :: TeamId -> MH ()
 loadLastEdit tId = do
     withCurrentChannel tId $ \cId _ -> do
-        oldEphemeral <- preuse (csChannel(cId).ccEditState)
+        oldEphemeral <- preuse (csChannel(cId).ccEphemeralEditState)
         case oldEphemeral of
             Nothing -> return ()
             Just e -> channelEditor(tId).cedEphemeral .= e
@@ -539,7 +539,7 @@ saveCurrentEdit tId = do
         saveCurrentChannelInput tId
 
         oldEphemeral <- use (channelEditor(tId).cedEphemeral)
-        csChannel(cId).ccEditState .= oldEphemeral
+        csChannel(cId).ccEphemeralEditState .= oldEphemeral
 
 saveCurrentChannelInput :: TeamId -> MH ()
 saveCurrentChannelInput tId = do

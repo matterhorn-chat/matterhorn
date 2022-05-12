@@ -17,7 +17,7 @@ module Matterhorn.Types.Channels
   , eesMultiline, eesInputHistoryPosition, eesLastInput, eesTypingUsers
   , defaultEphemeralEditState
   -- * Lenses created for accessing ClientChannel fields
-  , ccContents, ccInfo, ccEditState
+  , ccContents, ccInfo, ccEphemeralEditState
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
@@ -101,7 +101,7 @@ data ClientChannel = ClientChannel
     -- ^ A list of 'Message's in the channel
   , _ccInfo :: ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
-  , _ccEditState :: EphemeralEditState
+  , _ccEphemeralEditState :: EphemeralEditState
     -- ^ Editor state that we swap in and out as the current channel is
     -- changed.
   }
@@ -272,7 +272,7 @@ makeClientChannel myId nc = emptyChannelContents >>= \contents ->
   return ClientChannel
   { _ccContents = contents
   , _ccInfo = initialChannelInfo myId nc
-  , _ccEditState = defaultEphemeralEditState
+  , _ccEphemeralEditState = defaultEphemeralEditState
   }
 
 defaultEphemeralEditState :: EphemeralEditState

@@ -182,10 +182,10 @@ mkChannelEntryData st tId e =
         prevEditSigil = "»"
         sigil = if current
                 then fromMaybe "" normalSigil
-                else case chan^.ccEditState.eesInputHistoryPosition of
+                else case chan^.ccEphemeralEditState.eesInputHistoryPosition of
                     Just _ -> prevEditSigil
                     Nothing ->
-                        case chan^.ccEditState.eesLastInput of
+                        case chan^.ccEphemeralEditState.eesLastInput of
                             ("", _) -> fromMaybe "" normalSigil
                             _       -> prevEditSigil
         mentions = chan^.ccInfo.cdMentionCount
