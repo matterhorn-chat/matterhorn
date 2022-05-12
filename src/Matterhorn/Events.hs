@@ -254,8 +254,8 @@ teamEventHandlerByMode tId mode e =
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
         ChannelTopicWindow         -> onEventChannelTopicWindow tId e
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId e
-        ThreadWindow               -> onEventThreadWindow tId e
-        ThreadWindowMessageSelect  ->
+        ThreadWindow _             -> onEventThreadWindow tId e
+        ThreadWindowMessageSelect _ ->
             onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor) e
 
 -- | Refresh client-accessible server configuration information. This

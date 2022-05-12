@@ -953,10 +953,10 @@ data Name =
     | ChannelTopicSaveButton TeamId
     | ChannelTopicCancelButton TeamId
     | ChannelTopicEditorPreview TeamId
-    | ThreadMessageInput TeamId
-    | ThreadWindowEditorPreview TeamId
-    | ThreadEditorAttachmentList TeamId
-    | ThreadWindowMessages TeamId
+    | ThreadMessageInput TeamId ChannelId
+    | ThreadWindowEditorPreview TeamId ChannelId
+    | ThreadEditorAttachmentList TeamId ChannelId
+    | ThreadWindowMessages TeamId ChannelId
     | ChannelTopic ChannelId
     | TeamList
     | ClickableChannelListEntry ChannelId
@@ -1374,16 +1374,16 @@ emptyEditStateForTeam tId =
               , _cedShowReplyPrompt      = True
               }
 
-emptyEditStateForThread :: TeamId -> EditMode -> EditState
-emptyEditStateForThread tId initialEditMode =
-    EditState { _cedEditor               = editor (ThreadMessageInput tId) Nothing ""
+emptyEditStateForThread :: TeamId -> ChannelId -> EditMode -> EditState
+emptyEditStateForThread tId cId initialEditMode =
+    EditState { _cedEditor               = editor (ThreadMessageInput tId cId) Nothing ""
               , _cedEphemeral            = defaultEphemeralEditState
               , _cedEditMode             = initialEditMode
               , _cedMisspellings         = mempty
               , _cedAutocomplete         = Nothing
               , _cedResetEditMode        = initialEditMode
               , _cedAutocompletePending  = Nothing
-              , _cedAttachmentList       = list (ThreadEditorAttachmentList tId) mempty 1
+              , _cedAttachmentList       = list (ThreadEditorAttachmentList tId cId) mempty 1
               , _cedFileBrowser          = Nothing
               , _cedJustCompleted        = False
               , _cedShowReplyPrompt      = False
@@ -1434,8 +1434,8 @@ data Mode =
     | LeaveChannelConfirm
     | DeleteChannelConfirm
     | ChannelMessageSelect ChannelId
-    | ThreadWindow
-    | ThreadWindowMessageSelect
+    | ThreadWindow ChannelId
+    | ThreadWindowMessageSelect ChannelId
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay
@@ -1527,7 +1527,8 @@ newThreadInterface tId cId rootMsg rootPost msgs =
                     , _threadRootPostId = postId rootPost
                     , _threadParentChannelId = cId
                     , _threadMessageSelect = MessageSelectState Nothing
-                    , _threadEditor = emptyEditStateForThread tId (Replying rootMsg rootPost)
+                    , _threadEditor =
+                        emptyEditStateForThread tId cId (Replying rootMsg rootPost)
                     }
 
 -- | Construct a new tabbed window from a template. This will raise an

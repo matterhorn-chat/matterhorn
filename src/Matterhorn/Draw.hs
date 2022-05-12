@@ -72,11 +72,11 @@ draw st =
                         EditNotifyPrefs              -> drawNotifyPrefs st tId : monochrome rest
                         ChannelTopicWindow           -> drawChannelTopicWindow st tId : monochrome rest
                         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : monochrome rest
-                        ThreadWindow                 -> drawThreadWindowLayers st tId <> rest
+                        ThreadWindow _               -> drawThreadWindowLayers st tId <> rest
                         -- Skip the thread window draw in thread message
                         -- select mode since that will happen at a lower
                         -- stack level.
-                        ThreadWindowMessageSelect    -> rest
+                        ThreadWindowMessageSelect _  -> rest
                 topMode = st^.csTeam(tId).tsMode
                 stack = st^.csTeam(tId).tsModeStack
             in drawMode topMode stack

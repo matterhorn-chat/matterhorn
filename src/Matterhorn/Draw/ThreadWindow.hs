@@ -35,7 +35,7 @@ drawThreadWindow st tId =
         ti = threadInterface(tId)
 
         hs = getHighlightSet st tId
-        inMsgSelect = mode == ThreadWindowMessageSelect
+        inMsgSelect = mode == ThreadWindowMessageSelect cId
         mode = st^.csTeam(tId).tsMode
         cId = st^.ti.threadParentChannelId
 
@@ -54,11 +54,11 @@ drawThreadWindow st tId =
 
         body = header <=> hBorder <=> messageUI
         messageUI = drawMessageInterface st hs
-                            (ThreadWindowMessages tId)
+                            (ThreadWindowMessages tId cId)
                             tId inMsgSelect
                             False
                             (ti.threadMessageSelect)
                             (ti.threadEditor)
                             (ti.threadMessages)
                             False
-                            (ThreadWindowEditorPreview tId)
+                            (ThreadWindowEditorPreview tId cId)

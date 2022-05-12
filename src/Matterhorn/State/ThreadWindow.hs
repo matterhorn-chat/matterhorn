@@ -25,7 +25,7 @@ openThreadWindow tId cId pId = do
     -- viewing, do nothing.
     m <- use (csTeam(tId).tsMode)
     mPid <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
-    when (not (m == ThreadWindow && mPid == Just pId)) $ do
+    when (not (m == ThreadWindow cId && mPid == Just pId)) $ do
         -- Fetch the entire thread associated with the post.
         doAsyncMM Preempt getThread (processThread m)
         where getThread session = MM.mmGetThread pId session
@@ -46,8 +46,8 @@ openThreadWindow tId cId pId = do
                           Just rootMsg | Just rootPost <- rootMsg^.mOriginalPost -> do
                               let ti = newThreadInterface tId cId rootMsg rootPost msgs
                               csTeam(tId).tsThreadInterface .= Just ti
-                              when (m /= ThreadWindow) $
-                                  pushMode tId ThreadWindow
+                              when (m /= ThreadWindow cId) $
+                                  pushMode tId $ ThreadWindow cId
                           _ -> error "BUG: openThreadWindow failed to find the root message"
 
 closeThreadWindow :: TeamId -> MH ()
@@ -56,5 +56,10 @@ closeThreadWindow tId = do
             csTeam(tId).tsThreadInterface .= Nothing
             popMode tId
 
-    whenMode tId ThreadWindowMessageSelect $ popMode tId
-    whenMode tId ThreadWindow close
+    mCid <- use $ csCurrentChannelId tId
+
+    case mCid of
+        Nothing -> return ()
+        Just cId -> do
+            whenMode tId (ThreadWindowMessageSelect cId) $ popMode tId
+            whenMode tId (ThreadWindow cId) close

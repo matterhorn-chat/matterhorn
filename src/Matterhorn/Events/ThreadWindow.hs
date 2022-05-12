@@ -26,6 +26,7 @@ onEventThreadWindow tId ev = do
 
     let ti :: Lens' ChatState ThreadInterface
         ti = threadInterface tId
+        cId = st^.ti.threadParentChannelId
 
     void $ handleKeyboardEvent (threadWindowKeybindings tId) (\ e -> do
         let fallback e2 = do
@@ -37,7 +38,7 @@ onEventThreadWindow tId ev = do
                                                          (ti.threadMessageSelect)
                                                          (ti.threadMessages)
                                                          (Just $ FromThreadIn $ st^.ti.threadParentChannelId)
-                                                         ThreadWindowMessageSelect
+                                                         (ThreadWindowMessageSelect cId)
                 void $ handleKeyboardEvent bindings fallback2 e2
         void $ handleKeyboardEvent (messageEditorKeybindings tId (ti.threadEditor)
                                        (ti.threadParentChannelId.to Just))
