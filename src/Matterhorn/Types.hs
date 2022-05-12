@@ -5,8 +5,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE FlexibleInstances #-}
 module Matterhorn.Types
   ( ConnectionStatus(..)
   , HelpTopic(..)
