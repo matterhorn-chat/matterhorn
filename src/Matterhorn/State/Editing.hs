@@ -21,7 +21,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( invalidateCache, invalidateCacheEntry )
+import           Brick.Main ( invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
 import qualified Brick.Widgets.List as L
@@ -365,8 +365,8 @@ handleEditingInput tId getChannelId which e = do
     isMultiline <- use (which.cedEphemeral.eesMultiline)
     isPreviewing <- use (csResources.crConfiguration.configShowMessagePreviewL)
     when (beforeLineCount /= afterLineCount && isMultiline && isPreviewing) $ do
-        withCurrentChannel tId $ \cId _ -> do
-            mh $ invalidateCacheEntry $ ChannelMessages cId
+        withCurrentChannel tId $ \cId _ ->
+            invalidateChannelRenderingCache cId
 
     -- Reset the recent autocompletion flag to stop smart punctuation
     -- handling.
@@ -465,7 +465,7 @@ gotoEnd z =
 cancelAutocompleteOrReplyOrEdit :: TeamId -> Lens' ChatState EditState -> MH ()
 cancelAutocompleteOrReplyOrEdit tId which = do
     withCurrentChannel tId $ \cId _ -> do
-        mh $ invalidateCacheEntry $ ChannelMessages cId
+        invalidateChannelRenderingCache cId
         ac <- use (which.cedAutocomplete)
         case ac of
             Just _ -> do
@@ -483,7 +483,7 @@ replyToLatestMessage tId which = do
         case findLatestUserMessage isReplyable msgs of
           Just msg | isReplyable msg ->
               do rootMsg <- getReplyRootMessage msg
-                 mh $ invalidateCacheEntry $ ChannelMessages cId
+                 invalidateChannelRenderingCache cId
                  which.cedEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
           _ -> return ()
 

@@ -23,7 +23,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( getVtyHandle, invalidateCacheEntry, invalidateCache )
+import           Brick.Main ( getVtyHandle, invalidateCache )
 import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Exception ( SomeException, try )
 import qualified Data.Aeson as A
@@ -71,7 +71,7 @@ addDisconnectGaps :: MH ()
 addDisconnectGaps = mapM_ onEach . filteredChannelIds (const True) =<< use csChannels
     where onEach c = do addEndGap c
                         clearPendingFlags c
-                        mh $ invalidateCacheEntry (ChannelMessages c)
+                        invalidateChannelRenderingCache c
 
 -- | Websocket was disconnected, so all channels may now miss some
 -- messages
@@ -180,8 +180,9 @@ editMessage new = do
             isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
 
         csChannel (new^.postChannelIdL) . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
-        mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
-        mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
+
+        invalidateChannelRenderingCache $ new^.postChannelIdL
+        invalidateMessageRenderingCacheByPostId $ postId new
 
         editPostInOpenThread mTId new msg
 
@@ -208,8 +209,8 @@ deleteMessage new = do
             Nothing -> return ()
             Just tId -> deletePostFromOpenThread tId new
 
-    mh $ invalidateCacheEntry (ChannelMessages $ new^.postChannelIdL)
-    mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
+    invalidateChannelRenderingCache $ new^.postChannelIdL
+    invalidateMessageRenderingCacheByPostId $ postId new
 
 deletePostFromOpenThread :: TeamId -> Post -> MH ()
 deletePostFromOpenThread tId p = do
@@ -242,7 +243,7 @@ addNewPostedMessage p =
 -- message following the added block of messages.
 addObtainedMessages :: ChannelId -> Int -> Bool -> Posts -> MH PostProcessMessageAdd
 addObtainedMessages cId reqCnt addTrailingGap posts = do
-  mh $ invalidateCacheEntry (ChannelMessages cId)
+  invalidateChannelRenderingCache cId
   if null $ posts^.postsOrderL
   then do when addTrailingGap $
             -- Fetched at the end of the channel, but nothing was
@@ -597,8 +598,8 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                         fetchMentionedUsers mentionedUsers
 
                     csPostMap.at(postId new) .= Just msg'
-                    mh $ invalidateCacheEntry (ChannelMessages cId)
-                    mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId $ postId new
+                    invalidateChannelRenderingCache cId
+                    invalidateMessageRenderingCacheByPostId $ postId new
                     csChannels %= modifyChannelById cId
                       ((ccContents.cdMessages %~ addMessage msg') .
                        (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
@@ -1037,9 +1038,8 @@ asyncFetchAttachments p = do
                                when (mRoot == Just parentId) $ do
                                    csTeam(tId).tsThreadInterface._Just.threadMessages.traversed %= addAttachment
 
-            mh $ do
-                invalidateCacheEntry $ ChannelMessages cId
-                invalidateCacheEntry $ RenderedMessage $ MessagePostId pId
+            invalidateChannelRenderingCache cId
+            invalidateMessageRenderingCacheByPostId pId
 
 -- | Given a post ID, switch to that post's channel and select the post
 -- in message selection mode.

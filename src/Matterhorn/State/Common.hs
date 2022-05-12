@@ -22,6 +22,10 @@ module Matterhorn.State.Common
   , doPendingUserFetches
   , doPendingUserStatusFetches
 
+  -- Cache management
+  , invalidateChannelRenderingCache
+  , invalidateMessageRenderingCacheByPostId
+
   , module Matterhorn.State.Async
   )
 where
@@ -134,7 +138,7 @@ addClientMessage msg = do
                     (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
             csChannels %= modifyChannelById cid addCMsg
 
-            mh $ invalidateCacheEntry $ ChannelMessages cid
+            invalidateChannelRenderingCache cid
             mh $ invalidateCacheEntry $ ChannelSidebar tId
 
             let msgTy = case msg^.cmType of
@@ -408,3 +412,11 @@ fetchUsers rawUsernames uids = do
                         forM_ results (\u -> addNewUser $ userInfoFromUser u True)
 
             return $ Just $ act1 >> act2
+
+invalidateChannelRenderingCache :: ChannelId -> MH ()
+invalidateChannelRenderingCache cId = do
+    mh $ invalidateCacheEntry $ ChannelMessages cId
+
+invalidateMessageRenderingCacheByPostId :: PostId -> MH ()
+invalidateMessageRenderingCacheByPostId pId = do
+    mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId pId

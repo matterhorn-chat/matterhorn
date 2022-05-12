@@ -10,7 +10,6 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( invalidateCacheEntry )
 import qualified Data.Map.Strict as Map
 import           Lens.Micro.Platform
 import qualified Data.Set as S
@@ -20,7 +19,7 @@ import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Matterhorn.State.Async
-import           Matterhorn.State.Common ( fetchMentionedUsers )
+import           Matterhorn.State.Common
 import           Matterhorn.Types
 
 
@@ -41,7 +40,7 @@ asyncFetchReactionsForPost cId p
 -- incoming reactions.
 addReactions :: ChannelId -> [Reaction] -> MH ()
 addReactions cId rs = do
-    mh $ invalidateCacheEntry $ ChannelMessages cId
+    invalidateChannelRenderingCache cId
     csChannelMessages(cId) %= fmap upd
 
     -- Also update any open thread for the corresponding channel's team
@@ -61,9 +60,8 @@ addReactions cId rs = do
           | otherwise = id
         insertAll mId msg = foldr (insert mId) msg rs
         invalidateRenderCache = do
-          let cacheIds = map cacheIdOf rs
-          mh $ mapM_ invalidateCacheEntry cacheIds
-        cacheIdOf r = RenderedMessage $ MessagePostId (r^.reactionPostIdL)
+            forM_ rs $ \r ->
+                invalidateMessageRenderingCacheByPostId $ r^.reactionPostIdL
 
 -- | Remove the specified reaction from its message in the specified
 -- channel. This should only be called in response to a server event
@@ -72,7 +70,7 @@ addReactions cId rs = do
 -- rendered message corresponding to the removed reaction.
 removeReaction :: Reaction -> ChannelId -> MH ()
 removeReaction r cId = do
-    mh $ invalidateCacheEntry $ ChannelMessages cId
+    invalidateChannelRenderingCache cId
     csChannelMessages(cId) %= fmap upd
 
     -- Also update any open thread for the corresponding channel's team
@@ -88,7 +86,7 @@ removeReaction r cId = do
               | otherwise = m
         delReaction mUs = S.delete (r^.reactionUserIdL) <$> mUs
         invalidateRenderCache =
-          mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId (r^.reactionPostIdL)
+            invalidateMessageRenderingCacheByPostId $ r^.reactionPostIdL
 
 -- | Set or unset a reaction on a post.
 updateReaction :: PostId -> Text -> Bool -> MH ()

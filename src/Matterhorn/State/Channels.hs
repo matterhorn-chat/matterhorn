@@ -445,7 +445,7 @@ checkPendingChannelChangeByUserId tId uId = do
 -- the Mattermost server. Also update the channel name if it changed.
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
-    mh $ invalidateCacheEntry $ ChannelMessages cid
+    invalidateChannelRenderingCache cid
     csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
     withChannel cid $ \chan ->
         updateSidebar (chan^.ccInfo.cdTeamId)
