@@ -1297,19 +1297,19 @@ data ConnectionStatus = Connected | Disconnected deriving (Eq)
 -- | An entry in a tabbed window corresponding to a tab and its content.
 -- Parameterized over an abstract handle type ('a') for the tabs so we
 -- can give each a unique handle.
-data TabbedWindowEntry a =
+data TabbedWindowEntry m a =
     TabbedWindowEntry { tweValue :: a
                       -- ^ The handle for this tab.
                       , tweRender :: a -> ChatState -> Widget Name
                       -- ^ The rendering function to use when this tab
                       -- is selected.
-                      , tweHandleEvent :: a -> Vty.Event -> MH ()
+                      , tweHandleEvent :: a -> Vty.Event -> m ()
                       -- ^ The event-handling function to use when this
                       -- tab is selected.
                       , tweTitle :: a -> Bool -> T.Text
                       -- ^ Title function for this tab, with a boolean
                       -- indicating whether this is the current tab.
-                      , tweShowHandler :: a -> MH ()
+                      , tweShowHandler :: a -> m ()
                       -- ^ A handler to be invoked when this tab is
                       -- shown.
                       }
@@ -1321,8 +1321,8 @@ data TabbedWindowEntry a =
 --
 -- Parameterized over an abstract handle type ('a') for the tabs so we
 -- can give each a unique handle.
-data TabbedWindowTemplate a =
-    TabbedWindowTemplate { twtEntries :: [TabbedWindowEntry a]
+data TabbedWindowTemplate m a =
+    TabbedWindowTemplate { twtEntries :: [TabbedWindowEntry m a]
                          -- ^ The entries in tabbed windows with this
                          -- structure.
                          , twtTitle :: a -> Widget Name
@@ -1335,10 +1335,10 @@ data TabbedWindowTemplate a =
 --
 -- Parameterized over an abstract handle type ('a') for the tabs so we
 -- can give each a unique handle.
-data TabbedWindow a =
+data TabbedWindow m a =
     TabbedWindow { twValue :: a
                  -- ^ The handle of the currently-selected tab.
-                 , twTemplate :: TabbedWindowTemplate a
+                 , twTemplate :: TabbedWindowTemplate m a
                  -- ^ The template to use as a basis for rendering the
                  -- window and handling user input.
                  , twWindowWidth :: Int
@@ -1382,11 +1382,11 @@ tabbedWindow :: (Show a, Eq a)
              => a
              -- ^ The handle corresponding to the tab that should be
              -- selected initially.
-             -> TabbedWindowTemplate a
+             -> TabbedWindowTemplate m a
              -- ^ The template for the window to construct.
              -> (Int, Int)
              -- ^ The window dimensions (width, height).
-             -> TabbedWindow a
+             -> TabbedWindow m a
 tabbedWindow initialVal t (width, height) =
     let handles = tweValue <$> twtEntries t
     in if | null handles ->
@@ -1407,14 +1407,14 @@ tabbedWindow initialVal t (width, height) =
 -- an exception if the window's selected tab handle is not found in its
 -- template (which is a bug in the tabbed window infrastructure).
 getCurrentTabbedWindowEntry :: (Show a, Eq a)
-                            => TabbedWindow a
-                            -> TabbedWindowEntry a
+                            => TabbedWindow m a
+                            -> TabbedWindowEntry m a
 getCurrentTabbedWindowEntry w =
     lookupTabbedWindowEntry (twValue w) w
 
 -- | Run the on-show handler for the window tab entry with the specified
 -- handle.
-runTabShowHandlerFor :: (Eq a, Show a) => a -> TabbedWindow a -> MH ()
+runTabShowHandlerFor :: (Eq a, Show a) => a -> TabbedWindow m a -> m ()
 runTabShowHandlerFor handle w = do
     let entry = lookupTabbedWindowEntry handle w
     tweShowHandler entry handle
@@ -1423,8 +1423,8 @@ runTabShowHandlerFor handle w = do
 -- such entry exists.
 lookupTabbedWindowEntry :: (Eq a, Show a)
                         => a
-                        -> TabbedWindow a
-                        -> TabbedWindowEntry a
+                        -> TabbedWindow m a
+                        -> TabbedWindowEntry m a
 lookupTabbedWindowEntry handle w =
     let matchesVal e = tweValue e == handle
     in case filter matchesVal (twtEntries $ twTemplate w) of
@@ -1437,9 +1437,9 @@ lookupTabbedWindowEntry handle w =
 -- invokes the on-show handler for the newly-selected tab.
 --
 -- Note that this does nothing if the window has only one tab.
-tabbedWindowNextTab :: (Show a, Eq a)
-                    => TabbedWindow a
-                    -> MH (TabbedWindow a)
+tabbedWindowNextTab :: (Monad m, Show a, Eq a)
+                    => TabbedWindow m a
+                    -> m (TabbedWindow m a)
 tabbedWindowNextTab w | length (twtEntries $ twTemplate w) == 1 = return w
 tabbedWindowNextTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
@@ -1463,9 +1463,9 @@ tabbedWindowNextTab w = do
 -- invokes the on-show handler for the newly-selected tab.
 --
 -- Note that this does nothing if the window has only one tab.
-tabbedWindowPreviousTab :: (Show a, Eq a)
-                        => TabbedWindow a
-                        -> MH (TabbedWindow a)
+tabbedWindowPreviousTab :: (Monad m, Show a, Eq a)
+                        => TabbedWindow m a
+                        -> m (TabbedWindow m a)
 tabbedWindowPreviousTab w | length (twtEntries $ twTemplate w) == 1 = return w
 tabbedWindowPreviousTab w = do
     let curIdx = case elemIndex (tweValue curEntry) allHandles of
@@ -1591,7 +1591,7 @@ data TeamState =
               , _tsUrlList :: URLList
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
-              , _tsViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
+              , _tsViewedMessage :: Maybe (Message, TabbedWindow MH ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed. Note that this stores a message, not
               -- a message ID. That's because not all messages have

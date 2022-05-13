@@ -32,7 +32,7 @@ import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), prin
 
 -- | The template for "View Message" windows triggered by message
 -- selection mode.
-viewMessageWindowTemplate :: TeamId -> TabbedWindowTemplate ViewMessageWindowTab
+viewMessageWindowTemplate :: TeamId -> TabbedWindowTemplate MH ViewMessageWindowTab
 viewMessageWindowTemplate tId =
     TabbedWindowTemplate { twtEntries = [ messageEntry tId
                                         , reactionsEntry tId
@@ -40,7 +40,7 @@ viewMessageWindowTemplate tId =
                          , twtTitle = const $ txt "View Message"
                          }
 
-messageEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
+messageEntry :: TeamId -> TabbedWindowEntry MH ViewMessageWindowTab
 messageEntry tId =
     TabbedWindowEntry { tweValue = VMTabMessage
                       , tweRender = renderTab tId
@@ -49,7 +49,7 @@ messageEntry tId =
                       , tweShowHandler = onShow tId
                       }
 
-reactionsEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
+reactionsEntry :: TeamId -> TabbedWindowEntry MH ViewMessageWindowTab
 reactionsEntry tId =
     TabbedWindowEntry { tweValue = VMTabReactions
                       , tweRender = renderTab tId

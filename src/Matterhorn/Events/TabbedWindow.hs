@@ -19,7 +19,7 @@ import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.Keybindings
 
 handleTabbedWindowEvent :: (Show a, Eq a)
-                        => Lens' ChatState (TabbedWindow a)
+                        => Lens' ChatState (TabbedWindow MH a)
                         -> TeamId
                         -> Vty.Event
                         -> MH Bool
@@ -28,7 +28,7 @@ handleTabbedWindowEvent target tId e = do
     handleKeyboardEvent (tabbedWindowKeybindings target tId) (forwardEvent w) e
 
 forwardEvent :: (Show a, Eq a)
-             => TabbedWindow a
+             => TabbedWindow MH a
              -> Vty.Event
              -> MH ()
 forwardEvent w e = do
@@ -36,7 +36,7 @@ forwardEvent w e = do
     tweHandleEvent cur (twValue w) e
 
 tabbedWindowKeybindings :: (Show a, Eq a)
-                        => Lens' ChatState (TabbedWindow a)
+                        => Lens' ChatState (TabbedWindow MH a)
                         -> TeamId
                         -> KeyConfig
                         -> KeyHandlerMap
@@ -44,7 +44,7 @@ tabbedWindowKeybindings target tId = mkKeybindings $ tabbedWindowKeyHandlers tId
 
 tabbedWindowKeyHandlers :: (Show a, Eq a)
                         => TeamId
-                        -> Lens' ChatState (TabbedWindow a)
+                        -> Lens' ChatState (TabbedWindow MH a)
                         -> [KeyEventHandler]
 tabbedWindowKeyHandlers tId target =
     [ mkKb CancelEvent "Close window" $
