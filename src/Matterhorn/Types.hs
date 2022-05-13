@@ -221,40 +221,12 @@ module Matterhorn.Types
   , popMode
   , replaceMode
 
-  , EditState
   , emptyEditStateForTeam
-  , esAttachmentList
-  , esFileBrowser
-  , unsafeEsFileBrowser
-  , esMisspellings
-  , esEditMode
-  , esEphemeral
-  , esEditor
-  , esAutocomplete
-  , esAutocompletePending
-  , esResetEditMode
-  , esJustCompleted
-  , esShowReplyPrompt
 
   , GlobalEditState
   , emptyGlobalEditState
   , gedYankBuffer
   , gedSpellChecker
-
-  , AutocompleteState(..)
-  , acPreviousSearchString
-  , acCompletionList
-  , acCachedResponses
-  , acType
-
-  , AutocompletionType(..)
-
-  , CompletionSource(..)
-  , AutocompleteAlternative(..)
-  , autocompleteAlternativeReplacement
-  , SpecialMention(..)
-  , specialMentionName
-  , isSpecialMention
 
   , PostListOverlayState
   , postListSelected
@@ -393,6 +365,7 @@ module Matterhorn.Types
   , moveRight
 
   , module Matterhorn.Types.Channels
+  , module Matterhorn.Types.EditState
   , module Matterhorn.Types.Messages
   , module Matterhorn.Types.Posts
   , module Matterhorn.Types.Users
@@ -413,7 +386,6 @@ import qualified Brick.BChan as BCH
 import           Brick.Forms (Form)
 import           Brick.Widgets.Edit ( Editor, editor, applyEdit )
 import           Brick.Widgets.List ( List, list )
-import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
@@ -422,7 +394,6 @@ import qualified Control.Monad.Fail as MHF
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
-import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
 import           Data.Function ( on )
 import qualified Data.Kind as K
@@ -459,6 +430,7 @@ import           Matterhorn.Emoji
 import           Matterhorn.Types.Common
 import           Matterhorn.Types.Channels
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
+import           Matterhorn.Types.EditState
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.Posts
@@ -1219,143 +1191,12 @@ data ChatResources =
                   , _crEmoji               :: EmojiCollection
                   }
 
--- | A "special" mention that does not map to a specific user, but is an
--- alias that the server uses to notify users.
-data SpecialMention =
-    MentionAll
-    -- ^ @all: notify everyone in the channel.
-    | MentionChannel
-    -- ^ @channel: notify everyone in the channel.
-
-data AutocompleteAlternative =
-    UserCompletion User Bool
-    -- ^ User, plus whether the user is in the channel that triggered
-    -- the autocomplete
-    | SpecialMention SpecialMention
-    -- ^ A special mention.
-    | ChannelCompletion Bool Channel
-    -- ^ Channel, plus whether the user is a member of the channel
-    | SyntaxCompletion Text
-    -- ^ Name of a skylighting syntax definition
-    | CommandCompletion CompletionSource Text Text Text
-    -- ^ Source, name of a slash command, argspec, and description
-    | EmojiCompletion Text
-    -- ^ The text of an emoji completion
-
--- | The source of an autocompletion alternative.
-data CompletionSource = Server | Client
-                      deriving (Eq, Show)
-
-specialMentionName :: SpecialMention -> Text
-specialMentionName MentionChannel = "channel"
-specialMentionName MentionAll = "all"
-
-isSpecialMention :: T.Text -> Bool
-isSpecialMention n = isJust $ lookup (T.toLower $ trimUserSigil n) pairs
-    where
-        pairs = mkPair <$> mentions
-        mentions = [ MentionChannel
-                   , MentionAll
-                   ]
-        mkPair v = (specialMentionName v, v)
-
-autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
-autocompleteAlternativeReplacement (EmojiCompletion e) =
-    ":" <> e <> ":"
-autocompleteAlternativeReplacement (SpecialMention m) =
-    addUserSigil $ specialMentionName m
-autocompleteAlternativeReplacement (UserCompletion u _) =
-    addUserSigil $ userUsername u
-autocompleteAlternativeReplacement (ChannelCompletion _ c) =
-    normalChannelSigil <> (sanitizeUserText $ channelName c)
-autocompleteAlternativeReplacement (SyntaxCompletion t) =
-    "```" <> t
-autocompleteAlternativeReplacement (CommandCompletion _ t _ _) =
-    "/" <> t
-
--- | The type of data that the autocompletion logic supports. We use
--- this to track the kind of completion underway in case the type of
--- completion needs to change.
-data AutocompletionType =
-    ACUsers
-    | ACChannels
-    | ACCodeBlockLanguage
-    | ACEmoji
-    | ACCommands
-    deriving (Eq, Show)
-
-data AutocompleteState n =
-    AutocompleteState { _acPreviousSearchString :: Text
-                      -- ^ The search string used for the
-                      -- currently-displayed autocomplete results, for
-                      -- use in deciding whether to issue another server
-                      -- query
-                      , _acCompletionList :: List n AutocompleteAlternative
-                      -- ^ The list of alternatives that the user
-                      -- selects from
-                      , _acType :: AutocompletionType
-                      -- ^ The type of data that we're completing
-                      , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
-                      -- ^ A cache of alternative lists, keyed on search
-                      -- string, for use in avoiding server requests.
-                      -- The idea here is that users type quickly enough
-                      -- (and edit their input) that would normally lead
-                      -- to rapid consecutive requests, some for the
-                      -- same strings during editing, that we can avoid
-                      -- that by caching them here. Note that this cache
-                      -- gets destroyed whenever autocompletion is not
-                      -- on, so this cache does not live very long.
-                      }
-
--- | The 'EditState' value contains the editor widget itself as well as
--- history and metadata we need for editing-related operations.
-data EditState n =
-    EditState { _esEditor :: Editor Text n
-              , _esEditMode :: EditMode
-              , _esEphemeral :: EphemeralEditState
-              , _esMisspellings :: Set Text
-              , _esAutocomplete :: Maybe (AutocompleteState n)
-              -- ^ The autocomplete state. The autocompletion UI is
-              -- showing only when this state is present.
-              , _esResetEditMode :: EditMode
-              -- ^ The editing mode to reset to after input is handled.
-              , _esAutocompletePending :: Maybe Text
-              -- ^ The search string associated with the latest
-              -- in-flight autocompletion request. This is used to
-              -- determine whether any (potentially late-arriving) API
-              -- responses are for stale queries since the user can type
-              -- more quickly than the server can get us the results,
-              -- and we wouldn't want to show results associated with
-              -- old editor states.
-              , _esAttachmentList :: List n AttachmentData
-              -- ^ The list of attachments to be uploaded with the post
-              -- being edited.
-              , _esFileBrowser :: Maybe (FB.FileBrowser n)
-              -- ^ The browser for selecting attachment files. This is
-              -- a Maybe because the instantiation of the FileBrowser
-              -- causes it to read and ingest the target directory, so
-              -- this action is deferred until the browser is needed.
-              , _esJustCompleted :: Bool
-              -- A flag that indicates whether the most recent editing
-              -- event was a tab-completion. This is used by the smart
-              -- trailing space handling.
-              , _esShowReplyPrompt :: Bool
-              -- ^ Whether to show the reply prompt when replying
-              }
-
 -- | The 'GlobalEditState' value contains state not specific to any
 -- single editor.
 data GlobalEditState =
     GlobalEditState { _gedYankBuffer :: Text
                     , _gedSpellChecker :: Maybe (Aspell, IO ())
                     }
-
--- | An attachment.
-data AttachmentData =
-    AttachmentData { attachmentDataFileInfo :: FB.FileInfo
-                   , attachmentDataBytes :: BS.ByteString
-                   }
-                   deriving (Eq, Show)
 
 -- | We can initialize a new 'EditState' value with just an edit
 -- history, which we save locally.
@@ -2285,9 +2126,7 @@ data MHError =
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''TeamState
-makeLenses ''EditState
 makeLenses ''GlobalEditState
-makeLenses ''AutocompleteState
 makeLenses ''PostListOverlayState
 makeLenses ''ListOverlayState
 makeLenses ''ChannelSelectState
@@ -2353,11 +2192,6 @@ serverBaseUrl st tId =
     let baseUrl = connectionDataURL $ _crConn $ _csResources st
         tName = teamName $ st^.csTeam(tId).tsTeam
     in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
-
-unsafeEsFileBrowser :: Lens' (EditState n) (FB.FileBrowser n)
-unsafeEsFileBrowser =
-     lens (\st   -> st^.esFileBrowser ^?! _Just)
-          (\st t -> st & esFileBrowser .~ Just t)
 
 getSession :: MH Session
 getSession = use (csResources.crSession)

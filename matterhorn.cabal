@@ -146,6 +146,7 @@ library
                        Matterhorn.Types.Channels
                        Matterhorn.Types.Common
                        Matterhorn.Types.DirectionalSeq
+                       Matterhorn.Types.EditState
                        Matterhorn.Types.KeyEvents
                        Matterhorn.Types.Messages
                        Matterhorn.Types.Posts

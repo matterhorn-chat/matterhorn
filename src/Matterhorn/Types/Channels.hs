@@ -12,10 +12,6 @@ module Matterhorn.Types.Channels
   , ChannelInfo(..)
   , ClientChannels -- constructor remains internal
   , NewMessageIndicator(..)
-  , EphemeralEditState(..)
-  , EditMode(..)
-  , eesMultiline, eesInputHistoryPosition, eesLastInput, eesTypingUsers
-  , defaultEphemeralEditState
   -- * Lenses created for accessing ClientChannel fields
   , ccContents, ccInfo, ccEphemeralEditState
   -- * Lenses created for accessing ChannelInfo fields
@@ -41,7 +37,6 @@ module Matterhorn.Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
-  , addEphemeralStateTypingUser
   -- * Notification settings
   , notifyPreference
   , isMuted
@@ -65,7 +60,6 @@ import           Matterhorn.Prelude
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
-import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), (.~), Traversal', Lens'
                                      , makeLenses, ix, at
                                      , to, non )
@@ -85,10 +79,10 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           )
 
 import           Matterhorn.Types.Messages ( Messages, noMessages, addMessage
-                                           , clientMessageToMessage, Message, MessageType )
+                                           , clientMessageToMessage )
 import           Matterhorn.Types.Posts ( ClientMessageType(UnknownGapBefore)
                                         , newClientMessage )
-import           Matterhorn.Types.Users ( TypingUsers, noTypingUsers, addTypingUser )
+import           Matterhorn.Types.EditState
 import           Matterhorn.Types.Common
 
 
@@ -105,30 +99,6 @@ data ClientChannel = ClientChannel
     -- ^ Editor state that we swap in and out as the current channel is
     -- changed.
   }
-
--- | The input state associated with the message editor.
-data EditMode =
-    NewPost
-    -- ^ The input is for a new post.
-    | Editing Post MessageType
-    -- ^ The input is ultimately to replace the body of an existing post
-    -- of the specified type.
-    | Replying Message Post
-    -- ^ The input is to be used as a new post in reply to the specified
-    -- post.
-    deriving (Show)
-
-data EphemeralEditState =
-    EphemeralEditState { _eesMultiline :: Bool
-                       -- ^ Whether the editor is in multiline mode
-                       , _eesInputHistoryPosition :: Maybe Int
-                       -- ^ The input history position, if any
-                       , _eesLastInput :: (T.Text, EditMode)
-                       -- ^ The input entered into the text editor last
-                       -- time the user was focused on the channel
-                       -- associated with this state.
-                       , _eesTypingUsers :: TypingUsers
-                       }
 
 -- Get a channel's name, depending on its type
 preferredChannelName :: Channel -> Text
@@ -248,11 +218,6 @@ data ChannelInfo = ChannelInfo
 makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
-makeLenses ''EphemeralEditState
-
--- | Add user to the list of users in this state who are currently typing.
-addEphemeralStateTypingUser :: UserId -> UTCTime -> EphemeralEditState -> EphemeralEditState
-addEphemeralStateTypingUser uId ts = eesTypingUsers %~ (addTypingUser uId ts)
 
 isMuted :: ClientChannel -> Bool
 isMuted cc = cc^.ccInfo.cdNotifyProps.channelNotifyPropsMarkUnreadL ==
@@ -274,14 +239,6 @@ makeClientChannel myId nc = emptyChannelContents >>= \contents ->
   , _ccInfo = initialChannelInfo myId nc
   , _ccEphemeralEditState = defaultEphemeralEditState
   }
-
-defaultEphemeralEditState :: EphemeralEditState
-defaultEphemeralEditState =
-    EphemeralEditState { _eesMultiline = False
-                       , _eesInputHistoryPosition = Nothing
-                       , _eesLastInput = ("", NewPost)
-                       , _eesTypingUsers = noTypingUsers
-                       }
 
 canLeaveChannel :: ChannelInfo -> Bool
 canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
