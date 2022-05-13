@@ -16,7 +16,6 @@ module Matterhorn.Types
   , ChannelSelectMatch(..)
   , StartupStateInfo(..)
   , MHError(..)
-  , AttachmentData(..)
   , CPUUsagePolicy(..)
   , SemEq(..)
   , getServerBaseUrl
