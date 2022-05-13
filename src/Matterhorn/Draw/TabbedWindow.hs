@@ -21,7 +21,7 @@ import           Matterhorn.Types.KeyEvents
 
 -- | Render a tabbed window.
 drawTabbedWindow :: (Eq a, Show a)
-                 => TabbedWindow m a
+                 => TabbedWindow ChatState m Name a
                  -> ChatState
                  -> TeamId
                  -> Widget Name
@@ -47,7 +47,7 @@ keybindingHelp st =
 -- | The scrollable tab bar to show at the top of a tabbed window.
 tabBar :: (Eq a, Show a)
        => TeamId
-       -> TabbedWindow m a
+       -> TabbedWindow s m Name a
        -> Widget Name
 tabBar tId w =
     let cur = getCurrentTabbedWindowEntry w

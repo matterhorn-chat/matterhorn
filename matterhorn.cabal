@@ -151,6 +151,7 @@ library
                        Matterhorn.Types.Messages
                        Matterhorn.Types.Posts
                        Matterhorn.Types.RichText
+                       Matterhorn.Types.TabbedWindow
                        Matterhorn.Types.Users
                        Matterhorn.Util
                        Matterhorn.Windows.ViewMessage

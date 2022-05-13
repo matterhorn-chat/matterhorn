@@ -19,20 +19,12 @@ module Matterhorn.Types
   , AttachmentData(..)
   , CPUUsagePolicy(..)
   , SemEq(..)
-  , tabbedWindow
-  , getCurrentTabbedWindowEntry
-  , tabbedWindowNextTab
-  , tabbedWindowPreviousTab
-  , runTabShowHandlerFor
   , getServerBaseUrl
   , serverBaseUrl
   , URLListSource(..)
   , URLList(..)
   , ulList
   , ulSource
-  , TabbedWindow(..)
-  , TabbedWindowEntry(..)
-  , TabbedWindowTemplate(..)
   , ConnectionInfo(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
@@ -367,6 +359,7 @@ module Matterhorn.Types
   , module Matterhorn.Types.Channels
   , module Matterhorn.Types.EditState
   , module Matterhorn.Types.Messages
+  , module Matterhorn.Types.TabbedWindow
   , module Matterhorn.Types.Posts
   , module Matterhorn.Types.Users
   )
@@ -375,7 +368,6 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import qualified Graphics.Vty as Vty
 import qualified Brick
 import           Brick ( EventM, Next, Widget(..), Size(..), Result )
 import           Brick.Focus ( FocusRing, focusRing )
@@ -400,7 +392,7 @@ import qualified Data.Kind as K
 import           Data.Maybe ( fromJust )
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy, nub, elemIndex, partition )
+import           Data.List ( sortBy, elemIndex, partition )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z2
@@ -435,6 +427,7 @@ import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText ( TeamBaseURL(..), TeamURLName(..) )
+import           Matterhorn.Types.TabbedWindow
 import           Matterhorn.Types.Users
 import qualified Matterhorn.Zipper as Z
 
@@ -1294,58 +1287,6 @@ data Mode =
 -- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
--- | An entry in a tabbed window corresponding to a tab and its content.
--- Parameterized over an abstract handle type ('a') for the tabs so we
--- can give each a unique handle.
-data TabbedWindowEntry m a =
-    TabbedWindowEntry { tweValue :: a
-                      -- ^ The handle for this tab.
-                      , tweRender :: a -> ChatState -> Widget Name
-                      -- ^ The rendering function to use when this tab
-                      -- is selected.
-                      , tweHandleEvent :: a -> Vty.Event -> m ()
-                      -- ^ The event-handling function to use when this
-                      -- tab is selected.
-                      , tweTitle :: a -> Bool -> T.Text
-                      -- ^ Title function for this tab, with a boolean
-                      -- indicating whether this is the current tab.
-                      , tweShowHandler :: a -> m ()
-                      -- ^ A handler to be invoked when this tab is
-                      -- shown.
-                      }
-
--- | The definition of a tabbed window. Note that this does not track
--- the *state* of the window; it merely provides a collection of tab
--- window entries (see above). To track the state of a tabbed window,
--- use a TabbedWindow.
---
--- Parameterized over an abstract handle type ('a') for the tabs so we
--- can give each a unique handle.
-data TabbedWindowTemplate m a =
-    TabbedWindowTemplate { twtEntries :: [TabbedWindowEntry m a]
-                         -- ^ The entries in tabbed windows with this
-                         -- structure.
-                         , twtTitle :: a -> Widget Name
-                         -- ^ The title-rendering function for this kind
-                         -- of tabbed window.
-                         }
-
--- | An instantiated tab window. This is based on a template and tracks
--- the state of the tabbed window (current tab).
---
--- Parameterized over an abstract handle type ('a') for the tabs so we
--- can give each a unique handle.
-data TabbedWindow m a =
-    TabbedWindow { twValue :: a
-                 -- ^ The handle of the currently-selected tab.
-                 , twTemplate :: TabbedWindowTemplate m a
-                 -- ^ The template to use as a basis for rendering the
-                 -- window and handling user input.
-                 , twWindowWidth :: Int
-                 , twWindowHeight :: Int
-                 -- ^ Window dimensions
-                 }
-
 -- | A window in which a specific thread is viewed, where the user can
 -- send messages implicitly to that thread.
 data ThreadInterface n =
@@ -1371,118 +1312,6 @@ newThreadInterface tId cId rootMsg rootPost msgs =
                     , _threadEditor =
                         emptyEditStateForThread tId cId (Replying rootMsg rootPost)
                     }
-
--- | Construct a new tabbed window from a template. This will raise an
--- exception if the initially-selected tab does not exist in the window
--- template, or if the window template has any duplicated tab handles.
---
--- Note that the caller is responsible for determining whether to call
--- the initially-selected tab's on-show handler.
-tabbedWindow :: (Show a, Eq a)
-             => a
-             -- ^ The handle corresponding to the tab that should be
-             -- selected initially.
-             -> TabbedWindowTemplate m a
-             -- ^ The template for the window to construct.
-             -> (Int, Int)
-             -- ^ The window dimensions (width, height).
-             -> TabbedWindow m a
-tabbedWindow initialVal t (width, height) =
-    let handles = tweValue <$> twtEntries t
-    in if | null handles ->
-              error "BUG: tabbed window template must provide at least one entry"
-          | length handles /= length (nub handles) ->
-              error "BUG: tabbed window should have one entry per handle"
-          | not (initialVal `elem` handles) ->
-              error $ "BUG: tabbed window handle " <>
-                      show initialVal <> " not present in template"
-          | otherwise ->
-              TabbedWindow { twTemplate = t
-                           , twValue = initialVal
-                           , twWindowWidth = width
-                           , twWindowHeight = height
-                           }
-
--- | Get the currently-selected tab entry for a tabbed window. Raise
--- an exception if the window's selected tab handle is not found in its
--- template (which is a bug in the tabbed window infrastructure).
-getCurrentTabbedWindowEntry :: (Show a, Eq a)
-                            => TabbedWindow m a
-                            -> TabbedWindowEntry m a
-getCurrentTabbedWindowEntry w =
-    lookupTabbedWindowEntry (twValue w) w
-
--- | Run the on-show handler for the window tab entry with the specified
--- handle.
-runTabShowHandlerFor :: (Eq a, Show a) => a -> TabbedWindow m a -> m ()
-runTabShowHandlerFor handle w = do
-    let entry = lookupTabbedWindowEntry handle w
-    tweShowHandler entry handle
-
--- | Look up a tabbed window entry by handle. Raises an exception if no
--- such entry exists.
-lookupTabbedWindowEntry :: (Eq a, Show a)
-                        => a
-                        -> TabbedWindow m a
-                        -> TabbedWindowEntry m a
-lookupTabbedWindowEntry handle w =
-    let matchesVal e = tweValue e == handle
-    in case filter matchesVal (twtEntries $ twTemplate w) of
-        [e] -> e
-        _ -> error $ "BUG: tabbed window entry for " <> show (twValue w) <>
-                     " should have matched a single entry"
-
--- | Switch a tabbed window's selected tab to its next tab, cycling back
--- to the first tab if the last tab is the selected tab. This also
--- invokes the on-show handler for the newly-selected tab.
---
--- Note that this does nothing if the window has only one tab.
-tabbedWindowNextTab :: (Monad m, Show a, Eq a)
-                    => TabbedWindow m a
-                    -> m (TabbedWindow m a)
-tabbedWindowNextTab w | length (twtEntries $ twTemplate w) == 1 = return w
-tabbedWindowNextTab w = do
-    let curIdx = case elemIndex (tweValue curEntry) allHandles of
-            Nothing ->
-                error $ "BUG: tabbedWindowNextTab: could not find " <>
-                        "current handle in handle list"
-            Just i -> i
-        nextIdx = if curIdx == length allHandles - 1
-                  then 0
-                  else curIdx + 1
-        newHandle = allHandles !! nextIdx
-        allHandles = tweValue <$> twtEntries (twTemplate w)
-        curEntry = getCurrentTabbedWindowEntry w
-        newWin = w { twValue = newHandle }
-
-    runTabShowHandlerFor newHandle newWin
-    return newWin
-
--- | Switch a tabbed window's selected tab to its previous tab, cycling
--- to the last tab if the first tab is the selected tab. This also
--- invokes the on-show handler for the newly-selected tab.
---
--- Note that this does nothing if the window has only one tab.
-tabbedWindowPreviousTab :: (Monad m, Show a, Eq a)
-                        => TabbedWindow m a
-                        -> m (TabbedWindow m a)
-tabbedWindowPreviousTab w | length (twtEntries $ twTemplate w) == 1 = return w
-tabbedWindowPreviousTab w = do
-    let curIdx = case elemIndex (tweValue curEntry) allHandles of
-            Nothing ->
-                error $ "BUG: tabbedWindowPreviousTab: could not find " <>
-                        "current handle in handle list"
-            Just i -> i
-        nextIdx = if curIdx == 0
-                  then length allHandles - 1
-                  else curIdx - 1
-        newHandle = allHandles !! nextIdx
-        allHandles = tweValue <$> twtEntries (twTemplate w)
-        curEntry = getCurrentTabbedWindowEntry w
-        newWin = w { twValue = newHandle }
-
-    runTabShowHandlerFor newHandle newWin
-    return newWin
 
 data ChannelListOrientation =
     ChannelListLeft
@@ -1591,7 +1420,7 @@ data TeamState =
               , _tsUrlList :: URLList
               -- ^ The URL list used to show URLs drawn from messages in
               -- a channel.
-              , _tsViewedMessage :: Maybe (Message, TabbedWindow MH ViewMessageWindowTab)
+              , _tsViewedMessage :: Maybe (Message, TabbedWindow ChatState MH Name ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed. Note that this stores a message, not
               -- a message ID. That's because not all messages have

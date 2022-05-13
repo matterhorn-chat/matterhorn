@@ -470,7 +470,7 @@ keybindSections =
 teamIdThunk :: TeamId
 teamIdThunk = error "BUG: should not evaluate teamIdThunk"
 
-tabbedWinThunk :: Lens' ChatState (TabbedWindow MH Int)
+tabbedWinThunk :: Lens' ChatState (TabbedWindow ChatState MH Name Int)
 tabbedWinThunk = error "BUG: should not evaluate tabbedWinThunk"
 
 editorThunk :: Lens' ChatState (Editor Text Name)
