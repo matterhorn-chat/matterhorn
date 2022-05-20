@@ -241,8 +241,6 @@ data ChannelCollection a =
                       }
                       deriving (Functor, Foldable, Traversable)
 
--- | Define the exported typename which universally binds the
--- collection to the ChannelInfo type.
 type ClientChannels = ChannelCollection ClientChannel
 
 makeLenses ''ChannelCollection
