@@ -32,7 +32,7 @@ import           Matterhorn.Types.RichText ( URL, TeamURLName )
 data Name =
     ChannelMessages ChannelId
     | MessageInput TeamId
-    | ChannelList TeamId
+    | ChannelListViewport TeamId
     | HelpViewport
     | HelpText
     | PostList

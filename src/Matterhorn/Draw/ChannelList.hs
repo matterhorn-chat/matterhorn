@@ -94,7 +94,7 @@ renderChannelList st tId =
                  withVScrollBars sbOrientation $
                  withVScrollBarHandles $
                  withClickableVScrollBars VScrollBar $
-                 viewport (ChannelList tId) Vertical $ sbPad body
+                 viewport (ChannelListViewport tId) Vertical $ sbPad body
         body = case st^.csTeam(tId).tsMode of
             ChannelSelect ->
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches

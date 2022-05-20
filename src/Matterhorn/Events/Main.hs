@@ -74,13 +74,13 @@ mainKeyHandlers tId =
     , mkKb
         ChannelListScrollUpEvent
         "Scroll up in the channel list" $ do
-            let vp = viewportScroll $ ChannelList tId
+            let vp = viewportScroll $ ChannelListViewport tId
             mh $ vScrollBy vp (-1)
 
     , mkKb
         ChannelListScrollDownEvent
         "Scroll down in the channel list" $ do
-            let vp = viewportScroll $ ChannelList tId
+            let vp = viewportScroll $ ChannelListViewport tId
             mh $ vScrollBy vp 1
 
     , mkKb
