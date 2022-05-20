@@ -100,7 +100,7 @@ toggleVerbatimBlockTruncation = do
     csVerbatimTruncateSetting %= toggle
 
 clearPendingFlags :: ChannelId -> MH ()
-clearPendingFlags c = csChannel(c).ccContents.cdFetchPending .= False
+clearPendingFlags c = csChannel(c).ccInfo.cdFetchPending .= False
 
 addEndGap :: ChannelId -> MH ()
 addEndGap cId = withChannel cId $ \chan ->
@@ -994,11 +994,11 @@ fetchVisibleIfNeeded tId = do
                 op = \s c -> MM.mmGetPostsForChannel c finalQuery s
                 addTrailingGap = MM.postQueryBefore finalQuery == Nothing &&
                                  MM.postQueryPage finalQuery == Just 0
-            when ((not $ chan^.ccContents.cdFetchPending) && gapInDisplayable) $ do
-                   csChannel(cId).ccContents.cdFetchPending .= True
+            when ((not $ chan^.ccInfo.cdFetchPending) && gapInDisplayable) $ do
+                   csChannel(cId).ccInfo.cdFetchPending .= True
                    doAsyncChannelMM Preempt cId op
                        (\c p -> Just $ do
-                           csChannel(c).ccContents.cdFetchPending .= False
+                           csChannel(c).ccInfo.cdFetchPending .= False
                            addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd)
 
 asyncFetchAttachments :: Post -> MH ()

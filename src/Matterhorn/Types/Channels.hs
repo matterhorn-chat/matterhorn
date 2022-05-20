@@ -18,9 +18,9 @@ module Matterhorn.Types.Channels
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdDMUserId, cdChannelId
-  , cdSidebarShowOverride, cdNotifyProps, cdTeamId
+  , cdSidebarShowOverride, cdNotifyProps, cdTeamId, cdFetchPending
   -- * Lenses created for accessing ChannelContents fields
-  , cdMessages, cdFetchPending
+  , cdMessages
   -- * Creating ClientChannel objects
   , makeClientChannel
   -- * Managing ClientChannel collections
@@ -133,6 +133,7 @@ initialChannelInfo myId chan =
                                                       sanitizeUserText $ channelName chan
                                                  else Nothing
                    , _cdSidebarShowOverride    = Nothing
+                   , _cdFetchPending           = False
                    }
 
 channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
@@ -157,7 +158,6 @@ channelInfoFromChannelWithData chan chanMember ci =
 --   'Message' values
 data ChannelContents = ChannelContents
   { _cdMessages :: Messages
-  , _cdFetchPending :: Bool
   }
 
 -- | An initial empty 'ChannelContents' value.  This also contains an
@@ -169,7 +169,6 @@ emptyChannelContents :: MonadIO m => m ChannelContents
 emptyChannelContents = do
   gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGapBefore "--Fetching messages--"
   return $ ChannelContents { _cdMessages = addMessage gapMsg noMessages
-                           , _cdFetchPending = False
                            }
 
 
@@ -211,6 +210,8 @@ data ChannelInfo = ChannelInfo
     -- considerations as long as the specified timestamp meets a cutoff.
     -- Otherwise fall back to other application policy to determine
     -- whether to show the channel.
+  , _cdFetchPending :: Bool
+    -- ^ Whether a fetch in this channel is pending
   }
 
 -- ** Channel-related Lenses
