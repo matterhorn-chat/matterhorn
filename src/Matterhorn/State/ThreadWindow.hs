@@ -17,6 +17,7 @@ import Network.Mattermost.Lenses
 
 import Matterhorn.Types
 import Matterhorn.State.Common
+import Matterhorn.State.Teams ( newThreadInterface )
 import {-# SOURCE #-} Matterhorn.State.Messages
 
 openThreadWindow :: TeamId -> ChannelId -> PostId -> MH ()
@@ -34,6 +35,7 @@ openThreadWindow tId cId pId = do
 
                   when (numPosts > 0) $ do
                       st <- use id
+                      eventQueue <- use (csResources.crEventQueue)
                       msgs <- installMessagesFromPosts (Just tId) posts
 
                       mapM_ (addMessageToState False False . OldPost)
@@ -44,7 +46,8 @@ openThreadWindow tId cId pId = do
                       let mMsg = getMessageForPostId st pId
                       case mMsg of
                           Just rootMsg | Just rootPost <- rootMsg^.mOriginalPost -> do
-                              let ti = newThreadInterface tId cId rootMsg rootPost msgs
+                              checker <- use (csTeam(tId).tsGlobalEditState.gedSpellChecker)
+                              ti <- liftIO $ newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs
                               csTeam(tId).tsThreadInterface .= Just ti
                               when (m /= ThreadWindow cId) $
                                   pushMode tId $ ThreadWindow cId

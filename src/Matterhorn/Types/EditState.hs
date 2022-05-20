@@ -23,6 +23,7 @@ module Matterhorn.Types.EditState
   , esResetEditMode
   , esJustCompleted
   , esShowReplyPrompt
+  , esSpellCheckTimerReset
 
   , EphemeralEditState(..)
   , defaultEphemeralEditState
@@ -204,10 +205,13 @@ data EditState n =
               -- trailing space handling.
               , _esShowReplyPrompt :: Bool
               -- ^ Whether to show the reply prompt when replying
+              , _esSpellCheckTimerReset :: Maybe (IO ())
+              -- ^ An action to reset the spell check timer for this
+              -- editor, if a spell checker is running.
               }
 
-newEditState :: n -> n -> EditMode -> Bool -> EditState n
-newEditState editorName attachmentListName initialEditMode showReplyPrompt =
+newEditState :: n -> n -> EditMode -> Bool -> Maybe (IO ()) -> EditState n
+newEditState editorName attachmentListName initialEditMode showReplyPrompt reset =
     EditState { _esEditor               = editor editorName Nothing ""
               , _esEphemeral            = defaultEphemeralEditState
               , _esEditMode             = initialEditMode
@@ -219,6 +223,7 @@ newEditState editorName attachmentListName initialEditMode showReplyPrompt =
               , _esFileBrowser          = Nothing
               , _esJustCompleted        = False
               , _esShowReplyPrompt      = showReplyPrompt
+              , _esSpellCheckTimerReset = reset
               }
 
 data EphemeralEditState =

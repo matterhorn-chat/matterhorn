@@ -14,6 +14,7 @@ import           Network.Mattermost.Endpoints ( mmGetMetadataForFile )
 
 import           Matterhorn.Types
 import           Matterhorn.State.Common
+import           Matterhorn.State.Teams ( newSaveAttachmentDialog )
 
 
 -- | If the currently selected link in the URL list is for an

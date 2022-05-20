@@ -2,13 +2,14 @@ module Matterhorn.State.Messages
   ( PostToAdd(..)
   , fetchVisibleIfNeeded
   , addMessageToState
+  , sendMessage
   )
 where
 
 import Prelude ()
 import Matterhorn.Prelude
-import Matterhorn.Types ( MH )
-import Network.Mattermost.Types ( TeamId, Post )
+import Matterhorn.Types ( MH, AttachmentData, EditMode )
+import Network.Mattermost.Types ( ChannelId, TeamId, Post )
 
 data PostToAdd = OldPost Post | RecentPost Post Bool
 data PostProcessMessageAdd
@@ -18,3 +19,4 @@ data PostProcessMessageAdd
 -- State.Channels.
 fetchVisibleIfNeeded :: TeamId -> MH ()
 addMessageToState :: Bool -> Bool -> PostToAdd -> MH PostProcessMessageAdd
+sendMessage :: ChannelId -> EditMode -> Text -> [AttachmentData] -> MH ()

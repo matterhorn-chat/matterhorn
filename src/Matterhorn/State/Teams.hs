@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.Teams
   ( nextTeam
   , prevTeam
@@ -8,32 +9,42 @@ module Matterhorn.State.Teams
   , moveCurrentTeamLeft
   , moveCurrentTeamRight
   , setTeam
+  , newSaveAttachmentDialog
+  , newChannelTopicDialog
+  , newThreadInterface
   )
 where
 
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import qualified Brick.BChan as BCH
 import           Brick.Main ( invalidateCache, hScrollToBeginning, viewportScroll, makeVisible )
+import           Brick.Widgets.List ( list )
+import           Brick.Widgets.Edit ( editor, applyEdit )
+import           Brick.Focus ( focusRing )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
+import qualified Data.Text.Zipper as Z2
 import qualified Data.HashMap.Strict as HM
-import           Lens.Micro.Platform ( (%=), (.=), at )
+import           Lens.Micro.Platform ( (%=), (.=), at, Lens' )
+import           Text.Aspell ( Aspell )
 
 import           Network.Mattermost.Lenses ( userIdL )
-import           Network.Mattermost.Types ( TeamId, Team, User, userId
+import           Network.Mattermost.Types ( TeamId, Team, Channel, User, userId
                                           , getId, channelId, teamId, UserParam(..)
-                                          , teamOrderPref
+                                          , teamOrderPref, Post, ChannelId, postId
                                           )
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Types
+import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
-import           Matterhorn.State.Messages
+import {-# SOURCE #-} Matterhorn.State.Messages
 import           Matterhorn.State.Setup.Threads ( maybeStartSpellChecker, newSpellCheckTimer )
 import qualified Matterhorn.Zipper as Z
 
@@ -198,13 +209,7 @@ buildTeamState cr me team = do
         return (getId c, cChannel)
 
     -- Start the spell checker and spell check timer, if configured
-    spResult <- do
-        mAspell <- maybeStartSpellChecker config
-        case mAspell of
-            Nothing -> return Nothing
-            Just as -> do
-                reset <- newSpellCheckTimer tId (cr^.crEventQueue)
-                return $ Just (as, reset)
+    spResult <- maybeStartSpellChecker config
 
     now <- getCurrentTime
     let chanIds = mkChannelZipperList (config^.configChannelListSortingL) now config tId
@@ -213,7 +218,8 @@ buildTeamState cr me team = do
         chanZip = Z.fromList chanIds
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
 
-    return (newTeamState config team chanZip spResult, clientChans)
+    ts <- newTeamState (cr^.crEventQueue) config team chanZip spResult
+    return (ts, clientChans)
 
 -- | Add a new 'TeamState' and corresponding channels to the application
 -- state.
@@ -237,3 +243,143 @@ removeTeam :: TeamId -> MH ()
 removeTeam tId = do
     csTeams.at tId .= Nothing
     setTeamFocusWith $ Z.filterZipper (/= tId)
+
+emptyEditStateForTeam :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> IO (EditState Name)
+emptyEditStateForTeam checker eventQueue tId = do
+    reset <- case checker of
+        Nothing -> return Nothing
+        Just as -> Just <$> newSpellCheckTimer as eventQueue (channelEditor(tId))
+    let editorName = MessageInput tId
+        attachmentListName = AttachmentList tId
+    return $ newEditState editorName attachmentListName NewPost True reset
+
+emptyEditStateForThread :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> EditMode -> IO (EditState Name)
+emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
+    let ti :: Lens' ChatState (ThreadInterface Name)
+        ti = threadInterface(tId)
+    reset <- case checker of
+        Nothing -> return Nothing
+        Just as -> Just <$> newSpellCheckTimer as eventQueue (ti.threadEditor)
+    let editorName = ThreadMessageInput tId cId
+        attachmentListName = ThreadEditorAttachmentList tId cId
+    return $ newEditState editorName attachmentListName initialEditMode False reset
+
+newThreadInterface :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> Message -> Post -> Messages -> IO (ThreadInterface Name)
+newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
+    es <- emptyEditStateForThread checker eventQueue tId cId (Replying rootMsg rootPost)
+    return $ ThreadInterface { _threadMessages = msgs
+                             , _threadRootPostId = postId rootPost
+                             , _threadParentChannelId = cId
+                             , _threadMessageSelect = MessageSelectState Nothing
+                             , _threadMode = Compose
+                             , _threadEditor = es
+                             }
+
+newTeamState :: BCH.BChan MHEvent
+             -> Config
+             -> Team
+             -> Z.Zipper ChannelListGroup ChannelListEntry
+             -> Maybe Aspell
+             -> IO TeamState
+newTeamState eventQueue config team chanList spellChecker = do
+    let tId = teamId team
+    es <- emptyEditStateForTeam spellChecker eventQueue tId
+    return $ TeamState { _tsMode                     = Main
+                       , _tsModeStack                = []
+                       , _tsFocus                    = chanList
+                       , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
+                       , _tsTeam                     = team
+                       , _tsEditState                = es
+                       , _tsUrlList                  = URLList { _ulList = list (UrlList tId) mempty 2
+                                                               , _ulSource = Nothing
+                                                               }
+                       , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
+                       , _tsUserListOverlay          = nullUserListOverlayState tId
+                       , _tsChannelListOverlay       = nullChannelListOverlayState tId
+                       , _tsChannelSelectState       = emptyChannelSelectState tId
+                       , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
+                       , _tsMessageSelect            = MessageSelectState Nothing
+                       , _tsNotifyPrefs              = Nothing
+                       , _tsPendingChannelChange     = Nothing
+                       , _tsRecentChannel            = Nothing
+                       , _tsReturnChannel            = Nothing
+                       , _tsViewedMessage            = Nothing
+                       , _tsThemeListOverlay         = nullThemeListOverlayState tId
+                       , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
+                       , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
+                       , _tsChannelListSorting       = configChannelListSorting config
+                       , _tsThreadInterface          = Nothing
+                       }
+
+nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
+nullChannelListOverlayState tId =
+    let newList rs = list (JoinChannelList tId) rs 2
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
+                        , _listOverlaySearchScope    = AllChannels
+                        , _listOverlaySearching      = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
+                        }
+
+nullThemeListOverlayState :: TeamId -> ListOverlayState InternalTheme ()
+nullThemeListOverlayState tId =
+    let newList rs = list (ThemeListSearchResults tId) rs 3
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
+                        , _listOverlaySearchScope    = ()
+                        , _listOverlaySearching      = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
+                        }
+
+nullUserListOverlayState :: TeamId -> ListOverlayState UserInfo UserSearchScope
+nullUserListOverlayState tId =
+    let newList rs = list (UserListSearchResults tId) rs 1
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor (UserListSearchInput tId) (Just 1) ""
+                        , _listOverlaySearchScope    = AllUsers Nothing
+                        , _listOverlaySearching      = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
+                        }
+
+nullEmojiListOverlayState :: TeamId -> ListOverlayState (Bool, T.Text) ()
+nullEmojiListOverlayState tId =
+    let newList rs = list (ReactionEmojiList tId) rs 1
+    in ListOverlayState { _listOverlaySearchResults  = newList mempty
+                        , _listOverlaySearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
+                        , _listOverlaySearchScope    = ()
+                        , _listOverlaySearching      = False
+                        , _listOverlayEnterHandler   = const $ return False
+                        , _listOverlayNewList        = newList
+                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
+                        , _listOverlayRecordCount    = Nothing
+                        }
+
+-- | Make a new channel topic editor window state.
+newChannelTopicDialog :: TeamId -> T.Text -> ChannelTopicDialogState
+newChannelTopicDialog tId t =
+    ChannelTopicDialogState { _channelTopicDialogEditor = editor (ChannelTopicEditor tId) Nothing t
+                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor tId
+                                                                   , ChannelTopicSaveButton tId
+                                                                   , ChannelTopicCancelButton tId
+                                                                   ]
+                            }
+
+-- | Make a new attachment-saving editor window state.
+newSaveAttachmentDialog :: TeamId -> T.Text -> SaveAttachmentDialogState
+newSaveAttachmentDialog tId t =
+    SaveAttachmentDialogState { _attachmentPathEditor = applyEdit Z2.gotoEOL $
+                                                        editor (AttachmentPathEditor tId) (Just 1) t
+                              , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor tId
+                                                                       , AttachmentPathSaveButton tId
+                                                                       , AttachmentPathCancelButton tId
+                                                                       ]
+                              }

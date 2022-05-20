@@ -98,7 +98,7 @@ runMatterhorn opts config = do
     forM_ (HM.elems $ finalSt^.csTeams) $ \ts ->
         case ts^.tsGlobalEditState.gedSpellChecker of
             Nothing -> return ()
-            Just (s, _) -> stopAspell s
+            Just s -> stopAspell s
 
     return finalSt
 

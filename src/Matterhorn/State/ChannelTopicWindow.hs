@@ -11,6 +11,7 @@ import           Lens.Micro.Platform ( (.=) )
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
+import           Matterhorn.State.Teams ( newChannelTopicDialog )
 import           Matterhorn.State.Channels ( getCurrentChannelTopic )
 
 

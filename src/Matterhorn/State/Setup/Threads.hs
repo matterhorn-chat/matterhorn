@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Matterhorn.State.Setup.Threads
   ( startUserStatusUpdateThread
@@ -26,7 +27,7 @@ import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time ( getCurrentTime, addUTCTime )
-import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
+import           Lens.Micro.Platform ( Lens', (.=), (%=), (%~), mapped )
 import           Skylighting.Loader ( loadSyntaxesFromDir )
 import           System.Directory ( getTemporaryDirectory )
 import           System.Exit ( ExitCode(ExitSuccess) )
@@ -172,9 +173,9 @@ maybeStartSpellChecker config = do
                                      ]
           either (const Nothing) Just <$> startAspell aspellOpts
 
-newSpellCheckTimer :: TeamId -> BChan MHEvent -> IO (IO ())
-newSpellCheckTimer tId eventQueue = do
-    resetSCChan <- startSpellCheckerThread tId eventQueue spellCheckerTimeout
+newSpellCheckTimer :: Aspell -> BChan MHEvent -> Lens' ChatState (EditState Name) -> IO (IO ())
+newSpellCheckTimer checker eventQueue which = do
+    resetSCChan <- startSpellCheckerThread checker eventQueue which spellCheckerTimeout
     return $ STM.atomically $ STM.writeTChan resetSCChan ()
 
 -- Start the background spell checker delay thread.
@@ -203,14 +204,18 @@ newSpellCheckTimer tId eventQueue = do
 -- The worker thread works by reading a timer from its queue, waiting
 -- until the timer expires, and then injecting an event into the main
 -- event loop to request a spell check.
-startSpellCheckerThread :: TeamId
+startSpellCheckerThread :: Aspell
+                        -- ^ The spell checker handle to use
                         -> BChan MHEvent
                         -- ^ The main event loop's event channel.
+                        -> Lens' ChatState (EditState Name)
+                        -- ^ Where to get the editor content to spell
+                        -- check, and where to put the results
                         -> Int
                         -- ^ The number of microseconds to wait before
                         -- requesting a spell check.
                         -> IO (STM.TChan ())
-startSpellCheckerThread tId eventChan spellCheckTimeout = do
+startSpellCheckerThread checker eventChan which spellCheckTimeout = do
   delayWakeupChan <- STM.atomically STM.newTChan
   delayWorkerChan <- STM.atomically STM.newTChan
   delVar <- STM.atomically $ STM.newTVar Nothing
@@ -219,7 +224,7 @@ startSpellCheckerThread tId eventChan spellCheckTimeout = do
   -- requests a spell check.
   void $ forkIO $ forever $ do
     STM.atomically $ waitDelay =<< STM.readTChan delayWorkerChan
-    writeBChan eventChan (RespEvent $ requestSpellCheck tId (channelEditor(tId)))
+    writeBChan eventChan (RespEvent $ requestSpellCheck checker which)
 
   -- The delay manager waits for requests to start a delay timer and
   -- signals the worker to begin waiting.

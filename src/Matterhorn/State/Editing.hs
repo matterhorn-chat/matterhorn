@@ -45,7 +45,7 @@ import qualified System.Exit as Sys
 import qualified System.IO as Sys
 import qualified System.IO.Temp as Sys
 import qualified System.Process as Sys
-import           Text.Aspell ( AspellResponse(..), mistakeWord, askAspell )
+import           Text.Aspell ( Aspell, AspellResponse(..), mistakeWord, askAspell )
 
 import           Network.Mattermost.Types ( Post(..), ChannelId, TeamId )
 
@@ -56,7 +56,7 @@ import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Common
 import           Matterhorn.State.Autocomplete
 import           Matterhorn.State.Attachments
-import           Matterhorn.State.Messages
+import {-# SOURCE #-} Matterhorn.State.Messages
 import           Matterhorn.Types hiding ( newState )
 import           Matterhorn.Types.Common ( sanitizeUserText' )
 
@@ -355,7 +355,12 @@ handleEditingInput tId getChannelId which e = do
                                   , autocompleteFirstMatch = False
                                   }
     checkForAutocompletion tId which ctx
-    liftIO $ resetSpellCheckTimer $ st^.csTeam(tId).tsGlobalEditState
+
+    -- Reset the spell check timer for this editor
+    mReset <- use (which.esSpellCheckTimerReset)
+    case mReset of
+        Nothing -> return ()
+        Just reset -> liftIO reset
 
     -- If the preview is enabled and multi-line editing is enabled and
     -- the line count changed, we need to invalidate the rendering cache
@@ -380,8 +385,8 @@ sendUserTypingAction :: SimpleGetter ChatState (Maybe ChannelId)
                      -> Lens' ChatState (EditState Name)
                      -> MH ()
 sendUserTypingAction getChannelId which = do
-    mCId <- use getChannelId
-    case mCId of
+    mcId <- use getChannelId
+    case mcId of
         Nothing -> return ()
         Just cId -> do
             st <- use id
@@ -399,25 +404,21 @@ sendUserTypingAction getChannelId which = do
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
-requestSpellCheck :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
-requestSpellCheck tId which = do
-    st <- use id
-    case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
-        Nothing -> return ()
-        Just (checker, _) -> do
-            -- Get the editor contents.
-            contents <- getEditContents <$> use (which.esEditor)
-            doAsyncWith Preempt $ do
-                -- For each line in the editor, submit an aspell request.
-                let query = concat <$> mapM (askAspell checker) contents
-                    postMistakes :: [AspellResponse] -> MH ()
-                    postMistakes responses = do
-                        let getMistakes AllCorrect = []
-                            getMistakes (Mistakes ms) = mistakeWord <$> ms
-                            allMistakes = S.fromList $ concat $ getMistakes <$> responses
-                        which.esMisspellings .= allMistakes
+requestSpellCheck :: Aspell -> Lens' ChatState (EditState Name) -> MH ()
+requestSpellCheck checker which = do
+    -- Get the editor contents.
+    contents <- getEditContents <$> use (which.esEditor)
+    doAsyncWith Preempt $ do
+        -- For each line in the editor, submit an aspell request.
+        let query = concat <$> mapM (askAspell checker) contents
+            postMistakes :: [AspellResponse] -> MH ()
+            postMistakes responses = do
+                let getMistakes AllCorrect = []
+                    getMistakes (Mistakes ms) = mistakeWord <$> ms
+                    allMistakes = S.fromList $ concat $ getMistakes <$> responses
+                which.esMisspellings .= allMistakes
 
-                tryMM query (return . Just . postMistakes)
+        tryMM query (return . Just . postMistakes)
 
 editorEmpty :: Editor Text a -> Bool
 editorEmpty e = cursorIsAtEnd e &&
