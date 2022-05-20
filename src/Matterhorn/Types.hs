@@ -1286,8 +1286,8 @@ data Mode =
 -- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
--- | A window in which a specific thread is viewed, where the user can
--- send messages implicitly to that thread.
+-- | A UI region in which a specific thread is viewed, where the user
+-- can send messages implicitly to that thread.
 data ThreadInterface n =
     ThreadInterface { _threadMessages :: Messages
                     -- ^ The messages in the thread.
