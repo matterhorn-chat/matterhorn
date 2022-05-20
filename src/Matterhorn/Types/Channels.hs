@@ -8,19 +8,16 @@
 
 module Matterhorn.Types.Channels
   ( ClientChannel(..)
-  , ChannelContents(..)
   , ChannelInfo(..)
   , ClientChannels -- constructor remains internal
   , NewMessageIndicator(..)
   -- * Lenses created for accessing ClientChannel fields
-  , ccContents, ccInfo, ccEphemeralEditState
+  , ccMessages, ccInfo, ccEphemeralEditState
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdDMUserId, cdChannelId
   , cdSidebarShowOverride, cdNotifyProps, cdTeamId, cdFetchPending
-  -- * Lenses created for accessing ChannelContents fields
-  , cdMessages
   -- * Creating ClientChannel objects
   , makeClientChannel
   -- * Managing ClientChannel collections
@@ -91,7 +88,7 @@ import           Matterhorn.Types.Common
 -- | A 'ClientChannel' contains both the message
 --   listing and the metadata about a channel
 data ClientChannel = ClientChannel
-  { _ccContents :: ChannelContents
+  { _ccMessages :: Messages
     -- ^ A list of 'Message's in the channel
   , _ccInfo :: ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
@@ -154,23 +151,15 @@ channelInfoFromChannelWithData chan chanMember ci =
           , _cdNotifyProps      = chanMember^.to channelMemberNotifyProps
           }
 
--- | The 'ChannelContents' is a wrapper for a list of
---   'Message' values
-data ChannelContents = ChannelContents
-  { _cdMessages :: Messages
-  }
-
--- | An initial empty 'ChannelContents' value.  This also contains an
--- UnknownGapBefore, which is a signal that causes actual content fetching.
--- The initial Gap's timestamp is the local client time, but
+-- | An initial empty channel message list. This also contains an
+-- UnknownGapBefore, which is a signal that causes actual content
+-- fetching. The initial Gap's timestamp is the local client time, but
 -- subsequent fetches will synchronize with the server (and eventually
 -- eliminate this Gap as well).
-emptyChannelContents :: MonadIO m => m ChannelContents
-emptyChannelContents = do
+emptyChannelMessages :: MonadIO m => m Messages
+emptyChannelMessages = do
   gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGapBefore "--Fetching messages--"
-  return $ ChannelContents { _cdMessages = addMessage gapMsg noMessages
-                           }
-
+  return $ addMessage gapMsg noMessages
 
 ------------------------------------------------------------------------
 
@@ -216,7 +205,6 @@ data ChannelInfo = ChannelInfo
 
 -- ** Channel-related Lenses
 
-makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
 
@@ -234,9 +222,9 @@ notifyPreference u cc =
 -- ** Miscellaneous channel operations
 
 makeClientChannel :: (MonadIO m) => UserId -> Channel -> m ClientChannel
-makeClientChannel myId nc = emptyChannelContents >>= \contents ->
+makeClientChannel myId nc = emptyChannelMessages >>= \msgs ->
   return ClientChannel
-  { _ccContents = contents
+  { _ccMessages = msgs
   , _ccInfo = initialChannelInfo myId nc
   , _ccEphemeralEditState = defaultEphemeralEditState
   }

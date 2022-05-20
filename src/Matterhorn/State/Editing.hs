@@ -479,7 +479,7 @@ cancelAutocompleteOrReplyOrEdit tId which = do
 replyToLatestMessage :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 replyToLatestMessage tId which = do
     withCurrentChannel tId $ \cId chan -> do
-        let msgs = chan^. ccContents . cdMessages
+        let msgs = chan^. ccMessages
         case findLatestUserMessage isReplyable msgs of
           Just msg | isReplyable msg ->
               do rootMsg <- getReplyRootMessage msg

@@ -2143,7 +2143,7 @@ csChannel cId =
 
 csChannelMessages :: ChannelId -> Traversal' ChatState Messages
 csChannelMessages cId =
-    csChannel(cId).ccContents.cdMessages
+    csChannel(cId).ccMessages
 
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()

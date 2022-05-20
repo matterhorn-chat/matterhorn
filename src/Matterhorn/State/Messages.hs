@@ -104,7 +104,7 @@ clearPendingFlags c = csChannel(c).ccInfo.cdFetchPending .= False
 
 addEndGap :: ChannelId -> MH ()
 addEndGap cId = withChannel cId $ \chan ->
-    let lastmsg_ = chan^.ccContents.cdMessages.to reverseMessages.to lastMsg
+    let lastmsg_ = chan^.ccMessages.to reverseMessages.to lastMsg
         lastIsGap = maybe False isGap lastmsg_
         gapMsg = newGapMessage timeJustAfterLast
         timeJustAfterLast = maybe t0 (justAfter . _mDate) lastmsg_
@@ -113,7 +113,7 @@ addEndGap cId = withChannel cId $ \chan ->
                         (T.pack "Disconnected. Will refresh when connected.")
                         (C UnknownGapAfter)
     in unless lastIsGap
-           (csChannels %= modifyChannelById cId (ccContents.cdMessages %~ addMessage gapMsg))
+           (csChannels %= modifyChannelById cId (ccMessages %~ addMessage gapMsg))
 
 lastMsg :: RetrogradeMessages -> Maybe Message
 lastMsg = withFirstMessage id
@@ -179,7 +179,7 @@ editMessage new = do
         let (msg, mentionedUsers) = clientPostToMessage (toClientPost mBaseUrl new (new^.postRootIdL))
             isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
 
-        csChannel (new^.postChannelIdL) . ccContents . cdMessages . traversed . filtered isEditedMessage .= msg
+        csChannel (new^.postChannelIdL) . ccMessages . traversed . filtered isEditedMessage .= msg
 
         invalidateChannelRenderingCache $ new^.postChannelIdL
         invalidateMessageRenderingCacheByPostId $ postId new
@@ -201,7 +201,7 @@ deleteMessage new = do
                              isReplyTo (new^.postIdL) m
         chan :: Traversal' ChatState ClientChannel
         chan = csChannel (new^.postChannelIdL)
-    chan.ccContents.cdMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
+    chan.ccMessages.traversed.filtered isDeletedMessage %= (& mDeleted .~ True)
     chan %= adjustUpdated new
 
     withChannel (new^.postChannelIdL) $ \ch -> do
@@ -248,7 +248,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
             -- with no messages in it.  Need to remove any gaps that
             -- exist at the end of the channel.
             csChannels %= modifyChannelById cId
-              (ccContents.cdMessages %~
+              (ccMessages %~
                \msgs -> let startPoint = join $ _mMessageId <$> getLatestPostMsg msgs
                         in fst $ removeMatchesFromSubset isGap startPoint Nothing msgs)
           return NoAction
@@ -267,7 +267,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
             earliestDate = postCreateAt $ (posts^.postsPostsL) HM.! earliestPId
             latestDate = postCreateAt $ (posts^.postsPostsL) HM.! latestPId
 
-            localMessages = chan^.ccContents . cdMessages
+            localMessages = chan^.ccMessages
 
             -- Get a list of the duplicated message PostIds between
             -- the messages already in the channel and the new posts
@@ -375,7 +375,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
         -- Do this with the updated copy of the channel's messages.
 
         withChannelOrDefault cId () $ \updchan -> do
-          let updMsgs = updchan ^. ccContents . cdMessages
+          let updMsgs = updchan ^. ccMessages
 
           -- Remove any gaps in the added region.  If there was an
           -- active message selection and it is one of the removed
@@ -387,7 +387,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
           let (resultMessages, removedMessages) =
                 removeMatchesFromSubset isGap removeStart removeEnd updMsgs
           csChannels %= modifyChannelById cId
-            (ccContents.cdMessages .~ resultMessages)
+            (ccMessages .~ resultMessages)
 
           let processTeam tId = do
                 -- Determine if the current selected message was one of the
@@ -438,7 +438,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
                     -- the previously selected gap in this direction.
                     gapMsg <- newGapMessage (justBefore earliestDate) True
                     csChannels %= modifyChannelById cId
-                      (ccContents.cdMessages %~ addMessage gapMsg)
+                      (ccMessages %~ addMessage gapMsg)
                     -- Move selection from old gap to new gap
                     case rmvdSelType of
                       Just (C UnknownGapBefore) -> do
@@ -459,7 +459,7 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
                     -- the previously selected gap in this direction.
                     gapMsg <- newGapMessage (justAfter latestDate) False
                     csChannels %= modifyChannelById cId
-                      (ccContents.cdMessages %~ addMessage gapMsg)
+                      (ccMessages %~ addMessage gapMsg)
                     -- Move selection from old gap to new gap
                     case rmvdSelType of
                       Just (C UnknownGapAfter) ->
@@ -598,7 +598,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     invalidateChannelRenderingCache cId
                     invalidateMessageRenderingCacheByPostId $ postId new
                     csChannels %= modifyChannelById cId
-                      ((ccContents.cdMessages %~ addMessage msg') .
+                      ((ccMessages %~ addMessage msg') .
                        (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
                        (\c -> if currCId == Just cId
                               then c
@@ -851,9 +851,9 @@ asyncFetchMoreMessages :: MH ()
 asyncFetchMoreMessages =
     withCurrentTeam $ \tId ->
         withCurrentChannel tId $ \cId chan -> do
-            let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
+            let offset = max 0 $ length (chan^.ccMessages) - 2
                 page = offset `div` pageAmount
-                usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccContents.cdMessages.to reverseMessages)
+                usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccMessages.to reverseMessages)
                 sndOldestId = (messagePostId . snd) =<< usefulMsgs
                 query = MM.defaultPostQuery
                           { MM.postQueryPage = maybe (Just page) (const Nothing) sndOldestId
@@ -890,9 +890,9 @@ asyncFetchMessagesForGap :: ChannelId -> Message -> MH ()
 asyncFetchMessagesForGap cId gapMessage =
   when (isGap gapMessage) $
   withChannel cId $ \chan ->
-    let offset = max 0 $ length (chan^.ccContents.cdMessages) - 2
+    let offset = max 0 $ length (chan^.ccMessages) - 2
         page = offset `div` pageAmount
-        chanMsgs = chan^.ccContents.cdMessages
+        chanMsgs = chan^.ccMessages
         fromMsg = Just gapMessage
         fetchNewer = case gapMessage^.mType of
                        C UnknownGapAfter -> True
@@ -969,7 +969,7 @@ fetchVisibleIfNeeded tId = do
     sts <- use csConnectionStatus
     when (sts == Connected) $ do
         withCurrentChannel tId $ \cId chan -> do
-            let msgs = chan^.ccContents.cdMessages.to reverseMessages
+            let msgs = chan^.ccMessages.to reverseMessages
                 (numRemaining, gapInDisplayable, _, rel'pId, overlap) =
                     foldl gapTrail (numScrollbackPosts, False, Nothing, Nothing, 2) msgs
 

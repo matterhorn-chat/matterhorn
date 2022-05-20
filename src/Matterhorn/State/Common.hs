@@ -134,7 +134,7 @@ addClientMessage msg = do
     withCurrentTeam $ \tId -> do
         withCurrentChannel tId $ \cid _ -> do
             uuid <- generateUUID
-            let addCMsg = ccContents.cdMessages %~
+            let addCMsg = ccMessages %~
                     (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
             csChannels %= modifyChannelById cid addCMsg
 
@@ -169,7 +169,7 @@ postErrorMessageIO err st = do
               Just cId -> do
                   msg <- newClientMessage Error err
                   uuid <- generateUUID_IO
-                  let addEMsg = ccContents.cdMessages %~
+                  let addEMsg = ccMessages %~
                           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
                   return $ st & csChannels %~ modifyChannelById cId addEMsg
 
@@ -210,7 +210,7 @@ openWithOpener getTarget = do
                             -- current channel will be displayed as new.
                             withCurrentTeam $ \tId -> do
                                 withCurrentChannel tId $ \cId curChan -> do
-                                    let msgs = curChan^.ccContents.cdMessages
+                                    let msgs = curChan^.ccMessages
                                     case findLatestUserMessage isEditable msgs of
                                         Nothing -> return ()
                                         Just m ->
