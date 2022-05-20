@@ -34,7 +34,7 @@ import           Matterhorn.State.Async
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Messages
-import           Matterhorn.State.Setup.Threads ( maybeStartSpellChecker )
+import           Matterhorn.State.Setup.Threads ( maybeStartSpellChecker, newSpellCheckTimer )
 import qualified Matterhorn.Zipper as Z
 
 
@@ -198,7 +198,13 @@ buildTeamState cr me team = do
         return (getId c, cChannel)
 
     -- Start the spell checker and spell check timer, if configured
-    spResult <- maybeStartSpellChecker tId config (cr^.crEventQueue)
+    spResult <- do
+        mAspell <- maybeStartSpellChecker config
+        case mAspell of
+            Nothing -> return Nothing
+            Just as -> do
+                reset <- newSpellCheckTimer tId (cr^.crEventQueue)
+                return $ Just (as, reset)
 
     now <- getCurrentTime
     let chanIds = mkChannelZipperList (config^.configChannelListSortingL) now config tId

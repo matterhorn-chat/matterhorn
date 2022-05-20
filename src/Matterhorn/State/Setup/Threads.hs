@@ -5,6 +5,7 @@ module Matterhorn.State.Setup.Threads
   , startSubprocessLoggerThread
   , startTimezoneMonitorThread
   , maybeStartSpellChecker
+  , newSpellCheckTimer
   , startAsyncWorkerThread
   , startSyntaxMapLoaderThread
   , module Matterhorn.State.Setup.Threads.Logging
@@ -159,21 +160,22 @@ startTimezoneMonitorThread tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
-maybeStartSpellChecker :: TeamId -> Config -> BChan MHEvent -> IO (Maybe (Aspell, IO ()))
-maybeStartSpellChecker tId config eventQueue = do
+spellCheckerTimeout :: Int
+spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
+
+maybeStartSpellChecker :: Config -> IO (Maybe Aspell)
+maybeStartSpellChecker config = do
   case configEnableAspell config of
       False -> return Nothing
       True -> do
           let aspellOpts = catMaybes [ UseDictionary <$> (configAspellDictionary config)
                                      ]
-              spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
-          asResult <- either (const Nothing) Just <$> startAspell aspellOpts
-          case asResult of
-              Nothing -> return Nothing
-              Just as -> do
-                  resetSCChan <- startSpellCheckerThread tId eventQueue spellCheckerTimeout
-                  let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
-                  return $ Just (as, resetSCTimer)
+          either (const Nothing) Just <$> startAspell aspellOpts
+
+newSpellCheckTimer :: TeamId -> BChan MHEvent -> IO (IO ())
+newSpellCheckTimer tId eventQueue = do
+    resetSCChan <- startSpellCheckerThread tId eventQueue spellCheckerTimeout
+    return $ STM.atomically $ STM.writeTChan resetSCChan ()
 
 -- Start the background spell checker delay thread.
 --
