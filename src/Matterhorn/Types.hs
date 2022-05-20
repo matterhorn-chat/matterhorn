@@ -2033,8 +2033,10 @@ popMode tId = do
 pushMode' :: TeamId -> Mode -> ChatState -> ChatState
 pushMode' tId m st =
     let cur = st^.csTeam(tId).tsMode
-    in st & csTeam(tId).tsMode .~ m
-          & csTeam(tId).tsModeStack %~ (cur:)
+    in if cur == m
+       then st
+       else st & csTeam(tId).tsMode .~ m
+               & csTeam(tId).tsModeStack %~ (cur:)
 
 resetSpellCheckTimer :: GlobalEditState -> IO ()
 resetSpellCheckTimer s =
