@@ -1190,37 +1190,17 @@ data GlobalEditState =
                     , _gedSpellChecker :: Maybe (Aspell, IO ())
                     }
 
--- | We can initialize a new 'EditState' value with just an edit
--- history, which we save locally.
 emptyEditStateForTeam :: TeamId -> EditState Name
 emptyEditStateForTeam tId =
-    EditState { _esEditor               = editor (MessageInput tId) Nothing ""
-              , _esEphemeral            = defaultEphemeralEditState
-              , _esEditMode             = NewPost
-              , _esMisspellings         = mempty
-              , _esAutocomplete         = Nothing
-              , _esResetEditMode        = NewPost
-              , _esAutocompletePending  = Nothing
-              , _esAttachmentList       = list (AttachmentList tId) mempty 1
-              , _esFileBrowser          = Nothing
-              , _esJustCompleted        = False
-              , _esShowReplyPrompt      = True
-              }
+    let editorName = MessageInput tId
+        attachmentListName = AttachmentList tId
+    in newEditState editorName attachmentListName NewPost True
 
 emptyEditStateForThread :: TeamId -> ChannelId -> EditMode -> EditState Name
 emptyEditStateForThread tId cId initialEditMode =
-    EditState { _esEditor               = editor (ThreadMessageInput tId cId) Nothing ""
-              , _esEphemeral            = defaultEphemeralEditState
-              , _esEditMode             = initialEditMode
-              , _esMisspellings         = mempty
-              , _esAutocomplete         = Nothing
-              , _esResetEditMode        = initialEditMode
-              , _esAutocompletePending  = Nothing
-              , _esAttachmentList       = list (ThreadEditorAttachmentList tId cId) mempty 1
-              , _esFileBrowser          = Nothing
-              , _esJustCompleted        = False
-              , _esShowReplyPrompt      = False
-              }
+    let editorName = ThreadMessageInput tId cId
+        attachmentListName = ThreadEditorAttachmentList tId cId
+    in newEditState editorName attachmentListName initialEditMode False
 
 emptyGlobalEditState :: GlobalEditState
 emptyGlobalEditState =

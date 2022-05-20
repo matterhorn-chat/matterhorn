@@ -10,6 +10,7 @@ module Matterhorn.Types.EditState
   , isSpecialMention
 
   , EditState(..)
+  , newEditState
   , unsafeEsFileBrowser
   , esAttachmentList
   , esFileBrowser
@@ -45,8 +46,8 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Widgets.Edit ( Editor )
-import           Brick.Widgets.List ( List )
+import           Brick.Widgets.Edit ( Editor, editor )
+import           Brick.Widgets.List ( List, list )
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Data.ByteString as BS
 import qualified Data.HashMap.Strict as HM
@@ -205,6 +206,21 @@ data EditState n =
               -- ^ Whether to show the reply prompt when replying
               }
 
+newEditState :: n -> n -> EditMode -> Bool -> EditState n
+newEditState editorName attachmentListName initialEditMode showReplyPrompt =
+    EditState { _esEditor               = editor editorName Nothing ""
+              , _esEphemeral            = defaultEphemeralEditState
+              , _esEditMode             = initialEditMode
+              , _esResetEditMode        = initialEditMode
+              , _esMisspellings         = mempty
+              , _esAutocomplete         = Nothing
+              , _esAutocompletePending  = Nothing
+              , _esAttachmentList       = list attachmentListName mempty 1
+              , _esFileBrowser          = Nothing
+              , _esJustCompleted        = False
+              , _esShowReplyPrompt      = showReplyPrompt
+              }
+
 data EphemeralEditState =
     EphemeralEditState { _eesMultiline :: Bool
                        -- ^ Whether the editor is in multiline mode
@@ -217,10 +233,6 @@ data EphemeralEditState =
                        , _eesTypingUsers :: TypingUsers
                        }
 
-makeLenses ''EditState
-makeLenses ''EphemeralEditState
-makeLenses ''AutocompleteState
-
 defaultEphemeralEditState :: EphemeralEditState
 defaultEphemeralEditState =
     EphemeralEditState { _eesMultiline = False
@@ -229,9 +241,14 @@ defaultEphemeralEditState =
                        , _eesTypingUsers = noTypingUsers
                        }
 
+makeLenses ''EphemeralEditState
+
 -- | Add user to the list of users in this state who are currently typing.
 addEphemeralStateTypingUser :: UserId -> UTCTime -> EphemeralEditState -> EphemeralEditState
 addEphemeralStateTypingUser uId ts = eesTypingUsers %~ (addTypingUser uId ts)
+
+makeLenses ''EditState
+makeLenses ''AutocompleteState
 
 unsafeEsFileBrowser :: Lens' (EditState n) (FB.FileBrowser n)
 unsafeEsFileBrowser =
