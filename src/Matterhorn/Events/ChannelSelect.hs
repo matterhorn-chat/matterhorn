@@ -21,11 +21,11 @@ onEventChannelSelect tId =
     void .
     handleEventWith [ handleKeyboardEvent (channelSelectKeybindings tId)
                     , \e -> do
-                        handleEventWith [ handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput))
-                                        , \ev -> do
-                                            mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent ev
-                                            return True
-                                        ] e
+                        void $ handleEventWith [ handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput))
+                                               , \ev -> do
+                                                   mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent ev
+                                                   return True
+                                               ] e
                         updateChannelSelectMatches tId
                         return True
                     ]
