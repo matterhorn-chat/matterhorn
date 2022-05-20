@@ -195,13 +195,13 @@ messageListingKeyHandlers :: TeamId
 messageListingKeyHandlers tId selWhich msgsWhich urlSrc changeMode =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
-        beginMessageSelect tId selWhich msgsWhich changeMode
+        beginMessageSelect selWhich msgsWhich changeMode
 
     , mkKb PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect tId selWhich msgsWhich changeMode
+        beginMessageSelect selWhich msgsWhich changeMode
 
     , mkKb SelectOldestMessageEvent "Scroll to top of message list" $ do
-        beginMessageSelect tId selWhich msgsWhich changeMode
+        beginMessageSelect selWhich msgsWhich changeMode
         messageSelectFirst selWhich msgsWhich
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $

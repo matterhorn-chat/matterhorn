@@ -70,12 +70,11 @@ withSelectedMessage selWhich msgsWhich act = do
         Nothing -> return ()
         Just m -> act m
 
-beginMessageSelect :: TeamId
-                   -> Lens' ChatState MessageSelectState
+beginMessageSelect :: Lens' ChatState MessageSelectState
                    -> Traversal' ChatState Messages
                    -> MH ()
                    -> MH ()
-beginMessageSelect tId selWhich msgsWhich changeMode = do
+beginMessageSelect selWhich msgsWhich changeMode = do
     -- Invalidate the rendering cache since we cache messages to speed
     -- up the selection UI responsiveness. (See Draw.Messages for
     -- caching behavior.)
