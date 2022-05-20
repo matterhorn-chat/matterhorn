@@ -16,14 +16,19 @@ import           Matterhorn.Types
 import qualified Matterhorn.Zipper as Z
 
 
-onEventChannelSelect :: TeamId -> Vty.Event -> MH Bool
+onEventChannelSelect :: TeamId -> Vty.Event -> MH ()
 onEventChannelSelect tId =
-  handleKeyboardEvent (channelSelectKeybindings tId) $ \e -> do
-      handled <- handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput)) (const $ return ()) e
-      when (not handled) $
-          mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent e
-
-      updateChannelSelectMatches tId
+    void .
+    handleEventWith [ handleKeyboardEvent (channelSelectKeybindings tId)
+                    , \e -> do
+                        handleEventWith [ handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput))
+                                        , \ev -> do
+                                            mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent ev
+                                            return True
+                                        ] e
+                        updateChannelSelectMatches tId
+                        return True
+                    ]
 
 channelSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)

@@ -26,13 +26,16 @@ import           Matterhorn.State.Async
 
 onEventEditNotifyPrefs :: TeamId -> V.Event -> MH Bool
 onEventEditNotifyPrefs tId =
-    handleKeyboardEvent (editNotifyPrefsKeybindings tId) (handleEditNotifyPrefsEvent tId . VtyEvent)
+    handleEventWith [ handleKeyboardEvent (editNotifyPrefsKeybindings tId)
+                    , handleEditNotifyPrefsEvent tId . VtyEvent
+                    ]
 
-handleEditNotifyPrefsEvent :: TeamId -> BrickEvent Name MHEvent -> MH ()
+handleEditNotifyPrefsEvent :: TeamId -> BrickEvent Name MHEvent -> MH Bool
 handleEditNotifyPrefsEvent tId e = do
     form <- use (csTeam(tId).tsNotifyPrefs.singular _Just)
     updatedForm <- mh $ handleFormEvent e form
     csTeam(tId).tsNotifyPrefs .= Just updatedForm
+    return True
 
 editNotifyPrefsKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 editNotifyPrefsKeybindings tId = mkKeybindings (editNotifyPrefsKeyHandlers tId)

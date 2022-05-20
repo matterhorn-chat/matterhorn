@@ -18,6 +18,7 @@ module Matterhorn.Types
   , MHError(..)
   , CPUUsagePolicy(..)
   , SemEq(..)
+  , handleEventWith
   , getServerBaseUrl
   , serverBaseUrl
   , URLListSource(..)
@@ -401,6 +402,7 @@ import qualified Data.Text.Zipper as Z2
 import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
+import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
                                      , (%=), (%~), (.~), _Just, Traversal', to
                                      , SimpleGetter, filtered, traversed, singular
@@ -1957,6 +1959,20 @@ makeLenses ''SaveAttachmentDialogState
 makeLenses ''URLList
 makeLenses ''ThreadInterface
 Brick.suffixLenses ''Config
+
+-- | Given a list of event handlers and an event, try to handle the
+-- event with the handlers in the specified order. If a handler returns
+-- False (indicating it did not handle the event), try the next handler
+-- until either a handler returns True or all handlers are tried.
+-- Returns True if any handler handled the event or False otherwise.
+handleEventWith :: [Vty.Event -> MH Bool] -> Vty.Event -> MH Bool
+handleEventWith [] _ =
+    return False
+handleEventWith (handler:rest) e = do
+    handled <- handler e
+    if handled
+       then return True
+       else handleEventWith rest e
 
 applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
 applyTeamOrderPref Nothing st = st

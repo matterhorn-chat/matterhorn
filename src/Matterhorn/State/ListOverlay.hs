@@ -135,19 +135,26 @@ onEventListOverlay :: TeamId
                    -- ^ The event
                    -> MH Bool
 onEventListOverlay tId which keybindings =
-    handleKeyboardEvent keybindings $ \e -> do
-        -- Get the editor content before the event.
-        before <- listOverlaySearchString which
+    handleEventWith [ handleKeyboardEvent keybindings
+                    , handleEditorEvent tId which
+                    ]
 
-        -- First find a matching keybinding in the keybinding list.
-        handled <- handleKeyboardEvent (editingKeybindings tId (which.listOverlaySearchInput)) (const $ return ()) e
+handleEditorEvent :: TeamId -> Lens' ChatState (ListOverlayState a b) -> Vty.Event -> MH Bool
+handleEditorEvent tId which e = do
+    -- Get the editor content before the event.
+    before <- listOverlaySearchString which
 
-        -- If we didn't find a matching binding, just handle the event
-        -- as a normal editor input event.
-        when (not handled) $
-            mhHandleEventLensed (which.listOverlaySearchInput) E.handleEditorEvent e
+    -- First find a matching keybinding in the keybinding list.
+    handled <- handleKeyboardEvent (editingKeybindings tId (which.listOverlaySearchInput)) e
 
-        -- Get the editor content after the event. If the string changed,
-        -- start a new search.
-        after <- listOverlaySearchString which
-        when (before /= after) $ resetListOverlaySearch which
+    -- If we didn't find a matching binding, just handle the event as a
+    -- normal editor input event.
+    when (not handled) $
+        mhHandleEventLensed (which.listOverlaySearchInput) E.handleEditorEvent e
+
+    -- Get the editor content after the event. If the string changed,
+    -- start a new search.
+    after <- listOverlaySearchString which
+    when (before /= after) $ resetListOverlaySearch which
+
+    return True

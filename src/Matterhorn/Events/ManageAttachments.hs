@@ -45,8 +45,9 @@ onEventAttachmentList :: TeamId
                       -> V.Event
                       -> MH Bool
 onEventAttachmentList tId which =
-    handleKeyboardEvent (attachmentListKeybindings tId which) $
-        mhHandleEventLensed (which.esAttachmentList) L.handleListEvent
+    handleEventWith [ handleKeyboardEvent (attachmentListKeybindings tId which)
+                    , \e -> mhHandleEventLensed (which.esAttachmentList) L.handleListEvent e >> return True
+                    ]
 
 attachmentListKeybindings :: TeamId
                           -> Lens' ChatState (EditState Name)
@@ -161,7 +162,9 @@ onEventBrowseFile tId which e = do
     withFileBrowser tId which $ \b -> do
         case FB.fileBrowserIsSearching b of
             False ->
-                void $ handleKeyboardEvent (attachmentBrowseKeybindings tId which) (handleFileBrowserEvent tId which) e
+                void $ handleEventWith [ handleKeyboardEvent (attachmentBrowseKeybindings tId which)
+                                       , \_ -> handleFileBrowserEvent tId which e >> return True
+                                       ] e
             True ->
                 handleFileBrowserEvent tId which e
 

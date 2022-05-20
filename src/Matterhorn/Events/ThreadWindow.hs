@@ -31,23 +31,21 @@ onEventThreadWindow tId ev = do
     case st^.ti.threadMode of
         MessageSelect ->
             onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor) ev
-        Compose ->
-            void $ handleKeyboardEvent (threadWindowKeybindings tId) (\ e -> do
-                let fallback e2 = do
-                        let fallback2 e3 = do
-                                case e3 of
-                                    (Vty.EvPaste bytes) -> handlePaste (ti.threadEditor) bytes
-                                    _ -> handleEditingInput tId (ti.threadParentChannelId.to Just) (ti.threadEditor) e3
-                            bindings = messageListingKeybindings tId
-                                                                 (ti.threadMessageSelect)
-                                                                 (ti.threadMessages)
-                                                                 (Just $ FromThreadIn $ st^.ti.threadParentChannelId)
-                                                                 (ti.threadMode .= MessageSelect)
-                        void $ handleKeyboardEvent bindings fallback2 e2
-                void $ handleKeyboardEvent (messageEditorKeybindings tId (ti.threadEditor)
-                                               (ti.threadParentChannelId.to Just))
-                                           fallback e
-                ) ev
+        Compose -> do
+            let messageListingBindings = messageListingKeybindings tId (ti.threadMessageSelect)
+                                                                       (ti.threadMessages)
+                                                                       (Just $ FromThreadIn $ st^.ti.threadParentChannelId)
+                                                                       (ti.threadMode .= MessageSelect)
+            void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)
+                                   , handleKeyboardEvent (messageEditorKeybindings tId (ti.threadEditor)
+                                                         (ti.threadParentChannelId.to Just))
+                                   , handleKeyboardEvent messageListingBindings
+                                   , \_ -> do
+                                       case ev of
+                                           (Vty.EvPaste bytes) -> handlePaste (ti.threadEditor) bytes
+                                           _ -> handleEditingInput tId (ti.threadParentChannelId.to Just) (ti.threadEditor) ev
+                                       return True
+                                   ] ev
 
 threadWindowKeybindings :: TeamId
                         -> KeyConfig

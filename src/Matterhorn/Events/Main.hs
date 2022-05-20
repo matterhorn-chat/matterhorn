@@ -24,31 +24,28 @@ import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.Types
 
-
 onEventMain :: TeamId -> Vty.Event -> MH ()
 onEventMain tId =
-  void . handleKeyboardEvent (mainKeybindings tId) (\ ev -> do
-      let fallback e = do
-              mCid <- use (csCurrentChannelId(tId))
-              let fallback2 e2 = do
-                      resetReturnChannel tId
-                      case e of
-                          (Vty.EvPaste bytes) -> handlePaste (channelEditor(tId)) bytes
-                          _ -> handleEditingInput tId (csCurrentChannelId(tId)) (channelEditor(tId)) e2
-              case mCid of
-                  Nothing ->
-                      fallback2 e
-                  Just cId -> do
-                      let bindings = messageListingKeybindings tId
-                                                               (channelMessageSelect(tId))
-                                                               (csChannelMessages(cId))
-                                                               (Just $ FromChannel tId cId)
-                                                               (pushMode tId $ ChannelMessageSelect cId)
-                      void $ handleKeyboardEvent bindings fallback2 e
-      void $ handleKeyboardEvent
-                 (messageEditorKeybindings tId (channelEditor(tId)) (csCurrentChannelId(tId)))
-                 fallback ev
-  )
+    void .
+    handleEventWith [ handleKeyboardEvent (mainKeybindings tId)
+                    , handleKeyboardEvent (messageEditorKeybindings tId (channelEditor(tId)) (csCurrentChannelId(tId)))
+                    , \e -> do
+                        mCid <- use (csCurrentChannelId(tId))
+                        case mCid of
+                            Nothing -> return False
+                            Just cId ->
+                                handleKeyboardEvent (messageListingKeybindings tId (channelMessageSelect(tId))
+                                                                                   (csChannelMessages(cId))
+                                                                                   (Just $ FromChannel tId cId)
+                                                                                   (pushMode tId $ ChannelMessageSelect cId))
+                                                    e
+                    , \e -> do
+                           resetReturnChannel tId
+                           case e of
+                               (Vty.EvPaste bytes) -> handlePaste (channelEditor(tId)) bytes
+                               _ -> handleEditingInput tId (csCurrentChannelId(tId)) (channelEditor(tId)) e
+                           return True
+                    ]
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)

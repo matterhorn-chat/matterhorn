@@ -15,9 +15,15 @@ import           Matterhorn.Types
 
 onEventShowHelp :: TeamId -> Vty.Event -> MH Bool
 onEventShowHelp tId =
-  handleKeyboardEvent (helpKeybindings tId) $ \ e -> case e of
-    Vty.EvKey _ _ -> popMode tId
-    _ -> return ()
+    handleEventWith [ handleKeyboardEvent (helpKeybindings tId)
+                    , closeHelp tId
+                    ]
+
+closeHelp :: TeamId -> Vty.Event -> MH Bool
+closeHelp tId (Vty.EvKey {}) = do
+    popMode tId
+    return True
+closeHelp _ _ = return False
 
 helpKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 helpKeybindings tId = mkKeybindings (helpKeyHandlers tId)

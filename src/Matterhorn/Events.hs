@@ -193,28 +193,35 @@ formatMHError (AsyncErrEvent e) =
     "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
 
 onVtyEvent :: Vty.Event -> MH ()
-onVtyEvent e = do
-    case e of
-        (Vty.EvResize _ _) -> do
-            -- On resize, invalidate the entire rendering cache since
-            -- many things depend on the window size.
-            --
-            -- Note: we fall through after this because it is sometimes
-            -- important for modes to have their own additional logic
-            -- to run when a resize occurs, so we don't want to stop
-            -- processing here.
-            mh invalidateCache
-            withCurrentTeam $ \tId ->
-                mh $ makeVisible $ SelectedChannelListEntry tId
-        _ -> return ()
+onVtyEvent =
+    void .
+    handleEventWith [ handleKeyboardEvent globalKeybindings
+                    , handleTeamModeEvent
+                    , handleResizeEvent
+                    ]
 
-    void $ handleKeyboardEvent globalKeybindings handleTeamModeEvent e
+handleResizeEvent :: Vty.Event -> MH Bool
+handleResizeEvent (Vty.EvResize _ _) = do
+    -- On resize, invalidate the entire rendering cache since many
+    -- things depend on the window size.
+    --
+    -- Note: we fall through after this because it is sometimes
+    -- important for modes to have their own additional logic to run
+    -- when a resize occurs, so we don't want to stop processing here.
+    mh invalidateCache
+    withCurrentTeam $ \tId ->
+        mh $ makeVisible $ SelectedChannelListEntry tId
 
-handleTeamModeEvent :: Vty.Event -> MH ()
-handleTeamModeEvent e =
+    return True
+handleResizeEvent _ =
+    return False
+
+handleTeamModeEvent :: Vty.Event -> MH Bool
+handleTeamModeEvent e = do
     withCurrentTeam $ \tId -> do
         mode <- use (csTeam(tId).tsMode)
         teamEventHandlerByMode tId mode e
+    return True
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode e =

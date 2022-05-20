@@ -32,7 +32,7 @@ onEventMessageSelect :: TeamId
                      -> Vty.Event
                      -> MH ()
 onEventMessageSelect tId selWhich msgsWhich editWhich =
-  void . handleKeyboardEvent (messageSelectKeybindings tId selWhich msgsWhich editWhich) (const $ return ())
+    void . handleKeyboardEvent (messageSelectKeybindings tId selWhich msgsWhich editWhich)
 
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do

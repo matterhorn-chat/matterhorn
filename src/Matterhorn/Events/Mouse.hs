@@ -26,7 +26,7 @@ mouseHandlerByMode :: TeamId -> Mode -> BrickEvent Name MHEvent -> MH ()
 mouseHandlerByMode tId mode =
     case mode of
         ChannelSelect            -> channelSelectMouseHandler tId
-        EditNotifyPrefs          -> handleEditNotifyPrefsEvent tId
+        EditNotifyPrefs          -> void . handleEditNotifyPrefsEvent tId
         ReactionEmojiListOverlay -> reactionEmojiListMouseHandler tId
         UrlSelect                -> urlListMouseHandler
         _                        -> globalMouseHandler tId

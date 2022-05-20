@@ -16,8 +16,9 @@ import           Matterhorn.Types
 
 onEventUrlSelect :: TeamId -> Vty.Event -> MH Bool
 onEventUrlSelect tId =
-  handleKeyboardEvent (urlSelectKeybindings tId) $ \ ev ->
-    mhHandleEventLensed (csTeam(tId).tsUrlList.ulList) handleListEvent ev
+    handleEventWith [ handleKeyboardEvent (urlSelectKeybindings tId)
+                    , \e -> mhHandleEventLensed (csTeam(tId).tsUrlList.ulList) handleListEvent e >> return True
+                    ]
 
 urlSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 urlSelectKeybindings tId = mkKeybindings (urlSelectKeyHandlers tId)

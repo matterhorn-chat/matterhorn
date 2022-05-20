@@ -101,9 +101,9 @@ getLatestMessage cs tId m =
 
 handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent tId VMTabMessage =
-    void . handleKeyboardEvent (viewMessageKeybindings tId) (const $ return ())
+    void . handleKeyboardEvent (viewMessageKeybindings tId)
 handleEvent tId VMTabReactions =
-    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId) (const $ return ())
+    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId)
 
 reactionsText :: ChatState -> TeamId -> Message -> Widget Name
 reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body

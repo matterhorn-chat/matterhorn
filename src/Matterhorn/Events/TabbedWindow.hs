@@ -25,7 +25,9 @@ handleTabbedWindowEvent :: (Show a, Eq a)
                         -> MH Bool
 handleTabbedWindowEvent target tId e = do
     w <- use target
-    handleKeyboardEvent (tabbedWindowKeybindings target tId) (forwardEvent w) e
+    handleEventWith [ handleKeyboardEvent (tabbedWindowKeybindings target tId)
+                    , \_ -> forwardEvent w e >> return True
+                    ] e
 
 forwardEvent :: (Show a, Eq a)
              => TabbedWindow s MH n a

@@ -14,7 +14,7 @@ import           Matterhorn.State.PostListOverlay
 
 onEventPostListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventPostListOverlay tId =
-  void . handleKeyboardEvent (postListOverlayKeybindings tId) (const $ return ())
+    void . handleKeyboardEvent (postListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing a post list overlay
 postListOverlayKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap

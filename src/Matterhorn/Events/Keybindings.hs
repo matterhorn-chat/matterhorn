@@ -80,24 +80,21 @@ lookupKeybinding :: Vty.Event -> KeyHandlerMap -> Maybe KeyHandler
 lookupKeybinding e (KeyHandlerMap m) = M.lookup e m
 
 -- | Handle a keyboard event by looking it up in a map of bindings and
--- invoking the matching binding's handler. If no match can be found,
--- invoke a fallback action instead. Return True if the key event was
--- handled with a matching binding; False if not (the fallback case).
+-- invoking the matching binding's handler. Return True if the key event
+-- was handled with a matching binding; False if not (the fallback
+-- case).
 handleKeyboardEvent :: (KeyConfig -> KeyHandlerMap)
                     -- ^ The function to build a key handler map from a
                     -- key configuration.
-                    -> (Vty.Event -> MH ())
-                    -- ^ The fallback action to invoke if no matching
-                    -- binding can be found.
                     -> Vty.Event
                     -- ^ The event to handle.
                     -> MH Bool
-handleKeyboardEvent mkKeyMap fallthrough e = do
+handleKeyboardEvent mkKeyMap e = do
   conf <- use (csResources.crConfiguration)
   let keyMap = mkKeyMap (configUserKeys conf)
   case lookupKeybinding e keyMap of
     Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
-    Nothing -> fallthrough e >> return False
+    Nothing -> return False
 
 mkHandler :: Text -> MH () -> EventHandler
 mkHandler msg action =
