@@ -10,6 +10,7 @@ module Matterhorn.Types.Channels
   ( ClientChannel(..)
   , ChannelInfo(..)
   , ClientChannels -- constructor remains internal
+  , chanMap
   , NewMessageIndicator(..)
   -- * Lenses created for accessing ClientChannel fields
   , ccMessages, ccInfo, ccEphemeralEditState
@@ -234,16 +235,13 @@ canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 
 -- ** Manage the collection of all Channels
 
-data ChannelCollection a =
-    ChannelCollection { _chanMap :: HashMap ChannelId a
-                      , _channelNameSet :: HashMap TeamId (S.Set Text)
-                      , _userChannelMap :: HashMap UserId ChannelId
-                      }
-                      deriving (Functor, Foldable, Traversable)
+data ClientChannels =
+    ClientChannels { _chanMap :: HashMap ChannelId ClientChannel
+                   , _channelNameSet :: HashMap TeamId (S.Set Text)
+                   , _userChannelMap :: HashMap UserId ChannelId
+                   }
 
-type ClientChannels = ChannelCollection ClientChannel
-
-makeLenses ''ChannelCollection
+makeLenses ''ClientChannels
 
 getChannelNameSet :: TeamId -> ClientChannels -> S.Set Text
 getChannelNameSet tId cs = case cs^.channelNameSet.at tId of
@@ -253,10 +251,10 @@ getChannelNameSet tId cs = case cs^.channelNameSet.at tId of
 -- | Initial collection of Channels with no members
 noChannels :: ClientChannels
 noChannels =
-    ChannelCollection { _chanMap = HM.empty
-                      , _channelNameSet = HM.empty
-                      , _userChannelMap = HM.empty
-                      }
+    ClientChannels { _chanMap = HM.empty
+                   , _channelNameSet = HM.empty
+                   , _userChannelMap = HM.empty
+                   }
 
 -- | Add a channel to the existing collection.
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
@@ -285,12 +283,12 @@ removeChannel cId cs =
           & removeChannelName
           & userChannelMap %~ HM.filter (/= cId)
 
-instance Semigroup (ChannelCollection ClientChannel) where
+instance Semigroup ClientChannels where
     a <> b =
         let pairs = HM.toList $ _chanMap a
         in foldr (uncurry addChannel) b pairs
 
-instance Monoid (ChannelCollection ClientChannel) where
+instance Monoid ClientChannels where
     mempty = noChannels
 #if !MIN_VERSION_base(4,11,0)
     mappend = (<>)

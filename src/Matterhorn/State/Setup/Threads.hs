@@ -90,7 +90,7 @@ startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
         now <- liftIO getCurrentTime
         let expiry = addUTCTime (- userTypingExpiryInterval) now
             expireUsers c = c & ccEphemeralEditState.eesTypingUsers %~ expireTypingUsers expiry
-        csChannels . mapped %= expireUsers
+        csChannels . chanMap . mapped %= expireUsers
 
       threadDelay refreshIntervalMicros
 
