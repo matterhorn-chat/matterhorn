@@ -145,6 +145,7 @@ library
                        Matterhorn.Types
                        Matterhorn.Types.Channels
                        Matterhorn.Types.Common
+                       Matterhorn.Types.Core
                        Matterhorn.Types.DirectionalSeq
                        Matterhorn.Types.EditState
                        Matterhorn.Types.KeyEvents
