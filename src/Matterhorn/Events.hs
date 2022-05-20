@@ -195,9 +195,9 @@ formatMHError (AsyncErrEvent e) =
 onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent =
     void .
-    handleEventWith [ handleKeyboardEvent globalKeybindings
+    handleEventWith [ handleResizeEvent
+                    , handleKeyboardEvent globalKeybindings
                     , handleTeamModeEvent
-                    , handleResizeEvent
                     ]
 
 handleResizeEvent :: Vty.Event -> MH Bool
