@@ -43,7 +43,7 @@ onEventMain tId =
                                                                (channelMessageSelect(tId))
                                                                (csChannelMessages(cId))
                                                                (Just $ FromChannel tId cId)
-                                                               (ChannelMessageSelect cId)
+                                                               (pushMode tId $ ChannelMessageSelect cId)
                       void $ handleKeyboardEvent bindings fallback2 e
       void $ handleKeyboardEvent
                  (messageEditorKeybindings tId (channelEditor(tId)) (csCurrentChannelId(tId)))
@@ -57,11 +57,11 @@ messageListingKeybindings :: TeamId
                           -> Lens' ChatState MessageSelectState
                           -> Traversal' ChatState Messages
                           -> Maybe URLListSource
-                          -> Mode
+                          -> MH ()
                           -> KeyConfig
                           -> KeyHandlerMap
-messageListingKeybindings tId selWhich msgsWhich urlSrc m =
-    mkKeybindings (messageListingKeyHandlers tId selWhich msgsWhich urlSrc m)
+messageListingKeybindings tId selWhich msgsWhich urlSrc changeMode =
+    mkKeybindings (messageListingKeyHandlers tId selWhich msgsWhich urlSrc changeMode)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
@@ -193,18 +193,18 @@ messageListingKeyHandlers :: TeamId
                           -> Lens' ChatState MessageSelectState
                           -> Traversal' ChatState Messages
                           -> Maybe URLListSource
-                          -> Mode
+                          -> MH ()
                           -> [KeyEventHandler]
-messageListingKeyHandlers tId selWhich msgsWhich urlSrc m =
+messageListingKeyHandlers tId selWhich msgsWhich urlSrc changeMode =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
-        beginMessageSelect tId selWhich msgsWhich m
+        beginMessageSelect tId selWhich msgsWhich changeMode
 
     , mkKb PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect tId selWhich msgsWhich m
+        beginMessageSelect tId selWhich msgsWhich changeMode
 
     , mkKb SelectOldestMessageEvent "Scroll to top of message list" $ do
-        beginMessageSelect tId selWhich msgsWhich m
+        beginMessageSelect tId selWhich msgsWhich changeMode
         messageSelectFirst selWhich msgsWhich
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $

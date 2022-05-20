@@ -133,9 +133,12 @@ module Matterhorn.Types
   , ThreadInterface(..)
   , threadMessages
   , threadEditor
+  , threadMode
   , threadMessageSelect
   , threadRootPostId
   , threadParentChannelId
+
+  , ThreadInterfaceMode(..)
 
   , threadInterface
   , maybeThreadInterface
@@ -1248,7 +1251,6 @@ data Mode =
     | DeleteChannelConfirm
     | ChannelMessageSelect ChannelId
     | ThreadWindow ChannelId
-    | ThreadWindowMessageSelect ChannelId
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
     | UserListOverlay
@@ -1280,7 +1282,16 @@ data ThreadInterface n =
                     -- ^ The root post ID for this thread.
                     , _threadParentChannelId :: ChannelId
                     -- ^ The channel that this thread belongs to.
+                    , _threadMode :: ThreadInterfaceMode
+                    -- ^ The mode of the interface
                     }
+
+data ThreadInterfaceMode =
+    Compose
+    -- ^ Composing messages and interacting with the editor
+    | MessageSelect
+    -- ^ Selecting from messages in the listing
+    deriving (Eq, Show)
 
 newThreadInterface :: TeamId -> ChannelId -> Message -> Post -> Messages -> ThreadInterface Name
 newThreadInterface tId cId rootMsg rootPost msgs =
@@ -1288,6 +1299,7 @@ newThreadInterface tId cId rootMsg rootPost msgs =
                     , _threadRootPostId = postId rootPost
                     , _threadParentChannelId = cId
                     , _threadMessageSelect = MessageSelectState Nothing
+                    , _threadMode = Compose
                     , _threadEditor =
                         emptyEditStateForThread tId cId (Replying rootMsg rootPost)
                     }

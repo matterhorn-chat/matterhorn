@@ -73,9 +73,9 @@ withSelectedMessage selWhich msgsWhich act = do
 beginMessageSelect :: TeamId
                    -> Lens' ChatState MessageSelectState
                    -> Traversal' ChatState Messages
-                   -> Mode
                    -> MH ()
-beginMessageSelect tId selWhich msgsWhich m = do
+                   -> MH ()
+beginMessageSelect tId selWhich msgsWhich changeMode = do
     -- Invalidate the rendering cache since we cache messages to speed
     -- up the selection UI responsiveness. (See Draw.Messages for
     -- caching behavior.)
@@ -91,7 +91,7 @@ beginMessageSelect tId selWhich msgsWhich m = do
     let recentMsg = getLatestSelectableMessage msgs
 
     when (isJust recentMsg) $ do
-        pushMode tId m
+        changeMode
         selWhich .= MessageSelectState (recentMsg >>= _mMessageId)
 
 -- | Tell the server that the message we currently have selected

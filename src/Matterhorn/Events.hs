@@ -255,8 +255,6 @@ teamEventHandlerByMode tId mode e =
         ChannelTopicWindow         -> onEventChannelTopicWindow tId e
         SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId e
         ThreadWindow _             -> onEventThreadWindow tId e
-        ThreadWindowMessageSelect _ ->
-            onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor) e
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the

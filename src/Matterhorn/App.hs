@@ -57,7 +57,6 @@ app = App
                   ShowHelp _                    -> Nothing
                   UrlSelect                     -> Nothing
                   EditNotifyPrefs               -> Nothing
-                  ThreadWindowMessageSelect _   -> Nothing
   , appHandleEvent  = Events.onEvent
   , appStartEvent   = return
   , appAttrMap      = (^.csResources.crTheme)

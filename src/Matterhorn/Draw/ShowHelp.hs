@@ -447,13 +447,13 @@ keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk <>
-                         messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing modeThunk)
+                         messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing changeModeThunk)
     , ("Message Editor", channelEditorKeyHandlers teamIdThunk editWhichThunk getChannelIdThunk)
     , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
     , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk editWhichThunk)
     , ("Thread Window", threadWindowKeyHandlers teamIdThunk <>
-                        messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing modeThunk)
+                        messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing changeModeThunk)
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
@@ -488,8 +488,8 @@ msgsWhichThunk = error "BUG: should not evaluate msgsWhichThunk"
 getChannelIdThunk :: SimpleGetter ChatState (Maybe ChannelId)
 getChannelIdThunk = error "BUG: should not evaluate getChannelIdThunk"
 
-modeThunk :: Mode
-modeThunk = error "BUG: should not evaluate modeThunk"
+changeModeThunk :: MH ()
+changeModeThunk = error "BUG: should not evaluate changeModeThunk"
 
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =

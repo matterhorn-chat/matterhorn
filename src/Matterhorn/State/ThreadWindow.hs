@@ -60,6 +60,4 @@ closeThreadWindow tId = do
 
     case mCid of
         Nothing -> return ()
-        Just cId -> do
-            whenMode tId (ThreadWindowMessageSelect cId) $ popMode tId
-            whenMode tId (ThreadWindow cId) close
+        Just cId -> whenMode tId (ThreadWindow cId) close

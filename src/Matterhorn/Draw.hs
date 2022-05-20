@@ -73,10 +73,6 @@ draw st =
                         ChannelTopicWindow           -> drawChannelTopicWindow st tId : monochrome rest
                         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : monochrome rest
                         ThreadWindow _               -> drawThreadWindowLayers st tId <> rest
-                        -- Skip the thread window draw in thread message
-                        -- select mode since that will happen at a lower
-                        -- stack level.
-                        ThreadWindowMessageSelect _  -> rest
                 topMode = st^.csTeam(tId).tsMode
                 stack = st^.csTeam(tId).tsModeStack
             in drawMode topMode stack
