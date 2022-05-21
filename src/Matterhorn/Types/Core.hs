@@ -12,6 +12,8 @@ module Matterhorn.Types.Core
 
   , ChannelListGroupLabel(..)
   , channelListGroupNames
+
+  , MessageSelectState(..)
   )
 where
 
@@ -164,3 +166,8 @@ channelListGroupNames =
     , ("favorite", ChannelGroupFavoriteChannels)
     , ("direct", ChannelGroupDirectMessages)
     ]
+
+-- | The state of message selection mode.
+data MessageSelectState =
+    MessageSelectState { selectMessageId :: Maybe MessageId
+                       }

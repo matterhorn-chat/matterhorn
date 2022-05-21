@@ -39,7 +39,7 @@ onEventMain tId =
                         case mCid of
                             Nothing -> return False
                             Just cId ->
-                                handleKeyboardEvent (messageListingKeybindings tId (channelMessageSelect(tId))
+                                handleKeyboardEvent (messageListingKeybindings tId (channelMessageSelect(cId))
                                                                                    (csChannelMessages(cId))
                                                                                    (Just $ FromChannel tId cId)
                                                                                    (pushMode tId $ ChannelMessageSelect cId))

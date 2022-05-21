@@ -303,7 +303,6 @@ newTeamState config team chanList spellChecker =
                  , _tsChannelListOverlay       = nullChannelListOverlayState tId
                  , _tsChannelSelectState       = emptyChannelSelectState tId
                  , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
-                 , _tsMessageSelect            = MessageSelectState Nothing
                  , _tsNotifyPrefs              = Nothing
                  , _tsPendingChannelChange     = Nothing
                  , _tsRecentChannel            = Nothing
@@ -396,6 +395,7 @@ makeClientChannel eventQueue spellChecker myId tId nc = do
     return ClientChannel { _ccMessages = msgs
                          , _ccInfo = initialChannelInfo myId nc
                          , _ccEditState = es
+                         , _ccMessageSelect = MessageSelectState Nothing
                          }
 
 initialChannelInfo :: UserId -> Channel -> ChannelInfo

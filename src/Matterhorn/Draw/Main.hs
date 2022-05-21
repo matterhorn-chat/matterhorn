@@ -783,7 +783,7 @@ mainInterface st mode mtId =
                                                        (ChannelMessages cId)
                                                        tId inMsgSelect
                                                        True
-                                                       (channelMessageSelect(tId))
+                                                       (channelMessageSelect(cId))
                                                        (channelEditor(cId))
                                                        (csChannelMessages(cId))
                                                        True

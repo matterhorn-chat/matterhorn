@@ -8,7 +8,6 @@
 module Matterhorn.Types
   ( ConnectionStatus(..)
   , HelpTopic(..)
-  , MessageSelectState(..)
   , ProgramOutput(..)
   , MHEvent(..)
   , InternalEvent(..)
@@ -1237,8 +1236,6 @@ data TeamState =
               -- unread channels.
               , _tsGlobalEditState :: GlobalEditState
               -- ^ Bits of global state common to all editors.
-              , _tsMessageSelect :: MessageSelectState
-              -- ^ The state of message selection mode.
               , _tsTeam :: Team
               -- ^ The team data.
               , _tsChannelSelectState :: ChannelSelectState
@@ -1368,11 +1365,6 @@ emptyChannelSelectState :: TeamId -> ChannelSelectState
 emptyChannelSelectState tId =
     ChannelSelectState { _channelSelectInput = editor (ChannelSelectInput tId) (Just 1) ""
                        , _channelSelectMatches = Z.fromList []
-                       }
-
--- | The state of message selection mode.
-data MessageSelectState =
-    MessageSelectState { selectMessageId :: Maybe MessageId
                        }
 
 -- | The state of the post list overlay.
@@ -1834,8 +1826,9 @@ channelEditor :: ChannelId -> Lens' ChatState (EditState Name)
 channelEditor cId =
     csChannels.maybeChannelByIdL cId.singular _Just.ccEditState
 
-channelMessageSelect :: TeamId -> Lens' ChatState MessageSelectState
-channelMessageSelect tId = csTeam(tId).tsMessageSelect
+channelMessageSelect :: ChannelId -> Lens' ChatState MessageSelectState
+channelMessageSelect cId =
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageSelect
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
