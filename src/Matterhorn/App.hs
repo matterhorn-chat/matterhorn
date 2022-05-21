@@ -46,7 +46,7 @@ app = App
                   ThemeListOverlay              -> showFirstCursor s cs
                   ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
                   SaveAttachmentWindow _        -> showCursorNamed (AttachmentPathEditor tId) cs
-                  ThreadWindow cId              -> showCursorNamed (ThreadMessageInput tId cId) cs
+                  ThreadWindow cId              -> showCursorNamed (ThreadMessageInput cId) cs
                   LeaveChannelConfirm           -> Nothing
                   DeleteChannelConfirm          -> Nothing
                   ChannelMessageSelect _        -> Nothing

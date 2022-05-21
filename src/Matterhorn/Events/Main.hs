@@ -8,9 +8,9 @@ import           Matterhorn.Prelude
 import           Brick.Main ( viewportScroll, vScrollBy )
 import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens', Traversal', SimpleGetter )
+import           Lens.Micro.Platform ( Lens', Traversal' )
 
-import           Network.Mattermost.Types ( TeamId, ChannelId )
+import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.HelpTopics
 import           Matterhorn.Events.Keybindings
@@ -28,7 +28,12 @@ onEventMain :: TeamId -> Vty.Event -> MH ()
 onEventMain tId =
     void .
     handleEventWith [ handleKeyboardEvent (mainKeybindings tId)
-                    , handleKeyboardEvent (messageEditorKeybindings tId (channelEditor(tId)) (csCurrentChannelId(tId)))
+                    , \e -> do
+                        mCid <- use (csCurrentChannelId(tId))
+                        case mCid of
+                            Nothing -> return False
+                            Just cId ->
+                                handleKeyboardEvent (messageEditorKeybindings (channelEditor(cId))) e
                     , \e -> do
                         mCid <- use (csCurrentChannelId(tId))
                         case mCid of
@@ -40,11 +45,15 @@ onEventMain tId =
                                                                                    (pushMode tId $ ChannelMessageSelect cId))
                                                     e
                     , \e -> do
-                           resetReturnChannel tId
-                           case e of
-                               (Vty.EvPaste bytes) -> handlePaste (channelEditor(tId)) bytes
-                               _ -> handleEditingInput tId (csCurrentChannelId(tId)) (channelEditor(tId)) e
-                           return True
+                        mCid <- use (csCurrentChannelId(tId))
+                        case mCid of
+                            Nothing -> return False
+                            Just cId -> do
+                                resetReturnChannel tId
+                                case e of
+                                    (Vty.EvPaste bytes) -> handlePaste (channelEditor(cId)) bytes
+                                    _ -> handleEditingInput (channelEditor(cId)) e
+                                return True
                     ]
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -90,7 +99,8 @@ mainKeyHandlers tId =
 
     , mkKb ReplyRecentEvent
         "Reply to the most recent message" $
-        replyToLatestMessage tId (channelEditor(tId))
+        withCurrentChannel tId $ \cId _ ->
+            replyToLatestMessage (channelEditor(cId))
 
     , mkKb NextChannelEvent "Change to the next channel in the channel list" $
          nextChannel tId
@@ -117,45 +127,43 @@ mainKeyHandlers tId =
 
     , mkKb
         ScrollUpEvent
-        "Scroll up in the channel input history" $ do
+        "Scroll up in the channel input history" $
+        withCurrentChannel tId $ \cId _ -> do
              -- Up in multiline mode does the usual thing; otherwise we
              -- navigate the history.
-             isMultiline <- use (channelEditor(tId).esEphemeral.eesMultiline)
+             isMultiline <- use (channelEditor(cId).esEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (channelEditor(tId).esEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (channelEditor(cId).esEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KUp [])
                  False -> channelHistoryBackward tId
 
     , mkKb
         ScrollDownEvent
-        "Scroll down in the channel input history" $ do
+        "Scroll down in the channel input history" $
+        withCurrentChannel tId $ \cId _ -> do
              -- Down in multiline mode does the usual thing; otherwise
              -- we navigate the history.
-             isMultiline <- use (channelEditor(tId).esEphemeral.eesMultiline)
+             isMultiline <- use (channelEditor(cId).esEphemeral.eesMultiline)
              case isMultiline of
-                 True -> mhHandleEventLensed (channelEditor(tId).esEditor) handleEditorEvent
+                 True -> mhHandleEventLensed (channelEditor(cId).esEditor) handleEditorEvent
                                            (Vty.EvKey Vty.KDown [])
                  False -> channelHistoryForward tId
     ]
 
-messageEditorKeybindings :: TeamId
-                         -> Lens' ChatState (EditState Name)
-                         -> SimpleGetter ChatState (Maybe ChannelId)
+messageEditorKeybindings :: Lens' ChatState (EditState Name)
                          -> KeyConfig
                          -> KeyHandlerMap
-messageEditorKeybindings tId editWhich getChannelId =
-    mkKeybindings (channelEditorKeyHandlers tId editWhich getChannelId)
+messageEditorKeybindings editWhich =
+    mkKeybindings (channelEditorKeyHandlers editWhich)
 
-channelEditorKeyHandlers :: TeamId
-                         -> Lens' ChatState (EditState Name)
-                         -> SimpleGetter ChatState (Maybe ChannelId)
+channelEditorKeyHandlers :: Lens' ChatState (EditState Name)
                          -> [KeyEventHandler]
-channelEditorKeyHandlers tId editWhich getChannelId =
+channelEditorKeyHandlers editWhich =
     [ mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
            toggleMultilineEditing editWhich
 
     , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
-         cancelAutocompleteOrReplyOrEdit tId editWhich
+         cancelAutocompleteOrReplyOrEdit editWhich
 
     , mkKb
         InvokeEditorEvent
@@ -164,14 +172,14 @@ channelEditorKeyHandlers tId editWhich getChannelId =
 
     , staticKb "Tab-complete forward"
          (Vty.EvKey (Vty.KChar '\t') []) $
-         tabComplete tId editWhich Forwards
+         tabComplete editWhich Forwards
 
     , staticKb "Tab-complete backward"
          (Vty.EvKey (Vty.KBackTab) []) $
-         tabComplete tId editWhich Backwards
+         tabComplete editWhich Backwards
 
     , mkKb ShowAttachmentListEvent "Show the attachment list" $
-         showAttachmentList tId editWhich
+         withCurrentTeam $ \tId -> showAttachmentList tId editWhich
 
     , staticKb "Send the current message"
          (Vty.EvKey Vty.KEnter []) $ do
@@ -180,10 +188,10 @@ channelEditorKeyHandlers tId editWhich getChannelId =
                  -- Normally, this event causes the current message to
                  -- be sent. But in multiline mode we want to insert a
                  -- newline instead.
-                 True -> handleEditingInput tId getChannelId editWhich (Vty.EvKey Vty.KEnter [])
+                 True -> handleEditingInput editWhich (Vty.EvKey Vty.KEnter [])
                  False -> do
                      content <- getEditorContent editWhich
-                     handleInputSubmission tId editWhich getChannelId content
+                     handleInputSubmission editWhich content
     ]
 
 messageListingKeyHandlers :: TeamId

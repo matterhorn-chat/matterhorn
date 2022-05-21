@@ -126,26 +126,25 @@ resetListOverlaySearch which = do
 -- | Generically handle an event for the list overlay state targeted
 -- by the specified lens. Automatically dispatches new searches in the
 -- overlay's editor if the editor contents change.
-onEventListOverlay :: TeamId
-                   -> Lens' ChatState (ListOverlayState a b)
+onEventListOverlay :: Lens' ChatState (ListOverlayState a b)
                    -- ^ Which overlay to dispatch to?
                    -> (KeyConfig -> KeyHandlerMap)
                    -- ^ The keybinding builder
                    -> Vty.Event
                    -- ^ The event
                    -> MH Bool
-onEventListOverlay tId which keybindings =
+onEventListOverlay which keybindings =
     handleEventWith [ handleKeyboardEvent keybindings
-                    , handleEditorEvent tId which
+                    , handleEditorEvent which
                     ]
 
-handleEditorEvent :: TeamId -> Lens' ChatState (ListOverlayState a b) -> Vty.Event -> MH Bool
-handleEditorEvent tId which e = do
+handleEditorEvent :: Lens' ChatState (ListOverlayState a b) -> Vty.Event -> MH Bool
+handleEditorEvent which e = do
     -- Get the editor content before the event.
     before <- listOverlaySearchString which
 
     -- First find a matching keybinding in the keybinding list.
-    handled <- handleKeyboardEvent (editingKeybindings tId (which.listOverlaySearchInput)) e
+    handled <- handleKeyboardEvent (editingKeybindings (which.listOverlaySearchInput)) e
 
     -- If we didn't find a matching binding, just handle the event as a
     -- normal editor input event.

@@ -15,7 +15,7 @@ import           Matterhorn.Types
 
 onEventUserListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventUserListOverlay tId =
-    void . onEventListOverlay tId (csTeam(tId).tsUserListOverlay) (userListOverlayKeybindings tId)
+    void . onEventListOverlay (csTeam(tId).tsUserListOverlay) (userListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list overlay
 userListOverlayKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap

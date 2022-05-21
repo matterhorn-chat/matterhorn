@@ -233,7 +233,7 @@ teamEventHandlerByMode tId mode e =
         ChannelSelect              -> void $ onEventChannelSelect tId e
         UrlSelect                  -> void $ onEventUrlSelect tId e
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId e
-        ChannelMessageSelect cId   -> onEventMessageSelect tId (channelMessageSelect(tId)) (csChannelMessages(cId)) (channelEditor(tId)) e
+        ChannelMessageSelect cId   -> onEventMessageSelect tId (channelMessageSelect(tId)) (csChannelMessages(cId)) (channelEditor(cId)) e
         MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId e
         ThemeListOverlay           -> onEventThemeListOverlay tId e
@@ -248,14 +248,18 @@ teamEventHandlerByMode tId mode e =
             st <- use id
             let ed :: Lens' ChatState (EditState Name)
                 ed = case st^.csTeam(tId).tsThreadInterface of
-                         Nothing -> channelEditor(tId)
+                         Nothing -> case st^.csCurrentChannelId(tId) of
+                             Nothing -> error "BUG: should not be in ManageAttachments mode with no current channel"
+                             Just cId -> channelEditor(cId)
                          Just _ -> ti.threadEditor
             onEventManageAttachments tId ed e
         ManageAttachmentsBrowseFiles -> do
             st <- use id
             let ed :: Lens' ChatState (EditState Name)
                 ed = case st^.csTeam(tId).tsThreadInterface of
-                         Nothing -> channelEditor(tId)
+                         Nothing -> case st^.csCurrentChannelId(tId) of
+                             Nothing -> error "BUG: should not be in ManageAttachmentsBrowseFiles mode with no current channel"
+                             Just cId -> channelEditor(cId)
                          Just _ -> ti.threadEditor
             onEventManageAttachments tId ed e
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e

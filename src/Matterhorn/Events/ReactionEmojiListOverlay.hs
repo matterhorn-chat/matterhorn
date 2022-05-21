@@ -20,7 +20,7 @@ import           Matterhorn.Types
 
 onEventReactionEmojiListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventReactionEmojiListOverlay tId =
-    void . onEventListOverlay tId (csTeam(tId).tsReactionEmojiListOverlay)
+    void . onEventListOverlay (csTeam(tId).tsReactionEmojiListOverlay)
            (reactionEmojiListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing an emoji list overlay

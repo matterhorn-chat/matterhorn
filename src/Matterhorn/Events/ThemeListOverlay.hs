@@ -15,7 +15,7 @@ import           Matterhorn.Types
 
 onEventThemeListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventThemeListOverlay tId =
-    void . onEventListOverlay tId (csTeam(tId).tsThemeListOverlay)
+    void . onEventListOverlay (csTeam(tId).tsThemeListOverlay)
         (themeListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list overlay

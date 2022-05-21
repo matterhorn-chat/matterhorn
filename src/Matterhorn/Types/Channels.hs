@@ -13,14 +13,12 @@ module Matterhorn.Types.Channels
   , chanMap
   , NewMessageIndicator(..)
   -- * Lenses created for accessing ClientChannel fields
-  , ccMessages, ccInfo, ccEphemeralEditState
+  , ccMessages, ccInfo, ccEditState
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdDMUserId, cdChannelId
   , cdSidebarShowOverride, cdNotifyProps, cdTeamId, cdFetchPending
-  -- * Creating ClientChannel objects
-  , makeClientChannel
   -- * Managing ClientChannel collections
   , noChannels, addChannel, removeChannel, findChannelById, modifyChannelById
   , channelByIdL, maybeChannelByIdL
@@ -50,6 +48,7 @@ module Matterhorn.Types.Channels
   , getDmChannelFor
   , allDmChannelMappings
   , getChannelNameSet
+  , emptyChannelMessages
   )
 where
 
@@ -73,7 +72,6 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , WithDefault(..)
                                           , ServerTime
                                           , TeamId
-                                          , emptyChannelNotifyProps
                                           )
 
 import           Matterhorn.Types.Messages ( Messages, noMessages, addMessage
@@ -81,6 +79,7 @@ import           Matterhorn.Types.Messages ( Messages, noMessages, addMessage
 import           Matterhorn.Types.Posts ( ClientMessageType(UnknownGapBefore)
                                         , newClientMessage )
 import           Matterhorn.Types.EditState
+import           Matterhorn.Types.Core ( Name )
 import           Matterhorn.Types.Common
 
 
@@ -93,7 +92,7 @@ data ClientChannel = ClientChannel
     -- ^ A list of 'Message's in the channel
   , _ccInfo :: ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
-  , _ccEphemeralEditState :: EphemeralEditState
+  , _ccEditState :: EditState Name
     -- ^ Editor state that we swap in and out as the current channel is
     -- changed.
   }
@@ -109,30 +108,6 @@ data NewMessageIndicator =
     | NewPostsAfterServerTime ServerTime
     | NewPostsStartingAt ServerTime
     deriving (Eq, Show)
-
-initialChannelInfo :: UserId -> Channel -> ChannelInfo
-initialChannelInfo myId chan =
-    let updated  = chan ^. channelLastPostAtL
-    in ChannelInfo { _cdChannelId              = chan^.channelIdL
-                   , _cdTeamId                 = chan^.channelTeamIdL
-                   , _cdViewed                 = Nothing
-                   , _cdNewMessageIndicator    = Hide
-                   , _cdEditedMessageThreshold = Nothing
-                   , _cdMentionCount           = 0
-                   , _cdUpdated                = updated
-                   , _cdName                   = preferredChannelName chan
-                   , _cdDisplayName            = sanitizeUserText $ channelDisplayName chan
-                   , _cdHeader                 = sanitizeUserText $ chan^.channelHeaderL
-                   , _cdPurpose                = sanitizeUserText $ chan^.channelPurposeL
-                   , _cdType                   = chan^.channelTypeL
-                   , _cdNotifyProps            = emptyChannelNotifyProps
-                   , _cdDMUserId               = if chan^.channelTypeL == Direct
-                                                 then userIdForDMChannel myId $
-                                                      sanitizeUserText $ channelName chan
-                                                 else Nothing
-                   , _cdSidebarShowOverride    = Nothing
-                   , _cdFetchPending           = False
-                   }
 
 channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
 channelInfoFromChannelWithData chan chanMember ci =
@@ -221,14 +196,6 @@ notifyPreference u cc =
              Default   -> (userNotifyProps u)^.userNotifyPropsDesktopL
 
 -- ** Miscellaneous channel operations
-
-makeClientChannel :: (MonadIO m) => UserId -> Channel -> m ClientChannel
-makeClientChannel myId nc = emptyChannelMessages >>= \msgs ->
-  return ClientChannel
-  { _ccMessages = msgs
-  , _ccInfo = initialChannelInfo myId nc
-  , _ccEphemeralEditState = defaultEphemeralEditState
-  }
 
 canLeaveChannel :: ChannelInfo -> Bool
 canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]

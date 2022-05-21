@@ -37,7 +37,7 @@ onEventMessageSelect tId selWhich msgsWhich editWhich =
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
     withCurrentChannel tId $ \cId _ -> do
-        deleteSelectedMessage tId (channelMessageSelect(tId)) (csChannelMessages(cId)) (channelEditor(tId))
+        deleteSelectedMessage tId (channelMessageSelect(tId)) (csChannelMessages(cId)) (channelEditor(cId))
         popMode tId
 onEventMessageSelectDeleteConfirm _ (Vty.EvResize {}) = do
     return ()

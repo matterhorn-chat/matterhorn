@@ -12,6 +12,7 @@ module Matterhorn.State.Teams
   , newSaveAttachmentDialog
   , newChannelTopicDialog
   , newThreadInterface
+  , makeClientChannel
   )
 where
 
@@ -31,14 +32,20 @@ import qualified Data.HashMap.Strict as HM
 import           Lens.Micro.Platform ( (%=), (.=), at, Lens' )
 import           Text.Aspell ( Aspell )
 
-import           Network.Mattermost.Lenses ( userIdL )
+import           Network.Mattermost.Lenses ( userIdL, channelTypeL, channelPurposeL
+                                           , channelHeaderL, channelTeamIdL, channelIdL
+                                           , channelLastPostAtL
+                                           )
 import           Network.Mattermost.Types ( TeamId, Team, Channel, User, userId
                                           , getId, channelId, teamId, UserParam(..)
                                           , teamOrderPref, Post, ChannelId, postId
+                                          , emptyChannelNotifyProps, UserId
+                                          , channelName, Type(..), channelDisplayName
                                           )
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Types
+import           Matterhorn.Types.Common
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
@@ -179,6 +186,7 @@ buildTeamState cr me team = do
     let tId = teamId team
         session = getResourceSession cr
         config = cr^.crConfiguration
+        eventQueue = cr^.crEventQueue
 
     -- Create a predicate to find the last selected channel by reading
     -- the run state file. If unable to read or decode or validate the
@@ -202,14 +210,14 @@ buildTeamState cr me team = do
                   then Seq.filter isTownSquare userChans
                   else lastSelectedChans
 
+    -- Start the spell checker and spell check timer, if configured
+    spResult <- maybeStartSpellChecker config
+
     -- Since the only channel we are dealing with is by construction the
     -- last channel, we don't have to consider other cases here:
     chanPairs <- forM (toList chans) $ \c -> do
-        cChannel <- makeClientChannel (userId me) c
+        cChannel <- makeClientChannel eventQueue spResult (userId me) (Just tId) c
         return (getId c, cChannel)
-
-    -- Start the spell checker and spell check timer, if configured
-    spResult <- maybeStartSpellChecker config
 
     now <- getCurrentTime
     let chanIds = mkChannelZipperList (config^.configChannelListSortingL) now config tId
@@ -218,7 +226,7 @@ buildTeamState cr me team = do
         chanZip = Z.fromList chanIds
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
 
-    ts <- newTeamState (cr^.crEventQueue) config team chanZip spResult
+    let ts = newTeamState config team chanZip spResult
     return (ts, clientChans)
 
 -- | Add a new 'TeamState' and corresponding channels to the application
@@ -244,14 +252,14 @@ removeTeam tId = do
     csTeams.at tId .= Nothing
     setTeamFocusWith $ Z.filterZipper (/= tId)
 
-emptyEditStateForTeam :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> IO (EditState Name)
-emptyEditStateForTeam checker eventQueue tId = do
+emptyEditStateForChannel :: Maybe Aspell -> BCH.BChan MHEvent -> Maybe TeamId -> ChannelId -> IO (EditState Name)
+emptyEditStateForChannel checker eventQueue tId cId = do
     reset <- case checker of
         Nothing -> return Nothing
-        Just as -> Just <$> newSpellCheckTimer as eventQueue (channelEditor(tId))
-    let editorName = MessageInput tId
-        attachmentListName = AttachmentList tId
-    return $ newEditState editorName attachmentListName NewPost True reset
+        Just as -> Just <$> newSpellCheckTimer as eventQueue (channelEditor(cId))
+    let editorName = MessageInput cId
+        attachmentListName = AttachmentList cId
+    return $ newEditState editorName attachmentListName tId cId NewPost True reset
 
 emptyEditStateForThread :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> EditMode -> IO (EditState Name)
 emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
@@ -260,9 +268,9 @@ emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
     reset <- case checker of
         Nothing -> return Nothing
         Just as -> Just <$> newSpellCheckTimer as eventQueue (ti.threadEditor)
-    let editorName = ThreadMessageInput tId cId
-        attachmentListName = ThreadEditorAttachmentList tId cId
-    return $ newEditState editorName attachmentListName initialEditMode False reset
+    let editorName = ThreadMessageInput cId
+        attachmentListName = ThreadEditorAttachmentList cId
+    return $ newEditState editorName attachmentListName (Just tId) cId initialEditMode False reset
 
 newThreadInterface :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> Message -> Post -> Messages -> IO (ThreadInterface Name)
 newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
@@ -275,41 +283,38 @@ newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
                              , _threadEditor = es
                              }
 
-newTeamState :: BCH.BChan MHEvent
-             -> Config
+newTeamState :: Config
              -> Team
              -> Z.Zipper ChannelListGroup ChannelListEntry
              -> Maybe Aspell
-             -> IO TeamState
-newTeamState eventQueue config team chanList spellChecker = do
+             -> TeamState
+newTeamState config team chanList spellChecker =
     let tId = teamId team
-    es <- emptyEditStateForTeam spellChecker eventQueue tId
-    return $ TeamState { _tsMode                     = Main
-                       , _tsModeStack                = []
-                       , _tsFocus                    = chanList
-                       , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
-                       , _tsTeam                     = team
-                       , _tsEditState                = es
-                       , _tsUrlList                  = URLList { _ulList = list (UrlList tId) mempty 2
-                                                               , _ulSource = Nothing
-                                                               }
-                       , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
-                       , _tsUserListOverlay          = nullUserListOverlayState tId
-                       , _tsChannelListOverlay       = nullChannelListOverlayState tId
-                       , _tsChannelSelectState       = emptyChannelSelectState tId
-                       , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
-                       , _tsMessageSelect            = MessageSelectState Nothing
-                       , _tsNotifyPrefs              = Nothing
-                       , _tsPendingChannelChange     = Nothing
-                       , _tsRecentChannel            = Nothing
-                       , _tsReturnChannel            = Nothing
-                       , _tsViewedMessage            = Nothing
-                       , _tsThemeListOverlay         = nullThemeListOverlayState tId
-                       , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
-                       , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
-                       , _tsChannelListSorting       = configChannelListSorting config
-                       , _tsThreadInterface          = Nothing
-                       }
+    in TeamState { _tsMode                     = Main
+                 , _tsModeStack                = []
+                 , _tsFocus                    = chanList
+                 , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
+                 , _tsTeam                     = team
+                 , _tsUrlList                  = URLList { _ulList = list (UrlList tId) mempty 2
+                                                         , _ulSource = Nothing
+                                                         }
+                 , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
+                 , _tsUserListOverlay          = nullUserListOverlayState tId
+                 , _tsChannelListOverlay       = nullChannelListOverlayState tId
+                 , _tsChannelSelectState       = emptyChannelSelectState tId
+                 , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
+                 , _tsMessageSelect            = MessageSelectState Nothing
+                 , _tsNotifyPrefs              = Nothing
+                 , _tsPendingChannelChange     = Nothing
+                 , _tsRecentChannel            = Nothing
+                 , _tsReturnChannel            = Nothing
+                 , _tsViewedMessage            = Nothing
+                 , _tsThemeListOverlay         = nullThemeListOverlayState tId
+                 , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
+                 , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
+                 , _tsChannelListSorting       = configChannelListSorting config
+                 , _tsThreadInterface          = Nothing
+                 }
 
 nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
 nullChannelListOverlayState tId =
@@ -383,3 +388,36 @@ newSaveAttachmentDialog tId t =
                                                                        , AttachmentPathCancelButton tId
                                                                        ]
                               }
+
+makeClientChannel :: (MonadIO m) => BCH.BChan MHEvent -> Maybe Aspell -> UserId -> Maybe TeamId -> Channel -> m ClientChannel
+makeClientChannel eventQueue spellChecker myId tId nc = do
+    msgs <- emptyChannelMessages
+    es <- liftIO $ emptyEditStateForChannel spellChecker eventQueue tId (getId nc)
+    return ClientChannel { _ccMessages = msgs
+                         , _ccInfo = initialChannelInfo myId nc
+                         , _ccEditState = es
+                         }
+
+initialChannelInfo :: UserId -> Channel -> ChannelInfo
+initialChannelInfo myId chan =
+    let updated  = chan ^. channelLastPostAtL
+    in ChannelInfo { _cdChannelId              = chan^.channelIdL
+                   , _cdTeamId                 = chan^.channelTeamIdL
+                   , _cdViewed                 = Nothing
+                   , _cdNewMessageIndicator    = Hide
+                   , _cdEditedMessageThreshold = Nothing
+                   , _cdMentionCount           = 0
+                   , _cdUpdated                = updated
+                   , _cdName                   = preferredChannelName chan
+                   , _cdDisplayName            = sanitizeUserText $ channelDisplayName chan
+                   , _cdHeader                 = sanitizeUserText $ chan^.channelHeaderL
+                   , _cdPurpose                = sanitizeUserText $ chan^.channelPurposeL
+                   , _cdType                   = chan^.channelTypeL
+                   , _cdNotifyProps            = emptyChannelNotifyProps
+                   , _cdDMUserId               = if chan^.channelTypeL == Direct
+                                                 then userIdForDMChannel myId $
+                                                      sanitizeUserText $ channelName chan
+                                                 else Nothing
+                   , _cdSidebarShowOverride    = Nothing
+                   , _cdFetchPending           = False
+                   }

@@ -146,7 +146,6 @@ module Matterhorn.Types
   , emptyChannelSelectState
 
   , TeamState(..)
-  , tsEditState
   , tsFocus
   , tsMode
   , tsModeStack
@@ -1236,9 +1235,6 @@ data TeamState =
               , _tsReturnChannel :: Maybe ChannelId
               -- ^ The channel to return to after visiting one or more
               -- unread channels.
-              , _tsEditState :: EditState Name
-              -- ^ The state of the input box used for composing and
-              -- editing messages and commands.
               , _tsGlobalEditState :: GlobalEditState
               -- ^ Bits of global state common to all editors.
               , _tsMessageSelect :: MessageSelectState
@@ -1834,8 +1830,9 @@ withCurrentChannel' tId f = do
 csCurrentTeamId :: SimpleGetter ChatState (Maybe TeamId)
 csCurrentTeamId = csTeamZipper.to Z.focus
 
-channelEditor :: TeamId -> Lens' ChatState (EditState Name)
-channelEditor tId = csTeam(tId).tsEditState
+channelEditor :: ChannelId -> Lens' ChatState (EditState Name)
+channelEditor cId =
+    csChannels.maybeChannelByIdL cId.singular _Just.ccEditState
 
 channelMessageSelect :: TeamId -> Lens' ChatState MessageSelectState
 channelMessageSelect tId = csTeam(tId).tsMessageSelect

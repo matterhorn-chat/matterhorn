@@ -31,7 +31,7 @@ import           Matterhorn.Types.RichText ( URL, TeamURLName )
 -- parts of the interface.
 data Name =
     ChannelMessages ChannelId
-    | MessageInput TeamId
+    | MessageInput ChannelId
     | ChannelListViewport TeamId
     | HelpViewport
     | HelpText
@@ -43,7 +43,7 @@ data Name =
     | ChannelSelectString TeamId
     | ChannelSelectEntry ChannelSelectMatch
     | CompletionAlternatives TeamId
-    | CompletionList TeamId
+    | CompletionList ChannelId
     | JoinChannelList TeamId
     | UrlList TeamId
     | MessagePreviewViewport TeamId
@@ -56,8 +56,8 @@ data Name =
     | ViewMessageReactionsArea TeamId
     | ChannelSidebar TeamId
     | ChannelSelectInput TeamId
-    | AttachmentList TeamId
-    | AttachmentFileBrowser TeamId
+    | AttachmentList ChannelId
+    | AttachmentFileBrowser ChannelId
     | MessageReactionsArea TeamId
     | ReactionEmojiList TeamId
     | ReactionEmojiListInput TeamId
@@ -70,9 +70,9 @@ data Name =
     | ChannelTopicSaveButton TeamId
     | ChannelTopicCancelButton TeamId
     | ChannelTopicEditorPreview TeamId
-    | ThreadMessageInput TeamId ChannelId
-    | ThreadWindowEditorPreview TeamId ChannelId
-    | ThreadEditorAttachmentList TeamId ChannelId
+    | ThreadMessageInput ChannelId
+    | ThreadWindowEditorPreview ChannelId
+    | ThreadEditorAttachmentList ChannelId
     | ThreadWindowMessages TeamId ChannelId
     | ChannelTopic ChannelId
     | TeamList

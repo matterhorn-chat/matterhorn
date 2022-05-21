@@ -13,7 +13,6 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick ( vScrollToBeginning, viewportScroll )
 import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Control.Exception as E
@@ -50,17 +49,16 @@ showAttachmentList tId which = do
         0 -> showAttachmentFileBrowser tId which
         _ -> pushMode tId ManageAttachments
 
-resetAttachmentList :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
-resetAttachmentList tId which = do
-    let listName = AttachmentList tId
-    which.esAttachmentList .= L.list listName mempty 1
-    mh $ vScrollToBeginning $ viewportScroll listName
+resetAttachmentList :: Lens' ChatState (EditState Name) -> MH ()
+resetAttachmentList which = do
+    which.esAttachmentList %= L.listClear
 
 showAttachmentFileBrowser :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
 showAttachmentFileBrowser tId which = do
+    cId <- use (which.esChannelId)
     config <- use (csResources.crConfiguration)
     filePath <- liftIO $ defaultAttachmentsPath config
-    browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) filePath
+    browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser cId) filePath
     which.esFileBrowser .= browser
     pushMode tId ManageAttachmentsBrowseFiles
 

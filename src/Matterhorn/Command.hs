@@ -183,9 +183,8 @@ commandList =
             withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
                 case foundUser of
                     Just user -> createOrFocusDMChannel tId user $ Just $ \_ -> do
-                        handleInputSubmission tId (channelEditor(tId))
-                                                  (csCurrentChannelId(tId))
-                                                  msg
+                        withCurrentChannel tId $ \cId _ ->
+                            handleInputSubmission (channelEditor(cId)) msg
                     Nothing -> mhError $ NoSuchUser name
 
   , Cmd "log-start" "Begin logging debug information to the specified path"
@@ -277,7 +276,7 @@ commandList =
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
         withCurrentTeam $ \tId ->
             withCurrentChannel tId $ \cId _ -> do
-                findAndRunScript (channelEditor(tId)) cId script text
+                findAndRunScript (channelEditor(cId)) script text
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
@@ -304,7 +303,8 @@ commandList =
 
   , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
         withCurrentTeam $ \tId ->
-            attachFileByPath tId (channelEditor(tId)) path
+            withCurrentChannel tId $ \cId _ ->
+                attachFileByPath tId (channelEditor(cId)) path
 
   , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
         withCurrentTeam toggleChannelFavoriteStatus
@@ -328,7 +328,7 @@ execMMCommand :: MM.TeamId -> Text -> Text -> MH ()
 execMMCommand tId name rest = do
   withCurrentChannel tId $ \cId _ -> do
       session  <- getSession
-      em       <- use (channelEditor(tId).esEditMode)
+      em       <- use (channelEditor(cId).esEditMode)
       let mc = MM.MinCommand
                  { MM.minComChannelId = cId
                  , MM.minComCommand   = "/" <> name <> " " <> rest
@@ -364,8 +364,8 @@ execMMCommand tId name rest = do
         Just err ->
           mhError $ GenericError ("Error running command: " <> err)
 
-dispatchCommand :: MM.TeamId -> Text -> MH ()
-dispatchCommand tId cmd =
+dispatchCommand :: Maybe MM.TeamId -> Text -> MH ()
+dispatchCommand mTid cmd =
   case unwordHead cmd of
     Just (x, xs)
       | matchingCmds <- [ c
@@ -373,7 +373,9 @@ dispatchCommand tId cmd =
                         , name == x
                         ] -> go [] matchingCmds
       where go [] [] = do
-              execMMCommand tId x xs
+              case mTid of
+                  Nothing -> return ()
+                  Just tId -> execMMCommand tId x xs
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])

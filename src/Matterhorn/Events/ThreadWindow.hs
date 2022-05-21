@@ -8,7 +8,7 @@ import Prelude ()
 import Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform (Lens', to, (.=))
+import Lens.Micro.Platform (Lens', (.=))
 
 import Network.Mattermost.Types (TeamId)
 
@@ -37,13 +37,12 @@ onEventThreadWindow tId ev = do
                                                                        (Just $ FromThreadIn $ st^.ti.threadParentChannelId)
                                                                        (ti.threadMode .= MessageSelect)
             void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)
-                                   , handleKeyboardEvent (messageEditorKeybindings tId (ti.threadEditor)
-                                                         (ti.threadParentChannelId.to Just))
+                                   , handleKeyboardEvent (messageEditorKeybindings (ti.threadEditor))
                                    , handleKeyboardEvent messageListingBindings
                                    , \_ -> do
                                        case ev of
                                            (Vty.EvPaste bytes) -> handlePaste (ti.threadEditor) bytes
-                                           _ -> handleEditingInput tId (ti.threadParentChannelId.to Just) (ti.threadEditor) ev
+                                           _ -> handleEditingInput (ti.threadEditor) ev
                                        return True
                                    ] ev
 

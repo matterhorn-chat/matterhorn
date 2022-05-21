@@ -21,7 +21,7 @@ onEventChannelSelect tId =
     void .
     handleEventWith [ handleKeyboardEvent (channelSelectKeybindings tId)
                     , \e -> do
-                        void $ handleEventWith [ handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput))
+                        void $ handleEventWith [ handleKeyboardEvent (editingKeybindings (csTeam(tId).tsChannelSelectState.channelSelectInput))
                                                , \ev -> do
                                                    mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent ev
                                                    return True

@@ -87,14 +87,14 @@ attachmentBrowseKeyHandlers tId which =
     [ mkKb CancelEvent "Cancel attachment file browse" $
       cancelAttachmentBrowse tId which
     , mkKb AttachmentOpenEvent "Open the selected file using the URL open command" $
-      openSelectedBrowserEntry tId which
+      openSelectedBrowserEntry which
     , mkKb FileBrowserBeginSearchEvent "Begin search for name in list" $
       mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserBeginSearch
     , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $ do
       mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectEnter
-      withFileBrowser tId which (tryAddAttachment tId which . FB.fileBrowserSelection)
+      withFileBrowser which (tryAddAttachment tId which . FB.fileBrowserSelection)
     , mkKb FileBrowserSelectCurrentEvent "Select file" $
       mhHandleEventLensed' (which.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectCurrent
@@ -124,11 +124,10 @@ attachmentBrowseKeyHandlers tId which =
         FB.actionFileBrowserListPrev
     ]
 
-withFileBrowser :: TeamId
-                -> Lens' ChatState (EditState Name)
+withFileBrowser :: Lens' ChatState (EditState Name)
                 -> ((FB.FileBrowser Name) -> MH ())
                 -> MH ()
-withFileBrowser tId which f = do
+withFileBrowser which f = do
     use (which.esFileBrowser) >>= \case
         Nothing -> do
             -- The widget has not been created yet.  This should
@@ -138,7 +137,8 @@ withFileBrowser tId which f = do
             -- This could therefore be implemented as an `error "BUG:
             -- ..."` handler, but the more benign approach is to
             -- simply create an available FileBrowser at this stage.
-            new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser tId) Nothing
+            cId <- use (which.esChannelId)
+            new_b <- liftIO $ FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser cId) Nothing
             which.esFileBrowser ?= new_b
             f new_b
         Just b -> f b
@@ -151,15 +151,15 @@ openSelectedAttachment which = do
         Just (_, entry) -> void $ openFilePath (FB.fileInfoFilePath $
                                                 attachmentDataFileInfo entry)
 
-openSelectedBrowserEntry :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
-openSelectedBrowserEntry tId which = withFileBrowser tId which $ \b ->
+openSelectedBrowserEntry :: Lens' ChatState (EditState Name) -> MH ()
+openSelectedBrowserEntry which = withFileBrowser which $ \b ->
     case FB.fileBrowserCursor b of
         Nothing -> return ()
         Just entry -> void $ openFilePath (FB.fileInfoFilePath entry)
 
 onEventBrowseFile :: TeamId -> Lens' ChatState (EditState Name) -> V.Event -> MH ()
 onEventBrowseFile tId which e = do
-    withFileBrowser tId which $ \b -> do
+    withFileBrowser which $ \b -> do
         case FB.fileBrowserIsSearching b of
             False ->
                 void $ handleEventWith [ handleKeyboardEvent (attachmentBrowseKeybindings tId which)
@@ -169,7 +169,7 @@ onEventBrowseFile tId which e = do
                 handleFileBrowserEvent tId which e
 
     -- n.b. the FileBrowser may have been updated above, so re-acquire it
-    withFileBrowser tId which $ \b -> do
+    withFileBrowser which $ \b -> do
         case FB.fileBrowserException b of
             Nothing -> return ()
             Just ex -> do
@@ -187,7 +187,7 @@ handleFileBrowserEvent tId which e = do
     let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
     mhHandleEventLensed (which.esFileBrowser) fbHandle e
     -- TODO: Check file browser exception state
-    withFileBrowser tId which $ \b ->
+    withFileBrowser which $ \b ->
         tryAddAttachment tId which (FB.fileBrowserSelection b)
 
 deleteSelectedAttachment :: Lens' ChatState (EditState Name) -> MH ()

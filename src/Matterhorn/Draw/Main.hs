@@ -103,19 +103,15 @@ data Token =
 
 drawEditorContents :: ChatState
                    -> SimpleGetter ChatState (EditState Name)
-                   -> TeamId
                    -> HighlightSet
                    -> [Text]
                    -> Widget Name
-drawEditorContents st editWhich tId hs =
+drawEditorContents st editWhich hs =
     let noHighlight = txt . T.unlines
-    in case st^.csTeam(tId).tsGlobalEditState.gedSpellChecker of
-        Nothing -> noHighlight
-        Just _ ->
-            let ms = st^.editWhich.esMisspellings
-            in case S.null ms of
-                True -> noHighlight
-                False -> doHighlightMisspellings hs ms
+        ms = st^.editWhich.esMisspellings
+    in case S.null ms of
+        True -> noHighlight
+        False -> doHighlightMisspellings hs ms
 
 -- | This function takes a set of misspellings from the spell
 -- checker, the editor lines, and builds a rendering of the text with
@@ -239,10 +235,9 @@ doHighlightMisspellings hSet misspellings contents =
 
 userInputArea :: ChatState
               -> SimpleGetter ChatState (EditState Name)
-              -> TeamId
               -> HighlightSet
               -> Widget Name
-userInputArea st editWhich tId hs =
+userInputArea st editWhich hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "
         editPrompt = "edit> "
@@ -255,7 +250,7 @@ userInputArea st editWhich tId hs =
             NewPost ->
                 normalPrompt
         editor = st^.editWhich.esEditor
-        inputBox = renderEditor (drawEditorContents st editWhich tId hs) True editor
+        inputBox = renderEditor (drawEditorContents st editWhich hs) True editor
         curContents = getEditContents editor
         multilineContent = length curContents > 1
         multilineHints =
@@ -309,7 +304,7 @@ userInputArea st editWhich tId hs =
                                          "; Enter: send, " <> T.unpack multiLineToggleKey <>
                                          ": edit, Backspace: cancel] "
                                  , txt $ head curContents
-                                 , showCursor (MessageInput tId) (Location (0,0)) $ str " "
+                                 , showCursor (getName editor) (Location (0,0)) $ str " "
                                  ]
                             else [inputBox]
             True -> vLimit multilineHeightLimit inputBox <=> multilineHints
@@ -501,7 +496,10 @@ drawChannelSelectPrompt st tId =
 drawMain :: ChatState -> Mode -> [Widget Name]
 drawMain st mode =
     [ connectionLayer st
-    , maybe emptyWidget (\tId -> autocompleteLayer st (channelEditor(tId))) (st^.csCurrentTeamId)
+    , fromMaybe emptyWidget $ do
+        tId <- st^.csCurrentTeamId
+        cId <- st^.csCurrentChannelId(tId)
+        return $ autocompleteLayer st (channelEditor(cId))
     , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
     ]
 
@@ -786,7 +784,7 @@ mainInterface st mode mtId =
                                                        tId inMsgSelect
                                                        True
                                                        (channelMessageSelect(tId))
-                                                       (channelEditor(tId))
+                                                       (channelEditor(cId))
                                                        (csChannelMessages(cId))
                                                        True
                                                        (MessagePreviewViewport tId)
@@ -808,7 +806,7 @@ drawMessageInterface st hs region tId inMsgSelect showNewMsgLine selWhich editWh
     vBox [ interfaceContents
          , bottomBorder
          , inputPreview st editWhich tId previewVpName hs
-         , userInputArea st editWhich tId hs
+         , userInputArea st editWhich hs
          ]
     where
     interfaceContents =
@@ -836,7 +834,7 @@ drawMessageInterface st hs region tId inMsgSelect showNewMsgLine selWhich editWh
                     Nothing -> emptyWidget
                     Just chan ->
                         let format = renderText' Nothing (myUsername st) hs Nothing
-                        in case allTypingUsers (chan^.ccEphemeralEditState.eesTypingUsers) of
+                        in case allTypingUsers (chan^.ccEditState.esEphemeral.eesTypingUsers) of
                             [] -> emptyWidget
                             [uId] | Just un <- usernameForUserId uId st ->
                                format $ "[" <> addUserSigil un <> " is typing]"

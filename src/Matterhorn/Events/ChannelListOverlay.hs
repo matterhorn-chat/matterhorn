@@ -20,7 +20,7 @@ import           Matterhorn.Types
 
 onEventChannelListOverlay :: TeamId -> Vty.Event -> MH ()
 onEventChannelListOverlay tId =
-    void . onEventListOverlay tId (csTeam(tId).tsChannelListOverlay) (channelListOverlayKeybindings tId)
+    void . onEventListOverlay (csTeam(tId).tsChannelListOverlay) (channelListOverlayKeybindings tId)
 
 -- | The keybindings we want to use while viewing a channel list overlay
 channelListOverlayKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap

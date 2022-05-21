@@ -24,6 +24,8 @@ module Matterhorn.Types.EditState
   , esJustCompleted
   , esShowReplyPrompt
   , esSpellCheckTimerReset
+  , esTeamId
+  , esChannelId
 
   , EphemeralEditState(..)
   , defaultEphemeralEditState
@@ -208,10 +210,15 @@ data EditState n =
               , _esSpellCheckTimerReset :: Maybe (IO ())
               -- ^ An action to reset the spell check timer for this
               -- editor, if a spell checker is running.
+              , _esChannelId :: ChannelId
+              -- ^ Channel ID associated with this edit state
+              , _esTeamId :: Maybe TeamId
+              -- ^ Team ID associated with this edit state (optional
+              -- since not all channels are associated with teams)
               }
 
-newEditState :: n -> n -> EditMode -> Bool -> Maybe (IO ()) -> EditState n
-newEditState editorName attachmentListName initialEditMode showReplyPrompt reset =
+newEditState :: n -> n -> Maybe TeamId -> ChannelId -> EditMode -> Bool -> Maybe (IO ()) -> EditState n
+newEditState editorName attachmentListName tId cId initialEditMode showReplyPrompt reset =
     EditState { _esEditor               = editor editorName Nothing ""
               , _esEphemeral            = defaultEphemeralEditState
               , _esEditMode             = initialEditMode
@@ -224,6 +231,8 @@ newEditState editorName attachmentListName initialEditMode showReplyPrompt reset
               , _esJustCompleted        = False
               , _esShowReplyPrompt      = showReplyPrompt
               , _esSpellCheckTimerReset = reset
+              , _esChannelId            = cId
+              , _esTeamId               = tId
               }
 
 data EphemeralEditState =
