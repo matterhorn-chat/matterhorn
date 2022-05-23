@@ -150,6 +150,7 @@ library
                        Matterhorn.Types.EditState
                        Matterhorn.Types.KeyEvents
                        Matterhorn.Types.Messages
+                       Matterhorn.Types.MessageInterface
                        Matterhorn.Types.Posts
                        Matterhorn.Types.RichText
                        Matterhorn.Types.TabbedWindow
