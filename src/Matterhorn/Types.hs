@@ -122,6 +122,7 @@ module Matterhorn.Types
   , nonDMChannelListGroupUnread
 
   , ThreadInterface
+  , ChannelMessageInterface
 
   , threadInterface
   , maybeThreadInterface
@@ -186,6 +187,7 @@ module Matterhorn.Types
   , csWorkerIsBusy
   , csChannel
   , csChannelMessages
+  , csChannelMessageInterface
   , csChannels
   , csClientConfig
   , csInputHistory
@@ -1113,6 +1115,7 @@ data Mode =
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
 type ThreadInterface = MessageInterface Name PostId
+type ChannelMessageInterface = MessageInterface Name ()
 
 data ChannelListOrientation =
     ChannelListLeft
@@ -1793,13 +1796,17 @@ withCurrentChannel' tId f = do
 csCurrentTeamId :: SimpleGetter ChatState (Maybe TeamId)
 csCurrentTeamId = csTeamZipper.to Z.focus
 
+csChannelMessageInterface :: ChannelId -> Traversal' ChatState ChannelMessageInterface
+csChannelMessageInterface cId =
+    csChannel(cId).ccMessageInterface
+
 channelEditor :: ChannelId -> Lens' ChatState (EditState Name)
 channelEditor cId =
-    csChannels.maybeChannelByIdL cId.singular _Just.ccEditState
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miEditor
 
 channelMessageSelect :: ChannelId -> Lens' ChatState MessageSelectState
 channelMessageSelect cId =
-    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageSelect
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miMessageSelect
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
@@ -1829,7 +1836,7 @@ csChannel cId =
 
 csChannelMessages :: ChannelId -> Traversal' ChatState Messages
 csChannelMessages cId =
-    csChannel(cId).ccMessages
+    csChannelMessageInterface(cId).miMessages
 
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()

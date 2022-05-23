@@ -284,6 +284,16 @@ newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
     es <- emptyEditStateForThread checker eventQueue tId cId (Replying rootMsg rootPost)
     return $ newMessageInterface cId (postId rootPost) msgs es
 
+newChannelMessageInterface :: Maybe Aspell
+                           -> BCH.BChan MHEvent
+                           -> Maybe TeamId
+                           -> ChannelId
+                           -> Messages
+                           -> IO ChannelMessageInterface
+newChannelMessageInterface checker eventQueue tId cId msgs = do
+    es <- emptyEditStateForChannel checker eventQueue tId cId
+    return $ newMessageInterface cId () msgs es
+
 newMessageInterface :: ChannelId
                     -> i
                     -> Messages
@@ -403,14 +413,18 @@ newSaveAttachmentDialog tId t =
                                                                        ]
                               }
 
-makeClientChannel :: (MonadIO m) => BCH.BChan MHEvent -> Maybe Aspell -> UserId -> Maybe TeamId -> Channel -> m ClientChannel
+makeClientChannel :: (MonadIO m)
+                  => BCH.BChan MHEvent
+                  -> Maybe Aspell
+                  -> UserId
+                  -> Maybe TeamId
+                  -> Channel
+                  -> m ClientChannel
 makeClientChannel eventQueue spellChecker myId tId nc = do
     msgs <- emptyChannelMessages
-    es <- liftIO $ emptyEditStateForChannel spellChecker eventQueue tId (getId nc)
-    return ClientChannel { _ccMessages = msgs
-                         , _ccInfo = initialChannelInfo myId nc
-                         , _ccEditState = es
-                         , _ccMessageSelect = MessageSelectState Nothing
+    mi <- liftIO $ newChannelMessageInterface spellChecker eventQueue tId (getId nc) msgs
+    return ClientChannel { _ccInfo = initialChannelInfo myId nc
+                         , _ccMessageInterface = mi
                          }
 
 initialChannelInfo :: UserId -> Channel -> ChannelInfo

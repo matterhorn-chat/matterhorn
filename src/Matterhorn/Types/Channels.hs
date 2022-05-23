@@ -13,7 +13,7 @@ module Matterhorn.Types.Channels
   , chanMap
   , NewMessageIndicator(..)
   -- * Lenses created for accessing ClientChannel fields
-  , ccMessages, ccInfo, ccEditState, ccMessageSelect
+  , ccInfo, ccMessageInterface
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
@@ -78,8 +78,8 @@ import           Matterhorn.Types.Messages ( Messages, noMessages, addMessage
                                            , clientMessageToMessage )
 import           Matterhorn.Types.Posts ( ClientMessageType(UnknownGapBefore)
                                         , newClientMessage )
-import           Matterhorn.Types.EditState
-import           Matterhorn.Types.Core ( Name, MessageSelectState )
+import           Matterhorn.Types.MessageInterface
+import           Matterhorn.Types.Core ( Name )
 import           Matterhorn.Types.Common
 
 
@@ -88,15 +88,10 @@ import           Matterhorn.Types.Common
 -- | A 'ClientChannel' contains both the message
 --   listing and the metadata about a channel
 data ClientChannel = ClientChannel
-  { _ccMessages :: Messages
-    -- ^ A list of 'Message's in the channel
-  , _ccInfo :: ChannelInfo
+  { _ccInfo :: ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
-  , _ccEditState :: EditState Name
-    -- ^ Editor state that we swap in and out as the current channel is
-    -- changed.
-  , _ccMessageSelect :: MessageSelectState
-    -- ^ The state of message selection mode for this channel.
+  , _ccMessageInterface :: MessageInterface Name ()
+    -- ^ The channel's message interface
   }
 
 -- Get a channel's name, depending on its type

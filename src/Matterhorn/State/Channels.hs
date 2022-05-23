@@ -536,21 +536,6 @@ preChangeChannelCommon :: TeamId -> MH ()
 preChangeChannelCommon tId = do
     withCurrentChannel tId $ \cId _ -> do
         csTeam(tId).tsRecentChannel .= Just cId
-        saveCurrentEdit tId
-
--- resetEditorState :: ChannelId -> MH ()
--- resetEditorState cId = do
---     m <- use (channelEditor(cId).esResetEditMode)
---     channelEditor(cId).esEditMode .= m
---     channelEditor(cId).esEditor %= applyEdit clearZipper
-
-saveCurrentEdit :: TeamId -> MH ()
-saveCurrentEdit tId = do
-    withCurrentChannel tId $ \cId _ -> do
-        saveChannelInput cId
-
-        oldEphemeral <- use (channelEditor(cId).esEphemeral)
-        csChannel(cId).ccEditState.esEphemeral .= oldEphemeral
 
 saveChannelInput :: ChannelId -> MH ()
 saveChannelInput cId = do

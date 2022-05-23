@@ -834,7 +834,7 @@ drawMessageInterface st hs region tId inMsgSelect showNewMsgLine selWhich editWh
                     Nothing -> emptyWidget
                     Just chan ->
                         let format = renderText' Nothing (myUsername st) hs Nothing
-                        in case allTypingUsers (chan^.ccEditState.esEphemeral.eesTypingUsers) of
+                        in case allTypingUsers (chan^.ccMessageInterface.miEditor.esEphemeral.eesTypingUsers) of
                             [] -> emptyWidget
                             [uId] | Just un <- usernameForUserId uId st ->
                                format $ "[" <> addUserSigil un <> " is typing]"

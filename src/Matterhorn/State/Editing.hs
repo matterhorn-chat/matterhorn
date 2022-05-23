@@ -472,7 +472,7 @@ replyToLatestMessage :: Lens' ChatState (EditState Name) -> MH ()
 replyToLatestMessage which = do
     cId <- use (which.esChannelId)
     withChannel cId $ \chan -> do
-        let msgs = chan^. ccMessages
+        let msgs = chan^.ccMessageInterface.miMessages
         case findLatestUserMessage isReplyable msgs of
           Just msg | isReplyable msg ->
               do rootMsg <- getReplyRootMessage msg
