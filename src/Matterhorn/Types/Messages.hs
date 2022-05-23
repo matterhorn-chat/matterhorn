@@ -153,7 +153,7 @@ data Message = Message
   , _mFlagged       :: Bool
   , _mPinned        :: Bool
   , _mChannelId     :: Maybe ChannelId
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 isPostMessage :: Message -> Bool
 isPostMessage m =
@@ -242,7 +242,7 @@ isJoinLeave m = case _mType m of
 --   the union of both kinds of post types.
 data MessageType = C ClientMessageType
                  | CP ClientPostType
-                 deriving (Show)
+                 deriving (Show, Eq)
 
 -- | There may be no user (usually an internal message), a reference to
 -- a user (by Id), or the server may have supplied a specific username

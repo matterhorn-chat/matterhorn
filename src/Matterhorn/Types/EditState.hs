@@ -148,7 +148,7 @@ data EditMode =
     | Replying Message Post
     -- ^ The input is to be used as a new post in reply to the specified
     -- post.
-    deriving (Show)
+    deriving (Show, Eq)
 
 data AutocompleteState n =
     AutocompleteState { _acPreviousSearchString :: Text
