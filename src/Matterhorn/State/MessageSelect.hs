@@ -127,10 +127,9 @@ viewSelectedMessage tId which =
 -- But this is generalized enough that it looks like it should work for
 -- thread views, but it won't because asyncFetchMessagesForGap only
 -- works for channel message selection (and should).
-fillSelectedGap :: TeamId
-                -> Lens' ChatState (MessageInterface n i)
+fillSelectedGap :: Lens' ChatState (MessageInterface n i)
                 -> MH ()
-fillSelectedGap tId which = do
+fillSelectedGap which = do
     cId <- use (which.miChannelId)
     withSelectedMessage which $ \msg ->
         when (isGap msg) $ asyncFetchMessagesForGap cId msg

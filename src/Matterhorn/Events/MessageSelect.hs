@@ -109,7 +109,7 @@ messageSelectKeyHandlers tId which =
          openThreadWindow tId which
 
     , mkKb FillGapEvent "Fetch messages for the selected gap" $
-         fillSelectedGap tId which
+         fillSelectedGap which
 
     , mkKb ReactToMessageEvent "Post a reaction to the selected message" $ do
          mMsg <- use (to (getSelectedMessage which))
