@@ -139,7 +139,7 @@ module Matterhorn.Types
   , channelSelectInput
   , emptyChannelSelectState
 
-  , SpellCheckTarget(..)
+  , MessageInterfaceTarget(..)
 
   , TeamState(..)
   , tsFocus
@@ -466,9 +466,9 @@ data ChannelListSorting =
     | ChannelListSortUnreadFirst
     deriving (Eq, Show, Ord)
 
-data SpellCheckTarget =
-    SpellCheckThread TeamId
-    | SpellCheckChannel ChannelId
+data MessageInterfaceTarget =
+    MITeamThread TeamId
+    | MIChannel ChannelId
     deriving (Eq, Show)
 
 -- | This is how we represent the user's configuration. Most fields

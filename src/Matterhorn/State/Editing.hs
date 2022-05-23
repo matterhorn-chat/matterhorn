@@ -395,16 +395,16 @@ sendUserTypingAction which = do
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
-requestSpellCheck :: Aspell -> SpellCheckTarget -> MH ()
+requestSpellCheck :: Aspell -> MessageInterfaceTarget -> MH ()
 requestSpellCheck checker target = do
     -- Get the editor contents.
     mContents <- case target of
-        SpellCheckThread tId -> do
+        MITeamThread tId -> do
             mTi <- use (maybeThreadInterface(tId))
             case mTi of
                 Nothing -> return Nothing
                 Just ti -> return $ Just $ getEditContents $ ti^.miEditor.esEditor
-        SpellCheckChannel cId -> do
+        MIChannel cId -> do
             mMi <- preuse (maybeChannelMessageInterface(cId))
             case mMi of
                 Nothing -> return Nothing
@@ -423,9 +423,9 @@ requestSpellCheck checker target = do
                             allMistakes = S.fromList $ concat $ getMistakes <$> responses
 
                         case target of
-                            SpellCheckThread tId ->
+                            MITeamThread tId ->
                                 maybeThreadInterface(tId)._Just.miEditor.esMisspellings .= allMistakes
-                            SpellCheckChannel cId ->
+                            MIChannel cId ->
                                 maybeChannelMessageInterface(cId).miEditor.esMisspellings .= allMistakes
 
                 tryMM query (return . Just . postMistakes)

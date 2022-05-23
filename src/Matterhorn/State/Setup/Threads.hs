@@ -173,7 +173,7 @@ maybeStartSpellChecker config = do
                                      ]
           either (const Nothing) Just <$> startAspell aspellOpts
 
-newSpellCheckTimer :: Aspell -> BChan MHEvent -> SpellCheckTarget -> IO (IO ())
+newSpellCheckTimer :: Aspell -> BChan MHEvent -> MessageInterfaceTarget -> IO (IO ())
 newSpellCheckTimer checker eventQueue target = do
     resetSCChan <- startSpellCheckerThread checker eventQueue target spellCheckerTimeout
     return $ STM.atomically $ STM.writeTChan resetSCChan ()
@@ -208,7 +208,7 @@ startSpellCheckerThread :: Aspell
                         -- ^ The spell checker handle to use
                         -> BChan MHEvent
                         -- ^ The main event loop's event channel.
-                        -> SpellCheckTarget
+                        -> MessageInterfaceTarget
                         -- ^ The target of the editor whose contents
                         -- should be spell checked
                         -> Int
