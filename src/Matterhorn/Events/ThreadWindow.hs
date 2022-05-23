@@ -1,6 +1,5 @@
 module Matterhorn.Events.ThreadWindow
   ( onEventThreadWindow
-  , threadWindowKeyHandlers
   )
 where
 
@@ -13,8 +12,6 @@ import Lens.Micro.Platform (Lens')
 import Network.Mattermost.Types (TeamId)
 
 import Matterhorn.Types
-import Matterhorn.State.ThreadWindow
-import Matterhorn.Events.Keybindings
 import Matterhorn.Events.MessageInterface
 
 onEventThreadWindow :: TeamId -> Vty.Event -> MH ()
@@ -24,24 +21,4 @@ onEventThreadWindow tId ev = do
     let ti :: Lens' ChatState ThreadInterface
         ti = unsafeThreadInterface tId
 
-    m <- use (ti.miMode)
-
-    void $ handleEventWith [ if m == MessageSelect
-                             then const $ return False
-                             else handleKeyboardEvent (threadWindowKeybindings tId)
-                           , handleMessageInterfaceEvent tId ti
-                           ] ev
-
-threadWindowKeybindings :: TeamId
-                        -> KeyConfig
-                        -> KeyHandlerMap
-threadWindowKeybindings tId =
-    mkKeybindings (threadWindowKeyHandlers tId)
-
-threadWindowKeyHandlers :: TeamId
-                        -> [KeyEventHandler]
-threadWindowKeyHandlers tId =
-    [ mkKb CancelEvent
-        "Close the thread window" $
-        closeThreadWindow tId
-    ]
+    void $ handleMessageInterfaceEvent tId ti ev

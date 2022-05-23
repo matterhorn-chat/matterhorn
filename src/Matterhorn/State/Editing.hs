@@ -57,6 +57,7 @@ import           Matterhorn.State.Common
 import           Matterhorn.State.Autocomplete
 import           Matterhorn.State.Attachments
 import {-# SOURCE #-} Matterhorn.State.Messages
+import {-# SOURCE #-} Matterhorn.State.ThreadWindow
 import           Matterhorn.Types hiding ( newState )
 import           Matterhorn.Types.Common ( sanitizeUserText' )
 
@@ -473,6 +474,12 @@ gotoEnd z =
        then Z.moveCursor (numLines - 1, lastLineLength) z
        else z
 
+-- Cancels the following states in this order, as appropriate based on
+-- context:
+-- * Autocomplete UI display
+-- * Reply
+-- * Edit
+-- * Close current team's thread window if open
 cancelAutocompleteOrReplyOrEdit :: Lens' ChatState (EditState Name) -> MH ()
 cancelAutocompleteOrReplyOrEdit which = do
     cId <- use (which.esChannelId)
@@ -483,9 +490,24 @@ cancelAutocompleteOrReplyOrEdit which = do
             resetAutocomplete which
         Nothing -> do
             resetEditMode <- use (which.esResetEditMode)
-            which.esEditMode .= resetEditMode
-            which.esEditor %= applyEdit Z.clearZipper
-            resetAttachmentList which
+
+            let resetEditor = do
+                    which.esEditMode .= resetEditMode
+                    which.esEditor %= applyEdit Z.clearZipper
+                    resetAttachmentList which
+
+            curEditMode <- use (which.esEditMode)
+            case curEditMode of
+                NewPost -> return ()
+                Editing {} -> resetEditor
+                Replying {} -> do
+                    prevMode <- use (which.esEditMode)
+                    resetEditor
+                    newMode <- use (which.esEditMode)
+                    when (newMode == prevMode) $
+                        withCurrentTeam $ \tId -> do
+                            ti <- use (csTeam(tId).tsThreadInterface)
+                            when (isJust ti) $ closeThreadWindow tId
 
 replyToLatestMessage :: Lens' ChatState (EditState Name) -> MH ()
 replyToLatestMessage which = do
