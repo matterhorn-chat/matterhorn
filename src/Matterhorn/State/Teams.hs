@@ -280,7 +280,7 @@ newThreadInterface :: Maybe Aspell
                    -> IO ThreadInterface
 newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
     es <- emptyEditStateForThread checker eventQueue tId cId (Replying rootMsg rootPost)
-    return $ newMessageInterface cId (postId rootPost) msgs es
+    return $ newMessageInterface cId (postId rootPost) msgs es (MITeamThread tId)
 
 newChannelMessageInterface :: Maybe Aspell
                            -> BCH.BChan MHEvent
@@ -290,20 +290,22 @@ newChannelMessageInterface :: Maybe Aspell
                            -> IO ChannelMessageInterface
 newChannelMessageInterface checker eventQueue tId cId msgs = do
     es <- emptyEditStateForChannel checker eventQueue tId cId
-    return $ newMessageInterface cId () msgs es
+    return $ newMessageInterface cId () msgs es (MIChannel cId)
 
 newMessageInterface :: ChannelId
                     -> i
                     -> Messages
                     -> EditState n
+                    -> MessageInterfaceTarget
                     -> MessageInterface n i
-newMessageInterface cId pId msgs es =
+newMessageInterface cId pId msgs es target =
     MessageInterface { _miMessages = msgs
                      , _miRootPostId = pId
                      , _miChannelId = cId
                      , _miMessageSelect = MessageSelectState Nothing
                      , _miMode = Compose
                      , _miEditor = es
+                     , _miTarget = target
                      }
 
 newTeamState :: Config

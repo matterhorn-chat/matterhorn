@@ -7,6 +7,7 @@ module Matterhorn.Types.MessageInterface
   , miMessageSelect
   , miRootPostId
   , miChannelId
+  , miTarget
 
   , MessageInterfaceMode(..)
   , MessageInterfaceTarget(..)
@@ -41,6 +42,8 @@ data MessageInterface n i =
                      -- ^ The channel that these messages belong to.
                      , _miMode :: MessageInterfaceMode
                      -- ^ The mode of the interface.
+                     , _miTarget :: MessageInterfaceTarget
+                     -- ^ The target value for this message interface
                      }
 
 data MessageInterfaceMode =
