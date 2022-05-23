@@ -71,7 +71,7 @@ draw st =
                         EditNotifyPrefs              -> drawNotifyPrefs st tId : monochrome rest
                         ChannelTopicWindow           -> drawChannelTopicWindow st tId : monochrome rest
                         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : monochrome rest
-                        ThreadWindow _               -> drawThreadWindowLayers st tId <> rest
+                        ThreadWindow _               -> drawThreadWindowLayers st tId
                 topMode = st^.csTeam(tId).tsMode
                 stack = st^.csTeam(tId).tsModeStack
             in drawMode topMode stack
