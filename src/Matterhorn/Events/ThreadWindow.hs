@@ -22,7 +22,7 @@ onEventThreadWindow _ (Vty.EvResize {}) =
     return ()
 onEventThreadWindow tId ev = do
     let ti :: Lens' ChatState ThreadInterface
-        ti = threadInterface tId
+        ti = unsafeThreadInterface tId
 
     void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)
                            , handleMessageInterfaceEvent tId ti

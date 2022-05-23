@@ -6,7 +6,7 @@ module Matterhorn.State.Editing
 where
 
 import Matterhorn.Types ( MH, ChatState, EditState, Name )
-import Lens.Micro.Platform ( Lens' )
+import Lens.Micro.Platform ( Traversal' )
 
 data Direction = Forwards | Backwards
-tabComplete :: Lens' ChatState (EditState Name) -> Direction -> MH ()
+tabComplete :: Traversal' ChatState (EditState Name) -> Direction -> MH ()

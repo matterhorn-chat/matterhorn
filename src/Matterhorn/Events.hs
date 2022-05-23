@@ -226,7 +226,7 @@ handleTeamModeEvent e = do
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode e =
     let ti :: Lens' ChatState ThreadInterface
-        ti = threadInterface tId
+        ti = unsafeThreadInterface tId
     in case mode of
         Main                       -> onEventMain tId e
         ShowHelp _                 -> void $ onEventShowHelp tId e

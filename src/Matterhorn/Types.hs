@@ -125,6 +125,7 @@ module Matterhorn.Types
   , ChannelMessageInterface
 
   , threadInterface
+  , unsafeThreadInterface
   , maybeThreadInterface
   , threadInterfaceEmpty
   , threadInterfaceDeleteWhere
@@ -1971,7 +1972,7 @@ data SidebarUpdate =
     deriving (Eq, Show)
 
 
-resetAutocomplete :: Lens' ChatState (EditState n) -> MH ()
+resetAutocomplete :: Traversal' ChatState (EditState n) -> MH ()
 resetAutocomplete which = do
     which.esAutocomplete .= Nothing
     which.esAutocompletePending .= Nothing
@@ -2125,8 +2126,11 @@ resultToWidget = Widget Fixed Fixed . return
 -- the interface is present; if not, this crashes. Intended for places
 -- where you know the interface will be present due to other state and
 -- don't want to deal with Maybe.
-threadInterface :: (HasCallStack) => TeamId -> Lens' ChatState ThreadInterface
-threadInterface tId = maybeThreadInterface(tId).singular _Just
+threadInterface :: (HasCallStack) => TeamId -> Traversal' ChatState ThreadInterface
+threadInterface tId = maybeThreadInterface(tId)._Just
+
+unsafeThreadInterface :: (HasCallStack) => TeamId -> Lens' ChatState ThreadInterface
+unsafeThreadInterface tId = maybeThreadInterface(tId).singular _Just
 
 -- A safe version of threadInterface.
 maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe ThreadInterface)

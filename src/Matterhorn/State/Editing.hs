@@ -39,7 +39,7 @@ import qualified Data.Text.Zipper as Z
 import qualified Data.Text.Zipper.Generic.Words as Z
 import           Data.Time ( getCurrentTime )
 import           Graphics.Vty ( Event(..), Key(..) )
-import           Lens.Micro.Platform ( Lens', (%=), (.=), (.~), to, _Just )
+import           Lens.Micro.Platform ( Traversal', Lens', (%=), (.=), (.~), to, _Just )
 import qualified System.Environment as Sys
 import qualified System.Exit as Sys
 import qualified System.IO as Sys
@@ -501,7 +501,7 @@ replyToLatestMessage which = do
 
 data Direction = Forwards | Backwards
 
-tabComplete :: Lens' ChatState (EditState Name) -> Direction -> MH ()
+tabComplete :: Traversal' ChatState (EditState Name) -> Direction -> MH ()
 tabComplete which dir = do
     let transform list =
             let len = list^.L.listElementsL.to length
@@ -519,7 +519,7 @@ tabComplete which dir = do
 
     which.esAutocomplete._Just.acCompletionList %= transform
 
-    mac <- use (which.esAutocomplete)
+    mac <- join <$> preuse (which.esAutocomplete)
     case mac of
         Nothing -> do
             let ctx = AutocompleteContext { autocompleteManual = True
