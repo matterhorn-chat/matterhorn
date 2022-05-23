@@ -52,7 +52,7 @@ drawThreadWindow st tId =
 
         body = header <=> hBorder <=> messageUI
         messageUI = drawMessageInterface st hs
-                            (ThreadWindowMessages tId cId)
+                            (ThreadWindowMessages cId)
                             tId
                             False
                             ti

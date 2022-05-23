@@ -75,7 +75,7 @@ data Name =
     | ThreadMessageInput ChannelId
     | ThreadWindowEditorPreview ChannelId
     | ThreadEditorAttachmentList ChannelId
-    | ThreadWindowMessages TeamId ChannelId
+    | ThreadWindowMessages ChannelId
     | ChannelTopic ChannelId
     | TeamList
     | ClickableChannelListEntry ChannelId

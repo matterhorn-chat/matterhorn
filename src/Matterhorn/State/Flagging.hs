@@ -44,9 +44,20 @@ updateMessageFlag pId f = do
       csChannelMessages(cId).traversed.filtered isTargetMessage.mFlagged .= f
       csPostMap.ix(pId).mFlagged .= f
 
+      invalidateChannelRenderingCache cId
+      invalidateMessageRenderingCacheByPostId pId
+
       let mTId = chan^.ccInfo.cdTeamId
-          updatePostOverlay :: TeamId -> MH ()
-          updatePostOverlay tId = do
+          updateTeam :: TeamId -> MH ()
+          updateTeam tId = do
+              -- Update the thread window for this team, if its channel
+              -- is the one that the post is in.
+              mTi <- preuse (threadInterface(tId))
+              case mTi of
+                  Just ti | ti^.miChannelId == cId ->
+                      threadInterface(tId).miMessages.traversed.filtered isTargetMessage.mFlagged .= f
+                  _ -> return ()
+
               -- We also want to update the post overlay if this happens
               -- while we're we're observing it
               mode <- use (csTeam tId.tsMode)
@@ -74,7 +85,7 @@ updateMessageFlag pId f = do
       case mTId of
           Nothing -> do
               ts <- use csTeams
-              forM_ (HM.keys ts) updatePostOverlay
-          Just tId -> updatePostOverlay tId
+              forM_ (HM.keys ts) updateTeam
+          Just tId -> updateTeam tId
 
     _ -> return ()

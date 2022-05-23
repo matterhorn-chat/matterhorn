@@ -257,15 +257,13 @@ deleteSelectedMessage :: Lens' ChatState (MessageInterface n i)
 deleteSelectedMessage which = do
     st <- use id
     withSelectedMessage which $ \msg ->
-        when (isMine st msg && isDeletable msg) $
+        when (isMine st msg && isDeletable msg) $ do
+            exitMessageSelect which
             case msg^.mOriginalPost of
                 Just p ->
                     doAsyncMM Preempt
                         (\s -> MM.mmDeletePost (postId p) s)
-                        (\_ -> Just $ do
-                            m <- use (which.miEditor.esResetEditMode)
-                            which.miEditor.esEditMode .= m
-                            exitMessageSelect which)
+                        (const Nothing)
                 Nothing -> return ()
 
 beginReplyCompose :: Lens' ChatState (MessageInterface n i)
