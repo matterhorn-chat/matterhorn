@@ -818,21 +818,15 @@ drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent pre
                  Nothing -> emptyWidget
 
     showTypingUsers =
-        case st^.csCurrentChannelId(tId) of
-            Nothing -> emptyWidget
-            Just cId ->
-                case st^?csChannel(cId) of
-                    Nothing -> emptyWidget
-                    Just chan ->
-                        let format = renderText' Nothing (myUsername st) hs Nothing
-                        in case allTypingUsers (chan^.ccMessageInterface.miEditor.esEphemeral.eesTypingUsers) of
-                            [] -> emptyWidget
-                            [uId] | Just un <- usernameForUserId uId st ->
-                               format $ "[" <> addUserSigil un <> " is typing]"
-                            [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
-                                         , Just un2 <- usernameForUserId uId2 st ->
-                               format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
-                            _ -> format "[several people are typing]"
+        let format = renderText' Nothing (myUsername st) hs Nothing
+        in case allTypingUsers (st^.which.miEditor.esEphemeral.eesTypingUsers) of
+            [] -> emptyWidget
+            [uId] | Just un <- usernameForUserId uId st ->
+               format $ "[" <> addUserSigil un <> " is typing]"
+            [uId1, uId2] | Just un1 <- usernameForUserId uId1 st
+                         , Just un2 <- usernameForUserId uId2 st ->
+               format $ "[" <> addUserSigil un1 <> " and " <> addUserSigil un2 <> " are typing]"
+            _ -> format "[several people are typing]"
 
     kc = st^.csResources.crConfiguration.configUserKeysL
     showAttachmentCount =
