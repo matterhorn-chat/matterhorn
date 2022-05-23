@@ -56,7 +56,7 @@ draw st =
                         -- have layers and we want to show prior modes
                         -- underneath.
                         ChannelSelect                -> drawChannelSelectPrompt st tId : drawMain st m
-                        MessageSelectDeleteConfirm   -> drawDeleteMessageConfirm : rest
+                        MessageSelectDeleteConfirm {} -> drawDeleteMessageConfirm : rest
                         UrlSelect                    -> drawUrlSelectWindow st tId : monochrome rest
                         ThemeListOverlay             -> drawThemeListOverlay st tId : rest
                         LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : monochrome rest

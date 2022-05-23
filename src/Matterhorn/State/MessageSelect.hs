@@ -196,9 +196,10 @@ beginConfirmDeleteSelectedMessage :: TeamId
                                   -> MH ()
 beginConfirmDeleteSelectedMessage tId which = do
     st <- use id
+    target <- use (which.miTarget)
     withSelectedMessage which $ \msg ->
         when (isDeletable msg && isMine st msg) $
-            pushMode tId MessageSelectDeleteConfirm
+            pushMode tId $ MessageSelectDeleteConfirm target
 
 messageSelectUp :: Lens' ChatState (MessageInterface n i)
                 -> MH ()

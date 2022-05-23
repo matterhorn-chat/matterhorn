@@ -32,14 +32,13 @@ onEventMessageSelect :: TeamId
 onEventMessageSelect tId which =
     handleKeyboardEvent (messageSelectKeybindings tId which)
 
-onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
-onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
-    withCurrentChannel tId $ \cId _ -> do
-        deleteSelectedMessage (csChannelMessageInterface(cId))
-        popMode tId
-onEventMessageSelectDeleteConfirm _ (Vty.EvResize {}) = do
+onEventMessageSelectDeleteConfirm :: TeamId -> Lens' ChatState (MessageInterface Name i) -> Vty.Event -> MH ()
+onEventMessageSelectDeleteConfirm tId which (Vty.EvKey (Vty.KChar 'y') []) = do
+    deleteSelectedMessage which
+    popMode tId
+onEventMessageSelectDeleteConfirm _ _ (Vty.EvResize {}) = do
     return ()
-onEventMessageSelectDeleteConfirm tId _ = do
+onEventMessageSelectDeleteConfirm tId _ _ = do
     popMode tId
 
 messageSelectKeybindings :: TeamId
