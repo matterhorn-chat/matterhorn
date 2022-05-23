@@ -24,7 +24,11 @@ onEventThreadWindow tId ev = do
     let ti :: Lens' ChatState ThreadInterface
         ti = unsafeThreadInterface tId
 
-    void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)
+    m <- use (ti.miMode)
+
+    void $ handleEventWith [ if m == MessageSelect
+                             then const $ return False
+                             else handleKeyboardEvent (threadWindowKeybindings tId)
                            , handleMessageInterfaceEvent tId ti
                            ] ev
 
