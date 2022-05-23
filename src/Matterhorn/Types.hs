@@ -138,6 +138,8 @@ module Matterhorn.Types
   , channelSelectInput
   , emptyChannelSelectState
 
+  , SpellCheckTarget(..)
+
   , TeamState(..)
   , tsFocus
   , tsMode
@@ -188,6 +190,7 @@ module Matterhorn.Types
   , csChannel
   , csChannelMessages
   , csChannelMessageInterface
+  , maybeChannelMessageInterface
   , csChannels
   , csClientConfig
   , csInputHistory
@@ -461,6 +464,11 @@ data ChannelListSorting =
     ChannelListSortDefault
     | ChannelListSortUnreadFirst
     deriving (Eq, Show, Ord)
+
+data SpellCheckTarget =
+    SpellCheckThread TeamId
+    | SpellCheckChannel ChannelId
+    deriving (Eq, Show)
 
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
@@ -1800,6 +1808,10 @@ csCurrentTeamId = csTeamZipper.to Z.focus
 csChannelMessageInterface :: ChannelId -> Lens' ChatState ChannelMessageInterface
 csChannelMessageInterface cId =
     csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface
+
+maybeChannelMessageInterface :: ChannelId -> Traversal' ChatState ChannelMessageInterface
+maybeChannelMessageInterface cId =
+    csChannels.maybeChannelByIdL cId._Just.ccMessageInterface
 
 channelEditor :: ChannelId -> Lens' ChatState (EditState Name)
 channelEditor cId =

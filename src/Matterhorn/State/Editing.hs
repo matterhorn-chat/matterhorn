@@ -395,21 +395,40 @@ sendUserTypingAction which = do
 
 -- Kick off an async request to the spell checker for the current editor
 -- contents.
-requestSpellCheck :: Aspell -> Lens' ChatState (EditState Name) -> MH ()
-requestSpellCheck checker which = do
+requestSpellCheck :: Aspell -> SpellCheckTarget -> MH ()
+requestSpellCheck checker target = do
     -- Get the editor contents.
-    contents <- getEditContents <$> use (which.esEditor)
-    doAsyncWith Preempt $ do
-        -- For each line in the editor, submit an aspell request.
-        let query = concat <$> mapM (askAspell checker) contents
-            postMistakes :: [AspellResponse] -> MH ()
-            postMistakes responses = do
-                let getMistakes AllCorrect = []
-                    getMistakes (Mistakes ms) = mistakeWord <$> ms
-                    allMistakes = S.fromList $ concat $ getMistakes <$> responses
-                which.esMisspellings .= allMistakes
+    mContents <- case target of
+        SpellCheckThread tId -> do
+            mTi <- use (maybeThreadInterface(tId))
+            case mTi of
+                Nothing -> return Nothing
+                Just ti -> return $ Just $ getEditContents $ ti^.miEditor.esEditor
+        SpellCheckChannel cId -> do
+            mMi <- preuse (maybeChannelMessageInterface(cId))
+            case mMi of
+                Nothing -> return Nothing
+                Just mi -> return $ Just $ getEditContents $ mi^.miEditor.esEditor
 
-        tryMM query (return . Just . postMistakes)
+    case mContents of
+        Nothing -> return ()
+        Just contents ->
+            doAsyncWith Preempt $ do
+                -- For each line in the editor, submit an aspell request.
+                let query = concat <$> mapM (askAspell checker) contents
+                    postMistakes :: [AspellResponse] -> MH ()
+                    postMistakes responses = do
+                        let getMistakes AllCorrect = []
+                            getMistakes (Mistakes ms) = mistakeWord <$> ms
+                            allMistakes = S.fromList $ concat $ getMistakes <$> responses
+
+                        case target of
+                            SpellCheckThread tId ->
+                                maybeThreadInterface(tId)._Just.miEditor.esMisspellings .= allMistakes
+                            SpellCheckChannel cId ->
+                                maybeChannelMessageInterface(cId).miEditor.esMisspellings .= allMistakes
+
+                tryMM query (return . Just . postMistakes)
 
 editorEmpty :: Editor Text a -> Bool
 editorEmpty e = cursorIsAtEnd e &&

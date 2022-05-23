@@ -27,7 +27,7 @@ import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time ( getCurrentTime, addUTCTime )
-import           Lens.Micro.Platform ( Lens', (.=), (%=), (%~), mapped )
+import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
 import           Skylighting.Loader ( loadSyntaxesFromDir )
 import           System.Directory ( getTemporaryDirectory )
 import           System.Exit ( ExitCode(ExitSuccess) )
@@ -173,9 +173,9 @@ maybeStartSpellChecker config = do
                                      ]
           either (const Nothing) Just <$> startAspell aspellOpts
 
-newSpellCheckTimer :: Aspell -> BChan MHEvent -> Lens' ChatState (EditState Name) -> IO (IO ())
-newSpellCheckTimer checker eventQueue which = do
-    resetSCChan <- startSpellCheckerThread checker eventQueue which spellCheckerTimeout
+newSpellCheckTimer :: Aspell -> BChan MHEvent -> SpellCheckTarget -> IO (IO ())
+newSpellCheckTimer checker eventQueue target = do
+    resetSCChan <- startSpellCheckerThread checker eventQueue target spellCheckerTimeout
     return $ STM.atomically $ STM.writeTChan resetSCChan ()
 
 -- Start the background spell checker delay thread.
@@ -208,14 +208,14 @@ startSpellCheckerThread :: Aspell
                         -- ^ The spell checker handle to use
                         -> BChan MHEvent
                         -- ^ The main event loop's event channel.
-                        -> Lens' ChatState (EditState Name)
-                        -- ^ Where to get the editor content to spell
-                        -- check, and where to put the results
+                        -> SpellCheckTarget
+                        -- ^ The target of the editor whose contents
+                        -- should be spell checked
                         -> Int
                         -- ^ The number of microseconds to wait before
                         -- requesting a spell check.
                         -> IO (STM.TChan ())
-startSpellCheckerThread checker eventChan which spellCheckTimeout = do
+startSpellCheckerThread checker eventChan target spellCheckTimeout = do
   delayWakeupChan <- STM.atomically STM.newTChan
   delayWorkerChan <- STM.atomically STM.newTChan
   delVar <- STM.atomically $ STM.newTVar Nothing
@@ -224,7 +224,7 @@ startSpellCheckerThread checker eventChan which spellCheckTimeout = do
   -- requests a spell check.
   void $ forkIO $ forever $ do
     STM.atomically $ waitDelay =<< STM.readTChan delayWorkerChan
-    writeBChan eventChan (RespEvent $ requestSpellCheck checker which)
+    writeBChan eventChan (RespEvent $ requestSpellCheck checker target)
 
   -- The delay manager waits for requests to start a delay timer and
   -- signals the worker to begin waiting.

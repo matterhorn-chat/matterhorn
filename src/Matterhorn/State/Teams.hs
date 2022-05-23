@@ -29,7 +29,7 @@ import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
 import qualified Data.Text.Zipper as Z2
 import qualified Data.HashMap.Strict as HM
-import           Lens.Micro.Platform ( (%=), (.=), at, Lens' )
+import           Lens.Micro.Platform ( (%=), (.=), at )
 import           Text.Aspell ( Aspell )
 
 import           Network.Mattermost.Lenses ( userIdL, channelTypeL, channelPurposeL
@@ -256,18 +256,16 @@ emptyEditStateForChannel :: Maybe Aspell -> BCH.BChan MHEvent -> Maybe TeamId ->
 emptyEditStateForChannel checker eventQueue tId cId = do
     reset <- case checker of
         Nothing -> return Nothing
-        Just as -> Just <$> newSpellCheckTimer as eventQueue (channelEditor(cId))
+        Just as -> Just <$> (newSpellCheckTimer as eventQueue $ SpellCheckChannel cId)
     let editorName = MessageInput cId
         attachmentListName = AttachmentList cId
     return $ newEditState editorName attachmentListName tId cId NewPost True reset
 
 emptyEditStateForThread :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> EditMode -> IO (EditState Name)
 emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
-    let ti :: Lens' ChatState ThreadInterface
-        ti = threadInterface(tId)
     reset <- case checker of
         Nothing -> return Nothing
-        Just as -> Just <$> newSpellCheckTimer as eventQueue (ti.miEditor)
+        Just as -> Just <$> (newSpellCheckTimer as eventQueue $ SpellCheckThread tId)
     let editorName = ThreadMessageInput cId
         attachmentListName = ThreadEditorAttachmentList cId
     return $ newEditState editorName attachmentListName (Just tId) cId initialEditMode False reset
