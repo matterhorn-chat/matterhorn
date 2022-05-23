@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.Channels
   ( updateViewed
   , refreshChannel
@@ -22,8 +23,8 @@ module Matterhorn.State.Channels
   , hideDMChannel
   , createGroupChannel
   , showGroupChannelPref
-  , channelHistoryForward
-  , channelHistoryBackward
+  , inputHistoryForward
+  , inputHistoryBackward
   , handleNewChannel
   , createOrdinaryChannel
   , handleChannelInvite
@@ -77,7 +78,7 @@ import           Data.Time.Clock ( getCurrentTime )
 import           Lens.Micro.Platform
 
 import qualified Network.Mattermost.Endpoints as MM
-import           Network.Mattermost.Lenses
+import           Network.Mattermost.Lenses hiding ( Lens' )
 import           Network.Mattermost.Types
 
 import           Matterhorn.Constants ( normalChannelSigil )
@@ -512,42 +513,32 @@ postChangeChannelCommon tId = do
     -- loadLastEdit tId
     fetchVisibleIfNeeded tId
 
--- loadLastEdit :: TeamId -> MH ()
--- loadLastEdit tId = do
---     withCurrentChannel tId $ \cId _ -> do
---         oldEphemeral <- preuse (csChannel(cId).ccEditState.esEphemeral)
---         case oldEphemeral of
---             Nothing -> return ()
---             Just e -> channelEditor(tId).esEphemeral .= e
--- 
---         loadLastChannelInput tId
-
-loadLastChannelInput :: ChannelId -> MH ()
-loadLastChannelInput cId = do
-    inputHistoryPos <- use (channelEditor(cId).esEphemeral.eesInputHistoryPosition)
+loadLastChannelInput :: Lens' ChatState (MessageInterface n i) -> MH ()
+loadLastChannelInput which = do
+    inputHistoryPos <- use (which.miEditor.esEphemeral.eesInputHistoryPosition)
     case inputHistoryPos of
-        Just i -> loadHistoryEntryToEditor cId i
+        Just i -> void $ loadHistoryEntryToEditor which i
         Nothing -> do
-            (lastEdit, lastEditMode) <- use (channelEditor(cId).esEphemeral.eesLastInput)
-            channelEditor(cId).esEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
-            channelEditor(cId).esEditMode .= lastEditMode
+            (lastEdit, lastEditMode) <- use (which.miEditor.esEphemeral.eesLastInput)
+            which.miEditor.esEditor %= (applyEdit $ insertMany lastEdit . clearZipper)
+            which.miEditor.esEditMode .= lastEditMode
 
 preChangeChannelCommon :: TeamId -> MH ()
 preChangeChannelCommon tId = do
     withCurrentChannel tId $ \cId _ -> do
         csTeam(tId).tsRecentChannel .= Just cId
 
-saveChannelInput :: ChannelId -> MH ()
-saveChannelInput cId = do
-    cmdLine <- use (channelEditor(cId).esEditor)
-    mode <- use (channelEditor(cId).esEditMode)
+saveEditorInput :: Lens' ChatState (MessageInterface n i) -> MH ()
+saveEditorInput which = do
+    cmdLine <- use (which.miEditor.esEditor)
+    mode <- use (which.miEditor.esEditMode)
 
     -- Only save the editor contents if the user is not navigating the
     -- history.
-    inputHistoryPos <- use (channelEditor(cId).esEphemeral.eesInputHistoryPosition)
+    inputHistoryPos <- use (which.miEditor.esEphemeral.eesInputHistoryPosition)
 
     when (isNothing inputHistoryPos) $
-        channelEditor(cId).esEphemeral.eesLastInput .=
+        which.miEditor.esEphemeral.eesLastInput .=
            (T.intercalate "\n" $ getEditContents $ cmdLine, mode)
 
 applyPreferenceChange :: Preference -> MH ()
@@ -861,45 +852,50 @@ createGroupChannel tId usernameList = do
                 return $ Just $ do
                     forM_ missingUsernames (mhError . NoSuchUser)
 
-channelHistoryForward :: TeamId -> MH ()
-channelHistoryForward tId = do
-    withCurrentChannel tId $ \cId _ -> do
-        resetAutocomplete (channelEditor(cId))
+inputHistoryForward :: Lens' ChatState (MessageInterface n i) -> MH ()
+inputHistoryForward which = do
+    resetAutocomplete (which.miEditor)
 
-        inputHistoryPos <- use (channelEditor(cId).esEphemeral.eesInputHistoryPosition)
-        case inputHistoryPos of
-            Just i
-              | i == 0 -> do
-                -- Transition out of history navigation
-                channelEditor(cId).esEphemeral.eesInputHistoryPosition .= Nothing
-                loadLastChannelInput cId
-              | otherwise -> do
-                let newI = i - 1
-                loadHistoryEntryToEditor cId newI
-                channelEditor(cId).esEphemeral.eesInputHistoryPosition .= (Just newI)
-            _ -> return ()
+    inputHistoryPos <- use (which.miEditor.esEphemeral.eesInputHistoryPosition)
+    case inputHistoryPos of
+        Just i
+          | i == 0 -> do
+            -- Transition out of history navigation
+            which.miEditor.esEphemeral.eesInputHistoryPosition .= Nothing
+            loadLastChannelInput which
+          | otherwise -> do
+            let newI = i - 1
+            loaded <- loadHistoryEntryToEditor which newI
+            when loaded $
+                which.miEditor.esEphemeral.eesInputHistoryPosition .= (Just newI)
+        _ -> return ()
 
-loadHistoryEntryToEditor :: ChannelId -> Int -> MH ()
-loadHistoryEntryToEditor cId idx = do
+loadHistoryEntryToEditor :: Lens' ChatState (MessageInterface n i) -> Int -> MH Bool
+loadHistoryEntryToEditor which idx = do
+    cId <- use (which.miChannelId)
     inputHistory <- use csInputHistory
     case getHistoryEntry cId idx inputHistory of
-        Nothing -> return ()
+        Nothing -> return False
         Just entry -> do
             let eLines = T.lines entry
                 mv = if length eLines == 1 then gotoEOL else id
-            channelEditor(cId).esEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+            which.miEditor.esEditor.editContentsL .= (mv $ textZipper eLines Nothing)
+            cfg <- use (csResources.crConfiguration)
+            when (configShowMessagePreview cfg) $
+                invalidateChannelRenderingCache cId
+            return True
 
-channelHistoryBackward :: TeamId -> MH ()
-channelHistoryBackward tId = do
-    withCurrentChannel tId $ \cId _ -> do
-        resetAutocomplete (channelEditor(cId))
+inputHistoryBackward :: Lens' ChatState (MessageInterface n i) -> MH ()
+inputHistoryBackward which = do
+    resetAutocomplete (which.miEditor)
 
-        inputHistoryPos <- use (channelEditor(cId).esEphemeral.eesInputHistoryPosition)
-        saveChannelInput cId
+    inputHistoryPos <- use (which.miEditor.esEphemeral.eesInputHistoryPosition)
+    saveEditorInput which
 
-        let newI = maybe 0 (+ 1) inputHistoryPos
-        loadHistoryEntryToEditor cId newI
-        channelEditor(cId).esEphemeral.eesInputHistoryPosition .= (Just newI)
+    let newI = maybe 0 (+ 1) inputHistoryPos
+    loaded <- loadHistoryEntryToEditor which newI
+    when loaded $
+        which.miEditor.esEphemeral.eesInputHistoryPosition .= (Just newI)
 
 createOrdinaryChannel :: TeamId -> Bool -> Text -> MH ()
 createOrdinaryChannel myTId public name = do

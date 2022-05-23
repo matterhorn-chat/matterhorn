@@ -24,6 +24,7 @@ module Matterhorn.State.MessageSelect
   , flagMessage
   , getSelectedMessage
   , openThreadWindow
+  , exitMessageSelect
   )
 where
 
@@ -43,7 +44,7 @@ import           Network.Mattermost.Types
 import           Matterhorn.Clipboard ( copyToClipboard )
 import           Matterhorn.State.Common
 import           Matterhorn.State.Links
-import           Matterhorn.State.Messages
+import {-# SOURCE #-} Matterhorn.State.Messages ( asyncFetchMessagesForGap )
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( findVerbatimChunk, makePermalink )
 import           Matterhorn.Types.Common
@@ -70,8 +71,7 @@ withSelectedMessage which act = do
 
 beginMessageSelect :: Lens' ChatState (MessageInterface n i)
                    -> MH ()
-                   -> MH ()
-beginMessageSelect which changeMode = do
+beginMessageSelect which = do
     -- Invalidate the rendering cache since we cache messages to speed
     -- up the selection UI responsiveness. (See Draw.Messages for
     -- caching behavior.)
@@ -87,8 +87,11 @@ beginMessageSelect which changeMode = do
     let recentMsg = getLatestSelectableMessage msgs
 
     when (isJust recentMsg) $ do
-        changeMode
+        which.miMode .= MessageSelect
         which.miMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
+
+exitMessageSelect :: Lens' ChatState (MessageInterface n i) -> MH ()
+exitMessageSelect which = which.miMode .= Compose
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
@@ -141,7 +144,7 @@ copyPostLink tId which =
             baseUrl <- getServerBaseUrl tId
             let pId = fromJust (messageIdPostId =<< _mMessageId msg)
             copyToClipboard $ makePermalink baseUrl pId
-            popMode tId
+            exitMessageSelect which
 
 viewMessage :: TeamId -> Message -> MH ()
 viewMessage tId m = do
@@ -150,12 +153,11 @@ viewMessage tId m = do
     runTabShowHandlerFor (twValue w) w
     pushMode tId ViewMessage
 
-yankSelectedMessageVerbatim :: TeamId
-                            -> Lens' ChatState (MessageInterface n i)
+yankSelectedMessageVerbatim :: Lens' ChatState (MessageInterface n i)
                             -> MH ()
-yankSelectedMessageVerbatim tId which =
+yankSelectedMessageVerbatim which =
     withSelectedMessage which $ \msg -> do
-        popMode tId
+        exitMessageSelect which
         case findVerbatimChunk (msg^.mText) of
             Just txt -> copyToClipboard txt
             Nothing  -> return ()
@@ -172,15 +174,14 @@ openThreadWindow tId which =
                 Nothing -> return ()
                 Just cId -> do
                     -- Leave message selection mode
-                    popMode tId
+                    exitMessageSelect which
                     TW.openThreadWindow tId cId (postId p)
 
-yankSelectedMessage :: TeamId
-                    -> Lens' ChatState (MessageInterface n i)
+yankSelectedMessage :: Lens' ChatState (MessageInterface n i)
                     -> MH ()
-yankSelectedMessage tId which =
+yankSelectedMessage which =
     withSelectedMessage which $ \msg -> do
-        popMode tId
+        exitMessageSelect which
         copyToClipboard $ msg^.mMarkdownSource
 
 openSelectedMessageURLs :: Lens' ChatState (MessageInterface n i)
@@ -252,10 +253,9 @@ messageSelectLast which =
             which.miMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
           Nothing -> mhLog LogError "No last message found from current message?!"
 
-deleteSelectedMessage :: TeamId
-                      -> Lens' ChatState (MessageInterface n i)
+deleteSelectedMessage :: Lens' ChatState (MessageInterface n i)
                       -> MH ()
-deleteSelectedMessage tId which = do
+deleteSelectedMessage which = do
     st <- use id
     withSelectedMessage which $ \msg ->
         when (isMine st msg && isDeletable msg) $
@@ -266,29 +266,27 @@ deleteSelectedMessage tId which = do
                         (\_ -> Just $ do
                             m <- use (which.miEditor.esResetEditMode)
                             which.miEditor.esEditMode .= m
-                            popMode tId)
+                            exitMessageSelect which)
                 Nothing -> return ()
 
-beginReplyCompose :: TeamId
-                  -> Lens' ChatState (MessageInterface n i)
+beginReplyCompose :: Lens' ChatState (MessageInterface n i)
                   -> MH ()
-beginReplyCompose tId which = do
+beginReplyCompose which = do
     withSelectedMessage which $ \msg ->
         when (isReplyable msg) $ do
             rootMsg <- getReplyRootMessage msg
             let p = fromJust $ rootMsg^.mOriginalPost
-            popMode tId
+            exitMessageSelect which
             which.miEditor.esEditMode .= Replying rootMsg p
 
-beginEditMessage :: TeamId
-                 -> Lens' ChatState (MessageInterface n i)
+beginEditMessage :: Lens' ChatState (MessageInterface n i)
                  -> MH ()
-beginEditMessage tId which = do
+beginEditMessage which = do
     st <- use id
     withSelectedMessage which $ \msg ->
         when (isMine st msg && isEditable msg) $ do
             let p = fromJust $ msg^.mOriginalPost
-            popMode tId
+            exitMessageSelect which
             which.miEditor.esEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need
             -- to strip the formatting because that's only there to

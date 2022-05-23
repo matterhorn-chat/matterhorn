@@ -47,6 +47,7 @@ import           Matterhorn.Constants
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
 import           Matterhorn.State.ThreadWindow
+import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.Reactions
 import           Matterhorn.State.Users
 import           Matterhorn.TimeUtils
@@ -1060,7 +1061,7 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
                       joinChannel' tId cId (Just $ jumpToPost pId)
                   Just _ -> do
                       setFocus tId cId
-                      pushMode tId $ ChannelMessageSelect cId
+                      beginMessageSelect (csChannelMessageInterface(cId))
                       channelMessageSelect(cId) .= MessageSelectState (msg^.mMessageId)
           Nothing ->
             error "INTERNAL: selected Post ID not associated with a channel"

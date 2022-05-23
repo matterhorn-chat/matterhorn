@@ -6,22 +6,18 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Main ( viewportScroll, vScrollBy )
-import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens' )
 
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.HelpTopics
 import           Matterhorn.Events.Keybindings
-import           Matterhorn.State.Attachments
+import           Matterhorn.Events.MessageInterface
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
 import           Matterhorn.State.Help
-import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
-import           Matterhorn.State.UrlSelect
 import           Matterhorn.Types
 
 onEventMain :: TeamId -> Vty.Event -> MH ()
@@ -32,40 +28,11 @@ onEventMain tId =
                         mCid <- use (csCurrentChannelId(tId))
                         case mCid of
                             Nothing -> return False
-                            Just cId ->
-                                handleKeyboardEvent (messageEditorKeybindings (channelEditor(cId))) e
-                    , \e -> do
-                        mCid <- use (csCurrentChannelId(tId))
-                        case mCid of
-                            Nothing -> return False
-                            Just cId ->
-                                handleKeyboardEvent (messageListingKeybindings tId (csChannelMessageInterface(cId))
-                                                                                   (Just $ FromChannel tId cId)
-                                                                                   (pushMode tId $ ChannelMessageSelect cId))
-                                                    e
-                    , \e -> do
-                        mCid <- use (csCurrentChannelId(tId))
-                        case mCid of
-                            Nothing -> return False
-                            Just cId -> do
-                                resetReturnChannel tId
-                                case e of
-                                    (Vty.EvPaste bytes) -> handlePaste (channelEditor(cId)) bytes
-                                    _ -> handleEditingInput (channelEditor(cId)) e
-                                return True
+                            Just cId -> handleMessageInterfaceEvent tId (csChannelMessageInterface(cId)) e
                     ]
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
-
-messageListingKeybindings :: TeamId
-                          -> Lens' ChatState (MessageInterface n i)
-                          -> Maybe URLListSource
-                          -> MH ()
-                          -> KeyConfig
-                          -> KeyHandlerMap
-messageListingKeybindings tId which urlSrc changeMode =
-    mkKeybindings (messageListingKeyHandlers tId which urlSrc changeMode)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
@@ -122,93 +89,4 @@ mainKeyHandlers tId =
 
     , mkKb EnterFlaggedPostsEvent "View currently flagged posts" $
          enterFlaggedPostListMode tId
-
-    , mkKb
-        ScrollUpEvent
-        "Scroll up in the channel input history" $
-        withCurrentChannel tId $ \cId _ -> do
-             -- Up in multiline mode does the usual thing; otherwise we
-             -- navigate the history.
-             isMultiline <- use (channelEditor(cId).esEphemeral.eesMultiline)
-             case isMultiline of
-                 True -> mhHandleEventLensed (channelEditor(cId).esEditor) handleEditorEvent
-                                           (Vty.EvKey Vty.KUp [])
-                 False -> channelHistoryBackward tId
-
-    , mkKb
-        ScrollDownEvent
-        "Scroll down in the channel input history" $
-        withCurrentChannel tId $ \cId _ -> do
-             -- Down in multiline mode does the usual thing; otherwise
-             -- we navigate the history.
-             isMultiline <- use (channelEditor(cId).esEphemeral.eesMultiline)
-             case isMultiline of
-                 True -> mhHandleEventLensed (channelEditor(cId).esEditor) handleEditorEvent
-                                           (Vty.EvKey Vty.KDown [])
-                 False -> channelHistoryForward tId
-    ]
-
-messageEditorKeybindings :: Lens' ChatState (EditState Name)
-                         -> KeyConfig
-                         -> KeyHandlerMap
-messageEditorKeybindings editWhich =
-    mkKeybindings (channelEditorKeyHandlers editWhich)
-
-channelEditorKeyHandlers :: Lens' ChatState (EditState Name)
-                         -> [KeyEventHandler]
-channelEditorKeyHandlers editWhich =
-    [ mkKb ToggleMultiLineEvent "Toggle multi-line message compose mode" $
-           toggleMultilineEditing editWhich
-
-    , mkKb CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
-         cancelAutocompleteOrReplyOrEdit editWhich
-
-    , mkKb
-        InvokeEditorEvent
-        "Invoke `$EDITOR` to edit the current message" $
-        invokeExternalEditor editWhich
-
-    , staticKb "Tab-complete forward"
-         (Vty.EvKey (Vty.KChar '\t') []) $
-         tabComplete editWhich Forwards
-
-    , staticKb "Tab-complete backward"
-         (Vty.EvKey (Vty.KBackTab) []) $
-         tabComplete editWhich Backwards
-
-    , mkKb ShowAttachmentListEvent "Show the attachment list" $
-         withCurrentTeam $ \tId -> showAttachmentList tId editWhich
-
-    , staticKb "Send the current message"
-         (Vty.EvKey Vty.KEnter []) $ do
-             isMultiline <- use (editWhich.esEphemeral.eesMultiline)
-             case isMultiline of
-                 -- Normally, this event causes the current message to
-                 -- be sent. But in multiline mode we want to insert a
-                 -- newline instead.
-                 True -> handleEditingInput editWhich (Vty.EvKey Vty.KEnter [])
-                 False -> do
-                     content <- getEditorContent editWhich
-                     handleInputSubmission editWhich content
-    ]
-
-messageListingKeyHandlers :: TeamId
-                          -> Lens' ChatState (MessageInterface n i)
-                          -> Maybe URLListSource
-                          -> MH ()
-                          -> [KeyEventHandler]
-messageListingKeyHandlers tId which urlSrc changeMode =
-    [ mkKb EnterSelectModeEvent
-        "Select a message to edit/reply/delete" $
-        beginMessageSelect which changeMode
-
-    , mkKb PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect which changeMode
-
-    , mkKb SelectOldestMessageEvent "Scroll to top of message list" $ do
-        beginMessageSelect which changeMode
-        messageSelectFirst which
-
-    , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startUrlSelect tId which urlSrc
     ]

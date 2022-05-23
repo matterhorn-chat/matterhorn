@@ -8,42 +8,25 @@ import Prelude ()
 import Matterhorn.Prelude
 
 import qualified Graphics.Vty as Vty
-import Lens.Micro.Platform (Lens', (.=))
+import Lens.Micro.Platform (Lens')
 
 import Network.Mattermost.Types (TeamId)
 
 import Matterhorn.Types
-import Matterhorn.State.Editing
 import Matterhorn.State.ThreadWindow
 import Matterhorn.Events.Keybindings
-import Matterhorn.Events.Main
-import Matterhorn.Events.MessageSelect
+import Matterhorn.Events.MessageInterface
 
 onEventThreadWindow :: TeamId -> Vty.Event -> MH ()
 onEventThreadWindow _ (Vty.EvResize {}) =
     return ()
 onEventThreadWindow tId ev = do
-    st <- use id
-
     let ti :: Lens' ChatState ThreadInterface
         ti = threadInterface tId
 
-    case st^.ti.miMode of
-        MessageSelect ->
-            onEventMessageSelect tId ti ev
-        Compose -> do
-            let messageListingBindings = messageListingKeybindings tId ti
-                                                                       (Just $ FromThreadIn $ st^.ti.miChannelId)
-                                                                       (ti.miMode .= MessageSelect)
-            void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)
-                                   , handleKeyboardEvent (messageEditorKeybindings (ti.miEditor))
-                                   , handleKeyboardEvent messageListingBindings
-                                   , \_ -> do
-                                       case ev of
-                                           (Vty.EvPaste bytes) -> handlePaste (ti.miEditor) bytes
-                                           _ -> handleEditingInput (ti.miEditor) ev
-                                       return True
-                                   ] ev
+    void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)
+                           , handleMessageInterfaceEvent tId ti
+                           ] ev
 
 threadWindowKeybindings :: TeamId
                         -> KeyConfig

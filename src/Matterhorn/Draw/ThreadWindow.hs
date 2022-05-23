@@ -35,7 +35,6 @@ drawThreadWindow st tId =
         ti = threadInterface(tId)
 
         hs = getHighlightSet st tId
-        inMsgSelect = st^.ti.miMode == MessageSelect
         cId = st^.ti.miChannelId
 
         title = case st^?csChannel(cId) of
@@ -54,7 +53,7 @@ drawThreadWindow st tId =
         body = header <=> hBorder <=> messageUI
         messageUI = drawMessageInterface st hs
                             (ThreadWindowMessages tId cId)
-                            tId inMsgSelect
+                            tId
                             False
                             ti
                             False

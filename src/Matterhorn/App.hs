@@ -49,7 +49,6 @@ app = App
                   ThreadWindow cId              -> showCursorNamed (ThreadMessageInput cId) cs
                   LeaveChannelConfirm           -> Nothing
                   DeleteChannelConfirm          -> Nothing
-                  ChannelMessageSelect _        -> Nothing
                   MessageSelectDeleteConfirm    -> Nothing
                   PostListOverlay _             -> Nothing
                   ManageAttachments             -> Nothing

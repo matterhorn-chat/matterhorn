@@ -13,7 +13,7 @@ import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Types
 
 import           Matterhorn.State.Common
-import           Matterhorn.State.Messages ( jumpToPost )
+import {-# SOURCE #-} Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( unURL )
 

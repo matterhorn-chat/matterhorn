@@ -763,9 +763,6 @@ mainInterface st mode mtId =
                         padRight Max $
                         renderChannelHeader st tId hs mChan
 
-                    inMsgSelect = case mode of
-                        ChannelMessageSelect {} -> True
-                        _ -> False
                     maybeSubdue = if mode == ChannelSelect
                                   then forceAttr ""
                                   else id
@@ -778,7 +775,7 @@ mainInterface st mode mtId =
                                 , maybeSubdue $
                                   drawMessageInterface st hs
                                                        (ChannelMessages cId)
-                                                       tId inMsgSelect
+                                                       tId
                                                        True
                                                        (csChannelMessageInterface(cId))
                                                        True
@@ -790,18 +787,19 @@ drawMessageInterface :: ChatState
                      -> Name
                      -> TeamId
                      -> Bool
-                     -> Bool
                      -> Lens' ChatState (MessageInterface Name i)
                      -> Bool
                      -> Name
                      -> Widget Name
-drawMessageInterface st hs region tId inMsgSelect showNewMsgLine which renderReplyIndent previewVpName =
+drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent previewVpName =
     vBox [ interfaceContents
          , bottomBorder
          , inputPreview st (which.miEditor) tId previewVpName hs
          , userInputArea st (which.miEditor) hs
          ]
     where
+    inMsgSelect = st^.which.miMode == MessageSelect
+
     interfaceContents =
         renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region
 

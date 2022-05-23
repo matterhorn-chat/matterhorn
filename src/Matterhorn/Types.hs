@@ -353,6 +353,8 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           GHC.Stack ( HasCallStack )
+
 import qualified Brick
 import           Brick ( EventM, Next, Widget(..), Size(..), Result )
 import           Brick.Focus ( FocusRing )
@@ -1095,7 +1097,6 @@ data Mode =
     | UrlSelect
     | LeaveChannelConfirm
     | DeleteChannelConfirm
-    | ChannelMessageSelect ChannelId
     | ThreadWindow ChannelId
     | MessageSelectDeleteConfirm
     | PostListOverlay PostListContents
@@ -2112,7 +2113,7 @@ resultToWidget = Widget Fixed Fixed . return
 -- the interface is present; if not, this crashes. Intended for places
 -- where you know the interface will be present due to other state and
 -- don't want to deal with Maybe.
-threadInterface :: TeamId -> Lens' ChatState ThreadInterface
+threadInterface :: (HasCallStack) => TeamId -> Lens' ChatState ThreadInterface
 threadInterface tId = maybeThreadInterface(tId).singular _Just
 
 -- A safe version of threadInterface.

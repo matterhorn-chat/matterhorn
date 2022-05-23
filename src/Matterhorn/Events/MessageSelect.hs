@@ -28,14 +28,14 @@ messagesPerPageOperation = 10
 onEventMessageSelect :: TeamId
                      -> Lens' ChatState (MessageInterface n i)
                      -> Vty.Event
-                     -> MH ()
+                     -> MH Bool
 onEventMessageSelect tId which =
-    void . handleKeyboardEvent (messageSelectKeybindings tId which)
+    handleKeyboardEvent (messageSelectKeybindings tId which)
 
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
     withCurrentChannel tId $ \cId _ -> do
-        deleteSelectedMessage tId (csChannelMessageInterface(cId))
+        deleteSelectedMessage (csChannelMessageInterface(cId))
         popMode tId
 onEventMessageSelectDeleteConfirm _ (Vty.EvResize {}) = do
     return ()
@@ -53,8 +53,8 @@ messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState (MessageInterface n i)
                          -> [KeyEventHandler]
 messageSelectKeyHandlers tId which =
-    [ mkKb CancelEvent "Cancel message selection" $ do
-        popMode tId
+    [ mkKb CancelEvent "Cancel message selection" $
+        exitMessageSelect which
 
     , mkKb SelectUpEvent "Select the previous message" $
         messageSelectUp which
@@ -82,19 +82,19 @@ messageSelectKeyHandlers tId which =
         openSelectedMessageURLs which
 
     , mkKb ReplyMessageEvent "Begin composing a reply to the selected message" $
-         beginReplyCompose tId which
+         beginReplyCompose which
 
     , mkKb EditMessageEvent "Begin editing the selected message" $
-         beginEditMessage tId which
+         beginEditMessage which
 
     , mkKb DeleteMessageEvent "Delete the selected message (with confirmation)" $
          beginConfirmDeleteSelectedMessage tId which
 
     , mkKb YankMessageEvent "Copy a verbatim section or message to the clipboard" $
-         yankSelectedMessageVerbatim tId which
+         yankSelectedMessageVerbatim which
 
     , mkKb YankWholeMessageEvent "Copy an entire message to the clipboard" $
-         yankSelectedMessage tId which
+         yankSelectedMessage which
 
     , mkKb PinMessageEvent "Toggle whether the selected message is pinned" $
          pinSelectedMessage which

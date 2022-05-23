@@ -30,6 +30,7 @@ import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
+import           Matterhorn.Events.MessageInterface
 import           Matterhorn.Events.ThemeListOverlay
 import           Matterhorn.Events.PostListOverlay
 import           Matterhorn.Events.ShowHelp
@@ -447,13 +448,13 @@ keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk <>
-                         messageListingKeyHandlers teamIdThunk whichThunk Nothing changeModeThunk)
-    , ("Message Editor", channelEditorKeyHandlers editWhichThunk)
+                         messageInterfaceKeyHandlers teamIdThunk whichThunk Nothing)
+    , ("Message Editing", extraEditorKeyHandlers whichThunk)
     , ("Text Editing", editingKeyHandlers editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
     , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk whichThunk)
     , ("Thread Window", threadWindowKeyHandlers teamIdThunk <>
-                        messageListingKeyHandlers teamIdThunk whichThunk Nothing changeModeThunk)
+                        messageInterfaceKeyHandlers teamIdThunk whichThunk Nothing)
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
@@ -481,9 +482,6 @@ editWhichThunk = error "BUG: should not evaluate editWhichThunk"
 
 whichThunk :: Lens' ChatState (MessageInterface n i)
 whichThunk = error "BUG: should not evaluate whichThunk"
-
-changeModeThunk :: MH ()
-changeModeThunk = error "BUG: should not evaluate changeModeThunk"
 
 helpBox :: Name -> Widget Name -> Widget Name
 helpBox n helpText =

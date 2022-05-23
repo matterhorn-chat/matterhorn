@@ -49,7 +49,6 @@ draw st =
                         -- to be all we need to draw what should be on
                         -- the screen.
                         Main                         -> drawMain st m
-                        ChannelMessageSelect _       -> drawMain st m
                         ShowHelp topic               -> drawShowHelp topic st
 
                         -- For the following modes, we want to draw the
