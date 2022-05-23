@@ -18,7 +18,6 @@ import           Lens.Micro.Platform ( SimpleGetter )
 import           Network.Mattermost.Types ( User(..), Channel(..) )
 
 import           Matterhorn.Constants ( normalChannelSigil )
-import           Matterhorn.Draw.Util
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
@@ -59,6 +58,7 @@ renderAutocompleteBox st mCurChan which ac =
         visibleHeight = min maxListHeight numResults
         numResults = length elements
         elements = matchList^.listElementsL
+        editorName = getName $ st^.which.esEditor
         label = withDefAttr clientMessageAttr $
                 txt $ elementTypeLabel (ac^.acType) <> ": " <> (T.pack $ show numResults) <>
                      " match" <> (if numResults == 1 then "" else "es") <>
@@ -77,12 +77,8 @@ renderAutocompleteBox st mCurChan which ac =
     in if numResults == 0
        then emptyWidget
        else Widget Greedy Greedy $ do
-           ctx <- getContext
-           let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
-               editorOffset = if st^.which.esEphemeral.eesMultiline
-                              then multilineHeightLimit
-                              else 0
-           render $ translateBy (Location (0, rowOffset)) $
+           let verticalOffset = -1 * (visibleHeight + 2)
+           render $ relativeTo editorName (Location (-2, verticalOffset)) $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
                            renderList (renderAutocompleteAlternative curUser) True matchList
