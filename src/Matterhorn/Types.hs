@@ -139,8 +139,6 @@ module Matterhorn.Types
   , channelSelectInput
   , emptyChannelSelectState
 
-  , MessageInterfaceTarget(..)
-
   , TeamState(..)
   , tsFocus
   , tsMode
@@ -465,11 +463,6 @@ data ChannelListSorting =
     ChannelListSortDefault
     | ChannelListSortUnreadFirst
     deriving (Eq, Show, Ord)
-
-data MessageInterfaceTarget =
-    MITeamThread TeamId
-    | MIChannel ChannelId
-    deriving (Eq, Show)
 
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
@@ -1107,7 +1100,7 @@ data Mode =
     | LeaveChannelConfirm
     | DeleteChannelConfirm
     | ThreadWindow ChannelId
-    | MessageSelectDeleteConfirm
+    | MessageSelectDeleteConfirm MessageInterfaceTarget
     | PostListOverlay PostListContents
     | UserListOverlay
     | ReactionEmojiListOverlay

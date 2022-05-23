@@ -9,6 +9,7 @@ module Matterhorn.Types.MessageInterface
   , miChannelId
 
   , MessageInterfaceMode(..)
+  , MessageInterfaceTarget(..)
   )
 where
 
@@ -16,7 +17,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Lens.Micro.Platform ( makeLenses )
-import           Network.Mattermost.Types ( ChannelId )
+import           Network.Mattermost.Types ( ChannelId, TeamId )
 
 import           Matterhorn.Types.Core ( MessageSelectState )
 import           Matterhorn.Types.EditState
@@ -47,6 +48,11 @@ data MessageInterfaceMode =
     -- ^ Composing messages and interacting with the editor
     | MessageSelect
     -- ^ Selecting from messages in the listing
+    deriving (Eq, Show)
+
+data MessageInterfaceTarget =
+    MITeamThread TeamId
+    | MIChannel ChannelId
     deriving (Eq, Show)
 
 makeLenses ''MessageInterface
