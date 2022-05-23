@@ -225,7 +225,9 @@ deletePostFromOpenThread tId p = do
     threadInterfaceDeleteWhere tId (p^.postChannelIdL) isDeletedMessage
 
     isEmpty <- threadInterfaceEmpty tId
-    when isEmpty $ closeThreadWindow tId
+    when isEmpty $ do
+        closeThreadWindow tId
+        postInfoMessage "The thread you were viewing was deleted."
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
