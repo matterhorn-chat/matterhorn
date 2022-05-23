@@ -19,10 +19,10 @@ import Matterhorn.Draw.Util
 
 drawThreadWindowLayers :: ChatState -> TeamId -> [Widget Name]
 drawThreadWindowLayers st tId =
-    let ti :: Lens' ChatState (ThreadInterface Name)
+    let ti :: Lens' ChatState ThreadInterface
         ti = threadInterface(tId)
         ed :: SimpleGetter ChatState (EditState Name)
-        ed = ti.threadEditor
+        ed = ti.miEditor
     in [ autocompleteLayer st ed
        , drawThreadWindow st tId
        ]
@@ -31,12 +31,12 @@ drawThreadWindow :: ChatState -> TeamId -> Widget Name
 drawThreadWindow st tId =
     joinBorders body
     where
-        ti :: Lens' ChatState (ThreadInterface Name)
+        ti :: Lens' ChatState ThreadInterface
         ti = threadInterface(tId)
 
         hs = getHighlightSet st tId
-        inMsgSelect = st^.ti.threadMode == MessageSelect
-        cId = st^.ti.threadParentChannelId
+        inMsgSelect = st^.ti.miMode == MessageSelect
+        cId = st^.ti.miChannelId
 
         title = case st^?csChannel(cId) of
             Nothing -> "Thread"
@@ -56,8 +56,8 @@ drawThreadWindow st tId =
                             (ThreadWindowMessages tId cId)
                             tId inMsgSelect
                             False
-                            (ti.threadMessageSelect)
-                            (ti.threadEditor)
-                            (ti.threadMessages)
+                            (ti.miMessageSelect)
+                            (ti.miEditor)
+                            (ti.miMessages)
                             False
                             (ThreadWindowEditorPreview cId)

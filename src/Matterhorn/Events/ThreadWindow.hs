@@ -25,24 +25,24 @@ onEventThreadWindow _ (Vty.EvResize {}) =
 onEventThreadWindow tId ev = do
     st <- use id
 
-    let ti :: Lens' ChatState (ThreadInterface Name)
+    let ti :: Lens' ChatState ThreadInterface
         ti = threadInterface tId
 
-    case st^.ti.threadMode of
+    case st^.ti.miMode of
         MessageSelect ->
-            onEventMessageSelect tId (ti.threadMessageSelect) (ti.threadMessages) (ti.threadEditor) ev
+            onEventMessageSelect tId (ti.miMessageSelect) (ti.miMessages) (ti.miEditor) ev
         Compose -> do
-            let messageListingBindings = messageListingKeybindings tId (ti.threadMessageSelect)
-                                                                       (ti.threadMessages)
-                                                                       (Just $ FromThreadIn $ st^.ti.threadParentChannelId)
-                                                                       (ti.threadMode .= MessageSelect)
+            let messageListingBindings = messageListingKeybindings tId (ti.miMessageSelect)
+                                                                       (ti.miMessages)
+                                                                       (Just $ FromThreadIn $ st^.ti.miChannelId)
+                                                                       (ti.miMode .= MessageSelect)
             void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)
-                                   , handleKeyboardEvent (messageEditorKeybindings (ti.threadEditor))
+                                   , handleKeyboardEvent (messageEditorKeybindings (ti.miEditor))
                                    , handleKeyboardEvent messageListingBindings
                                    , \_ -> do
                                        case ev of
-                                           (Vty.EvPaste bytes) -> handlePaste (ti.threadEditor) bytes
-                                           _ -> handleEditingInput (ti.threadEditor) ev
+                                           (Vty.EvPaste bytes) -> handlePaste (ti.miEditor) bytes
+                                           _ -> handleEditingInput (ti.miEditor) ev
                                        return True
                                    ] ev
 

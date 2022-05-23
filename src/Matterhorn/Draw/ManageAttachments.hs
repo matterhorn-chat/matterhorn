@@ -32,7 +32,7 @@ drawManageAttachments st tId =
             Nothing ->
                 let cId = fromJust $ st^.csCurrentChannelId(tId)
                 in channelEditor(cId)
-            Just _  -> threadInterface(tId).threadEditor
+            Just _  -> threadInterface(tId).miEditor
         topLayer = case st^.csTeam(tId).tsMode of
             ManageAttachments -> drawAttachmentList st editWhich
             ManageAttachmentsBrowseFiles -> drawFileBrowser st editWhich

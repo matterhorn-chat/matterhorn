@@ -120,15 +120,17 @@ module Matterhorn.Types
   , mkChannelZipperList
   , ChannelListGroup(..)
   , nonDMChannelListGroupUnread
-  , ThreadInterface(..)
-  , threadMessages
-  , threadEditor
-  , threadMode
-  , threadMessageSelect
-  , threadRootPostId
-  , threadParentChannelId
+  , MessageInterface(..)
+  , miMessages
+  , miEditor
+  , miMode
+  , miMessageSelect
+  , miRootPostId
+  , miChannelId
 
-  , ThreadInterfaceMode(..)
+  , ThreadInterface
+
+  , MessageInterfaceMode(..)
 
   , threadInterface
   , maybeThreadInterface
@@ -1117,25 +1119,28 @@ data Mode =
 -- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
--- | A UI region in which a specific thread is viewed, where the user
--- can send messages implicitly to that thread.
-data ThreadInterface n =
-    ThreadInterface { _threadMessages :: Messages
-                    -- ^ The messages in the thread.
-                    , _threadEditor :: EditState n
-                    -- ^ The editor and associated state for composing
-                    -- messages in this thread.
-                    , _threadMessageSelect :: MessageSelectState
-                    -- ^ Message selection state for the thread.
-                    , _threadRootPostId :: PostId
-                    -- ^ The root post ID for this thread.
-                    , _threadParentChannelId :: ChannelId
-                    -- ^ The channel that this thread belongs to.
-                    , _threadMode :: ThreadInterfaceMode
-                    -- ^ The mode of the interface
-                    }
+-- | A UI region in which a specific message listing is viewed, where
+-- the user can send messages in that channel or thread.
+data MessageInterface n i =
+    MessageInterface { _miMessages :: Messages
+                     -- ^ The messages.
+                     , _miEditor :: EditState n
+                     -- ^ The editor and associated state for composing
+                     -- messages in this channel or thread.
+                     , _miMessageSelect :: MessageSelectState
+                     -- ^ Message selection state for the interface.
+                     , _miRootPostId :: i
+                     -- ^ The root post ID if these messages belong to a
+                     -- thread.
+                     , _miChannelId :: ChannelId
+                     -- ^ The channel that these messages belong to.
+                     , _miMode :: MessageInterfaceMode
+                     -- ^ The mode of the interface.
+                     }
 
-data ThreadInterfaceMode =
+type ThreadInterface = MessageInterface Name PostId
+
+data MessageInterfaceMode =
     Compose
     -- ^ Composing messages and interacting with the editor
     | MessageSelect
@@ -1289,7 +1294,7 @@ data TeamState =
               , _tsChannelListSorting :: ChannelListSorting
               -- ^ How to sort channels in this team's channel list
               -- groups
-              , _tsThreadInterface :: Maybe (ThreadInterface Name)
+              , _tsThreadInterface :: Maybe ThreadInterface
               -- ^ The thread interface for this team for participating
               -- in a single thread
               }
@@ -1676,7 +1681,7 @@ makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 makeLenses ''SaveAttachmentDialogState
 makeLenses ''URLList
-makeLenses ''ThreadInterface
+makeLenses ''MessageInterface
 Brick.suffixLenses ''Config
 
 -- | Given a list of event handlers and an event, try to handle the
@@ -2134,23 +2139,23 @@ resultToWidget = Widget Fixed Fixed . return
 -- the interface is present; if not, this crashes. Intended for places
 -- where you know the interface will be present due to other state and
 -- don't want to deal with Maybe.
-threadInterface :: TeamId -> Lens' ChatState (ThreadInterface Name)
+threadInterface :: TeamId -> Lens' ChatState ThreadInterface
 threadInterface tId = maybeThreadInterface(tId).singular _Just
 
 -- A safe version of threadInterface.
-maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe (ThreadInterface Name))
+maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe ThreadInterface)
 maybeThreadInterface tId = csTeam(tId).tsThreadInterface
 
 threadInterfaceEmpty :: TeamId -> MH Bool
 threadInterfaceEmpty tId = do
-    mLen <- preuse (maybeThreadInterface(tId)._Just.threadMessages.to messagesLength)
+    mLen <- preuse (maybeThreadInterface(tId)._Just.miMessages.to messagesLength)
     case mLen of
         Nothing -> return True
         Just len -> return $ len == 0
 
 withThreadInterface :: TeamId -> ChannelId -> MH () -> MH ()
 withThreadInterface tId cId act = do
-    mCid <- preuse (maybeThreadInterface(tId)._Just.threadParentChannelId)
+    mCid <- preuse (maybeThreadInterface(tId)._Just.miChannelId)
     case mCid of
         Just i | i == cId -> act
         _ -> return ()
@@ -2158,15 +2163,15 @@ withThreadInterface tId cId act = do
 threadInterfaceDeleteWhere :: TeamId -> ChannelId -> (Message -> Bool) -> MH ()
 threadInterfaceDeleteWhere tId cId f =
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.threadMessages.traversed.filtered f %=
+        maybeThreadInterface(tId)._Just.miMessages.traversed.filtered f %=
             (& mDeleted .~ True)
 
 modifyThreadMessages :: TeamId -> ChannelId -> (Messages -> Messages) -> MH ()
 modifyThreadMessages tId cId f = do
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.threadMessages %= f
+        maybeThreadInterface(tId)._Just.miMessages %= f
 
 modifyEachThreadMessage :: TeamId -> ChannelId -> (Message -> Message) -> MH ()
 modifyEachThreadMessage tId cId f = do
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.threadMessages.traversed %= f
+        maybeThreadInterface(tId)._Just.miMessages.traversed %= f

@@ -263,25 +263,40 @@ emptyEditStateForChannel checker eventQueue tId cId = do
 
 emptyEditStateForThread :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> EditMode -> IO (EditState Name)
 emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
-    let ti :: Lens' ChatState (ThreadInterface Name)
+    let ti :: Lens' ChatState ThreadInterface
         ti = threadInterface(tId)
     reset <- case checker of
         Nothing -> return Nothing
-        Just as -> Just <$> newSpellCheckTimer as eventQueue (ti.threadEditor)
+        Just as -> Just <$> newSpellCheckTimer as eventQueue (ti.miEditor)
     let editorName = ThreadMessageInput cId
         attachmentListName = ThreadEditorAttachmentList cId
     return $ newEditState editorName attachmentListName (Just tId) cId initialEditMode False reset
 
-newThreadInterface :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> Message -> Post -> Messages -> IO (ThreadInterface Name)
+newThreadInterface :: Maybe Aspell
+                   -> BCH.BChan MHEvent
+                   -> TeamId
+                   -> ChannelId
+                   -> Message
+                   -> Post
+                   -> Messages
+                   -> IO ThreadInterface
 newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
     es <- emptyEditStateForThread checker eventQueue tId cId (Replying rootMsg rootPost)
-    return $ ThreadInterface { _threadMessages = msgs
-                             , _threadRootPostId = postId rootPost
-                             , _threadParentChannelId = cId
-                             , _threadMessageSelect = MessageSelectState Nothing
-                             , _threadMode = Compose
-                             , _threadEditor = es
-                             }
+    return $ newMessageInterface cId (postId rootPost) msgs es
+
+newMessageInterface :: ChannelId
+                    -> i
+                    -> Messages
+                    -> EditState n
+                    -> MessageInterface n i
+newMessageInterface cId pId msgs es =
+    MessageInterface { _miMessages = msgs
+                     , _miRootPostId = pId
+                     , _miChannelId = cId
+                     , _miMessageSelect = MessageSelectState Nothing
+                     , _miMode = Compose
+                     , _miEditor = es
+                     }
 
 newTeamState :: Config
              -> Team

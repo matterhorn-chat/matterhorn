@@ -25,7 +25,7 @@ openThreadWindow tId cId pId = do
     -- If the thread we're switching to is the one we're already
     -- viewing, do nothing.
     m <- use (csTeam(tId).tsMode)
-    mPid <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
+    mPid <- preuse (maybeThreadInterface(tId)._Just.miRootPostId)
     when (not (m == ThreadWindow cId && mPid == Just pId)) $ do
         -- Fetch the entire thread associated with the post.
         doAsyncMM Preempt getThread (processThread m)

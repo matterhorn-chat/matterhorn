@@ -668,7 +668,7 @@ addPostToOpenThread (Just tId) new msg =
     case postRootId new of
         Nothing -> return ()
         Just parentId -> do
-            mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
+            mRoot <- preuse (maybeThreadInterface(tId)._Just.miRootPostId)
             when (mRoot == Just parentId) $
                 modifyThreadMessages tId (new^.postChannelIdL) (addMessage msg)
 
@@ -678,7 +678,7 @@ editPostInOpenThread (Just tId) new msg =
      case postRootId new of
         Nothing -> return ()
         Just parentId -> do
-            mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
+            mRoot <- preuse (maybeThreadInterface(tId)._Just.miRootPostId)
             when (mRoot == Just parentId) $ do
                 mhLog LogGeneral "editPostInOpenThread: updating message"
                 let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
@@ -1032,7 +1032,7 @@ asyncFetchAttachments p = do
                        case mTId of
                            Nothing -> return ()
                            Just tId -> do
-                               mRoot <- preuse (maybeThreadInterface(tId)._Just.threadRootPostId)
+                               mRoot <- preuse (maybeThreadInterface(tId)._Just.miRootPostId)
                                when (mRoot == Just parentId) $
                                    modifyEachThreadMessage tId cId addAttachment
 

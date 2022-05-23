@@ -225,7 +225,7 @@ handleTeamModeEvent e = do
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
 teamEventHandlerByMode tId mode e =
-    let ti :: Lens' ChatState (ThreadInterface Name)
+    let ti :: Lens' ChatState ThreadInterface
         ti = threadInterface tId
     in case mode of
         Main                       -> onEventMain tId e
@@ -251,7 +251,7 @@ teamEventHandlerByMode tId mode e =
                          Nothing -> case st^.csCurrentChannelId(tId) of
                              Nothing -> error "BUG: should not be in ManageAttachments mode with no current channel"
                              Just cId -> channelEditor(cId)
-                         Just _ -> ti.threadEditor
+                         Just _ -> ti.miEditor
             onEventManageAttachments tId ed e
         ManageAttachmentsBrowseFiles -> do
             st <- use id
@@ -260,7 +260,7 @@ teamEventHandlerByMode tId mode e =
                          Nothing -> case st^.csCurrentChannelId(tId) of
                              Nothing -> error "BUG: should not be in ManageAttachmentsBrowseFiles mode with no current channel"
                              Just cId -> channelEditor(cId)
-                         Just _ -> ti.threadEditor
+                         Just _ -> ti.miEditor
             onEventManageAttachments tId ed e
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
         ChannelTopicWindow         -> onEventChannelTopicWindow tId e
