@@ -130,10 +130,10 @@ viewSelectedMessage tId which =
 fillSelectedGap :: TeamId
                 -> Lens' ChatState (MessageInterface n i)
                 -> MH ()
-fillSelectedGap tId which =
-    withCurrentChannel tId $ \cId _ -> do
-        withSelectedMessage which $ \msg ->
-            when (isGap msg) $ asyncFetchMessagesForGap cId msg
+fillSelectedGap tId which = do
+    cId <- use (which.miChannelId)
+    withSelectedMessage which $ \msg ->
+        when (isGap msg) $ asyncFetchMessagesForGap cId msg
 
 copyPostLink :: TeamId
              -> Lens' ChatState (MessageInterface n i)
