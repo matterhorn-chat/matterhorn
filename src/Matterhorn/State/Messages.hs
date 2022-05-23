@@ -224,10 +224,12 @@ deletePostFromOpenThread tId p = do
     -- need to close down the window.
     threadInterfaceDeleteWhere tId (p^.postChannelIdL) isDeletedMessage
 
-    isEmpty <- threadInterfaceEmpty tId
-    when isEmpty $ do
-        closeThreadWindow tId
-        postInfoMessage "The thread you were viewing was deleted."
+    ti <- use (csTeam(tId).tsThreadInterface)
+    when (isJust ti) $ do
+        isEmpty <- threadInterfaceEmpty tId
+        when isEmpty $ do
+            closeThreadWindow tId
+            postInfoMessage "The thread you were viewing was deleted."
 
 addNewPostedMessage :: PostToAdd -> MH ()
 addNewPostedMessage p =
