@@ -51,30 +51,27 @@ import           Matterhorn.Windows.ViewMessage
 import qualified Matterhorn.State.ThreadWindow as TW
 
 
-getSelectedMessage :: SimpleGetter ChatState MessageSelectState
-                   -> Traversal' ChatState Messages
+getSelectedMessage :: Lens' ChatState (MessageInterface n i)
                    -> ChatState
                    -> Maybe Message
-getSelectedMessage selWhich msgsWhich st = do
-    selMsgId <- selectMessageId $ st^.selWhich
-    let chanMsgs = st^.msgsWhich
+getSelectedMessage which st = do
+    selMsgId <- selectMessageId $ st^.which.miMessageSelect
+    let chanMsgs = st^.which.miMessages
     findMessage selMsgId chanMsgs
 
-withSelectedMessage :: SimpleGetter ChatState MessageSelectState
-                    -> Traversal' ChatState Messages
+withSelectedMessage :: Lens' ChatState (MessageInterface n i)
                     -> (Message -> MH ())
                     -> MH ()
-withSelectedMessage selWhich msgsWhich act = do
-    selectedMessage <- use (to (getSelectedMessage selWhich msgsWhich))
+withSelectedMessage which act = do
+    selectedMessage <- use (to (getSelectedMessage which))
     case selectedMessage of
         Nothing -> return ()
         Just m -> act m
 
-beginMessageSelect :: Lens' ChatState MessageSelectState
-                   -> Traversal' ChatState Messages
+beginMessageSelect :: Lens' ChatState (MessageInterface n i)
                    -> MH ()
                    -> MH ()
-beginMessageSelect selWhich msgsWhich changeMode = do
+beginMessageSelect which changeMode = do
     -- Invalidate the rendering cache since we cache messages to speed
     -- up the selection UI responsiveness. (See Draw.Messages for
     -- caching behavior.)
@@ -86,20 +83,19 @@ beginMessageSelect selWhich msgsWhich changeMode = do
     --
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
-    msgs <- use msgsWhich
+    msgs <- use (which.miMessages)
     let recentMsg = getLatestSelectableMessage msgs
 
     when (isJust recentMsg) $ do
         changeMode
-        selWhich .= MessageSelectState (recentMsg >>= _mMessageId)
+        which.miMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
-flagSelectedMessage :: SimpleGetter ChatState MessageSelectState
-                    -> Traversal' ChatState Messages
+flagSelectedMessage :: Lens' ChatState (MessageInterface n i)
                     -> MH ()
-flagSelectedMessage selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg ->
+flagSelectedMessage which =
+    withSelectedMessage which $ \msg ->
         when (isFlaggable msg) $ do
             case messagePostId msg of
                 Just pId -> flagMessage pId (not (msg^.mFlagged))
@@ -107,22 +103,20 @@ flagSelectedMessage selWhich msgsWhich =
 
 -- | Tell the server that the message we currently have selected
 -- should have its pinned state toggled.
-pinSelectedMessage :: SimpleGetter ChatState MessageSelectState
-                   -> Traversal' ChatState Messages
+pinSelectedMessage :: Lens' ChatState (MessageInterface n i)
                    -> MH ()
-pinSelectedMessage selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+pinSelectedMessage which =
+    withSelectedMessage which $ \msg -> do
         when (isPinnable msg) $ do
             case messagePostId msg of
                 Just pId -> pinMessage pId (not (msg^.mPinned))
                 Nothing -> return ()
 
 viewSelectedMessage :: TeamId
-                    -> SimpleGetter ChatState MessageSelectState
-                    -> Traversal' ChatState Messages
+                    -> Lens' ChatState (MessageInterface n i)
                     -> MH ()
-viewSelectedMessage tId selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg ->
+viewSelectedMessage tId which =
+    withSelectedMessage which $ \msg ->
         when (not (isGap msg)) $ viewMessage tId msg
 
 -- This will only work for channel message selection, not thread message
@@ -131,20 +125,18 @@ viewSelectedMessage tId selWhich msgsWhich =
 -- thread views, but it won't because asyncFetchMessagesForGap only
 -- works for channel message selection (and should).
 fillSelectedGap :: TeamId
-                -> SimpleGetter ChatState MessageSelectState
-                -> Traversal' ChatState Messages
+                -> Lens' ChatState (MessageInterface n i)
                 -> MH ()
-fillSelectedGap tId selWhich msgsWhich =
+fillSelectedGap tId which =
     withCurrentChannel tId $ \cId _ -> do
-        withSelectedMessage selWhich msgsWhich $ \msg ->
+        withSelectedMessage which $ \msg ->
             when (isGap msg) $ asyncFetchMessagesForGap cId msg
 
 copyPostLink :: TeamId
-             -> SimpleGetter ChatState MessageSelectState
-             -> Traversal' ChatState Messages
+             -> Lens' ChatState (MessageInterface n i)
              -> MH ()
-copyPostLink tId selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg ->
+copyPostLink tId which =
+    withSelectedMessage which $ \msg ->
         when (isPostMessage msg) $ do
             baseUrl <- getServerBaseUrl tId
             let pId = fromJust (messageIdPostId =<< _mMessageId msg)
@@ -159,22 +151,20 @@ viewMessage tId m = do
     pushMode tId ViewMessage
 
 yankSelectedMessageVerbatim :: TeamId
-                            -> SimpleGetter ChatState MessageSelectState
-                            -> Traversal' ChatState Messages
+                            -> Lens' ChatState (MessageInterface n i)
                             -> MH ()
-yankSelectedMessageVerbatim tId selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+yankSelectedMessageVerbatim tId which =
+    withSelectedMessage which $ \msg -> do
         popMode tId
         case findVerbatimChunk (msg^.mText) of
             Just txt -> copyToClipboard txt
             Nothing  -> return ()
 
 openThreadWindow :: TeamId
-                 -> SimpleGetter ChatState MessageSelectState
-                 -> Traversal' ChatState Messages
+                 -> Lens' ChatState (MessageInterface n i)
                  -> MH ()
-openThreadWindow tId selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+openThreadWindow tId which =
+    withSelectedMessage which $ \msg -> do
         when (isPostMessage msg) $ do
             rootMsg <- getReplyRootMessage msg
             let p = fromJust $ rootMsg^.mOriginalPost
@@ -186,135 +176,120 @@ openThreadWindow tId selWhich msgsWhich =
                     TW.openThreadWindow tId cId (postId p)
 
 yankSelectedMessage :: TeamId
-                    -> SimpleGetter ChatState MessageSelectState
-                    -> Traversal' ChatState Messages
+                    -> Lens' ChatState (MessageInterface n i)
                     -> MH ()
-yankSelectedMessage tId selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+yankSelectedMessage tId which =
+    withSelectedMessage which $ \msg -> do
         popMode tId
         copyToClipboard $ msg^.mMarkdownSource
 
-openSelectedMessageURLs :: SimpleGetter ChatState MessageSelectState
-                        -> Traversal' ChatState Messages
+openSelectedMessageURLs :: Lens' ChatState (MessageInterface n i)
                         -> MH ()
-openSelectedMessageURLs selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+openSelectedMessageURLs which =
+    withSelectedMessage which $ \msg -> do
         let urls = msgURLs msg
         when (not (null urls)) $ do
             mapM_ (openLinkTarget . _linkTarget) urls
 
 beginConfirmDeleteSelectedMessage :: TeamId
-                                  -> SimpleGetter ChatState MessageSelectState
-                                  -> Traversal' ChatState Messages
+                                  -> Lens' ChatState (MessageInterface n i)
                                   -> MH ()
-beginConfirmDeleteSelectedMessage tId selWhich msgsWhich = do
+beginConfirmDeleteSelectedMessage tId which = do
     st <- use id
-    withSelectedMessage selWhich msgsWhich $ \msg ->
+    withSelectedMessage which $ \msg ->
         when (isDeletable msg && isMine st msg) $
             pushMode tId MessageSelectDeleteConfirm
 
-messageSelectUp :: Lens' ChatState MessageSelectState
-                -> Traversal' ChatState Messages
+messageSelectUp :: Lens' ChatState (MessageInterface n i)
                 -> MH ()
-messageSelectUp selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+messageSelectUp which =
+    withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use msgsWhich
+        msgs <- use (which.miMessages)
         let nextMsgId = getPrevMessageId selected msgs
-        selWhich .= MessageSelectState (nextMsgId <|> selected)
+        which.miMessageSelect .= MessageSelectState (nextMsgId <|> selected)
 
-messageSelectDown :: Lens' ChatState MessageSelectState
-                  -> Traversal' ChatState Messages
+messageSelectDown :: Lens' ChatState (MessageInterface n i)
                   -> MH ()
-messageSelectDown selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+messageSelectDown which =
+    withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use msgsWhich
+        msgs <- use (which.miMessages)
         let nextMsgId = getNextMessageId selected msgs
-        selWhich .= MessageSelectState (nextMsgId <|> selected)
+        which.miMessageSelect .= MessageSelectState (nextMsgId <|> selected)
 
-messageSelectDownBy :: Lens' ChatState MessageSelectState
-                    -> Traversal' ChatState Messages
+messageSelectDownBy :: Lens' ChatState (MessageInterface n i)
                     -> Int
                     -> MH ()
-messageSelectDownBy selWhich msgsWhich amt =
-    replicateM_ amt $ messageSelectDown selWhich msgsWhich
+messageSelectDownBy which amt =
+    replicateM_ amt $ messageSelectDown which
 
-messageSelectUpBy :: Lens' ChatState MessageSelectState
-                  -> Traversal' ChatState Messages
+messageSelectUpBy :: Lens' ChatState (MessageInterface n i)
                   -> Int
                   -> MH ()
-messageSelectUpBy selWhich msgsWhich amt =
-    replicateM_ amt $ messageSelectUp selWhich msgsWhich
+messageSelectUpBy which amt =
+    replicateM_ amt $ messageSelectUp which
 
-messageSelectFirst :: Lens' ChatState MessageSelectState
-                   -> Traversal' ChatState Messages
+messageSelectFirst :: Lens' ChatState (MessageInterface n i)
                    -> MH ()
-messageSelectFirst selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+messageSelectFirst which =
+    withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use msgsWhich
+        msgs <- use (which.miMessages)
         case getEarliestSelectableMessage msgs of
           Just firstMsg ->
-            selWhich .= MessageSelectState (firstMsg^.mMessageId <|> selected)
+            which.miMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
           Nothing -> mhLog LogError "No first message found from current message?!"
 
-messageSelectLast :: Lens' ChatState MessageSelectState
-                  -> Traversal' ChatState Messages
+messageSelectLast :: Lens' ChatState (MessageInterface n i)
                   -> MH ()
-messageSelectLast selWhich msgsWhich =
-    withSelectedMessage selWhich msgsWhich $ \msg -> do
+messageSelectLast which =
+    withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use msgsWhich
+        msgs <- use (which.miMessages)
         case getLatestSelectableMessage msgs of
           Just lastSelMsg ->
-            selWhich .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
+            which.miMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
           Nothing -> mhLog LogError "No last message found from current message?!"
 
 deleteSelectedMessage :: TeamId
-                      -> SimpleGetter ChatState MessageSelectState
-                      -> Traversal' ChatState Messages
-                      -> Lens' ChatState (EditState Name)
+                      -> Lens' ChatState (MessageInterface n i)
                       -> MH ()
-deleteSelectedMessage tId selWhich msgsWhich editWhich = do
+deleteSelectedMessage tId which = do
     st <- use id
-    withSelectedMessage selWhich msgsWhich $ \msg ->
+    withSelectedMessage which $ \msg ->
         when (isMine st msg && isDeletable msg) $
             case msg^.mOriginalPost of
                 Just p ->
                     doAsyncMM Preempt
                         (\s -> MM.mmDeletePost (postId p) s)
                         (\_ -> Just $ do
-                            m <- use (editWhich.esResetEditMode)
-                            editWhich.esEditMode .= m
+                            m <- use (which.miEditor.esResetEditMode)
+                            which.miEditor.esEditMode .= m
                             popMode tId)
                 Nothing -> return ()
 
 beginReplyCompose :: TeamId
-                  -> SimpleGetter ChatState MessageSelectState
-                  -> Traversal' ChatState Messages
-                  -> Lens' ChatState (EditState Name)
+                  -> Lens' ChatState (MessageInterface n i)
                   -> MH ()
-beginReplyCompose tId selWhich msgsWhich editWhich = do
-    withSelectedMessage selWhich msgsWhich $ \msg ->
+beginReplyCompose tId which = do
+    withSelectedMessage which $ \msg ->
         when (isReplyable msg) $ do
             rootMsg <- getReplyRootMessage msg
             let p = fromJust $ rootMsg^.mOriginalPost
             popMode tId
-            editWhich.esEditMode .= Replying rootMsg p
+            which.miEditor.esEditMode .= Replying rootMsg p
 
 beginEditMessage :: TeamId
-                 -> SimpleGetter ChatState MessageSelectState
-                 -> Traversal' ChatState Messages
-                 -> Lens' ChatState (EditState Name)
+                 -> Lens' ChatState (MessageInterface n i)
                  -> MH ()
-beginEditMessage tId selWhich msgsWhich editWhich = do
+beginEditMessage tId which = do
     st <- use id
-    withSelectedMessage selWhich msgsWhich $ \msg ->
+    withSelectedMessage which $ \msg ->
         when (isMine st msg && isEditable msg) $ do
             let p = fromJust $ msg^.mOriginalPost
             popMode tId
-            editWhich.esEditMode .= Editing p (msg^.mType)
+            which.miEditor.esEditMode .= Editing p (msg^.mType)
             -- If the post that we're editing is an emote, we need
             -- to strip the formatting because that's only there to
             -- indicate that the post is an emote. This is annoying and
@@ -326,7 +301,7 @@ beginEditMessage tId selWhich msgsWhich editWhich = do
             let toEdit = if isEmote msg
                          then removeEmoteFormatting sanitized
                          else sanitized
-            editWhich.esEditor %= applyEdit (insertMany toEdit . clearZipper)
+            which.miEditor.esEditor %= applyEdit (insertMany toEdit . clearZipper)
 
 -- | Tell the server that we have flagged or unflagged a message.
 flagMessage :: PostId -> Bool -> MH ()

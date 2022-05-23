@@ -56,8 +56,6 @@ drawThreadWindow st tId =
                             (ThreadWindowMessages tId cId)
                             tId inMsgSelect
                             False
-                            (ti.miMessageSelect)
-                            (ti.miEditor)
-                            (ti.miMessages)
+                            ti
                             False
                             (ThreadWindowEditorPreview cId)

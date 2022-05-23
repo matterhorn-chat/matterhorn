@@ -13,7 +13,7 @@ import           Matterhorn.Prelude
 
 import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
 import qualified Data.Vector as V
-import           Lens.Micro.Platform ( (.=), to, Traversal' )
+import           Lens.Micro.Platform ( (.=), to, Lens' )
 
 import           Network.Mattermost.Types ( TeamId )
 
@@ -22,9 +22,12 @@ import           Matterhorn.Types
 import           Matterhorn.Util
 
 
-startUrlSelect :: TeamId -> Traversal' ChatState Messages -> Maybe URLListSource -> MH ()
+startUrlSelect :: TeamId
+               -> Lens' ChatState (MessageInterface n i)
+               -> Maybe URLListSource
+               -> MH ()
 startUrlSelect tId which src = do
-    msgs <- use which
+    msgs <- use (which.miMessages)
     let urls = V.fromList $ findUrls msgs
         urlsWithIndexes = V.indexed urls
     pushMode tId UrlSelect

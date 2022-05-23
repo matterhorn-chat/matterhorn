@@ -12,7 +12,7 @@ import           Matterhorn.Prelude
 
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens', Traversal', to )
+import           Lens.Micro.Platform ( Lens', to )
 
 import           Network.Mattermost.Types ( TeamId )
 
@@ -26,18 +26,16 @@ messagesPerPageOperation :: Int
 messagesPerPageOperation = 10
 
 onEventMessageSelect :: TeamId
-                     -> Lens' ChatState MessageSelectState
-                     -> Traversal' ChatState Messages
-                     -> Lens' ChatState (EditState Name)
+                     -> Lens' ChatState (MessageInterface n i)
                      -> Vty.Event
                      -> MH ()
-onEventMessageSelect tId selWhich msgsWhich editWhich =
-    void . handleKeyboardEvent (messageSelectKeybindings tId selWhich msgsWhich editWhich)
+onEventMessageSelect tId which =
+    void . handleKeyboardEvent (messageSelectKeybindings tId which)
 
 onEventMessageSelectDeleteConfirm :: TeamId -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId (Vty.EvKey (Vty.KChar 'y') []) = do
     withCurrentChannel tId $ \cId _ -> do
-        deleteSelectedMessage tId (channelMessageSelect(cId)) (csChannelMessages(cId)) (channelEditor(cId))
+        deleteSelectedMessage tId (csChannelMessageInterface(cId))
         popMode tId
 onEventMessageSelectDeleteConfirm _ (Vty.EvResize {}) = do
     return ()
@@ -45,77 +43,80 @@ onEventMessageSelectDeleteConfirm tId _ = do
     popMode tId
 
 messageSelectKeybindings :: TeamId
-                         -> Lens' ChatState MessageSelectState
-                         -> Traversal' ChatState Messages
-                         -> Lens' ChatState (EditState Name)
+                         -> Lens' ChatState (MessageInterface n i)
                          -> KeyConfig
                          -> KeyHandlerMap
-messageSelectKeybindings tId selWhich msgsWhich editWhich =
-    mkKeybindings (messageSelectKeyHandlers tId selWhich msgsWhich editWhich)
+messageSelectKeybindings tId which =
+    mkKeybindings (messageSelectKeyHandlers tId which)
 
 messageSelectKeyHandlers :: TeamId
-                         -> Lens' ChatState MessageSelectState
-                         -> Traversal' ChatState Messages
-                         -> Lens' ChatState (EditState Name)
+                         -> Lens' ChatState (MessageInterface n i)
                          -> [KeyEventHandler]
-messageSelectKeyHandlers tId selWhich msgsWhich editWhich =
+messageSelectKeyHandlers tId which =
     [ mkKb CancelEvent "Cancel message selection" $ do
         popMode tId
 
-    , mkKb SelectUpEvent "Select the previous message" $ messageSelectUp selWhich msgsWhich
-    , mkKb SelectDownEvent "Select the next message" $ messageSelectDown selWhich msgsWhich
+    , mkKb SelectUpEvent "Select the previous message" $
+        messageSelectUp which
+
+    , mkKb SelectDownEvent "Select the next message" $
+        messageSelectDown which
+
     , mkKb ScrollTopEvent "Scroll to top and select the oldest message" $
-        messageSelectFirst selWhich msgsWhich
+        messageSelectFirst which
+
     , mkKb ScrollBottomEvent "Scroll to bottom and select the latest message" $
-        messageSelectLast selWhich msgsWhich
+        messageSelectLast which
+
     , mkKb
         PageUpEvent
         (T.pack $ "Move the cursor up by " <> show messagesPerPageOperation <> " messages")
-        (messageSelectUpBy selWhich msgsWhich messagesPerPageOperation)
+        (messageSelectUpBy which messagesPerPageOperation)
+
     , mkKb
         PageDownEvent
         (T.pack $ "Move the cursor down by " <> show messagesPerPageOperation <> " messages")
-        (messageSelectDownBy selWhich msgsWhich messagesPerPageOperation)
+        (messageSelectDownBy which messagesPerPageOperation)
 
     , mkKb OpenMessageURLEvent "Open all URLs in the selected message" $
-        openSelectedMessageURLs selWhich msgsWhich
+        openSelectedMessageURLs which
 
     , mkKb ReplyMessageEvent "Begin composing a reply to the selected message" $
-         beginReplyCompose tId selWhich msgsWhich editWhich
+         beginReplyCompose tId which
 
     , mkKb EditMessageEvent "Begin editing the selected message" $
-         beginEditMessage tId selWhich msgsWhich editWhich
+         beginEditMessage tId which
 
     , mkKb DeleteMessageEvent "Delete the selected message (with confirmation)" $
-         beginConfirmDeleteSelectedMessage tId selWhich msgsWhich
+         beginConfirmDeleteSelectedMessage tId which
 
     , mkKb YankMessageEvent "Copy a verbatim section or message to the clipboard" $
-         yankSelectedMessageVerbatim tId selWhich msgsWhich
+         yankSelectedMessageVerbatim tId which
 
     , mkKb YankWholeMessageEvent "Copy an entire message to the clipboard" $
-         yankSelectedMessage tId selWhich msgsWhich
+         yankSelectedMessage tId which
 
     , mkKb PinMessageEvent "Toggle whether the selected message is pinned" $
-         pinSelectedMessage selWhich msgsWhich
+         pinSelectedMessage which
 
     , mkKb FlagMessageEvent "Flag the selected message" $
-         flagSelectedMessage selWhich msgsWhich
+         flagSelectedMessage which
 
     , mkKb ViewMessageEvent "View the selected message" $
-         viewSelectedMessage tId selWhich msgsWhich
+         viewSelectedMessage tId which
 
     , mkKb OpenThreadEvent "Open the selected message's thread in a thread window" $ do
-         openThreadWindow tId selWhich msgsWhich
+         openThreadWindow tId which
 
     , mkKb FillGapEvent "Fetch messages for the selected gap" $
-         fillSelectedGap tId selWhich msgsWhich
+         fillSelectedGap tId which
 
     , mkKb ReactToMessageEvent "Post a reaction to the selected message" $ do
-         mMsg <- use (to (getSelectedMessage selWhich msgsWhich))
+         mMsg <- use (to (getSelectedMessage which))
          case mMsg of
              Nothing -> return ()
              Just m -> enterReactionEmojiListOverlayMode tId m
 
     , mkKb CopyPostLinkEvent "Copy a post's link to the clipboard" $
-         copyPostLink tId selWhich msgsWhich
+         copyPostLink tId which
     ]

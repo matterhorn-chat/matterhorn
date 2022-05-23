@@ -8,7 +8,7 @@ import           Matterhorn.Prelude
 import           Brick.Main ( viewportScroll, vScrollBy )
 import           Brick.Widgets.Edit
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens', Traversal' )
+import           Lens.Micro.Platform ( Lens' )
 
 import           Network.Mattermost.Types ( TeamId )
 
@@ -39,8 +39,7 @@ onEventMain tId =
                         case mCid of
                             Nothing -> return False
                             Just cId ->
-                                handleKeyboardEvent (messageListingKeybindings tId (channelMessageSelect(cId))
-                                                                                   (csChannelMessages(cId))
+                                handleKeyboardEvent (messageListingKeybindings tId (csChannelMessageInterface(cId))
                                                                                    (Just $ FromChannel tId cId)
                                                                                    (pushMode tId $ ChannelMessageSelect cId))
                                                     e
@@ -60,14 +59,13 @@ mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
 messageListingKeybindings :: TeamId
-                          -> Lens' ChatState MessageSelectState
-                          -> Traversal' ChatState Messages
+                          -> Lens' ChatState (MessageInterface n i)
                           -> Maybe URLListSource
                           -> MH ()
                           -> KeyConfig
                           -> KeyHandlerMap
-messageListingKeybindings tId selWhich msgsWhich urlSrc changeMode =
-    mkKeybindings (messageListingKeyHandlers tId selWhich msgsWhich urlSrc changeMode)
+messageListingKeybindings tId which urlSrc changeMode =
+    mkKeybindings (messageListingKeyHandlers tId which urlSrc changeMode)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]
 mainKeyHandlers tId =
@@ -195,23 +193,22 @@ channelEditorKeyHandlers editWhich =
     ]
 
 messageListingKeyHandlers :: TeamId
-                          -> Lens' ChatState MessageSelectState
-                          -> Traversal' ChatState Messages
+                          -> Lens' ChatState (MessageInterface n i)
                           -> Maybe URLListSource
                           -> MH ()
                           -> [KeyEventHandler]
-messageListingKeyHandlers tId selWhich msgsWhich urlSrc changeMode =
+messageListingKeyHandlers tId which urlSrc changeMode =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
-        beginMessageSelect selWhich msgsWhich changeMode
+        beginMessageSelect which changeMode
 
     , mkKb PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect selWhich msgsWhich changeMode
+        beginMessageSelect which changeMode
 
     , mkKb SelectOldestMessageEvent "Scroll to top of message list" $ do
-        beginMessageSelect selWhich msgsWhich changeMode
-        messageSelectFirst selWhich msgsWhich
+        beginMessageSelect which changeMode
+        messageSelectFirst which
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startUrlSelect tId msgsWhich urlSrc
+        startUrlSelect tId which urlSrc
     ]

@@ -447,13 +447,13 @@ keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk <>
-                         messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing changeModeThunk)
+                         messageListingKeyHandlers teamIdThunk whichThunk Nothing changeModeThunk)
     , ("Message Editor", channelEditorKeyHandlers editWhichThunk)
     , ("Text Editing", editingKeyHandlers editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
-    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk editWhichThunk)
+    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk whichThunk)
     , ("Thread Window", threadWindowKeyHandlers teamIdThunk <>
-                        messageListingKeyHandlers teamIdThunk selWhichThunk msgsWhichThunk Nothing changeModeThunk)
+                        messageListingKeyHandlers teamIdThunk whichThunk Nothing changeModeThunk)
     , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
     , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
@@ -479,11 +479,8 @@ editorThunk = error "BUG: should not evaluate editorThunk"
 editWhichThunk :: Lens' ChatState (EditState Name)
 editWhichThunk = error "BUG: should not evaluate editWhichThunk"
 
-selWhichThunk :: Lens' ChatState MessageSelectState
-selWhichThunk = error "BUG: should not evaluate selWhichThunk"
-
-msgsWhichThunk :: Lens' ChatState Messages
-msgsWhichThunk = error "BUG: should not evaluate msgsWhichThunk"
+whichThunk :: Lens' ChatState (MessageInterface n i)
+whichThunk = error "BUG: should not evaluate whichThunk"
 
 changeModeThunk :: MH ()
 changeModeThunk = error "BUG: should not evaluate changeModeThunk"

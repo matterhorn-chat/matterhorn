@@ -1796,9 +1796,9 @@ withCurrentChannel' tId f = do
 csCurrentTeamId :: SimpleGetter ChatState (Maybe TeamId)
 csCurrentTeamId = csTeamZipper.to Z.focus
 
-csChannelMessageInterface :: ChannelId -> Traversal' ChatState ChannelMessageInterface
+csChannelMessageInterface :: ChannelId -> Lens' ChatState ChannelMessageInterface
 csChannelMessageInterface cId =
-    csChannel(cId).ccMessageInterface
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface
 
 channelEditor :: ChannelId -> Lens' ChatState (EditState Name)
 channelEditor cId =

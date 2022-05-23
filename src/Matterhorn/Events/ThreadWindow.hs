@@ -30,10 +30,9 @@ onEventThreadWindow tId ev = do
 
     case st^.ti.miMode of
         MessageSelect ->
-            onEventMessageSelect tId (ti.miMessageSelect) (ti.miMessages) (ti.miEditor) ev
+            onEventMessageSelect tId ti ev
         Compose -> do
-            let messageListingBindings = messageListingKeybindings tId (ti.miMessageSelect)
-                                                                       (ti.miMessages)
+            let messageListingBindings = messageListingKeybindings tId ti
                                                                        (Just $ FromThreadIn $ st^.ti.miChannelId)
                                                                        (ti.miMode .= MessageSelect)
             void $ handleEventWith [ handleKeyboardEvent (threadWindowKeybindings tId)

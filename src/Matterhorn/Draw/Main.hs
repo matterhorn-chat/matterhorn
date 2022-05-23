@@ -234,23 +234,23 @@ doHighlightMisspellings hSet misspellings contents =
     in vBox $ handleLine <$> contents
 
 userInputArea :: ChatState
-              -> SimpleGetter ChatState (EditState Name)
+              -> Lens' ChatState (EditState Name)
               -> HighlightSet
               -> Widget Name
-userInputArea st editWhich hs =
+userInputArea st which hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "
         editPrompt = "edit> "
-        showReplyPrompt = st^.editWhich.esShowReplyPrompt
-        prompt = txt $ case st^.editWhich.esEditMode of
+        showReplyPrompt = st^.which.esShowReplyPrompt
+        prompt = txt $ case st^.which.esEditMode of
             Replying {} ->
                 if showReplyPrompt then replyPrompt else normalPrompt
             Editing {}  ->
                 editPrompt
             NewPost ->
                 normalPrompt
-        editor = st^.editWhich.esEditor
-        inputBox = renderEditor (drawEditorContents st editWhich hs) True editor
+        editor = st^.which.esEditor
+        inputBox = renderEditor (drawEditorContents st which hs) True editor
         curContents = getEditContents editor
         multilineContent = length curContents > 1
         multilineHints =
@@ -263,7 +263,7 @@ userInputArea st editWhich hs =
                          " to finish."
                  ]
 
-        replyDisplay = case st^.editWhich.esEditMode of
+        replyDisplay = case st^.which.esEditMode of
             Replying msg _ | showReplyPrompt ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
@@ -293,7 +293,7 @@ userInputArea st editWhich hs =
         kc = st^.csResources.crConfiguration.configUserKeysL
         multiLineToggleKey = ppBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
-        commandBox = case st^.editWhich.esEphemeral.eesMultiline of
+        commandBox = case st^.which.esEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
@@ -366,12 +366,11 @@ renderMessageListing :: ChatState
                      -> Bool
                      -> TeamId
                      -> HighlightSet
-                     -> Traversal' ChatState Messages
-                     -> Lens' ChatState MessageSelectState
+                     -> Lens' ChatState (MessageInterface Name i)
                      -> Bool
                      -> Name
                      -> Widget Name
-renderMessageListing st inMsgSelect showNewMsgLine tId hs getMessages selWhich renderReplyIndent region =
+renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region =
     messages
     where
     mcId = st^.(csCurrentChannelId tId)
@@ -384,7 +383,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs getMessages selWhich r
             Just cId ->
                 if inMsgSelect
                 then freezeBorders $
-                     renderMessagesWithSelect cId (st^.selWhich) (buildMessages cId)
+                     renderMessagesWithSelect cId (st^.which.miMessageSelect) (buildMessages cId)
                 else cached (ChannelMessages cId) $
                      freezeBorders $
                      renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region $
@@ -422,7 +421,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs getMessages selWhich r
         let cutoff = if showNewMsgLine
                      then getNewMessageCutoff cId st
                      else Nothing
-            ms = filterMessageListing st getMessages
+            ms = filterMessageListing st (which.miMessages)
         in if F.null ms
            then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
            else insertTransitions ms
@@ -551,12 +550,10 @@ connectionLayer st =
 
 messageSelectBottomBar :: ChatState
                        -> TeamId
-                       -> Lens' ChatState MessageSelectState
-                       -> Lens' ChatState (EditState Name)
-                       -> Traversal' ChatState Messages
+                       -> Lens' ChatState (MessageInterface Name i)
                        -> Widget Name
-messageSelectBottomBar st tId selWhich editWhich msgsWhich =
-    case getSelectedMessage selWhich msgsWhich st of
+messageSelectBottomBar st tId which =
+    case getSelectedMessage which st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
@@ -572,7 +569,7 @@ messageSelectBottomBar st tId selWhich editWhich msgsWhich =
                 hasURLs = numURLs > 0
                 openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
                 hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId selWhich msgsWhich editWhich)
+                ev = keyEventBindings st (messageSelectKeybindings tId which)
                 -- make sure these keybinding pieces are up-to-date!
                 options = [ ( not . isGap
                             , ev YankWholeMessageEvent
@@ -783,9 +780,7 @@ mainInterface st mode mtId =
                                                        (ChannelMessages cId)
                                                        tId inMsgSelect
                                                        True
-                                                       (channelMessageSelect(cId))
-                                                       (channelEditor(cId))
-                                                       (csChannelMessages(cId))
+                                                       (csChannelMessageInterface(cId))
                                                        True
                                                        (MessagePreviewViewport tId)
                                 ]
@@ -796,25 +791,23 @@ drawMessageInterface :: ChatState
                      -> TeamId
                      -> Bool
                      -> Bool
-                     -> Lens' ChatState MessageSelectState
-                     -> Lens' ChatState (EditState Name)
-                     -> Traversal' ChatState Messages
+                     -> Lens' ChatState (MessageInterface Name i)
                      -> Bool
                      -> Name
                      -> Widget Name
-drawMessageInterface st hs region tId inMsgSelect showNewMsgLine selWhich editWhich msgsWhich renderReplyIndent previewVpName =
+drawMessageInterface st hs region tId inMsgSelect showNewMsgLine which renderReplyIndent previewVpName =
     vBox [ interfaceContents
          , bottomBorder
-         , inputPreview st editWhich tId previewVpName hs
-         , userInputArea st editWhich hs
+         , inputPreview st (which.miEditor) tId previewVpName hs
+         , userInputArea st (which.miEditor) hs
          ]
     where
     interfaceContents =
-        renderMessageListing st inMsgSelect showNewMsgLine tId hs msgsWhich selWhich renderReplyIndent region
+        renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region
 
     bottomBorder =
         if inMsgSelect
-        then messageSelectBottomBar st tId selWhich editWhich msgsWhich
+        then messageSelectBottomBar st tId which
         else hBox [ showAttachmentCount
                   , hBorder
                   , showTypingUsers
@@ -845,7 +838,7 @@ drawMessageInterface st hs region tId inMsgSelect showNewMsgLine selWhich editWh
 
     kc = st^.csResources.crConfiguration.configUserKeysL
     showAttachmentCount =
-        let count = length $ listElements $ st^.editWhich.esAttachmentList
+        let count = length $ listElements $ st^.which.miEditor.esAttachmentList
         in if count == 0
            then emptyWidget
            else hBox [ borderElem bsHorizontal
