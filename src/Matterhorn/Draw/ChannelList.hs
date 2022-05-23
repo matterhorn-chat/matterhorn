@@ -24,7 +24,9 @@ import           Matterhorn.Prelude
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center (hCenter)
+import           Brick.Widgets.Edit ( editContentsL )
 import qualified Data.Text as T
+import qualified Data.Text.Zipper as TZ
 import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform (non)
 
@@ -185,9 +187,11 @@ mkChannelEntryData st tId e =
                 else case chan^.ccMessageInterface.miEditor.esEphemeral.eesInputHistoryPosition of
                     Just _ -> prevEditSigil
                     Nothing ->
-                        case chan^.ccMessageInterface.miEditor.esEphemeral.eesLastInput of
-                            ("", _) -> fromMaybe "" normalSigil
-                            _       -> prevEditSigil
+                        let emptyEditor = T.null $ T.concat $ TZ.getText $
+                                          chan^.ccMessageInterface.miEditor.esEditor.editContentsL
+                        in if emptyEditor
+                           then fromMaybe "" normalSigil
+                           else prevEditSigil
         mentions = chan^.ccInfo.cdMentionCount
 
 -- | Render an individual Channel List entry (in Normal mode) with
