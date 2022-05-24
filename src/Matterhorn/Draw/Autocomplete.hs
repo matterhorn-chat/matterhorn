@@ -73,12 +73,22 @@ renderAutocompleteBox st mCurChan which ac =
                     Just w -> hBorderWithLabel w
                     _ -> hBorder
         curUser = myUsername st
+        cfg = st^.csResources.crConfiguration
+        showingChanList = configShowChannelList cfg
+        chanListWidth = configChannelListWidth cfg
+        maybeLimit w =
+            if not showingChanList
+            then w
+            else Widget Greedy Greedy $ do
+                ctx <- getContext
+                render $ hLimit (ctx^.availWidthL - (1 + chanListWidth)) w
 
     in if numResults == 0
        then emptyWidget
        else Widget Greedy Greedy $ do
            let verticalOffset = -1 * (visibleHeight + 2)
            render $ relativeTo editorName (Location (-2, verticalOffset)) $
+                    maybeLimit $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
                            renderList (renderAutocompleteAlternative curUser) True matchList
