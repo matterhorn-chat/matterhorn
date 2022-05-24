@@ -149,6 +149,8 @@ setupState mkVty mLogLocation config = do
             Right e -> return $ Right e
             Left _ -> loadEmoji =<< bundledEmojiJsonPath
 
+    spResult <- maybeStartSpellChecker config
+
     let cr = ChatResources { _crSession             = session
                            , _crWebsocketThreadId   = Nothing
                            , _crConn                = cd
@@ -164,6 +166,7 @@ setupState mkVty mLogLocation config = do
                            , _crSyntaxMap           = mempty
                            , _crLogManager          = logMgr
                            , _crEmoji               = emoji
+                           , _crSpellChecker        = spResult
                            }
 
     st <- initializeState cr initialTeamId teams me

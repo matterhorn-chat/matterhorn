@@ -146,7 +146,6 @@ module Matterhorn.Types
   , tsPendingChannelChange
   , tsRecentChannel
   , tsReturnChannel
-  , tsGlobalEditState
   , tsTeam
   , tsChannelSelectState
   , tsUrlList
@@ -178,6 +177,7 @@ module Matterhorn.Types
   , csChannelListOrientation
   , csResources
   , csLastMouseDownEvent
+  , csGlobalEditState
   , csVerbatimTruncateSetting
   , csCurrentChannelId
   , csCurrentTeamId
@@ -204,7 +204,6 @@ module Matterhorn.Types
   , GlobalEditState(..)
   , emptyGlobalEditState
   , gedYankBuffer
-  , gedSpellChecker
 
   , PostListOverlayState(..)
   , postListSelected
@@ -239,6 +238,7 @@ module Matterhorn.Types
   , crConfiguration
   , crSyntaxMap
   , crLogManager
+  , crSpellChecker
   , crEmoji
   , getSession
   , getResourceSession
@@ -1046,19 +1046,18 @@ data ChatResources =
                   , _crSyntaxMap           :: SyntaxMap
                   , _crLogManager          :: LogManager
                   , _crEmoji               :: EmojiCollection
+                  , _crSpellChecker        :: Maybe Aspell
                   }
 
 -- | The 'GlobalEditState' value contains state not specific to any
 -- single editor.
 data GlobalEditState =
     GlobalEditState { _gedYankBuffer :: Text
-                    , _gedSpellChecker :: Maybe Aspell
                     }
 
 emptyGlobalEditState :: GlobalEditState
 emptyGlobalEditState =
     GlobalEditState { _gedYankBuffer   = ""
-                    , _gedSpellChecker = Nothing
                     }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
@@ -1177,6 +1176,8 @@ data ChatState =
               -- for other per-channel state) since keeping it
               -- under the InputHistory banner lets us use a nicer
               -- startup/shutdown disk file management API.
+              , _csGlobalEditState :: GlobalEditState
+              -- ^ Bits of global state common to all editors.
               }
 
 data URLList =
@@ -1212,8 +1213,6 @@ data TeamState =
               , _tsReturnChannel :: Maybe ChannelId
               -- ^ The channel to return to after visiting one or more
               -- unread channels.
-              , _tsGlobalEditState :: GlobalEditState
-              -- ^ Bits of global state common to all editors.
               , _tsTeam :: Team
               -- ^ The team data.
               , _tsChannelSelectState :: ChannelSelectState
@@ -1697,6 +1696,7 @@ newState (StartupStateInfo {..}) =
     in applyTeamOrderPref (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
        ChatState { _csResources                   = startupStateResources
                  , _csLastMouseDownEvent          = Nothing
+                 , _csGlobalEditState             = emptyGlobalEditState
                  , _csVerbatimTruncateSetting     = configTruncateVerbatimBlocks config
                  , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
                                                     mkTeamZipper startupStateTeams

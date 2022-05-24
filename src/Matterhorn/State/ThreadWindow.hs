@@ -46,7 +46,7 @@ openThreadWindow tId cId pId = do
                       let mMsg = getMessageForPostId st pId
                       case mMsg of
                           Just rootMsg | Just rootPost <- rootMsg^.mOriginalPost -> do
-                              checker <- use (csTeam(tId).tsGlobalEditState.gedSpellChecker)
+                              checker <- use (csResources.crSpellChecker)
                               ti <- liftIO $ newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs
                               csTeam(tId).tsThreadInterface .= Just ti
                               when (m /= ThreadWindow cId) $

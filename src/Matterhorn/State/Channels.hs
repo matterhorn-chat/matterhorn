@@ -330,10 +330,7 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                 Just tId -> setFocus tId (getId nc)
         Nothing -> do
             eventQueue <- use (csResources.crEventQueue)
-            mtId <- use csCurrentTeamId
-            spellChecker <- case mtId of
-                Nothing -> return Nothing
-                Just tId -> use (csTeam(tId).tsGlobalEditState.gedSpellChecker)
+            spellChecker <- use (csResources.crSpellChecker)
 
             -- Create a new ClientChannel structure
             cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>

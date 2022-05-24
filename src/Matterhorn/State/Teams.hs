@@ -52,7 +52,7 @@ import           Matterhorn.State.Async
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import {-# SOURCE #-} Matterhorn.State.Messages
-import           Matterhorn.State.Setup.Threads ( maybeStartSpellChecker, newSpellCheckTimer )
+import           Matterhorn.State.Setup.Threads ( newSpellCheckTimer )
 import qualified Matterhorn.Zipper as Z
 
 
@@ -210,13 +210,10 @@ buildTeamState cr me team = do
                   then Seq.filter isTownSquare userChans
                   else lastSelectedChans
 
-    -- Start the spell checker and spell check timer, if configured
-    spResult <- maybeStartSpellChecker config
-
     -- Since the only channel we are dealing with is by construction the
     -- last channel, we don't have to consider other cases here:
     chanPairs <- forM (toList chans) $ \c -> do
-        cChannel <- makeClientChannel eventQueue spResult (userId me) (Just tId) c
+        cChannel <- makeClientChannel eventQueue (cr^.crSpellChecker) (userId me) (Just tId) c
         return (getId c, cChannel)
 
     now <- getCurrentTime
@@ -226,7 +223,7 @@ buildTeamState cr me team = do
         chanZip = Z.fromList chanIds
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
 
-    let ts = newTeamState config team chanZip spResult
+    let ts = newTeamState config team chanZip
     return (ts, clientChans)
 
 -- | Add a new 'TeamState' and corresponding channels to the application
@@ -311,14 +308,12 @@ newMessageInterface cId pId msgs es target =
 newTeamState :: Config
              -> Team
              -> Z.Zipper ChannelListGroup ChannelListEntry
-             -> Maybe Aspell
              -> TeamState
-newTeamState config team chanList spellChecker =
+newTeamState config team chanList =
     let tId = teamId team
     in TeamState { _tsMode                     = Main
                  , _tsModeStack                = []
                  , _tsFocus                    = chanList
-                 , _tsGlobalEditState          = emptyGlobalEditState { _gedSpellChecker = spellChecker }
                  , _tsTeam                     = team
                  , _tsUrlList                  = URLList { _ulList = list (UrlList tId) mempty 2
                                                          , _ulSource = Nothing

@@ -173,17 +173,15 @@ editingKeyHandlers editor =
     "Move the cursor to the end of the input" $ do
     editor %= applyEdit gotoEnd
   , mkKb EditorKillToEolEvent
-    "Kill the line to the right of the current position and copy it" $
-      withCurrentTeam $ \tId -> do
-          z <- use (editor.editContentsL)
-          let restOfLine = Z.currentLine (Z.killToBOL z)
-          csTeam(tId).tsGlobalEditState.gedYankBuffer .= restOfLine
-          editor %= applyEdit Z.killToEOL
+    "Kill the line to the right of the current position and copy it" $ do
+      z <- use (editor.editContentsL)
+      let restOfLine = Z.currentLine (Z.killToBOL z)
+      csGlobalEditState.gedYankBuffer .= restOfLine
+      editor %= applyEdit Z.killToEOL
   , mkKb EditorYankEvent
-    "Paste the current buffer contents at the cursor" $
-      withCurrentTeam $ \tId -> do
-          buf <- use (csTeam(tId).tsGlobalEditState.gedYankBuffer)
-          editor %= applyEdit (Z.insertMany buf)
+    "Paste the current buffer contents at the cursor" $ do
+        buf <- use (csGlobalEditState.gedYankBuffer)
+        editor %= applyEdit (Z.insertMany buf)
   ]
 
 getEditorContent :: Lens' ChatState (EditState Name) -> MH Text
