@@ -16,6 +16,7 @@ import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( sortBy, partition )
 import qualified Data.Map as M
+import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as Z
@@ -87,23 +88,27 @@ getCompleterForInput :: Traversal' ChatState (EditState Name)
 getCompleterForInput which ctx = do
     maybeZipper <- preuse (which.esEditor.editContentsL)
     mmTid <- preuse (which.esTeamId)
-    case (maybeZipper, mmTid) of
-        (Just z, Just mTid) -> do
+    tId <- do
+        case mmTid of
+            Just (Just i) -> return i
+            _ -> fromJust <$> use csCurrentTeamId
+    case maybeZipper of
+        Just z -> do
             let col = snd $ Z.cursorPosition z
                 curLine = Z.currentLine z
 
             return $ case wordAtColumn col curLine of
                 Just (startCol, w)
                     | userSigil `T.isPrefixOf` w ->
-                        Just (ACUsers, doUserAutoCompletion which, T.tail w)
-                    | normalChannelSigil `T.isPrefixOf` w, Just tId <- mTid ->
+                        Just (ACUsers, doUserAutoCompletion which tId, T.tail w)
+                    | normalChannelSigil `T.isPrefixOf` w ->
                         Just (ACChannels, doChannelAutoCompletion tId which, T.tail w)
                     | ":" `T.isPrefixOf` w && autocompleteManual ctx ->
                         Just (ACEmoji, doEmojiAutoCompletion which, T.tail w)
                     | "```" `T.isPrefixOf` w ->
                         Just (ACCodeBlockLanguage, doSyntaxAutoCompletion which, T.drop 3 w)
                     | "/" `T.isPrefixOf` w && startCol == 0 ->
-                        Just (ACCommands, doCommandAutoCompletion which, T.tail w)
+                        Just (ACCommands, doCommandAutoCompletion which tId, T.tail w)
                 _ -> Nothing
         _ -> return Nothing
 
@@ -185,11 +190,12 @@ isDeletedCommand :: Command -> Bool
 isDeletedCommand cmd = commandDeleteAt cmd > commandCreateAt cmd
 
 doCommandAutoCompletion :: Traversal' ChatState (EditState Name)
+                        -> TeamId
                         -> AutocompletionType
                         -> AutocompleteContext
                         -> Text
                         -> MH ()
-doCommandAutoCompletion which ty ctx searchString = do
+doCommandAutoCompletion which tId ty ctx searchString = do
     session <- getSession
 
     mCache <- preuse (which.esAutocomplete._Just.acCachedResponses)
@@ -223,18 +229,13 @@ doCommandAutoCompletion which ty ctx searchString = do
             lowerSearch `T.isInfixOf` (T.toLower desc)
         matches _ = False
 
-    mmTid <- preuse (which.esTeamId)
-    let mTid = join mmTid
-
     if (isNothing entry || (mActiveTy /= (Just ACCommands)))
        then doAsyncWith Preempt $ do
                 let clientAlts = mkAlt <$> commandList
                     mkAlt (Cmd name desc args _) =
                         (Client, name, printArgSpec args, desc)
 
-                serverCommands <- case mTid of
-                    Nothing -> return mempty
-                    Just tId -> MM.mmListCommandsForTeam tId False session
+                serverCommands <- MM.mmListCommandsForTeam tId False session
 
                 let filteredServerCommands =
                         filter (\c -> not (hiddenCommand c || isDeletedCommand c)) $
@@ -281,18 +282,18 @@ compareCommandAlts s (CommandCompletion _ nameA _ _)
 compareCommandAlts _ _ _ = LT
 
 doUserAutoCompletion :: Traversal' ChatState (EditState Name)
+                     -> TeamId
                      -> AutocompletionType
                      -> AutocompleteContext
                      -> Text
                      -> MH ()
-doUserAutoCompletion which ty ctx searchString = do
+doUserAutoCompletion which tId ty ctx searchString = do
     session <- getSession
     myUid <- gets myUserId
-    Just mTid <- preuse (which.esTeamId)
     Just cId <- preuse (which.esChannelId)
     withCachedAutocompleteResults which ctx ty searchString $
         doAsyncWith Preempt $ do
-            ac <- MM.mmAutocompleteUsers mTid (Just cId) searchString session
+            ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) searchString session
 
             let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
                 alts = F.toList $
