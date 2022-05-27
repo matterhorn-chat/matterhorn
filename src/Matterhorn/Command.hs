@@ -364,8 +364,8 @@ execMMCommand tId name rest = do
         Just err ->
           mhError $ GenericError ("Error running command: " <> err)
 
-dispatchCommand :: Maybe MM.TeamId -> Text -> MH ()
-dispatchCommand mTid cmd =
+dispatchCommand :: MM.TeamId -> Text -> MH ()
+dispatchCommand tId cmd =
   case unwordHead cmd of
     Just (x, xs)
       | matchingCmds <- [ c
@@ -373,9 +373,7 @@ dispatchCommand mTid cmd =
                         , name == x
                         ] -> go [] matchingCmds
       where go [] [] = do
-              case mTid of
-                  Nothing -> return ()
-                  Just tId -> execMMCommand tId x xs
+              execMMCommand tId x xs
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])

@@ -8,4 +8,4 @@ import Matterhorn.Types ( MH, Cmd, CmdArgs )
 
 commandList :: [Cmd]
 printArgSpec :: CmdArgs a -> Text
-dispatchCommand :: Maybe TeamId -> Text -> MH ()
+dispatchCommand :: TeamId -> Text -> MH ()

@@ -219,8 +219,11 @@ handleInputSubmission editWhich content = do
 
     case T.uncons content of
       Just ('/', cmd) -> do
-          mTid <- use (editWhich.esTeamId)
-          dispatchCommand mTid cmd
+          tId <- do
+              mTid <- use (editWhich.esTeamId)
+              Just curTid <- use csCurrentTeamId
+              return $ fromMaybe curTid mTid
+          dispatchCommand tId cmd
       _ -> do
           attachments <- use (editWhich.esAttachmentList.L.listElementsL)
           mode <- use (editWhich.esEditMode)
