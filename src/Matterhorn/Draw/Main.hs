@@ -93,10 +93,12 @@ mainInterface st mode mtId =
                 let
                     hs = getHighlightSet st tId
 
-                    channelHeader mChan =
+                    channelHeader Nothing =
+                        txt " "
+                    channelHeader (Just chan) =
                         withDefAttr channelHeaderAttr $
                         padRight Max $
-                        renderChannelHeader st tId hs mChan
+                        renderChannelHeader st tId hs chan
 
                     focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel &&
                               threadShowing
@@ -159,10 +161,8 @@ teamList st =
                  , hBorder
                  ]
 
-renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> Maybe ClientChannel -> Widget Name
-renderChannelHeader _ _ _ Nothing =
-    txt " "
-renderChannelHeader st tId hs (Just chan) =
+renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
+renderChannelHeader st tId hs chan =
     let chnType = chan^.ccInfo.cdType
         topicStr = chan^.ccInfo.cdHeader
         userHeader u = let s = T.intercalate " " $ filter (not . T.null) parts
