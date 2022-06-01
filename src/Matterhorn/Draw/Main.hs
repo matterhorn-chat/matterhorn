@@ -98,7 +98,9 @@ mainInterface st mode mtId =
                         padRight Max $
                         renderChannelHeader st tId hs mChan
 
-                    focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel
+                    focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel &&
+                              threadShowing
+                    threadShowing = isJust $ st^.csTeam(tId).tsThreadInterface
                     maybeSubdue = if mode == ChannelSelect
                                   then forceAttr ""
                                   else id
