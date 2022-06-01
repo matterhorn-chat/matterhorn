@@ -62,6 +62,124 @@ drawMain st mode =
     , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
     ]
 
+connectionLayer :: ChatState -> Widget Name
+connectionLayer st =
+    case st^.csConnectionStatus of
+        Connected -> emptyWidget
+        Disconnected ->
+            Widget Fixed Fixed $ do
+                ctx <- getContext
+                let aw = ctx^.availWidthL
+                    w = length msg + 2
+                    msg = "NOT CONNECTED"
+                render $ translateBy (Location (max 0 (aw - w), 0)) $
+                         withDefAttr errorMessageAttr $
+                         border $ str msg
+
+mainInterface :: ChatState -> Mode -> Maybe TeamId -> Widget Name
+mainInterface st mode mtId =
+    vBox [ teamList st
+         , body
+         ]
+    where
+    showChannelList =
+        st^.csResources.crConfiguration.configShowChannelListL ||
+        case mtId of
+            Nothing -> True
+            Just {} -> mode == ChannelSelect
+    body = if showChannelList
+           then case st^.csChannelListOrientation of
+               ChannelListLeft ->
+                   hBox [channelList, vBorder, mainDisplay]
+               ChannelListRight ->
+                   hBox [mainDisplay, vBorder, channelList]
+           else mainDisplay
+    channelList = channelListMaybeVlimit mode $
+                  hLimit channelListWidth $ case mtId of
+                      Nothing -> fill ' '
+                      Just tId -> renderChannelList st tId
+    channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
+    channelListMaybeVlimit ChannelSelect w =
+        Widget (hSize w) (vSize w) $ do
+            ctx <- getContext
+            render $ vLimit (ctx^.availHeightL - 1) w
+    channelListMaybeVlimit _ w = w
+
+    mainDisplay =
+        case mtId of
+            Nothing ->
+                vBox [ fill ' '
+                     , hBorder
+                     , vLimit 1 $ fill ' '
+                     ]
+            Just tId ->
+                let
+                    hs = getHighlightSet st tId
+
+                    channelHeader mChan =
+                        withDefAttr channelHeaderAttr $
+                        padRight Max $
+                        renderChannelHeader st tId hs mChan
+
+                    focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel
+                    maybeSubdue = if mode == ChannelSelect
+                                  then forceAttr ""
+                                  else id
+                    channelMessageIface cId = drawMessageInterface st hs
+                                                       (ChannelMessages cId)
+                                                       tId
+                                                       True
+                                                       (csChannelMessageInterface(cId))
+                                                       True
+                                                       (MessagePreviewViewport tId)
+                                                       focused
+
+                    maybeThreadIface = fromMaybe emptyWidget $ do
+                        _ <- st^.csTeam(tId).tsThreadInterface
+                        return $ drawThreadWindow st tId
+
+                in case st^.csCurrentChannelId(tId) of
+                    Nothing -> fill ' '
+                    Just cId ->
+                        let ch = st^?csChannel(cId)
+                        in vBox [ channelHeader ch
+                                , hBorder
+                                , maybeSubdue $ channelMessageIface cId
+                                , maybeSubdue maybeThreadIface
+                                ]
+
+teamList :: ChatState -> Widget Name
+teamList st =
+    let curTid = st^.csCurrentTeamId
+        z = st^.csTeamZipper
+        pos = fromJust $ Z.position z
+        teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
+        numTeams = length teams
+        entries = mkEntry <$> teams
+        mkEntry ts =
+            let tId = teamId $ _tsTeam ts
+                unread = uCount > 0
+                uCount = unreadCount tId
+                tName  = ClickableTeamListEntry tId
+            in (if Just tId == curTid
+                   then visible . withDefAttr currentTeamAttr
+                   else if unread
+                        then withDefAttr unreadChannelAttr
+                        else id) $
+               clickable tName $ txt $
+               (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts)
+        unreadCount tId = sum $ fmap (nonDMChannelListGroupUnread . fst) $
+                          Z.toList $ st^.csTeam(tId).tsFocus
+    in if numTeams == 1
+       then emptyWidget
+       else vBox [ hBox [ padRight (Pad 1) $ txt $ T.pack $ "Teams (" <> show (pos + 1) <> "/" <> show numTeams <> "):"
+                        , vLimit 1 $ viewport TeamList Horizontal $
+                          hBox $
+                          intersperse (txt " ") entries
+                        ]
+                 , hBorder
+                 ]
+
 previewFromInput :: TeamBaseURL -> Maybe MessageType -> UserId -> Text -> Maybe Message
 previewFromInput _ _ _ s | s == T.singleton cursorSentinel = Nothing
 previewFromInput baseUrl overrideTy uId s =
@@ -502,52 +620,6 @@ drawChannelSelectPrompt st tId =
                 (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
                 (renderEditor (txt . T.concat) True e)
 
-teamList :: ChatState -> Widget Name
-teamList st =
-    let curTid = st^.csCurrentTeamId
-        z = st^.csTeamZipper
-        pos = fromJust $ Z.position z
-        teams = (\tId -> st^.csTeam(tId)) <$> (concat $ snd <$> Z.toList z)
-        numTeams = length teams
-        entries = mkEntry <$> teams
-        mkEntry ts =
-            let tId = teamId $ _tsTeam ts
-                unread = uCount > 0
-                uCount = unreadCount tId
-                tName  = ClickableTeamListEntry tId
-            in (if Just tId == curTid
-                   then visible . withDefAttr currentTeamAttr
-                   else if unread
-                        then withDefAttr unreadChannelAttr
-                        else id) $
-               clickable tName $ txt $
-               (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts)
-        unreadCount tId = sum $ fmap (nonDMChannelListGroupUnread . fst) $
-                          Z.toList $ st^.csTeam(tId).tsFocus
-    in if numTeams == 1
-       then emptyWidget
-       else vBox [ hBox [ padRight (Pad 1) $ txt $ T.pack $ "Teams (" <> show (pos + 1) <> "/" <> show numTeams <> "):"
-                        , vLimit 1 $ viewport TeamList Horizontal $
-                          hBox $
-                          intersperse (txt " ") entries
-                        ]
-                 , hBorder
-                 ]
-
-connectionLayer :: ChatState -> Widget Name
-connectionLayer st =
-    case st^.csConnectionStatus of
-        Connected -> emptyWidget
-        Disconnected ->
-            Widget Fixed Fixed $ do
-                ctx <- getContext
-                let aw = ctx^.availWidthL
-                    w = length msg + 2
-                    msg = "NOT CONNECTED"
-                render $ translateBy (Location (max 0 (aw - w), 0)) $
-                         withDefAttr errorMessageAttr $
-                         border $ str msg
-
 messageSelectBottomBar :: ChatState
                        -> TeamId
                        -> Lens' ChatState (MessageInterface Name i)
@@ -717,78 +789,6 @@ drawDeleteMessageConfirm =
        center $
        withDefAttr errorMessageAttr $
        txt msg
-
-mainInterface :: ChatState -> Mode -> Maybe TeamId -> Widget Name
-mainInterface st mode mtId =
-    vBox [ teamList st
-         , body
-         ]
-    where
-    showChannelList =
-        st^.csResources.crConfiguration.configShowChannelListL ||
-        case mtId of
-            Nothing -> True
-            Just {} -> mode == ChannelSelect
-    body = if showChannelList
-           then case st^.csChannelListOrientation of
-               ChannelListLeft ->
-                   hBox [channelList, vBorder, mainDisplay]
-               ChannelListRight ->
-                   hBox [mainDisplay, vBorder, channelList]
-           else mainDisplay
-    channelList = channelListMaybeVlimit mode $
-                  hLimit channelListWidth $ case mtId of
-                      Nothing -> fill ' '
-                      Just tId -> renderChannelList st tId
-    channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
-    channelListMaybeVlimit ChannelSelect w =
-        Widget (hSize w) (vSize w) $ do
-            ctx <- getContext
-            render $ vLimit (ctx^.availHeightL - 1) w
-    channelListMaybeVlimit _ w = w
-
-    mainDisplay =
-        case mtId of
-            Nothing ->
-                vBox [ fill ' '
-                     , hBorder
-                     , vLimit 1 $ fill ' '
-                     ]
-            Just tId ->
-                let
-                    hs = getHighlightSet st tId
-
-                    channelHeader mChan =
-                        withDefAttr channelHeaderAttr $
-                        padRight Max $
-                        renderChannelHeader st tId hs mChan
-
-                    focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel
-                    maybeSubdue = if mode == ChannelSelect
-                                  then forceAttr ""
-                                  else id
-                    channelMessageIface cId = drawMessageInterface st hs
-                                                       (ChannelMessages cId)
-                                                       tId
-                                                       True
-                                                       (csChannelMessageInterface(cId))
-                                                       True
-                                                       (MessagePreviewViewport tId)
-                                                       focused
-
-                    maybeThreadIface = fromMaybe emptyWidget $ do
-                        _ <- st^.csTeam(tId).tsThreadInterface
-                        return $ drawThreadWindow st tId
-
-                in case st^.csCurrentChannelId(tId) of
-                    Nothing -> fill ' '
-                    Just cId ->
-                        let ch = st^?csChannel(cId)
-                        in vBox [ channelHeader ch
-                                , hBorder
-                                , maybeSubdue $ channelMessageIface cId
-                                , maybeSubdue maybeThreadIface
-                                ]
 
 drawMessageInterface :: ChatState
                      -> HighlightSet
