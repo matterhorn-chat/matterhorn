@@ -64,6 +64,7 @@ mainInterface st mode mtId =
         case mtId of
             Nothing -> True
             Just {} -> mode == ChannelSelect
+
     body = if showChannelList
            then case st^.csChannelListOrientation of
                ChannelListLeft ->
@@ -71,6 +72,14 @@ mainInterface st mode mtId =
                ChannelListRight ->
                    hBox [mainDisplay, vBorder, channelList]
            else mainDisplay
+
+    mainDisplay =
+        vBox [ header
+             , hBorder
+             , maybeSubdue messageInterface
+             , maybeSubdue threadUI
+             ]
+
     channelList = channelListMaybeVlimit mode $
                   hLimit channelListWidth $ case mtId of
                       Nothing -> fill ' '
@@ -82,52 +91,48 @@ mainInterface st mode mtId =
             render $ vLimit (ctx^.availHeightL - 1) w
     channelListMaybeVlimit _ w = w
 
-    mainDisplay =
-        case mtId of
-            Nothing ->
-                vBox [ fill ' '
-                     , hBorder
-                     , vLimit 1 $ fill ' '
-                     ]
-            Just tId ->
-                let
-                    hs = getHighlightSet st tId
+    noHeader = vLimit 1 $ fill ' '
+    noMessageInterface = fill ' '
+    noThreadUI = emptyWidget
+    noTeamUI = (noHeader, noMessageInterface, noThreadUI)
 
-                    channelHeader Nothing =
-                        txt " "
-                    channelHeader (Just chan) =
-                        withDefAttr channelHeaderAttr $
-                        padRight Max $
-                        renderChannelHeader st tId hs chan
+    (header, messageInterface, threadUI) = fromMaybe noTeamUI $ do
+        tId <- mtId
+        let hs = getHighlightSet st tId
 
-                    focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel &&
-                              threadShowing
-                    threadShowing = isJust $ st^.csTeam(tId).tsThreadInterface
-                    maybeSubdue = if mode == ChannelSelect
-                                  then forceAttr ""
-                                  else id
-                    channelMessageIface cId = drawMessageInterface st hs
-                                                       (ChannelMessages cId)
-                                                       tId
-                                                       True
-                                                       (csChannelMessageInterface(cId))
-                                                       True
-                                                       (MessagePreviewViewport tId)
-                                                       focused
+            channelHeader Nothing =
+                txt " "
+            channelHeader (Just chan) =
+                withDefAttr channelHeaderAttr $
+                padRight Max $
+                renderChannelHeader st tId hs chan
 
-                    maybeThreadIface = fromMaybe emptyWidget $ do
-                        _ <- st^.csTeam(tId).tsThreadInterface
-                        return $ drawThreadWindow st tId
+            focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel &&
+                      threadShowing
+            threadShowing = isJust $ st^.csTeam(tId).tsThreadInterface
+            channelMessageIface cId = drawMessageInterface st hs
+                                               (ChannelMessages cId)
+                                               tId
+                                               True
+                                               (csChannelMessageInterface(cId))
+                                               True
+                                               (MessagePreviewViewport tId)
+                                               focused
 
-                in case st^.csCurrentChannelId(tId) of
-                    Nothing -> fill ' '
-                    Just cId ->
-                        let ch = st^?csChannel(cId)
-                        in vBox [ channelHeader ch
-                                , hBorder
-                                , maybeSubdue $ channelMessageIface cId
-                                , maybeSubdue maybeThreadIface
-                                ]
+            maybeThreadIface = fromMaybe emptyWidget $ do
+                _ <- st^.csTeam(tId).tsThreadInterface
+                return $ drawThreadWindow st tId
+
+        cId <- st^.csCurrentChannelId(tId)
+        let ch = st^?csChannel(cId)
+        return ( channelHeader ch
+               , channelMessageIface cId
+               , maybeThreadIface
+               )
+
+    maybeSubdue = if mode == ChannelSelect
+                  then forceAttr ""
+                  else id
 
 teamList :: ChatState -> Widget Name
 teamList st =
