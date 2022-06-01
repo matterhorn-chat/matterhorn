@@ -2,7 +2,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Main
   ( drawMain
-  , drawDeleteMessageConfirm
   )
 where
 
@@ -11,7 +10,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Widgets.Border
-import           Brick.Widgets.Center ( centerLayer, center )
 import           Data.List ( intersperse )
 import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
@@ -209,17 +207,6 @@ renderChannelHeader st tId hs (Just chan) =
     in renderText' (Just baseUrl) (myUsername st)
          hs (Just (mkClickableInline Nothing (ChannelTopic $ chan^.ccInfo.cdChannelId)))
          (channelNameString <> maybeTopic)
-
-drawDeleteMessageConfirm :: Widget Name
-drawDeleteMessageConfirm =
-    let msg = "Are you sure you want to delete the selected message? (y/n)"
-    in centerLayer $
-       borderWithLabel (withAttr channelListHeaderAttr $ txt "Confirm") $
-       hLimit (T.length msg + 4) $
-       vLimit 3 $
-       center $
-       withDefAttr errorMessageAttr $
-       txt msg
 
 drawThreadWindow :: ChatState -> TeamId -> Widget Name
 drawThreadWindow st tId = withDefAttr threadAttr body

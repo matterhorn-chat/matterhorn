@@ -64,6 +64,7 @@ library
                        Matterhorn.Draw.ListOverlay
                        Matterhorn.Draw.Main
                        Matterhorn.Draw.ManageAttachments
+                       Matterhorn.Draw.MessageDeleteConfirm
                        Matterhorn.Draw.MessageInterface
                        Matterhorn.Draw.Messages
                        Matterhorn.Draw.NotifyPrefs
