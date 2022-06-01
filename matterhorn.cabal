@@ -58,6 +58,7 @@ library
                        Matterhorn.Draw.ChannelTopicWindow
                        Matterhorn.Draw.SaveAttachmentWindow
                        Matterhorn.Draw.DeleteChannelConfirm
+                       Matterhorn.Draw.InputPreview
                        Matterhorn.Draw.LeaveChannelConfirm
                        Matterhorn.Draw.ListOverlay
                        Matterhorn.Draw.Main
