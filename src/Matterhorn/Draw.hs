@@ -10,6 +10,7 @@ import Brick
 import Lens.Micro.Platform ( _2, singular, _Just )
 
 import Matterhorn.Draw.ChannelTopicWindow
+import Matterhorn.Draw.ChannelSelectPrompt
 import Matterhorn.Draw.SaveAttachmentWindow
 import Matterhorn.Draw.DeleteChannelConfirm
 import Matterhorn.Draw.LeaveChannelConfirm

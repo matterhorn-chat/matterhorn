@@ -55,6 +55,7 @@ library
                        Matterhorn.Draw.Buttons
                        Matterhorn.Draw.ChannelList
                        Matterhorn.Draw.ChannelListOverlay
+                       Matterhorn.Draw.ChannelSelectPrompt
                        Matterhorn.Draw.ChannelTopicWindow
                        Matterhorn.Draw.SaveAttachmentWindow
                        Matterhorn.Draw.DeleteChannelConfirm

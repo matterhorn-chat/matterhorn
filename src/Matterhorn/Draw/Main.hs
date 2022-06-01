@@ -3,7 +3,6 @@
 module Matterhorn.Draw.Main
   ( drawMain
   , drawDeleteMessageConfirm
-  , drawChannelSelectPrompt
   )
 where
 
@@ -13,7 +12,6 @@ import           Matterhorn.Prelude
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center ( centerLayer, center )
-import           Brick.Widgets.Edit ( renderEditor )
 import           Data.List ( intersperse )
 import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
@@ -211,17 +209,6 @@ renderChannelHeader st tId hs (Just chan) =
     in renderText' (Just baseUrl) (myUsername st)
          hs (Just (mkClickableInline Nothing (ChannelTopic $ chan^.ccInfo.cdChannelId)))
          (channelNameString <> maybeTopic)
-
-drawChannelSelectPrompt :: ChatState -> TeamId -> Widget Name
-drawChannelSelectPrompt st tId =
-    Widget Greedy Greedy $ do
-       ctx <- getContext
-       let rowOffset = ctx^.availHeightL - 1
-           e = st^.csTeam(tId).tsChannelSelectState.channelSelectInput
-       render $ translateBy (Location (0, rowOffset)) $
-                withDefAttr channelSelectPromptAttr $
-                (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
-                (renderEditor (txt . T.concat) True e)
 
 drawDeleteMessageConfirm :: Widget Name
 drawDeleteMessageConfirm =
