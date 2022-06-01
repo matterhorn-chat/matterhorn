@@ -28,11 +28,12 @@ drawManageAttachments st tId =
     topLayer
     where
         editWhich :: Lens' ChatState (EditState Name)
-        editWhich = case st^.csTeam(tId).tsThreadInterface of
-            Nothing ->
+        editWhich = case st^.csTeam(tId).tsMessageInterfaceFocus of
+            FocusCurrentChannel ->
                 let cId = fromJust $ st^.csCurrentChannelId(tId)
                 in channelEditor(cId)
-            Just _  -> unsafeThreadInterface(tId).miEditor
+            FocusThread ->
+                unsafeThreadInterface(tId).miEditor
         topLayer = case st^.csTeam(tId).tsMode of
             ManageAttachments -> drawAttachmentList st editWhich
             ManageAttachmentsBrowseFiles -> drawFileBrowser st editWhich

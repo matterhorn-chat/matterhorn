@@ -160,6 +160,11 @@ module Matterhorn.Types
   , tsSaveAttachmentDialog
   , tsChannelListSorting
   , tsThreadInterface
+  , tsMessageInterfaceFocus
+
+  , MessageInterfaceFocus(..)
+  , messageInterfaceFocusNext
+  , messageInterfaceFocusPrev
 
   , channelEditor
   , channelMessageSelect
@@ -1098,7 +1103,6 @@ data Mode =
     | UrlSelect
     | LeaveChannelConfirm
     | DeleteChannelConfirm
-    | ThreadWindow ChannelId
     | MessageSelectDeleteConfirm MessageInterfaceTarget
     | PostListOverlay PostListContents
     | UserListOverlay
@@ -1269,7 +1273,42 @@ data TeamState =
               , _tsThreadInterface :: Maybe ThreadInterface
               -- ^ The thread interface for this team for participating
               -- in a single thread
+              , _tsMessageInterfaceFocus :: MessageInterfaceFocus
+              -- ^ Which message interface is focused for editing input
               }
+
+data MessageInterfaceFocus =
+    FocusThread
+    | FocusCurrentChannel
+    deriving (Eq, Show)
+
+messageInterfaceFocusList :: [MessageInterfaceFocus]
+messageInterfaceFocusList =
+    [ FocusCurrentChannel
+    , FocusThread
+    ]
+
+messageInterfaceFocusNext :: TeamState -> TeamState
+messageInterfaceFocusNext = messageInterfaceFocusWith messageInterfaceFocusList
+
+messageInterfaceFocusPrev :: TeamState -> TeamState
+messageInterfaceFocusPrev = messageInterfaceFocusWith (reverse messageInterfaceFocusList)
+
+messageInterfaceFocusWith :: [MessageInterfaceFocus] -> TeamState -> TeamState
+messageInterfaceFocusWith lst ts =
+    let next = fromJust $ cycleElemAfter cur lst
+        cur = _tsMessageInterfaceFocus ts
+        noThread = isNothing $ _tsThreadInterface ts
+        newFocus = if next == FocusThread && noThread
+                   then fromJust $ cycleElemAfter FocusThread lst
+                   else next
+    in ts { _tsMessageInterfaceFocus = newFocus }
+
+cycleElemAfter :: (Eq a) => a -> [a] -> Maybe a
+cycleElemAfter e es =
+    if e `notElem` es
+    then Nothing
+    else Just $ head $ drop 1 $ dropWhile (/= e) $ cycle es
 
 -- | Handles for the View Message window's tabs.
 data ViewMessageWindowTab =

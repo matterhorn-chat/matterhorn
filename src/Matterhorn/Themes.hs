@@ -58,6 +58,9 @@ module Matterhorn.Themes
   , tabUnselectedAttr
   , buttonAttr
   , buttonFocusedAttr
+  , threadTitleBarAttr
+  , threadAttr
+  , focusedEditorPromptAttr
 
   -- * Username formatting
   , colorUsername
@@ -238,6 +241,15 @@ buttonAttr = "button"
 buttonFocusedAttr :: AttrName
 buttonFocusedAttr = buttonAttr <> "focused"
 
+threadAttr :: AttrName
+threadAttr = "thread"
+
+threadTitleBarAttr :: AttrName
+threadTitleBarAttr = threadAttr <> "header"
+
+focusedEditorPromptAttr :: AttrName
+focusedEditorPromptAttr = "focusedEditorPrompt"
+
 lookupTheme :: Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes
 
@@ -287,6 +299,9 @@ lightAttrs usernameColors =
     in [ (timeAttr,                         fg black)
        , (buttonAttr,                       black `on` cyan)
        , (buttonFocusedAttr,                black `on` yellow)
+       , (threadAttr,                       defAttr)
+       , (threadTitleBarAttr,               fg cyan `withStyle` bold)
+       , (focusedEditorPromptAttr,          fg yellow `withStyle` bold)
        , (currentUserAttr,                  defAttr `withStyle` bold)
        , (channelHeaderAttr,                fg black)
        , (verbatimTruncateMessageAttr,      fg blue)
@@ -355,6 +370,9 @@ darkAttrs usernameColors =
   in [ (timeAttr,                         fg white)
      , (buttonAttr,                       black `on` cyan)
      , (buttonFocusedAttr,                black `on` yellow)
+     , (threadAttr,                       defAttr)
+     , (threadTitleBarAttr,               fg cyan `withStyle` bold)
+     , (focusedEditorPromptAttr,          fg yellow `withStyle` bold)
      , (currentUserAttr,                  defAttr `withStyle` bold)
      , (channelHeaderAttr,                fg white)
      , (verbatimTruncateMessageAttr,      fg cyan)
@@ -862,6 +880,15 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( scrollbarHandleAttr
       , "Attribute for scroll bar handles"
+      )
+    , ( threadAttr
+      , "Base attribute for the thread window"
+      )
+    , ( threadTitleBarAttr
+      , "Base attribute for the thread window's title bar"
+      )
+    , ( focusedEditorPromptAttr
+      , "The attribute for the prompt of the focused message editor"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..usernameColorHashBuckets-1]

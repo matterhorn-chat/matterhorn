@@ -9,9 +9,11 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
+import           Data.Maybe ( fromJust )
 import qualified Graphics.Vty as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
+import           Lens.Micro.Platform ( _Just )
 import           System.Posix.IO ( stdInput )
 
 import           Network.Mattermost
@@ -36,7 +38,11 @@ app = App
           Nothing -> showFirstCursor s cs
           Just tId ->
               case s^.csTeam(tId).tsMode of
-                  Main                          -> showFirstCursor s cs
+                  Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
+                      FocusCurrentChannel -> showFirstCursor s cs
+                      FocusThread ->
+                          let cId = fromJust $ s^?csTeam(tId).tsThreadInterface._Just.miChannelId
+                          in showCursorNamed (ThreadMessageInput cId) cs
                   ChannelSelect                 -> showFirstCursor s cs
                   UserListOverlay               -> showFirstCursor s cs
                   ReactionEmojiListOverlay      -> showFirstCursor s cs
@@ -45,7 +51,6 @@ app = App
                   ThemeListOverlay              -> showFirstCursor s cs
                   ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
                   SaveAttachmentWindow _        -> showCursorNamed (AttachmentPathEditor tId) cs
-                  ThreadWindow cId              -> showCursorNamed (ThreadMessageInput cId) cs
                   LeaveChannelConfirm           -> Nothing
                   DeleteChannelConfirm          -> Nothing
                   MessageSelectDeleteConfirm {} -> Nothing

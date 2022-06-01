@@ -13,6 +13,7 @@ module Matterhorn.State.Teams
   , newChannelTopicDialog
   , newThreadInterface
   , makeClientChannel
+  , cycleTeamMessageInterfaceFocus
   )
 where
 
@@ -249,6 +250,10 @@ removeTeam tId = do
     csTeams.at tId .= Nothing
     setTeamFocusWith $ Z.filterZipper (/= tId)
 
+cycleTeamMessageInterfaceFocus :: TeamId -> MH ()
+cycleTeamMessageInterfaceFocus tId =
+    csTeam(tId) %= messageInterfaceFocusNext
+
 emptyEditStateForChannel :: Maybe Aspell -> BCH.BChan MHEvent -> Maybe TeamId -> ChannelId -> IO (EditState Name)
 emptyEditStateForChannel checker eventQueue tId cId = do
     reset <- case checker of
@@ -333,6 +338,7 @@ newTeamState config team chanList =
                  , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
                  , _tsChannelListSorting       = configChannelListSorting config
                  , _tsThreadInterface          = Nothing
+                 , _tsMessageInterfaceFocus    = FocusCurrentChannel
                  }
 
 nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope

@@ -175,6 +175,7 @@ defaultBindings ev =
         PrevChannelEventAlternate     -> [ kb Vty.KUp ]
         NextUnreadChannelEvent        -> [ meta (key 'a') ]
         ShowAttachmentListEvent       -> [ ctrl (key 'x') ]
+        ChangeMessageEditorFocus      -> [ meta (key 'o') ]
         NextUnreadUserOrChannelEvent  -> [ ]
         LastChannelEvent              -> [ meta (key 's') ]
         EnterOpenURLModeEvent         -> [ ctrl (key 'o') ]

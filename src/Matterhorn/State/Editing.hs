@@ -508,7 +508,9 @@ cancelAutocompleteOrReplyOrEdit which = do
                     when (newMode == prevMode) $
                         withCurrentTeam $ \tId -> do
                             ti <- use (csTeam(tId).tsThreadInterface)
-                            when (isJust ti) $ closeThreadWindow tId
+                            foc <- use (csTeam(tId).tsMessageInterfaceFocus)
+                            when (isJust ti && foc == FocusThread) $
+                                closeThreadWindow tId
 
 replyToLatestMessage :: Lens' ChatState (EditState Name) -> MH ()
 replyToLatestMessage which = do

@@ -13,10 +13,12 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.HelpTopics
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.MessageInterface
+import           Matterhorn.Events.ThreadWindow
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
 import           Matterhorn.State.Help
+import           Matterhorn.State.Teams
 import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
 import           Matterhorn.Types
 
@@ -25,10 +27,14 @@ onEventMain tId =
     void .
     handleEventWith [ handleKeyboardEvent (mainKeybindings tId)
                     , \e -> do
-                        mCid <- use (csCurrentChannelId(tId))
-                        case mCid of
-                            Nothing -> return False
-                            Just cId -> handleMessageInterfaceEvent tId (csChannelMessageInterface(cId)) e
+                        st <- use id
+                        case st^.csTeam(tId).tsMessageInterfaceFocus of
+                            FocusThread -> onEventThreadWindow tId e
+                            FocusCurrentChannel -> do
+                                mCid <- use (csCurrentChannelId(tId))
+                                case mCid of
+                                    Nothing -> return False
+                                    Just cId -> handleMessageInterfaceEvent tId (csChannelMessageInterface(cId)) e
                     ]
 
 mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
@@ -66,6 +72,10 @@ mainKeyHandlers tId =
         "Reply to the most recent message" $
         withCurrentChannel tId $ \cId _ ->
             replyToLatestMessage (channelEditor(cId))
+
+    , mkKb ChangeMessageEditorFocus
+        "Cycle between message editors when a thread is open" $
+        cycleTeamMessageInterfaceFocus tId
 
     , mkKb NextChannelEvent "Change to the next channel in the channel list" $
          nextChannel tId

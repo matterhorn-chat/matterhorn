@@ -55,6 +55,7 @@ data KeyEvent
   | ToggleChannelListVisibleEvent
   | ToggleExpandedChannelTopicsEvent
   | ShowAttachmentListEvent
+  | ChangeMessageEditorFocus
 
   | EditorKillToBolEvent
   | EditorKillToEolEvent
@@ -181,6 +182,8 @@ allEvents =
   , LastChannelEvent
 
   , ShowAttachmentListEvent
+
+  , ChangeMessageEditorFocus
 
   , EditorKillToBolEvent
   , EditorKillToEolEvent
@@ -428,6 +431,8 @@ keyEventName ev = case ev of
   SaveAttachmentEvent       -> "save-attachment"
 
   ShowAttachmentListEvent   -> "show-attachment-list"
+
+  ChangeMessageEditorFocus  -> "change-message-editor-focus"
 
   EditorKillToBolEvent        -> "editor-kill-to-beginning-of-line"
   EditorKillToEolEvent        -> "editor-kill-to-end-of-line"

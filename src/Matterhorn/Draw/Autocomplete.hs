@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Autocomplete
-  ( autocompleteLayer
+  ( drawAutocompleteLayer
   )
 where
 
@@ -13,7 +13,7 @@ import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFoc
                                     , listSelectedElement
                                     )
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( SimpleGetter )
+import           Lens.Micro.Platform ( SimpleGetter, Lens' )
 
 import           Network.Mattermost.Types ( User(..), Channel(..) )
 
@@ -22,6 +22,20 @@ import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 
+drawAutocompleteLayer :: ChatState -> Widget Name
+drawAutocompleteLayer st = fromMaybe emptyWidget $ do
+    tId <- st^.csCurrentTeamId
+    case st^.csTeam(tId).tsMessageInterfaceFocus of
+        FocusCurrentChannel -> do
+            cId <- st^.csCurrentChannelId(tId)
+            return $ autocompleteLayer st (channelEditor(cId))
+        FocusThread -> do
+            void $ st^.csTeam(tId).tsThreadInterface
+            let ti :: Lens' ChatState ThreadInterface
+                ti = unsafeThreadInterface(tId)
+                ed :: SimpleGetter ChatState (EditState Name)
+                ed = ti.miEditor
+            return $ autocompleteLayer st ed
 
 autocompleteLayer :: ChatState -> SimpleGetter ChatState (EditState Name) -> Widget Name
 autocompleteLayer st which =

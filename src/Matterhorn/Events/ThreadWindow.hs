@@ -14,11 +14,9 @@ import Network.Mattermost.Types (TeamId)
 import Matterhorn.Types
 import Matterhorn.Events.MessageInterface
 
-onEventThreadWindow :: TeamId -> Vty.Event -> MH ()
-onEventThreadWindow _ (Vty.EvResize {}) =
-    return ()
+onEventThreadWindow :: TeamId -> Vty.Event -> MH Bool
 onEventThreadWindow tId ev = do
     let ti :: Lens' ChatState ThreadInterface
         ti = unsafeThreadInterface tId
 
-    void $ handleMessageInterfaceEvent tId ti ev
+    handleMessageInterfaceEvent tId ti ev

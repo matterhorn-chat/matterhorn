@@ -72,7 +72,6 @@ library
                        Matterhorn.Draw.ShowHelp
                        Matterhorn.Draw.TabbedWindow
                        Matterhorn.Draw.ThemeListOverlay
-                       Matterhorn.Draw.ThreadWindow
                        Matterhorn.Draw.URLList
                        Matterhorn.Draw.UserListOverlay
                        Matterhorn.Draw.Util

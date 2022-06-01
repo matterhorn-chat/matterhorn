@@ -22,7 +22,6 @@ import Matterhorn.Draw.UserListOverlay
 import Matterhorn.Draw.ChannelListOverlay
 import Matterhorn.Draw.ReactionEmojiListOverlay
 import Matterhorn.Draw.TabbedWindow
-import Matterhorn.Draw.ThreadWindow
 import Matterhorn.Draw.ManageAttachments
 import Matterhorn.Draw.NotifyPrefs
 import Matterhorn.Types
@@ -71,7 +70,6 @@ draw st =
                         EditNotifyPrefs              -> drawNotifyPrefs st tId : monochrome rest
                         ChannelTopicWindow           -> drawChannelTopicWindow st tId : monochrome rest
                         SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : monochrome rest
-                        ThreadWindow _               -> drawThreadWindowLayers st tId
                 topMode = st^.csTeam(tId).tsMode
                 stack = st^.csTeam(tId).tsModeStack
             in drawMode topMode stack

@@ -4,7 +4,6 @@ module Matterhorn.Draw.Main
   ( drawMain
   , drawDeleteMessageConfirm
   , drawChannelSelectPrompt
-  , drawMessageInterface
   )
 where
 
@@ -55,6 +54,13 @@ import           Matterhorn.Types.RichText ( parseMarkdown, TeamBaseURL )
 import           Matterhorn.Types.KeyEvents
 import qualified Matterhorn.Zipper as Z
 
+
+drawMain :: ChatState -> Mode -> [Widget Name]
+drawMain st mode =
+    [ connectionLayer st
+    , drawAutocompleteLayer st
+    , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
+    ]
 
 previewFromInput :: TeamBaseURL -> Maybe MessageType -> UserId -> Text -> Maybe Message
 previewFromInput _ _ _ s | s == T.singleton cursorSentinel = Nothing
@@ -235,14 +241,18 @@ doHighlightMisspellings hSet misspellings contents =
 
 userInputArea :: ChatState
               -> Lens' ChatState (EditState Name)
+              -> Bool
               -> HighlightSet
               -> Widget Name
-userInputArea st which hs =
+userInputArea st which focused hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "
         editPrompt = "edit> "
         showReplyPrompt = st^.which.esShowReplyPrompt
-        prompt = txt $ case st^.which.esEditMode of
+        maybeHighlight = if focused
+                         then withDefAttr focusedEditorPromptAttr
+                         else id
+        prompt = maybeHighlight $ txt $ case st^.which.esEditMode of
             Replying {} ->
                 if showReplyPrompt then replyPrompt else normalPrompt
             Editing {}  ->
@@ -384,7 +394,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
                 if inMsgSelect
                 then freezeBorders $
                      renderMessagesWithSelect cId (st^.which.miMessageSelect) (buildMessages cId)
-                else cached (ChannelMessages cId) $
+                else cached region $
                      freezeBorders $
                      renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region $
                      retrogradeMsgsWithThreadStates $
@@ -491,16 +501,6 @@ drawChannelSelectPrompt st tId =
                 withDefAttr channelSelectPromptAttr $
                 (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
                 (renderEditor (txt . T.concat) True e)
-
-drawMain :: ChatState -> Mode -> [Widget Name]
-drawMain st mode =
-    [ connectionLayer st
-    , fromMaybe emptyWidget $ do
-        tId <- st^.csCurrentTeamId
-        cId <- st^.csCurrentChannelId(tId)
-        return $ autocompleteLayer st (channelEditor(cId))
-    , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
-    ]
 
 teamList :: ChatState -> Widget Name
 teamList st =
@@ -763,23 +763,31 @@ mainInterface st mode mtId =
                         padRight Max $
                         renderChannelHeader st tId hs mChan
 
+                    focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel
                     maybeSubdue = if mode == ChannelSelect
                                   then forceAttr ""
                                   else id
-                in case st^.csCurrentChannelId(tId) of
-                    Nothing -> fill ' '
-                    Just cId ->
-                        let ch = st^?csChannel(cId)
-                        in vBox [ channelHeader ch
-                                , hBorder
-                                , maybeSubdue $
-                                  drawMessageInterface st hs
+                    channelMessageIface cId = drawMessageInterface st hs
                                                        (ChannelMessages cId)
                                                        tId
                                                        True
                                                        (csChannelMessageInterface(cId))
                                                        True
                                                        (MessagePreviewViewport tId)
+                                                       focused
+
+                    maybeThreadIface = fromMaybe emptyWidget $ do
+                        _ <- st^.csTeam(tId).tsThreadInterface
+                        return $ drawThreadWindow st tId
+
+                in case st^.csCurrentChannelId(tId) of
+                    Nothing -> fill ' '
+                    Just cId ->
+                        let ch = st^?csChannel(cId)
+                        in vBox [ channelHeader ch
+                                , hBorder
+                                , maybeSubdue $ channelMessageIface cId
+                                , maybeSubdue maybeThreadIface
                                 ]
 
 drawMessageInterface :: ChatState
@@ -790,12 +798,13 @@ drawMessageInterface :: ChatState
                      -> Lens' ChatState (MessageInterface Name i)
                      -> Bool
                      -> Name
+                     -> Bool
                      -> Widget Name
-drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent previewVpName =
+drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent previewVpName focused =
     vBox [ interfaceContents
          , bottomBorder
          , inputPreview st (which.miEditor) tId previewVpName hs
-         , userInputArea st (which.miEditor) hs
+         , userInputArea st (which.miEditor) focused hs
          ]
     where
     inMsgSelect = st^.which.miMode == MessageSelect
@@ -848,3 +857,39 @@ replyArrow =
         ctx <- getContext
         let bs = ctx^.ctxBorderStyleL
         render $ str [' ', bsCornerTL bs, '▸']
+
+drawThreadWindow :: ChatState -> TeamId -> Widget Name
+drawThreadWindow st tId = withDefAttr threadAttr body
+    where
+        ti :: Lens' ChatState ThreadInterface
+        ti = unsafeThreadInterface(tId)
+
+        hs = getHighlightSet st tId
+        cId = st^.ti.miChannelId
+
+        titleText = case st^?csChannel(cId) of
+            Nothing -> "Thread"
+            Just chan ->
+                let prefix = case chan^.ccInfo.cdType of
+                        Group -> "Thread with "
+                        Direct -> "Thread with "
+                        _ -> "Thread in "
+                in prefix <> mkChannelName st (chan^.ccInfo)
+
+        -- TODO: "Thread from ~<channel>" or "Thread with @<user>[, @<user>[, ...]]"
+        -- depending on whether it's a DM/group/public thread or not
+        title = renderText' Nothing "" hs Nothing titleText
+        titleBar = withDefAttr threadTitleBarAttr $
+                   hBorderWithLabel title
+
+        focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusThread
+
+        body = titleBar <=> messageUI
+        messageUI = drawMessageInterface st hs
+                            (ThreadWindowMessages cId)
+                            tId
+                            False
+                            ti
+                            False
+                            (ThreadWindowEditorPreview cId)
+                            focused
