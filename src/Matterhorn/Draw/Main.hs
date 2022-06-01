@@ -319,12 +319,12 @@ doHighlightMisspellings hSet misspellings contents =
 
     in vBox $ handleLine <$> contents
 
-userInputArea :: ChatState
-              -> Lens' ChatState (EditState Name)
-              -> Bool
-              -> HighlightSet
-              -> Widget Name
-userInputArea st which focused hs =
+inputArea :: ChatState
+          -> Lens' ChatState (EditState Name)
+          -> Bool
+          -> HighlightSet
+          -> Widget Name
+inputArea st which focused hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "
         editPrompt = "edit> "
@@ -699,7 +699,7 @@ drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent pre
     vBox [ interfaceContents
          , bottomBorder
          , inputPreview st (which.miEditor) tId previewVpName hs
-         , userInputArea st (which.miEditor) focused hs
+         , inputArea st (which.miEditor) focused hs
          ]
     where
     inMsgSelect = st^.which.miMode == MessageSelect
