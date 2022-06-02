@@ -18,7 +18,6 @@ module Matterhorn.Types
   , handleEventWith
   , getServerBaseUrl
   , serverBaseUrl
-  , URLListSource(..)
   , URLList(..)
   , ulList
   , ulSource
@@ -1204,11 +1203,6 @@ data URLList =
     URLList { _ulList :: List Name (Int, LinkChoice)
             , _ulSource :: Maybe URLListSource
             }
-
-data URLListSource =
-    FromChannel TeamId ChannelId
-    | FromThreadIn ChannelId
-    deriving (Show, Eq)
 
 -- | All application state specific to a team, along with state specific
 -- to our user interface's presentation of that team. We include the

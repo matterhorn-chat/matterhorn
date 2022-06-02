@@ -31,13 +31,11 @@ handleMessageInterfaceEvent :: TeamId
                             -> Vty.Event
                             -> MH Bool
 handleMessageInterfaceEvent tId which ev = do
-    cId <- use (which.miChannelId)
     mode <- use (which.miMode)
     case mode of
         Compose ->
             handleEventWith [ handleKeyboardEvent (extraEditorKeybindings which)
-                            , handleKeyboardEvent (messageInterfaceKeybindings tId which
-                                                      (Just $ FromChannel tId cId))
+                            , handleKeyboardEvent (messageInterfaceKeybindings tId which)
                             , \e -> do
                                 case e of
                                     (Vty.EvPaste bytes) -> handlePaste (which.miEditor) bytes
@@ -49,17 +47,15 @@ handleMessageInterfaceEvent tId which ev = do
 
 messageInterfaceKeybindings :: TeamId
                             -> Lens' ChatState (MessageInterface n i)
-                            -> Maybe URLListSource
                             -> KeyConfig
                             -> KeyHandlerMap
-messageInterfaceKeybindings tId which urlSrc =
-    mkKeybindings (messageInterfaceKeyHandlers tId which urlSrc)
+messageInterfaceKeybindings tId which =
+    mkKeybindings (messageInterfaceKeyHandlers tId which)
 
 messageInterfaceKeyHandlers :: TeamId
                             -> Lens' ChatState (MessageInterface n i)
-                            -> Maybe URLListSource
                             -> [KeyEventHandler]
-messageInterfaceKeyHandlers tId which urlSrc =
+messageInterfaceKeyHandlers tId which =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
         beginMessageSelect which
@@ -72,7 +68,7 @@ messageInterfaceKeyHandlers tId which urlSrc =
         messageSelectFirst which
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startUrlSelect tId which urlSrc
+        startUrlSelect tId which
     ]
 
 extraEditorKeybindings :: Lens' ChatState (MessageInterface Name i)

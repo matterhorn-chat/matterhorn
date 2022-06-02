@@ -8,9 +8,11 @@ module Matterhorn.Types.MessageInterface
   , miRootPostId
   , miChannelId
   , miTarget
+  , miUrlListSource
 
   , MessageInterfaceMode(..)
   , MessageInterfaceTarget(..)
+  , URLListSource(..)
   )
 where
 
@@ -44,6 +46,9 @@ data MessageInterface n i =
                      -- ^ The mode of the interface.
                      , _miTarget :: MessageInterfaceTarget
                      -- ^ The target value for this message interface
+                     , _miUrlListSource :: URLListSource
+                     -- ^ How to characterize the URLs found in messages
+                     -- in this interface
                      }
 
 data MessageInterfaceMode =
@@ -52,6 +57,11 @@ data MessageInterfaceMode =
     | MessageSelect
     -- ^ Selecting from messages in the listing
     deriving (Eq, Show)
+
+data URLListSource =
+    FromChannel ChannelId
+    | FromThreadIn ChannelId
+    deriving (Show, Eq)
 
 data MessageInterfaceTarget =
     MITeamThread TeamId

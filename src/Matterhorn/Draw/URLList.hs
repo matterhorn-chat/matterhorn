@@ -54,7 +54,7 @@ renderUrlList st tId =
         headerTitleFromSrc (FromThreadIn cId) = do
             cName <- channelNameFor cId
             return $ "Links from thread in " <> cName
-        headerTitleFromSrc (FromChannel _ cId) = do
+        headerTitleFromSrc (FromChannel cId) = do
             cName <- channelNameFor cId
             return $ "Links from " <> cName
 

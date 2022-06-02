@@ -24,15 +24,16 @@ import           Matterhorn.Util
 
 startUrlSelect :: TeamId
                -> Lens' ChatState (MessageInterface n i)
-               -> Maybe URLListSource
                -> MH ()
-startUrlSelect tId which src = do
+startUrlSelect tId which = do
     msgs <- use (which.miMessages)
+    src <- use (which.miUrlListSource)
     let urls = V.fromList $ findUrls msgs
         urlsWithIndexes = V.indexed urls
     pushMode tId UrlSelect
-    csTeam(tId).tsUrlList .= URLList { _ulList = listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2
-                                     , _ulSource = src
+    csTeam(tId).tsUrlList .= URLList { _ulList = listMoveTo (length urls - 1) $
+                                                 list (UrlList tId) urlsWithIndexes 2
+                                     , _ulSource = Just src
                                      }
 
 stopUrlSelect :: TeamId -> MH ()
