@@ -39,7 +39,9 @@ app = App
           Just tId ->
               case s^.csTeam(tId).tsMode of
                   Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
-                      FocusCurrentChannel -> showFirstCursor s cs
+                      FocusCurrentChannel -> do
+                          cId <- s^.csCurrentChannelId(tId)
+                          showCursorNamed (MessageInput cId) cs
                       FocusThread ->
                           let cId = fromJust $ s^?csTeam(tId).tsThreadInterface._Just.miChannelId
                           in showCursorNamed (ThreadMessageInput cId) cs
