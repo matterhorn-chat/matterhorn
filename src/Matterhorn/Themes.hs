@@ -58,7 +58,6 @@ module Matterhorn.Themes
   , tabUnselectedAttr
   , buttonAttr
   , buttonFocusedAttr
-  , threadTitleBarAttr
   , threadAttr
   , focusedEditorPromptAttr
 
@@ -244,9 +243,6 @@ buttonFocusedAttr = buttonAttr <> "focused"
 threadAttr :: AttrName
 threadAttr = "thread"
 
-threadTitleBarAttr :: AttrName
-threadTitleBarAttr = threadAttr <> "header"
-
 focusedEditorPromptAttr :: AttrName
 focusedEditorPromptAttr = "focusedEditorPrompt"
 
@@ -300,7 +296,6 @@ lightAttrs usernameColors =
        , (buttonAttr,                       black `on` cyan)
        , (buttonFocusedAttr,                black `on` yellow)
        , (threadAttr,                       defAttr)
-       , (threadTitleBarAttr,               fg cyan `withStyle` bold)
        , (focusedEditorPromptAttr,          fg yellow `withStyle` bold)
        , (currentUserAttr,                  defAttr `withStyle` bold)
        , (channelHeaderAttr,                fg black)
@@ -371,7 +366,6 @@ darkAttrs usernameColors =
      , (buttonAttr,                       black `on` cyan)
      , (buttonFocusedAttr,                black `on` yellow)
      , (threadAttr,                       defAttr)
-     , (threadTitleBarAttr,               fg cyan `withStyle` bold)
      , (focusedEditorPromptAttr,          fg yellow `withStyle` bold)
      , (currentUserAttr,                  defAttr `withStyle` bold)
      , (channelHeaderAttr,                fg white)
@@ -883,9 +877,6 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( threadAttr
       , "Base attribute for the thread window"
-      )
-    , ( threadTitleBarAttr
-      , "Base attribute for the thread window's title bar"
       )
     , ( focusedEditorPromptAttr
       , "The attribute for the prompt of the focused message editor"

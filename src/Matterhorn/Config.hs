@@ -135,6 +135,9 @@ fromIni = do
     configChannelListOrientation <- fieldDefOf "channelListOrientation"
         channelListOrientationField
         (configChannelListOrientation defaultConfig)
+    configThreadOrientation <- fieldDefOf "threadOrientation"
+        threadOrientationField
+        (configThreadOrientation defaultConfig)
     configToken <- (Just . TokenCommand  <$> field "tokencmd") <!>
                   pure Nothing
     configUnsafeUseHTTP <-
@@ -164,6 +167,15 @@ channelListOrientationField t =
         "left" -> return ChannelListLeft
         "right" -> return ChannelListRight
         _ -> Left $ "Invalid value for channelListOrientation: " <> show t
+
+threadOrientationField :: Text -> Either String ThreadOrientation
+threadOrientationField t =
+    case T.toLower t of
+        "left" -> return ThreadLeft
+        "right" -> return ThreadRight
+        "above" -> return ThreadAbove
+        "below" -> return ThreadBelow
+        _ -> Left $ "Invalid value for threadOrientation: " <> show t
 
 syntaxDirsField :: Text -> Either String [FilePath]
 syntaxDirsField = listWithSeparator ":" string
@@ -302,6 +314,7 @@ defaultConfig =
            , configCpuUsagePolicy              = MultipleCPUs
            , configDefaultAttachmentPath       = Nothing
            , configChannelListOrientation      = ChannelListLeft
+           , configThreadOrientation           = ThreadBelow
            , configMouseMode                   = False
            , configChannelListSorting          = ChannelListSortDefault
            }

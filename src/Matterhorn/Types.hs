@@ -28,6 +28,7 @@ module Matterhorn.Types
   , ViewMessageWindowTab(..)
   , clearChannelUnreadStatus
   , ChannelListSorting(..)
+  , ThreadOrientation(..)
   , ChannelListOrientation(..)
   , channelListEntryUserId
   , userIdsFromZipper
@@ -93,6 +94,7 @@ module Matterhorn.Types
   , configCpuUsagePolicyL
   , configDefaultAttachmentPathL
   , configChannelListOrientationL
+  , configThreadOrientationL
   , configMouseModeL
 
   , NotificationVersion(..)
@@ -564,6 +566,9 @@ data Config =
            -- ^ The default path for browsing attachments
            , configChannelListOrientation :: ChannelListOrientation
            -- ^ The orientation of the channel list.
+           , configThreadOrientation :: ThreadOrientation
+           -- ^ The orientation of the thread window relative to the
+           -- main channel message window.
            , configMouseMode :: Bool
            -- ^ Whether to enable mouse support in matterhorn
            } deriving (Eq, Show)
@@ -1128,6 +1133,17 @@ data ChannelListOrientation =
     -- ^ Show the channel list to the left of the message area.
     | ChannelListRight
     -- ^ Show the channel list to the right of the message area.
+    deriving (Eq, Show)
+
+data ThreadOrientation =
+    ThreadBelow
+    -- ^ Show the thread below the channel message area.
+    | ThreadAbove
+    -- ^ Show the thread above the channel message area.
+    | ThreadLeft
+    -- ^ Show the thread to the left of the channel message area.
+    | ThreadRight
+    -- ^ Show the thread to the right of the channel message area.
     deriving (Eq, Show)
 
 -- | This type represents the current state of our application at any

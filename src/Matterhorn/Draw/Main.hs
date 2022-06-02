@@ -59,8 +59,10 @@ mainInterface st mode mtId =
          , body
          ]
     where
+    config = st^.csResources.crConfiguration
+
     showChannelList =
-        st^.csResources.crConfiguration.configShowChannelListL ||
+        config^.configShowChannelListL ||
         case mtId of
             Nothing -> True
             Just {} -> mode == ChannelSelect
@@ -73,12 +75,7 @@ mainInterface st mode mtId =
                    hBox [mainDisplay, vBorder, channelList]
            else mainDisplay
 
-    mainDisplay =
-        vBox [ header
-             , hBorder
-             , maybeSubdue messageInterface
-             , maybeSubdue threadUI
-             ]
+    mainDisplay = maybeSubdue messageInterface
 
     channelList = channelListMaybeVlimit mode $
                   hLimit channelListWidth $ case mtId of
@@ -91,12 +88,9 @@ mainInterface st mode mtId =
             render $ vLimit (ctx^.availHeightL - 1) w
     channelListMaybeVlimit _ w = w
 
-    noHeader = vLimit 1 $ fill ' '
     noMessageInterface = fill ' '
-    noThreadUI = emptyWidget
-    noTeamUI = (noHeader, noMessageInterface, noThreadUI)
 
-    (header, messageInterface, threadUI) = fromMaybe noTeamUI $ do
+    messageInterface = fromMaybe noMessageInterface $ do
         tId <- mtId
         let hs = getHighlightSet st tId
 
@@ -119,16 +113,22 @@ mainInterface st mode mtId =
                                                (MessagePreviewViewport tId)
                                                focused
 
-            maybeThreadIface = fromMaybe emptyWidget $ do
+            maybeThreadIface = do
                 _ <- st^.csTeam(tId).tsThreadInterface
                 return $ drawThreadWindow st tId
 
         cId <- st^.csCurrentChannelId(tId)
+
         let ch = st^?csChannel(cId)
-        return ( channelHeader ch
-               , channelMessageIface cId
-               , maybeThreadIface
-               )
+            channelUI = channelHeader ch <=> hBorder <=> channelMessageIface cId
+
+        return $ fromMaybe channelUI $ do
+            tui <- maybeThreadIface
+            return $ case config^.configThreadOrientationL of
+                ThreadAbove -> tui <=> hBorder <=> channelUI
+                ThreadBelow -> channelUI <=> hBorder <=> tui
+                ThreadLeft  -> tui <+> vBorder <+> channelUI
+                ThreadRight -> channelUI <+> vBorder <+> tui
 
     maybeSubdue = if mode == ChannelSelect
                   then forceAttr ""
@@ -236,12 +236,10 @@ drawThreadWindow st tId = withDefAttr threadAttr body
         -- TODO: "Thread from ~<channel>" or "Thread with @<user>[, @<user>[, ...]]"
         -- depending on whether it's a DM/group/public thread or not
         title = renderText' Nothing "" hs Nothing titleText
-        titleBar = withDefAttr threadTitleBarAttr $
-                   hBorderWithLabel title
 
         focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusThread
 
-        body = titleBar <=> messageUI
+        body = title <=> hBorder <=> messageUI
         messageUI = drawMessageInterface st hs
                             (ThreadWindowMessages cId)
                             tId
