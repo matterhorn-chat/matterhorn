@@ -15,7 +15,7 @@ import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFoc
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( SimpleGetter, Lens' )
 
-import           Network.Mattermost.Types ( User(..), Channel(..) )
+import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
 
 import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.Themes
@@ -43,13 +43,13 @@ autocompleteLayer st which =
         Nothing ->
             emptyWidget
         Just ac ->
-            let mcId = do
-                    tId <- st^.csCurrentTeamId
-                    st^.csCurrentChannelId(tId)
-                mCurChan = do
-                    cId <- mcId
-                    st^?csChannel(cId)
-            in renderAutocompleteBox st mCurChan which ac
+            fromMaybe emptyWidget $ do
+                tId <- st^.csCurrentTeamId
+                let mcId = st^.csCurrentChannelId(tId)
+                    mCurChan = do
+                        cId <- mcId
+                        st^?csChannel(cId)
+                return $ renderAutocompleteBox st tId mCurChan which ac
 
 userNotInChannelMarker :: T.Text
 userNotInChannelMarker = "*"
@@ -62,11 +62,12 @@ elementTypeLabel ACEmoji = "Emoji"
 elementTypeLabel ACCommands = "Commands"
 
 renderAutocompleteBox :: ChatState
+                      -> TeamId
                       -> Maybe ClientChannel
                       -> SimpleGetter ChatState (EditState Name)
                       -> AutocompleteState Name
                       -> Widget Name
-renderAutocompleteBox st mCurChan which ac =
+renderAutocompleteBox st tId mCurChan which ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
@@ -90,12 +91,22 @@ renderAutocompleteBox st mCurChan which ac =
         cfg = st^.csResources.crConfiguration
         showingChanList = configShowChannelList cfg
         chanListWidth = configChannelListWidth cfg
-        maybeLimit w =
-            if not showingChanList
-            then w
-            else Widget Greedy Greedy $ do
-                ctx <- getContext
-                render $ hLimit (ctx^.availWidthL - (1 + chanListWidth)) w
+        maybeLimit = fromMaybe id $ do
+            let sub = if showingChanList
+                      then chanListWidth + 1
+                      else 0
+                threadNarrow = threadShowing && (cfg^.configThreadOrientationL `elem` [ThreadLeft, ThreadRight])
+                threadShowing = isJust $ st^.csTeam(tId).tsThreadInterface
+
+            if threadNarrow || sub > 0
+               then return $ \w -> Widget Greedy Greedy $ do
+                   ctx <- getContext
+                   let adjusted = ctx^.availWidthL - sub
+                       lim = if threadNarrow
+                             then (adjusted - 1) `div` 2
+                             else adjusted
+                   render $ hLimit lim w
+               else Nothing
 
     in if numResults == 0
        then emptyWidget
