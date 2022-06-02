@@ -63,6 +63,7 @@ drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent pre
     inMsgSelect = st^.which.miMode == MessageSelect
 
     interfaceContents =
+        freezeBorders $
         renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region
 
     bottomBorder =
