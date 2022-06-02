@@ -22,6 +22,8 @@ module Matterhorn.State.Common
   , doPendingUserFetches
   , doPendingUserStatusFetches
 
+  , setThreadOrientationByName
+
   -- Cache management
   , invalidateChannelRenderingCache
   , invalidateMessageRenderingCacheByPostId
@@ -33,7 +35,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( invalidateCacheEntry )
+import           Brick.Main ( invalidateCacheEntry, invalidateCache )
 import           Control.Concurrent ( MVar, putMVar, forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
@@ -421,3 +423,22 @@ invalidateChannelRenderingCache cId = do
 invalidateMessageRenderingCacheByPostId :: PostId -> MH ()
 invalidateMessageRenderingCacheByPostId pId = do
     mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId pId
+
+setThreadOrientationByName :: T.Text -> MH ()
+setThreadOrientationByName o = do
+    let o' = T.strip $ T.toLower o
+    new <- case o' of
+        "above" -> return $ Just ThreadAbove
+        "below" -> return $ Just ThreadBelow
+        "left"  -> return $ Just ThreadLeft
+        "right" -> return $ Just ThreadRight
+        _ -> do
+            postErrorMessage' $ T.pack $ "Invalid orientation: " <> show o
+            return Nothing
+
+    case new of
+        Nothing -> return ()
+        Just n -> do
+            csResources.crConfiguration.configThreadOrientationL .= n
+            postInfoMessage $ "Thread orientation set to " <> o'
+            mh invalidateCache

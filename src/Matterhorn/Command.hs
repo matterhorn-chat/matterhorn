@@ -32,6 +32,7 @@ import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelTopicWindow
 import           Matterhorn.State.ChannelSelect
+import           Matterhorn.State.Common
 import           Matterhorn.State.Logging
 import           Matterhorn.State.PostListOverlay
 import           Matterhorn.State.UserListOverlay
@@ -39,7 +40,6 @@ import           Matterhorn.State.ChannelListOverlay
 import           Matterhorn.State.ThemeListOverlay
 import           Matterhorn.State.Messages
 import           Matterhorn.State.NotifyPrefs
-import           Matterhorn.State.Common ( postInfoMessage )
 import           Matterhorn.State.Teams
 import           Matterhorn.State.Users
 import           Matterhorn.Themes ( attrForUsername )
@@ -240,6 +240,9 @@ commandList =
 
   , Cmd "cycle-channel-list-sorting" "Cycle through channel list sorting modes for this team" NoArg $ \_ ->
         withCurrentTeam cycleChannelListSortingMode
+
+  , Cmd "thread-orientation" "Set the orientation of the thread UI" (LineArg "left|right|above|below") $ \o ->
+        setThreadOrientationByName o
 
   , Cmd "focus" "Focus on a channel or user"
     (ChannelArg NoArg) $ \ (name, ()) -> do
