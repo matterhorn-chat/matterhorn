@@ -270,7 +270,12 @@ parseUsername = P.try $ do
         period = case C.tokenize "" "." of
             [p] -> p
             _ -> error "BUG: parseUsername: failed to tokenize basic input"
-    uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
+    uts <- intersperse period <$> do
+        c <- chunk
+        rest <- P.many $ P.try $ do
+            void $ C.symbol '.'
+            chunk
+        return $ c : rest
     return $ singleI $ EUser $ C.untokenize uts
 
 -- Syntax extension for parsing :emoji: references.
