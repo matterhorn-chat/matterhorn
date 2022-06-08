@@ -95,6 +95,7 @@ module Matterhorn.Types
   , configChannelListOrientationL
   , configThreadOrientationL
   , configMouseModeL
+  , configShowLastOpenThreadL
 
   , NotificationVersion(..)
   , HelpScreen(..)
@@ -570,6 +571,9 @@ data Config =
            -- main channel message window.
            , configMouseMode :: Bool
            -- ^ Whether to enable mouse support in matterhorn
+           , configShowLastOpenThread :: Bool
+           -- ^ Whether to re-open a thread that was open the last time
+           -- Matterhorn quit
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.

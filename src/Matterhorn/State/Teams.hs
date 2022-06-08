@@ -52,6 +52,7 @@ import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
+import {-# SOURCE #-} Matterhorn.State.ThreadWindow
 import {-# SOURCE #-} Matterhorn.State.Messages
 import           Matterhorn.State.Setup.Threads ( newSpellCheckTimer )
 import qualified Matterhorn.Zipper as Z
@@ -189,15 +190,14 @@ buildTeamState cr me team = do
         config = cr^.crConfiguration
         eventQueue = cr^.crEventQueue
 
-    -- Create a predicate to find the last selected channel by reading
-    -- the run state file. If unable to read or decode or validate the
-    -- file, this predicate is just `isTownSquare`.
-    isLastSelectedChannel <- do
-        result <- readLastRunState tId
-        case result of
-            Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
-                 Just (channelId c) == lrs^.lrsSelectedChannelId
-            _ -> return isTownSquare
+    lrsResult <- readLastRunState tId
+    let mLrs = case lrsResult of
+            Right lrs | isValidLastRunState cr me lrs -> Just lrs
+            _ -> Nothing
+
+        -- Create a predicate to find the last selected channel by
+        -- checking the last run state.
+        isLastSelectedChannel = maybe isTownSquare (\lrs c -> Just (channelId c) == lrs^.lrsSelectedChannelId) mLrs
 
     -- Get all channels, but filter down to just the one we want
     -- to start in. We get all, rather than requesting by name or
@@ -223,6 +223,15 @@ buildTeamState cr me team = do
                                           mempty clientChans noUsers
         chanZip = Z.fromList chanIds
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
+
+    -- If the configuration says to open any last open thread, then
+    -- schedule it to be opened.
+    when (configShowLastOpenThread config) $ do
+        let maybeOpenThread = do
+                lrs <- mLrs
+                (cId, pId) <- lrs^.lrsOpenThread
+                return $ scheduleMH cr (openThreadWindow tId cId pId)
+        fromMaybe (return ()) maybeOpenThread
 
     let ts = newTeamState config team chanZip
     return (ts, clientChans)

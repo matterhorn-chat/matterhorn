@@ -129,6 +129,8 @@ fromIni = do
               | otherwise -> Just i
     configHyperlinkingMode <- fieldFlagDef "hyperlinkURLs"
       (configHyperlinkingMode defaultConfig)
+    configShowLastOpenThread <- fieldFlagDef "showLastOpenThread"
+      (configShowLastOpenThread defaultConfig)
     configPass <- (Just . PasswordCommand <$> field "passcmd") <!>
                   (Just . PasswordString  <$> field "pass") <!>
                   pure Nothing
@@ -309,6 +311,7 @@ defaultConfig =
            , configShowTypingIndicator         = False
            , configSendTypingNotifications     = False
            , configHyperlinkingMode            = True
+           , configShowLastOpenThread          = False
            , configSyntaxDirs                  = []
            , configDirectChannelExpirationDays = 7
            , configCpuUsagePolicy              = MultipleCPUs
