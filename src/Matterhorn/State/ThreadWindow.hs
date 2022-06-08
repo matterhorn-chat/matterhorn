@@ -33,7 +33,6 @@ openThreadWindow tId cId pId = do
                   let numPosts = HM.size (MM.postsPosts posts)
 
                   when (numPosts > 0) $ do
-                      st <- use id
                       eventQueue <- use (csResources.crEventQueue)
                       msgs <- installMessagesFromPosts (Just tId) posts
 
@@ -42,6 +41,7 @@ openThreadWindow tId cId pId = do
                                | p <- toList (posts^.postsOrderL)
                                ]
 
+                      st <- use id
                       let mMsg = getMessageForPostId st pId
                       case mMsg of
                           Just rootMsg | Just rootPost <- rootMsg^.mOriginalPost -> do
