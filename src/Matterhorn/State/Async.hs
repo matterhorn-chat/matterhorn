@@ -8,6 +8,7 @@ module Matterhorn.State.Async
   , doAsyncMM
   , tryMM
   , endAsyncNOP
+  , scheduleMH
   )
 where
 
@@ -107,6 +108,11 @@ doAsyncWith prio act = do
 doAsyncIO :: AsyncPriority -> ChatState -> IO () -> IO ()
 doAsyncIO prio st act =
   doAsyncWithIO prio st (act >> return Nothing)
+
+scheduleMH :: ChatResources -> MH () -> IO ()
+scheduleMH r act = do
+    let queue = r^.crRequestQueue
+    STM.atomically $ STM.writeTChan queue $ return $ Just act
 
 -- | Run a computation in the background, returning a computation to be
 -- called on the 'ChatState' value.
