@@ -45,7 +45,7 @@
 | `/shortcuts` | Show keyboard shortcuts |
 | `/theme` | List the available themes |
 | `/theme <theme>` | Set the color theme |
-| `/thread-orientation <left|right|above|below>` | Set the orientation of the thread UI |
+| `/thread-orientation <left\|right\|above\|below>` | Set the orientation of the thread UI |
 | `/toggle-channel-list` | Toggle channel list visibility |
 | `/toggle-expanded-topics` | Toggle expanded channel topics |
 | `/toggle-favorite` | Toggle the favorite status of the current channel |
