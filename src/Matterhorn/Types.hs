@@ -136,8 +136,6 @@ module Matterhorn.Types
 
   , TeamState(..)
   , tsFocus
-  , tsMode
-  , tsModeStack
   , tsPendingChannelChange
   , tsRecentChannel
   , tsReturnChannel
@@ -154,6 +152,10 @@ module Matterhorn.Types
   , tsChannelListSorting
   , tsThreadInterface
   , tsMessageInterfaceFocus
+
+  , teamMode
+  , teamModes
+  , getTeamMode
 
   , MessageInterfaceFocus(..)
   , messageInterfaceFocusNext
@@ -413,6 +415,7 @@ import           Matterhorn.Types.EditState
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.MessageInterface
+import           Matterhorn.Types.NonemptyStack
 import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText ( TeamBaseURL(..), TeamURLName(..) )
 import           Matterhorn.Types.TabbedWindow
@@ -1244,17 +1247,11 @@ data TeamState =
               , _tsChannelTopicDialog :: ChannelTopicDialogState
               -- ^ The state for the interactive channel topic editor
               -- window.
-              , _tsMode :: Mode
-              -- ^ The current application mode when viewing this team.
-              -- This is used to dispatch to different rendering and
-              -- event handling routines.
-              , _tsModeStack :: [Mode]
-              -- ^ The rest of the mode stack for this team. The current
-              -- mode is always in tsMode; "popping" off the stack
-              -- means replacing tsMode with the head of this list,
-              -- unless this list is empty, in which case the pop does
-              -- nothing. Pushing means pushing tsMode onto this list
-              -- and replacing tsMode.
+              , _tsModeStack :: NonemptyStack Mode
+              -- ^ The current application mode stack when viewing this
+              -- team. This is used to dispatch to different rendering
+              -- and event handling routines. The current mode is always
+              -- in at the top of the stack.
               , _tsReactionEmojiListWindow :: ListWindowState (Bool, T.Text) ()
               -- ^ The state of the reaction emoji list window.
               , _tsThemeListWindow :: ListWindowState InternalTheme ()
@@ -1754,7 +1751,7 @@ getResourceSession = _crSession
 
 whenMode :: TeamId -> Mode -> MH () -> MH ()
 whenMode tId m act = do
-    curMode <- use (csTeam(tId).tsMode)
+    curMode <- top <$> use (csTeam(tId).tsModeStack)
     when (curMode == m) act
 
 pushMode :: TeamId -> Mode -> MH ()
@@ -1767,21 +1764,20 @@ replaceMode tId m = popMode tId >> pushMode tId m
 
 popMode :: TeamId -> MH ()
 popMode tId = do
-    curStack <- use (csTeam(tId).tsModeStack)
-    case curStack of
-        [] -> return ()
-        (m:ms) -> do
-            csTeam(tId).tsMode .= m
-            csTeam(tId).tsModeStack .= ms
+    s <- use (csTeam(tId).tsModeStack)
+    let (s', topVal) = pop s
+    case topVal of
+        Nothing -> return ()
+        Just _ -> do
+            csTeam(tId).tsModeStack .= s'
             mh invalidateCache
 
 pushMode' :: TeamId -> Mode -> ChatState -> ChatState
 pushMode' tId m st =
-    let cur = st^.csTeam(tId).tsMode
-    in if cur == m
+    let s = st^.csTeam(tId).tsModeStack
+    in if top s == m
        then st
-       else st & csTeam(tId).tsMode .~ m
-               & csTeam(tId).tsModeStack %~ (cur:)
+       else st & csTeam(tId).tsModeStack %~ (push m)
 
 -- ** Utility Lenses
 csCurrentChannelId :: TeamId -> SimpleGetter ChatState (Maybe ChannelId)
@@ -1840,6 +1836,15 @@ csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
     lens (\ st -> st ^. csTeams . at tId ^?! _Just)
          (\ st t -> st & csTeams . at tId .~ Just t)
+
+teamMode :: TeamState -> Mode
+teamMode = top . _tsModeStack
+
+teamModes :: TeamState -> [Mode]
+teamModes = stackToList . _tsModeStack
+
+getTeamMode :: TeamId -> MH Mode
+getTeamMode tId = teamMode <$> use (csTeam(tId))
 
 channelListEntryUserId :: ChannelListEntry -> Maybe UserId
 channelListEntryUserId e =

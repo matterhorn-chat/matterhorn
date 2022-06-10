@@ -48,6 +48,7 @@ import qualified Network.Mattermost.Endpoints as MM
 import           Matterhorn.Types
 import           Matterhorn.Types.Common
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
+import           Matterhorn.Types.NonemptyStack
 import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
 import           Matterhorn.State.ChannelList
@@ -332,8 +333,7 @@ newTeamState :: Config
              -> TeamState
 newTeamState config team chanList =
     let tId = teamId team
-    in TeamState { _tsMode                     = Main
-                 , _tsModeStack                = []
+    in TeamState { _tsModeStack                = newStack Main
                  , _tsFocus                    = chanList
                  , _tsTeam                     = team
                  , _tsPostListWindow          = PostListWindowState emptyDirSeq Nothing

@@ -34,7 +34,7 @@ drawManageAttachments st tId =
                 in channelEditor(cId)
             FocusThread ->
                 unsafeThreadInterface(tId).miEditor
-        topLayer = case st^.csTeam(tId).tsMode of
+        topLayer = case teamMode $ st^.csTeam(tId) of
             ManageAttachments -> drawAttachmentList st editWhich
             ManageAttachmentsBrowseFiles -> drawFileBrowser st editWhich
             _ -> error "BUG: drawManageAttachments called in invalid mode"

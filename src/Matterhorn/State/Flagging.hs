@@ -60,7 +60,7 @@ updateMessageFlag pId f = do
 
               -- We also want to update the post window if this happens
               -- while we're we're observing it
-              mode <- use (csTeam tId.tsMode)
+              mode <- getTeamMode tId
               case mode of
                 PostListWindow PostListFlagged
                   | f ->

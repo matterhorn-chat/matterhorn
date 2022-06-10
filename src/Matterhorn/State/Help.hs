@@ -15,7 +15,7 @@ import           Matterhorn.Types
 
 showHelpScreen :: TeamId -> HelpTopic -> MH ()
 showHelpScreen tId topic = do
-    curMode <- use (csTeam(tId).tsMode)
+    curMode <- getTeamMode tId
     case curMode of
         ShowHelp {} -> return ()
         _ -> do

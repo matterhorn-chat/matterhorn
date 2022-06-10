@@ -34,7 +34,7 @@ onEventManageAttachments :: TeamId
                          -> V.Event
                          -> MH ()
 onEventManageAttachments tId which e = do
-    mode <- use (csTeam(tId).tsMode)
+    mode <- getTeamMode tId
     case mode of
         ManageAttachments -> void $ onEventAttachmentList tId which e
         ManageAttachmentsBrowseFiles -> onEventBrowseFile tId which e

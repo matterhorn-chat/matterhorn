@@ -73,7 +73,7 @@ onBrickEvent e@(MouseDown n button modifier _) = do
         mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
         withCurrentTeam $ \tId -> do
-            mode <- use (csTeam(tId).tsMode)
+            mode <- getTeamMode tId
             mouseHandlerByMode tId mode e
 onBrickEvent (MouseUp {}) = do
     csLastMouseDownEvent .= Nothing
@@ -216,7 +216,7 @@ handleResizeEvent _ =
 handleTeamModeEvent :: Vty.Event -> MH Bool
 handleTeamModeEvent e = do
     withCurrentTeam $ \tId -> do
-        mode <- use (csTeam(tId).tsMode)
+        mode <- getTeamMode tId
         teamEventHandlerByMode tId mode e
     return True
 

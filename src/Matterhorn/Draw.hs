@@ -68,6 +68,6 @@ draw st =
                         ManageAttachmentsBrowseFiles  -> drawManageAttachments st tId : monochrome rest
                         EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
                         ChannelTopicWindow            -> drawChannelTopicWindow st tId : monochrome rest
-                topMode = st^.csTeam(tId).tsMode
-                stack = st^.csTeam(tId).tsModeStack
-            in drawMode topMode stack
+                topMode = teamMode $ st^.csTeam(tId)
+                otherModes = tail $ teamModes $ st^.csTeam(tId)
+            in drawMode topMode otherModes

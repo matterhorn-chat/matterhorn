@@ -97,7 +97,7 @@ renderChannelList st tId =
                  withVScrollBarHandles $
                  withClickableVScrollBars VScrollBar $
                  viewport (ChannelListViewport tId) Vertical $ sbPad body
-        body = case st^.csTeam(tId).tsMode of
+        body = case teamMode $ st^.csTeam(tId) of
             ChannelSelect ->
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
                     matches = if Z.isEmpty zipper

@@ -35,7 +35,7 @@ app = App
       case s^.csCurrentTeamId of
           Nothing -> showFirstCursor s cs
           Just tId ->
-              case s^.csTeam(tId).tsMode of
+              case teamMode $ s^.csTeam(tId) of
                   Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
                       FocusCurrentChannel -> do
                           cId <- s^.csCurrentChannelId(tId)
