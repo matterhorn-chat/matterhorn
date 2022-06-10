@@ -17,6 +17,7 @@ module Matterhorn.State.Common
   , postErrorMessage'
   , addEmoteFormatting
   , removeEmoteFormatting
+  , toggleMouseMode
 
   , fetchMentionedUsers
   , doPendingUserFetches
@@ -35,7 +36,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( invalidateCacheEntry, invalidateCache )
+import           Brick.Main ( invalidateCacheEntry, invalidateCache, getVtyHandle )
 import           Control.Concurrent ( MVar, putMVar, forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
@@ -44,6 +45,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), (%=), (%~), (.~) )
 import           System.Directory ( createDirectoryIfMissing )
 import           System.Environment.XDG.BaseDir ( getUserCacheDir )
@@ -442,3 +444,13 @@ setThreadOrientationByName o = do
             csResources.crConfiguration.configThreadOrientationL .= n
             postInfoMessage $ "Thread orientation set to " <> o'
             mh invalidateCache
+
+toggleMouseMode :: MH ()
+toggleMouseMode = do
+    vty <- mh getVtyHandle
+    csResources.crConfiguration.configMouseModeL %= not
+    newMode <- use (csResources.crConfiguration.configMouseModeL)
+    liftIO $ Vty.setMode (Vty.outputIface vty) Vty.Mouse newMode
+    postInfoMessage $ if newMode
+                      then "Mouse input is now enabled."
+                      else "Mouse input is now disabled."

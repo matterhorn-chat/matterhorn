@@ -309,6 +309,9 @@ commandList =
             withCurrentChannel tId $ \cId _ ->
                 attachFileByPath tId (channelEditor(cId)) path
 
+  , Cmd "toggle-mouse-input" "Toggle whether mouse input is enabled" NoArg $ \_ ->
+        toggleMouseMode
+
   , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
         withCurrentTeam toggleChannelFavoriteStatus
 
