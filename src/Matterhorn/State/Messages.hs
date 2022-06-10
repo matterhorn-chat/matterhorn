@@ -1029,17 +1029,12 @@ asyncFetchAttachments p = do
         return $ Just $ do
             csChannelMessages(cId).traversed %= addAttachment
 
-            case postRootId p of
-               Nothing -> return ()
-               Just parentId -> do
-                   withChannel cId $ \chan -> do
-                       let mTId = chan^.ccInfo.cdTeamId
-                       case mTId of
-                           Nothing -> return ()
-                           Just tId -> do
-                               mRoot <- preuse (maybeThreadInterface(tId)._Just.miRootPostId)
-                               when (mRoot == Just parentId) $
-                                   modifyEachThreadMessage tId cId addAttachment
+            curTId <- use csCurrentTeamId
+            withChannel cId $ \chan -> do
+                let mTId = chan^.ccInfo.cdTeamId <|> curTId
+                case mTId of
+                    Nothing -> return ()
+                    Just tId -> modifyEachThreadMessage tId cId addAttachment
 
             invalidateChannelRenderingCache cId
             invalidateMessageRenderingCacheByPostId pId
