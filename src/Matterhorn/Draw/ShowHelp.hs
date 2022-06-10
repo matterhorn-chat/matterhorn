@@ -114,9 +114,12 @@ commandMarkdownTable =
     , "| Command | Description |"
     , "| ------- | ----------- |"
     ] <>
-    [ "| `" <> info <> "` | " <> desc <> " |"
+    [ "| `" <> escapePipes info <> "` | " <> escapePipes desc <> " |"
     | (info, desc) <- commandHelpInfo
     ]
+
+escapePipes :: Text -> Text
+escapePipes = T.replace "|" "\\|"
 
 drawHelpTopics :: Widget Name
 drawHelpTopics =
