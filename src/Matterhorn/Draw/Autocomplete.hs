@@ -18,6 +18,7 @@ import           Lens.Micro.Platform ( SimpleGetter, Lens' )
 import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
 
 import           Matterhorn.Constants ( normalChannelSigil )
+import           Matterhorn.Draw.Util ( mkChannelName )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
@@ -84,7 +85,7 @@ renderAutocompleteBox st tId mCurChan which ac =
             Nothing ->
                 hBorder
             Just curChan ->
-                case renderAutocompleteFooterFor curChan =<< selElem of
+                case renderAutocompleteFooterFor st curChan =<< selElem of
                     Just w -> hBorderWithLabel w
                     _ -> hBorder
         curUser = myUsername st
@@ -120,24 +121,24 @@ renderAutocompleteBox st tId mCurChan which ac =
                          , footer
                          ]
 
-renderAutocompleteFooterFor :: ClientChannel -> AutocompleteAlternative -> Maybe (Widget Name)
-renderAutocompleteFooterFor _ (SpecialMention MentionChannel) = Nothing
-renderAutocompleteFooterFor _ (SpecialMention MentionAll) = Nothing
-renderAutocompleteFooterFor ch (UserCompletion _ False) =
+renderAutocompleteFooterFor :: ChatState -> ClientChannel -> AutocompleteAlternative -> Maybe (Widget Name)
+renderAutocompleteFooterFor _ _ (SpecialMention MentionChannel) = Nothing
+renderAutocompleteFooterFor _ _ (SpecialMention MentionAll) = Nothing
+renderAutocompleteFooterFor st ch (UserCompletion _ False) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
                 , txt ": not a member of "
-                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> ch^.ccInfo.cdName)
+                , withDefAttr channelNameAttr (txt $ mkChannelName st (ch^.ccInfo))
                 , txt ")"
                 ]
-renderAutocompleteFooterFor _ (ChannelCompletion False ch) =
+renderAutocompleteFooterFor _ _ (ChannelCompletion False ch) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
                 , txt ": you are not a member of "
-                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> sanitizeUserText (channelName ch))
+                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> preferredChannelName ch)
                 , txt ")"
                 ]
-renderAutocompleteFooterFor _ (CommandCompletion src _ _ _) =
+renderAutocompleteFooterFor _ _ (CommandCompletion src _ _ _) =
     case src of
         Server ->
             Just $ hBox [ txt $ "("
@@ -145,7 +146,7 @@ renderAutocompleteFooterFor _ (CommandCompletion src _ _ _) =
                         , txt ": command provided by the server)"
                         ]
         Client -> Nothing
-renderAutocompleteFooterFor _ _ =
+renderAutocompleteFooterFor _ _ _ =
     Nothing
 
 serverCommandMarker :: Text
