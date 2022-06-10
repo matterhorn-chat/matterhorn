@@ -592,32 +592,13 @@ drawUrlSelectWindow st hs which =
 
 renderUrlList :: ChatState -> HighlightSet -> Lens' ChatState (MessageInterface Name i) -> Widget Name
 renderUrlList st hs which =
-    header <=> urlDisplay
+    urlDisplay
     where
-        header = fromMaybe emptyWidget headerFromSrc
-
-        headerFromSrc = do
-            title <- headerTitleFromSrc =<< src
-            return $ (withDefAttr channelHeaderAttr $
-                     (vLimit 1 (renderText' Nothing "" hs Nothing title <+> fill ' '))) <=> hBorder
-
-        headerTitleFromSrc (FromThreadIn cId) = do
-            cName <- channelNameFor cId
-            return $ "Links from thread in " <> cName
-        headerTitleFromSrc (FromChannel cId) = do
-            cName <- channelNameFor cId
-            return $ "Links from " <> cName
-
-        channelNameFor cId = do
-            chan <- st^?csChannel(cId)
-            return $ mkChannelName st (chan^.ccInfo)
-
         urlDisplay = if F.length urls == 0
-                     then str "No links found."
+                     then str "No links found." <=> fill ' '
                      else renderList renderItem True urls
 
         urls = st^.which.miUrlList.ulList
-        src = st^.which.miUrlList.ulSource
 
         me = myUsername st
 
