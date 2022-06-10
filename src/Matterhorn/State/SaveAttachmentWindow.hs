@@ -49,6 +49,5 @@ openSaveAttachmentWindow which = do
 
 closeSaveAttachmentWindow :: Lens' ChatState (MessageInterface n i)
                           -> MH ()
-closeSaveAttachmentWindow which = do
-    -- TODO: this might need to be some other mode
+closeSaveAttachmentWindow which =
     which.miMode .= Compose
