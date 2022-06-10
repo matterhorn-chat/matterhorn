@@ -336,9 +336,9 @@ newTeamState config team chanList =
     in TeamState { _tsModeStack                = newStack Main
                  , _tsFocus                    = chanList
                  , _tsTeam                     = team
-                 , _tsPostListWindow          = PostListWindowState emptyDirSeq Nothing
-                 , _tsUserListWindow          = nullUserListWindowState tId
-                 , _tsChannelListWindow       = nullChannelListWindowState tId
+                 , _tsPostListWindow           = PostListWindowState emptyDirSeq Nothing
+                 , _tsUserListWindow           = nullUserListWindowState tId
+                 , _tsChannelListWindow        = nullChannelListWindowState tId
                  , _tsChannelSelectState       = emptyChannelSelectState tId
                  , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
                  , _tsNotifyPrefs              = Nothing
@@ -346,8 +346,8 @@ newTeamState config team chanList =
                  , _tsRecentChannel            = Nothing
                  , _tsReturnChannel            = Nothing
                  , _tsViewedMessage            = Nothing
-                 , _tsThemeListWindow         = nullThemeListWindowState tId
-                 , _tsReactionEmojiListWindow = nullEmojiListWindowState tId
+                 , _tsThemeListWindow          = nullThemeListWindowState tId
+                 , _tsReactionEmojiListWindow  = nullEmojiListWindowState tId
                  , _tsChannelListSorting       = configChannelListSorting config
                  , _tsThreadInterface          = Nothing
                  , _tsMessageInterfaceFocus    = FocusCurrentChannel
@@ -357,53 +357,53 @@ nullChannelListWindowState :: TeamId -> ListWindowState Channel ChannelSearchSco
 nullChannelListWindowState tId =
     let newList rs = list (JoinChannelList tId) rs 2
     in ListWindowState { _listWindowSearchResults  = newList mempty
-                        , _listWindowSearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
-                        , _listWindowSearchScope    = AllChannels
-                        , _listWindowSearching      = False
-                        , _listWindowEnterHandler   = const $ return False
-                        , _listWindowNewList        = newList
-                        , _listWindowFetchResults   = const $ const $ const $ return mempty
-                        , _listWindowRecordCount    = Nothing
-                        }
+                       , _listWindowSearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = AllChannels
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
 
 nullThemeListWindowState :: TeamId -> ListWindowState InternalTheme ()
 nullThemeListWindowState tId =
     let newList rs = list (ThemeListSearchResults tId) rs 3
     in ListWindowState { _listWindowSearchResults  = newList mempty
-                        , _listWindowSearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
-                        , _listWindowSearchScope    = ()
-                        , _listWindowSearching      = False
-                        , _listWindowEnterHandler   = const $ return False
-                        , _listWindowNewList        = newList
-                        , _listWindowFetchResults   = const $ const $ const $ return mempty
-                        , _listWindowRecordCount    = Nothing
-                        }
+                       , _listWindowSearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = ()
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
 
 nullUserListWindowState :: TeamId -> ListWindowState UserInfo UserSearchScope
 nullUserListWindowState tId =
     let newList rs = list (UserListSearchResults tId) rs 1
     in ListWindowState { _listWindowSearchResults  = newList mempty
-                        , _listWindowSearchInput    = editor (UserListSearchInput tId) (Just 1) ""
-                        , _listWindowSearchScope    = AllUsers Nothing
-                        , _listWindowSearching      = False
-                        , _listWindowEnterHandler   = const $ return False
-                        , _listWindowNewList        = newList
-                        , _listWindowFetchResults   = const $ const $ const $ return mempty
-                        , _listWindowRecordCount    = Nothing
-                        }
+                       , _listWindowSearchInput    = editor (UserListSearchInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = AllUsers Nothing
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
 
 nullEmojiListWindowState :: TeamId -> ListWindowState (Bool, T.Text) ()
 nullEmojiListWindowState tId =
     let newList rs = list (ReactionEmojiList tId) rs 1
     in ListWindowState { _listWindowSearchResults  = newList mempty
-                        , _listWindowSearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
-                        , _listWindowSearchScope    = ()
-                        , _listWindowSearching      = False
-                        , _listWindowEnterHandler   = const $ return False
-                        , _listWindowNewList        = newList
-                        , _listWindowFetchResults   = const $ const $ const $ return mempty
-                        , _listWindowRecordCount    = Nothing
-                        }
+                       , _listWindowSearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = ()
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
 
 -- | Make a new channel topic editor window state.
 newChannelTopicDialog :: TeamId -> T.Text -> ChannelTopicDialogState
