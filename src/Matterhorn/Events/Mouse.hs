@@ -28,7 +28,6 @@ mouseHandlerByMode tId mode =
         ChannelSelect            -> channelSelectMouseHandler tId
         EditNotifyPrefs          -> void . handleEditNotifyPrefsEvent tId
         ReactionEmojiListOverlay -> reactionEmojiListMouseHandler tId
-        UrlSelect                -> urlListMouseHandler
         _                        -> globalMouseHandler tId
 
 -- Handle global mouse click events (when mode is not important).
@@ -82,6 +81,8 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             void $ toggleReaction pId t uIds
         ClickableChannelListGroupHeading label ->
             toggleChannelListGroupVisibility label
+        ClickableURLListEntry _ t ->
+            void $ openLinkTarget t
         VScrollBar e vpName -> do
             let vp = viewportScroll vpName
             mh $ case e of
@@ -93,12 +94,6 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
         _ ->
             return ()
 globalMouseHandler _ _ =
-    return ()
-
-urlListMouseHandler :: BrickEvent Name MHEvent -> MH ()
-urlListMouseHandler (MouseDown (ClickableURLListEntry _ t) _ _ _) =
-    void $ openLinkTarget t
-urlListMouseHandler _ =
     return ()
 
 channelSelectMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()

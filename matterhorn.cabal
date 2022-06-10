@@ -57,7 +57,6 @@ library
                        Matterhorn.Draw.ChannelListOverlay
                        Matterhorn.Draw.ChannelSelectPrompt
                        Matterhorn.Draw.ChannelTopicWindow
-                       Matterhorn.Draw.SaveAttachmentWindow
                        Matterhorn.Draw.DeleteChannelConfirm
                        Matterhorn.Draw.InputPreview
                        Matterhorn.Draw.LeaveChannelConfirm
@@ -76,7 +75,6 @@ library
                        Matterhorn.Draw.ShowHelp
                        Matterhorn.Draw.TabbedWindow
                        Matterhorn.Draw.ThemeListOverlay
-                       Matterhorn.Draw.URLList
                        Matterhorn.Draw.UserListOverlay
                        Matterhorn.Draw.Util
                        Matterhorn.Emoji

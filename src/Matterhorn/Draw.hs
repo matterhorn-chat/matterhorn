@@ -12,11 +12,9 @@ import Lens.Micro.Platform ( _2, singular, _Just )
 import Matterhorn.Draw.ChannelTopicWindow
 import Matterhorn.Draw.ChannelSelectPrompt
 import Matterhorn.Draw.MessageDeleteConfirm
-import Matterhorn.Draw.SaveAttachmentWindow
 import Matterhorn.Draw.DeleteChannelConfirm
 import Matterhorn.Draw.LeaveChannelConfirm
 import Matterhorn.Draw.Main
-import Matterhorn.Draw.URLList
 import Matterhorn.Draw.ThemeListOverlay
 import Matterhorn.Draw.PostListOverlay
 import Matterhorn.Draw.ShowHelp
@@ -58,7 +56,6 @@ draw st =
                         -- underneath.
                         ChannelSelect                -> drawChannelSelectPrompt st tId : drawMain st m
                         MessageSelectDeleteConfirm {} -> drawMessageDeleteConfirm : rest
-                        UrlSelect                    -> drawUrlSelectWindow st tId : monochrome rest
                         ThemeListOverlay             -> drawThemeListOverlay st tId : rest
                         LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : monochrome rest
                         DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : monochrome rest
@@ -71,7 +68,6 @@ draw st =
                         ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : monochrome rest
                         EditNotifyPrefs              -> drawNotifyPrefs st tId : monochrome rest
                         ChannelTopicWindow           -> drawChannelTopicWindow st tId : monochrome rest
-                        SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : monochrome rest
                 topMode = st^.csTeam(tId).tsMode
                 stack = st^.csTeam(tId).tsModeStack
             in drawMode topMode stack

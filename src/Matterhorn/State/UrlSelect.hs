@@ -11,41 +11,38 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
+import           Brick.Widgets.List ( listSelectedElement, listReplace )
 import qualified Data.Vector as V
-import           Lens.Micro.Platform ( (.=), to, Lens' )
-
-import           Network.Mattermost.Types ( TeamId )
+import           Lens.Micro.Platform ( (.=), (%=), to, Lens' )
 
 import           Matterhorn.State.Links
 import           Matterhorn.Types
 import           Matterhorn.Util
 
 
-startUrlSelect :: TeamId
-               -> Lens' ChatState (MessageInterface n i)
+startUrlSelect :: Lens' ChatState (MessageInterface n i)
                -> MH ()
-startUrlSelect tId which = do
+startUrlSelect which = do
     msgs <- use (which.miMessages)
     src <- use (which.miUrlListSource)
     let urls = V.fromList $ findUrls msgs
         urlsWithIndexes = V.indexed urls
-    pushMode tId UrlSelect
-    csTeam(tId).tsUrlList .= URLList { _ulList = listMoveTo (length urls - 1) $
-                                                 list (UrlList tId) urlsWithIndexes 2
-                                     , _ulSource = Just src
-                                     }
+    which.miMode .= ShowUrlList
+    which.miUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
+    which.miUrlList.ulSource .= Just src
 
-stopUrlSelect :: TeamId -> MH ()
-stopUrlSelect = popMode
+stopUrlSelect :: Lens' ChatState (MessageInterface n i)
+              -> MH ()
+stopUrlSelect which = do
+    which.miMode .= Compose
 
-openSelectedURL :: TeamId -> MH ()
-openSelectedURL tId = whenMode tId UrlSelect $ do
-    selected <- use (csTeam(tId).tsUrlList.ulList.to listSelectedElement)
+openSelectedURL :: Lens' ChatState (MessageInterface n i) -> MH ()
+openSelectedURL which = do
+    selected <- use (which.miUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)
-    popMode tId
+    stopUrlSelect which
 
 findUrls :: Messages -> [LinkChoice]
 findUrls ms =

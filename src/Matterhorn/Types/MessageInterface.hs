@@ -9,16 +9,33 @@ module Matterhorn.Types.MessageInterface
   , miChannelId
   , miTarget
   , miUrlListSource
+  , miUrlList
+  , miSaveAttachmentDialog
+
+  , messageInterfaceCursor
 
   , MessageInterfaceMode(..)
   , MessageInterfaceTarget(..)
   , URLListSource(..)
+
+  , URLList(..)
+  , ulList
+  , ulSource
+
+  , SaveAttachmentDialogState(..)
+  , attachmentPathEditor
+  , attachmentPathDialogFocus
   )
 where
 
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( getName )
+import           Brick.Focus ( FocusRing )
+import           Brick.Widgets.List ( List )
+import           Brick.Widgets.Edit ( Editor )
+import qualified Data.Text as T
 import           Lens.Micro.Platform ( makeLenses )
 import           Network.Mattermost.Types ( ChannelId, TeamId )
 
@@ -49,13 +66,30 @@ data MessageInterface n i =
                      , _miUrlListSource :: URLListSource
                      -- ^ How to characterize the URLs found in messages
                      -- in this interface
+                     , _miUrlList :: URLList n
+                     -- ^ The URL listing for this interface
+                     , _miSaveAttachmentDialog :: SaveAttachmentDialogState n
+                     -- ^ The state for the interactive attachment-saving
+                     -- editor window.
                      }
+
+messageInterfaceCursor :: MessageInterface n i -> Maybe n
+messageInterfaceCursor mi =
+    case _miMode mi of
+        Compose           -> Just $ getName $ _esEditor $ _miEditor mi
+        SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
+        MessageSelect     -> Nothing
+        ShowUrlList       -> Nothing
 
 data MessageInterfaceMode =
     Compose
     -- ^ Composing messages and interacting with the editor
     | MessageSelect
     -- ^ Selecting from messages in the listing
+    | ShowUrlList
+    -- ^ Show the URL listing
+    | SaveAttachment LinkChoice
+    -- ^ Show the attachment save UI
     deriving (Eq, Show)
 
 data URLListSource =
@@ -68,4 +102,19 @@ data MessageInterfaceTarget =
     | MIChannel ChannelId
     deriving (Eq, Show)
 
+data URLList n =
+    URLList { _ulList :: List n (Int, LinkChoice)
+            , _ulSource :: Maybe URLListSource
+            }
+
+-- | The state of the attachment path window.
+data SaveAttachmentDialogState n =
+    SaveAttachmentDialogState { _attachmentPathEditor :: Editor T.Text n
+                              -- ^ The attachment path editor state.
+                              , _attachmentPathDialogFocus :: FocusRing n
+                              -- ^ The window focus state (editor/buttons)
+                              }
+
 makeLenses ''MessageInterface
+makeLenses ''URLList
+makeLenses ''SaveAttachmentDialogState

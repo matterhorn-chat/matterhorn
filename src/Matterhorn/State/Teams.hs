@@ -291,7 +291,7 @@ newThreadInterface :: Maybe Aspell
                    -> IO ThreadInterface
 newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
     es <- emptyEditStateForThread checker eventQueue tId cId (Replying rootMsg rootPost)
-    return $ newMessageInterface cId (postId rootPost) msgs es (MITeamThread tId) (FromThreadIn cId)
+    return $ newMessageInterface cId (postId rootPost) msgs es (MITeamThread tId) (FromThreadIn cId) (UrlList cId (Just $ postId rootPost))
 
 newChannelMessageInterface :: Maybe Aspell
                            -> BCH.BChan MHEvent
@@ -301,16 +301,17 @@ newChannelMessageInterface :: Maybe Aspell
                            -> IO ChannelMessageInterface
 newChannelMessageInterface checker eventQueue tId cId msgs = do
     es <- emptyEditStateForChannel checker eventQueue tId cId
-    return $ newMessageInterface cId () msgs es (MIChannel cId) (FromChannel cId)
+    return $ newMessageInterface cId () msgs es (MIChannel cId) (FromChannel cId) (UrlList cId Nothing)
 
 newMessageInterface :: ChannelId
                     -> i
                     -> Messages
-                    -> EditState n
+                    -> EditState Name
                     -> MessageInterfaceTarget
                     -> URLListSource
-                    -> MessageInterface n i
-newMessageInterface cId pId msgs es target src =
+                    -> Name
+                    -> MessageInterface Name i
+newMessageInterface cId pId msgs es target src urlListName =
     MessageInterface { _miMessages = msgs
                      , _miRootPostId = pId
                      , _miChannelId = cId
@@ -319,6 +320,10 @@ newMessageInterface cId pId msgs es target src =
                      , _miEditor = es
                      , _miTarget = target
                      , _miUrlListSource = src
+                     , _miUrlList = URLList { _ulList = list urlListName mempty 2
+                                            , _ulSource = Nothing
+                                            }
+                     , _miSaveAttachmentDialog = newSaveAttachmentDialog urlListName "(unused)"
                      }
 
 newTeamState :: Config
@@ -331,9 +336,6 @@ newTeamState config team chanList =
                  , _tsModeStack                = []
                  , _tsFocus                    = chanList
                  , _tsTeam                     = team
-                 , _tsUrlList                  = URLList { _ulList = list (UrlList tId) mempty 2
-                                                         , _ulSource = Nothing
-                                                         }
                  , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
                  , _tsUserListOverlay          = nullUserListOverlayState tId
                  , _tsChannelListOverlay       = nullChannelListOverlayState tId
@@ -346,7 +348,6 @@ newTeamState config team chanList =
                  , _tsViewedMessage            = Nothing
                  , _tsThemeListOverlay         = nullThemeListOverlayState tId
                  , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
-                 , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
                  , _tsChannelListSorting       = configChannelListSorting config
                  , _tsThreadInterface          = Nothing
                  , _tsMessageInterfaceFocus    = FocusCurrentChannel
@@ -415,13 +416,13 @@ newChannelTopicDialog tId t =
                             }
 
 -- | Make a new attachment-saving editor window state.
-newSaveAttachmentDialog :: TeamId -> T.Text -> SaveAttachmentDialogState
-newSaveAttachmentDialog tId t =
+newSaveAttachmentDialog :: Name -> T.Text -> SaveAttachmentDialogState Name
+newSaveAttachmentDialog n t =
     SaveAttachmentDialogState { _attachmentPathEditor = applyEdit Z2.gotoEOL $
-                                                        editor (AttachmentPathEditor tId) (Just 1) t
-                              , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor tId
-                                                                       , AttachmentPathSaveButton tId
-                                                                       , AttachmentPathCancelButton tId
+                                                        editor (AttachmentPathEditor n) (Just 1) t
+                              , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor n
+                                                                       , AttachmentPathSaveButton n
+                                                                       , AttachmentPathCancelButton n
                                                                        ]
                               }
 

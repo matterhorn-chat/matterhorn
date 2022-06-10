@@ -8,9 +8,11 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Focus ( withFocusRing )
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
-import           Brick.Widgets.List ( listElements )
+import           Brick.Widgets.Center
+import           Brick.Widgets.List ( listElements, listSelectedElement, renderList )
 import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditContents )
 import           Data.Char ( isSpace, isPunctuation )
 import qualified Data.Foldable as F
@@ -24,23 +26,25 @@ import           Data.Time.Clock ( UTCTime(..) )
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, Lens', Traversal', SimpleGetter )
 
 import           Network.Mattermost.Types ( ChannelId, Type(Direct, Group)
-                                          , ServerTime(..), TeamId
+                                          , ServerTime(..), TeamId, idString
                                           )
 
-
 import           Matterhorn.Constants
+import           Matterhorn.Draw.Buttons
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.InputPreview
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.MessageSelect
+import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.KeyEvents
+import           Matterhorn.Types.RichText
 
 
 drawMessageInterface :: ChatState
@@ -54,17 +58,24 @@ drawMessageInterface :: ChatState
                      -> Bool
                      -> Widget Name
 drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent previewVpName focused =
-    vBox [ interfaceContents
-         , bottomBorder
-         , inputPreview st (which.miEditor) tId previewVpName hs
-         , inputArea st (which.miEditor) focused hs
-         ]
+    interfaceContents
     where
     inMsgSelect = st^.which.miMode == MessageSelect
 
     interfaceContents =
-        freezeBorders $
-        renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region
+        case st^.which.miMode of
+            Compose           -> renderMessages False
+            MessageSelect     -> renderMessages True
+            ShowUrlList       -> drawUrlSelectWindow st hs which
+            SaveAttachment {} -> drawSaveAttachmentWindow st which
+
+    renderMessages inMsgSel =
+        vBox [ freezeBorders $
+               renderMessageListing st inMsgSel showNewMsgLine tId hs which renderReplyIndent region
+             , bottomBorder
+             , inputPreview st (which.miEditor) tId previewVpName hs
+             , inputArea st (which.miEditor) focused hs
+             ]
 
     bottomBorder =
         if inMsgSelect
@@ -96,7 +107,7 @@ drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent pre
         let count = length $ listElements $ st^.which.miEditor.esAttachmentList
         in if count == 0
            then emptyWidget
-           else hBox [ borderElem bsHorizontal
+           else hBox [ hLimit 1 hBorder
                      , withDefAttr clientMessageAttr $
                        txt $ "(" <> (T.pack $ show count) <> " attachment" <>
                              (if count == 1 then "" else "s") <> "; "
@@ -190,7 +201,7 @@ messageSelectBottomBar st tId which =
                             )
                           ]
 
-            in hBox [ borderElem bsHorizontal
+            in hBox [ hLimit 1 hBorder
                     , txt "["
                     , optionList
                     , txt "]"
@@ -342,7 +353,7 @@ inputArea st which focused hs =
         curContents = getEditContents editor
         multilineContent = length curContents > 1
         multilineHints =
-            hBox [ borderElem bsHorizontal
+            hBox [ hLimit 1 hBorder
                  , str $ "[" <> (show $ (+1) $ fst $ cursorPosition $
                                         editor^.editContentsL) <>
                          "/" <> (show $ length curContents) <> "]"
@@ -479,10 +490,10 @@ data Token =
 -- if we did that, we'd still have to do this tokenization operation to
 -- annotate misspellings and reconstruct the user's raw input.
 doHighlightMisspellings :: HighlightSet -> S.Set Text -> [Text] -> Widget Name
-doHighlightMisspellings hSet misspellings contents =
+doHighlightMisspellings hs misspellings contents =
     -- Traverse the input, gathering non-whitespace into tokens and
     -- checking if they appear in the misspelling collection
-    let whitelist = S.union (hUserSet hSet) (hChannelSet hSet)
+    let whitelist = S.union (hUserSet hs) (hChannelSet hs)
 
         handleLine t | t == "" = txt " "
         handleLine t =
@@ -547,3 +558,132 @@ doHighlightMisspellings hSet misspellings contents =
 
     in vBox $ handleLine <$> contents
 
+drawSaveAttachmentWindow :: ChatState
+                         -> Lens' ChatState (MessageInterface Name i)
+                         -> Widget Name
+drawSaveAttachmentWindow st which =
+    center $
+    padAll 2 $
+    borderWithLabel (withDefAttr clientEmphAttr $ txt "Save Attachment") $
+    vBox [ padAll 1 $
+           txt "Path: " <+>
+           (vLimit editorHeight $
+            withFocusRing foc (renderEditor drawEditorTxt) ed)
+         , hBox [ padRight Max $
+                  padLeft (Pad 1) $
+                  drawButton foc (AttachmentPathSaveButton listName) "Save"
+                , padRight (Pad 1) $
+                  drawButton foc (AttachmentPathCancelButton listName) "Cancel"
+                ]
+         ]
+    where
+        editorHeight = 1
+        listName = getName $ st^.which.miUrlList.ulList
+        foc = st^.which.miSaveAttachmentDialog.attachmentPathDialogFocus
+        ed = st^.which.miSaveAttachmentDialog.attachmentPathEditor
+        drawEditorTxt = txt . T.unlines
+
+drawUrlSelectWindow :: ChatState -> HighlightSet -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+drawUrlSelectWindow st hs which =
+    vBox [ renderUrlList st hs which
+         , urlSelectBottomBar st which
+         , urlSelectInputArea st which
+         ]
+
+renderUrlList :: ChatState -> HighlightSet -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+renderUrlList st hs which =
+    header <=> urlDisplay
+    where
+        header = fromMaybe emptyWidget headerFromSrc
+
+        headerFromSrc = do
+            title <- headerTitleFromSrc =<< src
+            return $ (withDefAttr channelHeaderAttr $
+                     (vLimit 1 (renderText' Nothing "" hs Nothing title <+> fill ' '))) <=> hBorder
+
+        headerTitleFromSrc (FromThreadIn cId) = do
+            cName <- channelNameFor cId
+            return $ "Links from thread in " <> cName
+        headerTitleFromSrc (FromChannel cId) = do
+            cName <- channelNameFor cId
+            return $ "Links from " <> cName
+
+        channelNameFor cId = do
+            chan <- st^?csChannel(cId)
+            return $ mkChannelName st (chan^.ccInfo)
+
+        urlDisplay = if F.length urls == 0
+                     then str "No links found."
+                     else renderList renderItem True urls
+
+        urls = st^.which.miUrlList.ulList
+        src = st^.which.miUrlList.ulSource
+
+        me = myUsername st
+
+        renderItem sel (i, link) =
+          let time = link^.linkTime
+          in attr sel $ vLimit 2 $
+            (vLimit 1 $
+             hBox [ let u = maybe "<server>" id (link^.linkUser.to (printableNameForUserRef st))
+                    in colorUsername me u u
+                  , case link^.linkLabel of
+                      Nothing -> emptyWidget
+                      Just label ->
+                          case Seq.null (unInlines label) of
+                              True -> emptyWidget
+                              False -> txt ": " <+> renderRichText me hs Nothing False Nothing Nothing
+                                                    (Blocks $ Seq.singleton $ Para label)
+                  , fill ' '
+                  , renderDate st $ withServerTime time
+                  , str " "
+                  , renderTime st $ withServerTime time
+                  ] ) <=>
+            (vLimit 1 (clickable (ClickableURLListEntry i (link^.linkTarget)) $ renderLinkTarget (link^.linkTarget)))
+
+        renderLinkTarget (LinkPermalink (TeamURLName tName) pId) =
+            renderText $ "Team: " <> tName <> ", post " <> idString pId
+        renderLinkTarget (LinkURL url) = renderText $ unURL url
+        renderLinkTarget (LinkFileId _) = txt " "
+
+        attr True = forceAttr urlListSelectedAttr
+        attr False = id
+
+urlSelectBottomBar :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+urlSelectBottomBar st which =
+    case listSelectedElement $ st^.which.miUrlList.ulList of
+        Nothing -> hBorder
+        Just (_, (_, link)) ->
+            let options = [ ( isFile
+                            , ev SaveAttachmentEvent
+                            , "save attachment"
+                            )
+                          ]
+                ev = keyEventBindings st (urlSelectKeybindings which)
+                isFile entry = case entry^.linkTarget of
+                    LinkFileId {} -> True
+                    _ -> False
+                optionList = if null usableOptions
+                             then txt "(no actions available for this link)"
+                             else hBox $ intersperse (txt " ") usableOptions
+                usableOptions = catMaybes $ mkOption <$> options
+                mkOption (f, k, desc) = if f link
+                                        then Just $ withDefAttr urlSelectStatusAttr (txt k) <+>
+                                                    txt (":" <> desc)
+                                        else Nothing
+            in hBox [ hLimit 1 hBorder
+                    , txt "["
+                    , txt "Options: "
+                    , optionList
+                    , txt "]"
+                    , hBorder
+                    ]
+
+urlSelectInputArea :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+urlSelectInputArea st which =
+    let getBinding = keyEventBindings st (urlSelectKeybindings which)
+    in hCenter $ hBox [ withDefAttr clientEmphAttr $ txt "Enter"
+                      , txt ":open  "
+                      , withDefAttr clientEmphAttr $ txt $ getBinding CancelEvent
+                      , txt ":close"
+                      ]

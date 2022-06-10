@@ -28,7 +28,6 @@ import           Matterhorn.Types
 
 import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.ChannelTopicWindow
-import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.DeleteChannelConfirm
 import           Matterhorn.Events.Global
 import           Matterhorn.Events.Keybindings
@@ -38,7 +37,6 @@ import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.ThemeListOverlay
 import           Matterhorn.Events.PostListOverlay
 import           Matterhorn.Events.ShowHelp
-import           Matterhorn.Events.UrlSelect
 import           Matterhorn.Events.UserListOverlay
 import           Matterhorn.Events.ChannelListOverlay
 import           Matterhorn.Events.ReactionEmojiListOverlay
@@ -231,7 +229,6 @@ teamEventHandlerByMode tId mode e = do
         Main                       -> onEventMain tId e
         ShowHelp _                 -> void $ onEventShowHelp tId e
         ChannelSelect              -> void $ onEventChannelSelect tId e
-        UrlSelect                  -> void $ onEventUrlSelect tId e
         LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId e
         MessageSelectDeleteConfirm target ->
             case target of
@@ -266,7 +263,6 @@ teamEventHandlerByMode tId mode e = do
             onEventManageAttachments tId ed e
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
         ChannelTopicWindow         -> onEventChannelTopicWindow tId e
-        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId e
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the

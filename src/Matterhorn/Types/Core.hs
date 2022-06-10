@@ -47,7 +47,7 @@ data Name =
     | CompletionAlternatives TeamId
     | CompletionList ChannelId
     | JoinChannelList TeamId
-    | UrlList TeamId
+    | UrlList ChannelId (Maybe PostId)
     | MessagePreviewViewport TeamId
     | ThemeListSearchInput TeamId
     | UserListSearchInput TeamId
@@ -89,9 +89,9 @@ data Name =
     | ClickableURLListEntry Int LinkTarget
     | ClickableReaction PostId Text (Set UserId)
     | ClickableChannelListGroupHeading ChannelListGroupLabel
-    | AttachmentPathEditor TeamId
-    | AttachmentPathSaveButton TeamId
-    | AttachmentPathCancelButton TeamId
+    | AttachmentPathEditor Name
+    | AttachmentPathSaveButton Name
+    | AttachmentPathCancelButton Name
     | RenderedMessage MessageId
     | ReactionEmojiListOverlayEntry (Bool, T.Text)
     | SelectedChannelListEntry TeamId

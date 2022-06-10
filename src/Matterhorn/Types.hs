@@ -18,9 +18,6 @@ module Matterhorn.Types
   , handleEventWith
   , getServerBaseUrl
   , serverBaseUrl
-  , URLList(..)
-  , ulList
-  , ulSource
   , ConnectionInfo(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
@@ -45,10 +42,6 @@ module Matterhorn.Types
   , channelTopicDialogFocus
 
   , resultToWidget
-
-  , SaveAttachmentDialogState(..)
-  , attachmentPathEditor
-  , attachmentPathDialogFocus
 
   , Config(..)
   , configUserL
@@ -150,7 +143,6 @@ module Matterhorn.Types
   , tsReturnChannel
   , tsTeam
   , tsChannelSelectState
-  , tsUrlList
   , tsViewedMessage
   , tsPostListOverlay
   , tsUserListOverlay
@@ -159,7 +151,6 @@ module Matterhorn.Types
   , tsChannelTopicDialog
   , tsReactionEmojiListOverlay
   , tsThemeListOverlay
-  , tsSaveAttachmentDialog
   , tsChannelListSorting
   , tsThreadInterface
   , tsMessageInterfaceFocus
@@ -1108,7 +1099,6 @@ data Mode =
     Main
     | ShowHelp HelpTopic
     | ChannelSelect
-    | UrlSelect
     | LeaveChannelConfirm
     | DeleteChannelConfirm
     | MessageSelectDeleteConfirm MessageInterfaceTarget
@@ -1122,7 +1112,6 @@ data Mode =
     | ManageAttachmentsBrowseFiles
     | EditNotifyPrefs
     | ChannelTopicWindow
-    | SaveAttachmentWindow LinkChoice
     deriving (Eq, Show)
 
 -- | We're either connected or we're not.
@@ -1203,11 +1192,6 @@ data ChatState =
               -- ^ Bits of global state common to all editors.
               }
 
-data URLList =
-    URLList { _ulList :: List Name (Int, LinkChoice)
-            , _ulSource :: Maybe URLListSource
-            }
-
 -- | All application state specific to a team, along with state specific
 -- to our user interface's presentation of that team. We include the
 -- UI state relevant to the team so that we can easily switch which
@@ -1236,9 +1220,6 @@ data TeamState =
               , _tsChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
-              , _tsUrlList :: URLList
-              -- ^ The URL list used to show URLs drawn from messages in
-              -- a channel.
               , _tsViewedMessage :: Maybe (Message, TabbedWindow ChatState MH Name ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed. Note that this stores a message, not
@@ -1278,9 +1259,6 @@ data TeamState =
               -- ^ The state of the reaction emoji list overlay.
               , _tsThemeListOverlay :: ListOverlayState InternalTheme ()
               -- ^ The state of the theme list overlay.
-              , _tsSaveAttachmentDialog :: SaveAttachmentDialogState
-              -- ^ The state for the interactive attachment-saving
-              -- editor window.
               , _tsChannelListSorting :: ChannelListSorting
               -- ^ How to sort channels in this team's channel list
               -- groups
@@ -1354,14 +1332,6 @@ data ChannelTopicDialogState =
                             , _channelTopicDialogFocus :: FocusRing Name
                             -- ^ The window focus state (editor/buttons)
                             }
-
--- | The state of the attachment path window.
-data SaveAttachmentDialogState =
-    SaveAttachmentDialogState { _attachmentPathEditor :: Editor T.Text Name
-                              -- ^ The attachment path editor state.
-                              , _attachmentPathDialogFocus :: FocusRing Name
-                              -- ^ The window focus state (editor/buttons)
-                              }
 
 sortTeams :: [Team] -> [Team]
 sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
@@ -1704,8 +1674,6 @@ makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
-makeLenses ''SaveAttachmentDialogState
-makeLenses ''URLList
 Brick.suffixLenses ''Config
 
 -- | Given a list of event handlers and an event, try to handle the

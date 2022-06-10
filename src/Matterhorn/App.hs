@@ -9,11 +9,9 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
-import           Data.Maybe ( fromJust )
 import qualified Graphics.Vty as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
-import           Lens.Micro.Platform ( _Just )
 import           System.Posix.IO ( stdInput )
 
 import           Network.Mattermost
@@ -41,10 +39,13 @@ app = App
                   Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
                       FocusCurrentChannel -> do
                           cId <- s^.csCurrentChannelId(tId)
-                          showCursorNamed (MessageInput cId) cs
-                      FocusThread ->
-                          let cId = fromJust $ s^?csTeam(tId).tsThreadInterface._Just.miChannelId
-                          in showCursorNamed (ThreadMessageInput cId) cs
+                          mi <- s^?maybeChannelMessageInterface(cId)
+                          cur <- messageInterfaceCursor mi
+                          showCursorNamed cur cs
+                      FocusThread -> do
+                          ti <- s^.csTeam(tId).tsThreadInterface
+                          cur <- messageInterfaceCursor ti
+                          showCursorNamed cur cs
                   ChannelSelect                 -> showFirstCursor s cs
                   UserListOverlay               -> showFirstCursor s cs
                   ReactionEmojiListOverlay      -> showFirstCursor s cs
@@ -52,7 +53,6 @@ app = App
                   ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
                   ThemeListOverlay              -> showFirstCursor s cs
                   ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
-                  SaveAttachmentWindow _        -> showCursorNamed (AttachmentPathEditor tId) cs
                   LeaveChannelConfirm           -> Nothing
                   DeleteChannelConfirm          -> Nothing
                   MessageSelectDeleteConfirm {} -> Nothing
@@ -60,7 +60,6 @@ app = App
                   ManageAttachments             -> Nothing
                   ViewMessage                   -> Nothing
                   ShowHelp _                    -> Nothing
-                  UrlSelect                     -> Nothing
                   EditNotifyPrefs               -> Nothing
   , appHandleEvent  = Events.onEvent
   , appStartEvent   = return

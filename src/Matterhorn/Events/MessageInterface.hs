@@ -17,8 +17,10 @@ import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
+import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.Keybindings
+import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.Editing
 import           Matterhorn.State.UrlSelect
@@ -35,7 +37,7 @@ handleMessageInterfaceEvent tId which ev = do
     case mode of
         Compose ->
             handleEventWith [ handleKeyboardEvent (extraEditorKeybindings which)
-                            , handleKeyboardEvent (messageInterfaceKeybindings tId which)
+                            , handleKeyboardEvent (messageInterfaceKeybindings which)
                             , \e -> do
                                 case e of
                                     (Vty.EvPaste bytes) -> handlePaste (which.miEditor) bytes
@@ -44,18 +46,20 @@ handleMessageInterfaceEvent tId which ev = do
                             ] ev
         MessageSelect ->
             onEventMessageSelect tId which ev
+        ShowUrlList ->
+            onEventUrlSelect which ev
+        SaveAttachment {} ->
+            onEventSaveAttachmentWindow which ev
 
-messageInterfaceKeybindings :: TeamId
-                            -> Lens' ChatState (MessageInterface n i)
+messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig
                             -> KeyHandlerMap
-messageInterfaceKeybindings tId which =
-    mkKeybindings (messageInterfaceKeyHandlers tId which)
+messageInterfaceKeybindings which =
+    mkKeybindings (messageInterfaceKeyHandlers which)
 
-messageInterfaceKeyHandlers :: TeamId
-                            -> Lens' ChatState (MessageInterface n i)
+messageInterfaceKeyHandlers :: Lens' ChatState (MessageInterface n i)
                             -> [KeyEventHandler]
-messageInterfaceKeyHandlers tId which =
+messageInterfaceKeyHandlers which =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
         beginMessageSelect which
@@ -68,7 +72,7 @@ messageInterfaceKeyHandlers tId which =
         messageSelectFirst which
 
     , mkKb EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startUrlSelect tId which
+        startUrlSelect which
     ]
 
 extraEditorKeybindings :: Lens' ChatState (MessageInterface Name i)
