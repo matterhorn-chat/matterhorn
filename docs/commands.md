@@ -52,7 +52,7 @@
 | `/toggle-message-timestamps` | Toggle message timestamps |
 | `/toggle-mouse-input` | Toggle whether mouse input is enabled |
 | `/toggle-sidebar-group` | Toggle the visibility of the current channel's sidebar group |
-| `/toggle-sidebar-group <public|private|favorite|direct>` | Toggle the visibility of the named sidebar group |
+| `/toggle-sidebar-group <public\|private\|favorite\|direct>` | Toggle the visibility of the named sidebar group |
 | `/toggle-truncate-verbatim-blocks` | Toggle truncation of verbatim and code blocks |
 | `/topic` | Set the current channel's topic (header) interactively |
 | `/topic <topic>` | Set the current channel's topic (header) |
