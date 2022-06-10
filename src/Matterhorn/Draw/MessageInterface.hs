@@ -644,21 +644,21 @@ urlSelectBottomBar st which =
                 isFile entry = case entry^.linkTarget of
                     LinkFileId {} -> True
                     _ -> False
-                optionList = if null usableOptions
-                             then txt "(no actions available for this link)"
-                             else hBox $ intersperse (txt " ") usableOptions
+                optionList = hBox $ intersperse (txt " ") usableOptions
                 usableOptions = catMaybes $ mkOption <$> options
                 mkOption (f, k, desc) = if f link
                                         then Just $ withDefAttr urlSelectStatusAttr (txt k) <+>
                                                     txt (":" <> desc)
                                         else Nothing
-            in hBox [ hLimit 1 hBorder
-                    , txt "["
-                    , txt "Options: "
-                    , optionList
-                    , txt "]"
-                    , hBorder
-                    ]
+            in if null usableOptions
+               then hBorder
+               else hBox [ hLimit 1 hBorder
+                         , txt "["
+                         , txt "Options: "
+                         , optionList
+                         , txt "]"
+                         , hBorder
+                         ]
 
 urlSelectInputArea :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
 urlSelectInputArea st which =
