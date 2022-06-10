@@ -1,4 +1,4 @@
-module Matterhorn.State.ThemeListOverlay
+module Matterhorn.State.ThemeListWindow
   ( enterThemeListMode
 
   , themeListSelectDown
@@ -22,32 +22,32 @@ import           Lens.Micro.Platform ( (.=) )
 
 import           Network.Mattermost.Types
 
-import           Matterhorn.State.ListOverlay
+import           Matterhorn.State.ListWindow
 import           Matterhorn.Themes
 import           Matterhorn.Types
 
 
--- | Show the user list overlay with the given search scope, and issue a
+-- | Show the user list window with the given search scope, and issue a
 -- request to gather the first search results.
 enterThemeListMode :: TeamId -> MH ()
 enterThemeListMode tId =
-    enterListOverlayMode tId (csTeam(tId).tsThemeListOverlay)
-        ThemeListOverlay () (setInternalTheme tId) getThemesMatching
+    enterListWindowMode tId (csTeam(tId).tsThemeListWindow)
+        ThemeListWindow () (setInternalTheme tId) getThemesMatching
 
--- | Move the selection up in the user list overlay by one user.
+-- | Move the selection up in the user list window by one user.
 themeListSelectUp :: TeamId -> MH ()
 themeListSelectUp tId = themeListMove tId L.listMoveUp
 
--- | Move the selection down in the user list overlay by one user.
+-- | Move the selection down in the user list window by one user.
 themeListSelectDown :: TeamId -> MH ()
 themeListSelectDown tId = themeListMove tId L.listMoveDown
 
--- | Move the selection up in the user list overlay by a page of users
+-- | Move the selection up in the user list window by a page of users
 -- (themeListPageSize).
 themeListPageUp :: TeamId -> MH ()
 themeListPageUp tId = themeListMove tId (L.listMoveBy (-1 * themeListPageSize))
 
--- | Move the selection down in the user list overlay by a page of users
+-- | Move the selection down in the user list window by a page of users
 -- (themeListPageSize).
 themeListPageDown :: TeamId -> MH ()
 themeListPageDown tId = themeListMove tId (L.listMoveBy themeListPageSize)
@@ -56,7 +56,7 @@ themeListPageDown tId = themeListMove tId (L.listMoveBy themeListPageSize)
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 themeListMove :: TeamId -> (L.List Name InternalTheme -> L.List Name InternalTheme) -> MH ()
-themeListMove tId = listOverlayMove (csTeam(tId).tsThemeListOverlay)
+themeListMove tId = listWindowMove (csTeam(tId).tsThemeListWindow)
 
 -- | The number of users in a "page" for cursor movement purposes.
 themeListPageSize :: Int

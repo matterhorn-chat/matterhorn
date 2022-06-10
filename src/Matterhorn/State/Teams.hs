@@ -336,9 +336,9 @@ newTeamState config team chanList =
                  , _tsModeStack                = []
                  , _tsFocus                    = chanList
                  , _tsTeam                     = team
-                 , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
-                 , _tsUserListOverlay          = nullUserListOverlayState tId
-                 , _tsChannelListOverlay       = nullChannelListOverlayState tId
+                 , _tsPostListWindow          = PostListWindowState emptyDirSeq Nothing
+                 , _tsUserListWindow          = nullUserListWindowState tId
+                 , _tsChannelListWindow       = nullChannelListWindowState tId
                  , _tsChannelSelectState       = emptyChannelSelectState tId
                  , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
                  , _tsNotifyPrefs              = Nothing
@@ -346,63 +346,63 @@ newTeamState config team chanList =
                  , _tsRecentChannel            = Nothing
                  , _tsReturnChannel            = Nothing
                  , _tsViewedMessage            = Nothing
-                 , _tsThemeListOverlay         = nullThemeListOverlayState tId
-                 , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
+                 , _tsThemeListWindow         = nullThemeListWindowState tId
+                 , _tsReactionEmojiListWindow = nullEmojiListWindowState tId
                  , _tsChannelListSorting       = configChannelListSorting config
                  , _tsThreadInterface          = Nothing
                  , _tsMessageInterfaceFocus    = FocusCurrentChannel
                  }
 
-nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
-nullChannelListOverlayState tId =
+nullChannelListWindowState :: TeamId -> ListWindowState Channel ChannelSearchScope
+nullChannelListWindowState tId =
     let newList rs = list (JoinChannelList tId) rs 2
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = AllChannels
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                        , _listWindowSearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
+                        , _listWindowSearchScope    = AllChannels
+                        , _listWindowSearching      = False
+                        , _listWindowEnterHandler   = const $ return False
+                        , _listWindowNewList        = newList
+                        , _listWindowFetchResults   = const $ const $ const $ return mempty
+                        , _listWindowRecordCount    = Nothing
                         }
 
-nullThemeListOverlayState :: TeamId -> ListOverlayState InternalTheme ()
-nullThemeListOverlayState tId =
+nullThemeListWindowState :: TeamId -> ListWindowState InternalTheme ()
+nullThemeListWindowState tId =
     let newList rs = list (ThemeListSearchResults tId) rs 3
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = ()
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                        , _listWindowSearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
+                        , _listWindowSearchScope    = ()
+                        , _listWindowSearching      = False
+                        , _listWindowEnterHandler   = const $ return False
+                        , _listWindowNewList        = newList
+                        , _listWindowFetchResults   = const $ const $ const $ return mempty
+                        , _listWindowRecordCount    = Nothing
                         }
 
-nullUserListOverlayState :: TeamId -> ListOverlayState UserInfo UserSearchScope
-nullUserListOverlayState tId =
+nullUserListWindowState :: TeamId -> ListWindowState UserInfo UserSearchScope
+nullUserListWindowState tId =
     let newList rs = list (UserListSearchResults tId) rs 1
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (UserListSearchInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = AllUsers Nothing
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                        , _listWindowSearchInput    = editor (UserListSearchInput tId) (Just 1) ""
+                        , _listWindowSearchScope    = AllUsers Nothing
+                        , _listWindowSearching      = False
+                        , _listWindowEnterHandler   = const $ return False
+                        , _listWindowNewList        = newList
+                        , _listWindowFetchResults   = const $ const $ const $ return mempty
+                        , _listWindowRecordCount    = Nothing
                         }
 
-nullEmojiListOverlayState :: TeamId -> ListOverlayState (Bool, T.Text) ()
-nullEmojiListOverlayState tId =
+nullEmojiListWindowState :: TeamId -> ListWindowState (Bool, T.Text) ()
+nullEmojiListWindowState tId =
     let newList rs = list (ReactionEmojiList tId) rs 1
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = ()
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                        , _listWindowSearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
+                        , _listWindowSearchScope    = ()
+                        , _listWindowSearching      = False
+                        , _listWindowEnterHandler   = const $ return False
+                        , _listWindowNewList        = newList
+                        , _listWindowFetchResults   = const $ const $ const $ return mempty
+                        , _listWindowRecordCount    = Nothing
                         }
 
 -- | Make a new channel topic editor window state.

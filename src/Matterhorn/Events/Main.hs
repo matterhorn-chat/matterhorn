@@ -19,7 +19,7 @@ import           Matterhorn.State.Channels
 import           Matterhorn.State.Editing
 import           Matterhorn.State.Help
 import           Matterhorn.State.Teams
-import           Matterhorn.State.PostListOverlay ( enterFlaggedPostListMode )
+import           Matterhorn.State.PostListWindow ( enterFlaggedPostListMode )
 import           Matterhorn.Types
 
 onEventMain :: TeamId -> Vty.Event -> MH ()

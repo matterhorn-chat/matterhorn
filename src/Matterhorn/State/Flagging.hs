@@ -58,13 +58,13 @@ updateMessageFlag pId f = do
                       threadInterface(tId).miMessages.traversed.filtered isTargetMessage.mFlagged .= f
                   _ -> return ()
 
-              -- We also want to update the post overlay if this happens
+              -- We also want to update the post window if this happens
               -- while we're we're observing it
               mode <- use (csTeam tId.tsMode)
               case mode of
-                PostListOverlay PostListFlagged
+                PostListWindow PostListFlagged
                   | f ->
-                      csTeam tId.tsPostListOverlay.postListPosts %=
+                      csTeam tId.tsPostListWindow.postListPosts %=
                         addMessage (msg & mFlagged .~ True)
 
                   -- deleting here is tricky, because it means that we
@@ -72,13 +72,13 @@ updateMessageFlag pId f = do
                   -- it _up_ unless we can't, in which case we'll try
                   -- moving it down.
                   | otherwise -> do
-                      selId <- use (csTeam tId.tsPostListOverlay.postListSelected)
-                      posts <- use (csTeam tId.tsPostListOverlay.postListPosts)
+                      selId <- use (csTeam tId.tsPostListWindow.postListSelected)
+                      posts <- use (csTeam tId.tsPostListWindow.postListPosts)
                       let nextId = case getNextPostId selId posts of
                             Nothing -> getPrevPostId selId posts
                             Just x  -> Just x
-                      csTeam tId.tsPostListOverlay.postListSelected .= nextId
-                      csTeam tId.tsPostListOverlay.postListPosts %=
+                      csTeam tId.tsPostListWindow.postListSelected .= nextId
+                      csTeam tId.tsPostListWindow.postListPosts %=
                         filterMessages (((/=) `on` _mMessageId) msg)
                 _ -> return ()
 

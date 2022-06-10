@@ -34,10 +34,10 @@ import           Matterhorn.State.ChannelTopicWindow
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Common
 import           Matterhorn.State.Logging
-import           Matterhorn.State.PostListOverlay
-import           Matterhorn.State.UserListOverlay
-import           Matterhorn.State.ChannelListOverlay
-import           Matterhorn.State.ThemeListOverlay
+import           Matterhorn.State.PostListWindow
+import           Matterhorn.State.UserListWindow
+import           Matterhorn.State.ChannelListWindow
+import           Matterhorn.State.ThemeListWindow
 import           Matterhorn.State.Messages
 import           Matterhorn.State.NotifyPrefs
 import           Matterhorn.State.Teams
@@ -137,7 +137,7 @@ commandList =
         withCurrentTeam startLeaveCurrentChannel
 
   , Cmd "join" "Find a channel to join" NoArg $ \ () -> do
-        withCurrentTeam enterChannelListOverlayMode
+        withCurrentTeam enterChannelListWindowMode
 
   , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) -> do
         withCurrentTeam $ \tId ->

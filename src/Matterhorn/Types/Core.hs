@@ -93,7 +93,7 @@ data Name =
     | AttachmentPathSaveButton Name
     | AttachmentPathCancelButton Name
     | RenderedMessage MessageId
-    | ReactionEmojiListOverlayEntry (Bool, T.Text)
+    | ReactionEmojiListWindowEntry (Bool, T.Text)
     | SelectedChannelListEntry TeamId
     | VScrollBar Brick.ClickableScrollbarElement Name
     deriving (Eq, Show, Ord)

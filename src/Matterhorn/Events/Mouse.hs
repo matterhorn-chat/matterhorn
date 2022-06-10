@@ -12,7 +12,7 @@ import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Teams ( setTeam )
-import           Matterhorn.State.ListOverlay ( listOverlayActivate )
+import           Matterhorn.State.ListWindow ( listWindowActivate )
 import           Matterhorn.Types
 
 import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent )
@@ -27,7 +27,7 @@ mouseHandlerByMode tId mode =
     case mode of
         ChannelSelect            -> channelSelectMouseHandler tId
         EditNotifyPrefs          -> void . handleEditNotifyPrefsEvent tId
-        ReactionEmojiListOverlay -> reactionEmojiListMouseHandler tId
+        ReactionEmojiListWindow -> reactionEmojiListMouseHandler tId
         _                        -> globalMouseHandler tId
 
 -- Handle global mouse click events (when mode is not important).
@@ -104,7 +104,7 @@ channelSelectMouseHandler _ _ =
     return ()
 
 reactionEmojiListMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
-reactionEmojiListMouseHandler tId (MouseDown (ReactionEmojiListOverlayEntry val) _ _ _) =
-    listOverlayActivate tId (csTeam(tId).tsReactionEmojiListOverlay) val
+reactionEmojiListMouseHandler tId (MouseDown (ReactionEmojiListWindowEntry val) _ _ _) =
+    listWindowActivate tId (csTeam(tId).tsReactionEmojiListWindow) val
 reactionEmojiListMouseHandler _ _ =
     return ()

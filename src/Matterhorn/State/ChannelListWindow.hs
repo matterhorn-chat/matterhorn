@@ -1,5 +1,5 @@
-module Matterhorn.State.ChannelListOverlay
-  ( enterChannelListOverlayMode
+module Matterhorn.State.ChannelListWindow
+  ( enterChannelListWindowMode
 
   , channelListSelectDown
   , channelListSelectUp
@@ -21,15 +21,15 @@ import           Lens.Micro.Platform ( to )
 import           Network.Mattermost.Types
 import qualified Network.Mattermost.Endpoints as MM
 
-import           Matterhorn.State.ListOverlay
+import           Matterhorn.State.ListWindow
 import           Matterhorn.State.Channels
 import           Matterhorn.Types
 
 
-enterChannelListOverlayMode :: TeamId -> MH ()
-enterChannelListOverlayMode tId = do
+enterChannelListWindowMode :: TeamId -> MH ()
+enterChannelListWindowMode tId = do
     myChannels <- use (csChannels.to (filteredChannelIds (const True)))
-    enterListOverlayMode tId (csTeam(tId).tsChannelListOverlay) ChannelListOverlay
+    enterListWindowMode tId (csTeam(tId).tsChannelListWindow) ChannelListWindow
         AllChannels (enterHandler tId) (fetchResults tId myChannels)
 
 enterHandler :: TeamId -> Channel -> MH Bool
@@ -56,20 +56,20 @@ fetchResults myTId exclude AllChannels session searchString = do
         sortedChans = Vec.fromList $ toList $ Seq.sortBy (compare `on` channelDisplayName) filteredChans
     return sortedChans
 
--- | Move the selection up in the channel list overlay by one channel.
+-- | Move the selection up in the channel list window by one channel.
 channelListSelectUp :: TeamId -> MH ()
 channelListSelectUp tId = channelListMove tId L.listMoveUp
 
--- | Move the selection down in the channel list overlay by one channel.
+-- | Move the selection down in the channel list window by one channel.
 channelListSelectDown :: TeamId -> MH ()
 channelListSelectDown tId = channelListMove tId L.listMoveDown
 
--- | Move the selection up in the channel list overlay by a page of channels
+-- | Move the selection up in the channel list window by a page of channels
 -- (channelListPageSize).
 channelListPageUp :: TeamId -> MH ()
 channelListPageUp tId = channelListMove tId (L.listMoveBy (-1 * channelListPageSize))
 
--- | Move the selection down in the channel list overlay by a page of channels
+-- | Move the selection down in the channel list window by a page of channels
 -- (channelListPageSize).
 channelListPageDown :: TeamId -> MH ()
 channelListPageDown tId = channelListMove tId (L.listMoveBy channelListPageSize)
@@ -78,7 +78,7 @@ channelListPageDown tId = channelListMove tId (L.listMoveBy channelListPageSize)
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 channelListMove :: TeamId -> (L.List Name Channel -> L.List Name Channel) -> MH ()
-channelListMove tId = listOverlayMove (csTeam(tId).tsChannelListOverlay)
+channelListMove tId = listWindowMove (csTeam(tId).tsChannelListWindow)
 
 -- | The number of channels in a "page" for cursor movement purposes.
 channelListPageSize :: Int

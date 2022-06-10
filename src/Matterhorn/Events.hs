@@ -34,12 +34,12 @@ import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.LeaveChannelConfirm
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
-import           Matterhorn.Events.ThemeListOverlay
-import           Matterhorn.Events.PostListOverlay
+import           Matterhorn.Events.ThemeListWindow
+import           Matterhorn.Events.PostListWindow
 import           Matterhorn.Events.ShowHelp
-import           Matterhorn.Events.UserListOverlay
-import           Matterhorn.Events.ChannelListOverlay
-import           Matterhorn.Events.ReactionEmojiListOverlay
+import           Matterhorn.Events.UserListWindow
+import           Matterhorn.Events.ChannelListWindow
+import           Matterhorn.Events.ReactionEmojiListWindow
 import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.Mouse
@@ -237,11 +237,11 @@ teamEventHandlerByMode tId mode e = do
                 MIChannel cId ->
                     onEventMessageSelectDeleteConfirm tId (csChannelMessageInterface(cId)) e
         DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId e
-        ThemeListOverlay           -> onEventThemeListOverlay tId e
-        PostListOverlay _          -> onEventPostListOverlay tId e
-        UserListOverlay            -> onEventUserListOverlay tId e
-        ChannelListOverlay         -> onEventChannelListOverlay tId e
-        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay tId e
+        ThemeListWindow            -> onEventThemeListWindow tId e
+        PostListWindow _           -> onEventPostListWindow tId e
+        UserListWindow             -> onEventUserListWindow tId e
+        ChannelListWindow          -> onEventChannelListWindow tId e
+        ReactionEmojiListWindow    -> onEventReactionEmojiListWindow tId e
         ViewMessage                -> void $ (handleTabbedWindowEvent
                                               (csTeam(tId).tsViewedMessage.singular _Just._2)
                                               tId e)

@@ -15,12 +15,12 @@ import Matterhorn.Draw.MessageDeleteConfirm
 import Matterhorn.Draw.DeleteChannelConfirm
 import Matterhorn.Draw.LeaveChannelConfirm
 import Matterhorn.Draw.Main
-import Matterhorn.Draw.ThemeListOverlay
-import Matterhorn.Draw.PostListOverlay
+import Matterhorn.Draw.ThemeListWindow
+import Matterhorn.Draw.PostListWindow
 import Matterhorn.Draw.ShowHelp
-import Matterhorn.Draw.UserListOverlay
-import Matterhorn.Draw.ChannelListOverlay
-import Matterhorn.Draw.ReactionEmojiListOverlay
+import Matterhorn.Draw.UserListWindow
+import Matterhorn.Draw.ChannelListWindow
+import Matterhorn.Draw.ReactionEmojiListWindow
 import Matterhorn.Draw.TabbedWindow
 import Matterhorn.Draw.ManageAttachments
 import Matterhorn.Draw.NotifyPrefs
@@ -47,27 +47,27 @@ draw st =
                         -- mode stack because we expect the current mode
                         -- to be all we need to draw what should be on
                         -- the screen.
-                        Main                         -> drawMain st m
-                        ShowHelp topic               -> drawShowHelp topic st
+                        Main                          -> drawMain st m
+                        ShowHelp topic                -> drawShowHelp topic st
 
                         -- For the following modes, we want to draw the
                         -- whole mode stack since we expect the UI to
                         -- have layers and we want to show prior modes
                         -- underneath.
-                        ChannelSelect                -> drawChannelSelectPrompt st tId : drawMain st m
+                        ChannelSelect                 -> drawChannelSelectPrompt st tId : drawMain st m
                         MessageSelectDeleteConfirm {} -> drawMessageDeleteConfirm : rest
-                        ThemeListOverlay             -> drawThemeListOverlay st tId : rest
-                        LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : monochrome rest
-                        DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : monochrome rest
-                        PostListOverlay contents     -> drawPostListOverlay contents st tId : monochrome rest
-                        UserListOverlay              -> drawUserListOverlay st tId : monochrome rest
-                        ChannelListOverlay           -> drawChannelListOverlay st tId : monochrome rest
-                        ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : monochrome rest
-                        ViewMessage                  -> drawTabbedWindow messageViewWindow st tId : monochrome rest
-                        ManageAttachments            -> drawManageAttachments st tId : monochrome rest
-                        ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : monochrome rest
-                        EditNotifyPrefs              -> drawNotifyPrefs st tId : monochrome rest
-                        ChannelTopicWindow           -> drawChannelTopicWindow st tId : monochrome rest
+                        ThemeListWindow               -> drawThemeListWindow st tId : rest
+                        LeaveChannelConfirm           -> drawLeaveChannelConfirm st tId : monochrome rest
+                        DeleteChannelConfirm          -> drawDeleteChannelConfirm st tId : monochrome rest
+                        PostListWindow contents       -> drawPostListWindow contents st tId : monochrome rest
+                        UserListWindow                -> drawUserListWindow st tId : monochrome rest
+                        ChannelListWindow             -> drawChannelListWindow st tId : monochrome rest
+                        ReactionEmojiListWindow       -> drawReactionEmojiListWindow st tId : monochrome rest
+                        ViewMessage                   -> drawTabbedWindow messageViewWindow st tId : monochrome rest
+                        ManageAttachments             -> drawManageAttachments st tId : monochrome rest
+                        ManageAttachmentsBrowseFiles  -> drawManageAttachments st tId : monochrome rest
+                        EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
+                        ChannelTopicWindow            -> drawChannelTopicWindow st tId : monochrome rest
                 topMode = st^.csTeam(tId).tsMode
                 stack = st^.csTeam(tId).tsModeStack
             in drawMode topMode stack

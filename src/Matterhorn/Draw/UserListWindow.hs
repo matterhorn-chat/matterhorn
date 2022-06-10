@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Matterhorn.Draw.UserListOverlay
-  ( drawUserListOverlay
+module Matterhorn.Draw.UserListWindow
+  ( drawUserListWindow
   )
 where
 
@@ -17,20 +17,20 @@ import qualified Graphics.Vty as V
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Draw.Util ( userSigilFromInfo )
-import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
+import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 
 
-drawUserListOverlay :: ChatState -> TeamId -> Widget Name
-drawUserListOverlay st tId =
-    let overlay = drawListOverlay (st^.csTeam(tId).tsUserListOverlay) userSearchScopeHeader
+drawUserListWindow :: ChatState -> TeamId -> Widget Name
+drawUserListWindow st tId =
+    let window = drawListWindow (st^.csTeam(tId).tsUserListWindow) userSearchScopeHeader
                                   userSearchScopeNoResults userSearchScopePrompt
                                   (renderUser (myUsername st))
                                   Nothing
-                                  OverlayCenter
+                                  WindowCenter
                                   80
-    in joinBorders overlay
+    in joinBorders window
 
 userSearchScopePrompt :: UserSearchScope -> Widget Name
 userSearchScopePrompt scope =

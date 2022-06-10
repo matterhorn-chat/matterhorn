@@ -144,13 +144,13 @@ module Matterhorn.Types
   , tsTeam
   , tsChannelSelectState
   , tsViewedMessage
-  , tsPostListOverlay
-  , tsUserListOverlay
-  , tsChannelListOverlay
+  , tsPostListWindow
+  , tsUserListWindow
+  , tsChannelListWindow
   , tsNotifyPrefs
   , tsChannelTopicDialog
-  , tsReactionEmojiListOverlay
-  , tsThemeListOverlay
+  , tsReactionEmojiListWindow
+  , tsThemeListWindow
   , tsChannelListSorting
   , tsThreadInterface
   , tsMessageInterfaceFocus
@@ -203,22 +203,22 @@ module Matterhorn.Types
   , emptyGlobalEditState
   , gedYankBuffer
 
-  , PostListOverlayState(..)
+  , PostListWindowState(..)
   , postListSelected
   , postListPosts
 
   , UserSearchScope(..)
   , ChannelSearchScope(..)
 
-  , ListOverlayState(..)
-  , listOverlaySearchResults
-  , listOverlaySearchInput
-  , listOverlaySearchScope
-  , listOverlaySearching
-  , listOverlayEnterHandler
-  , listOverlayNewList
-  , listOverlayFetchResults
-  , listOverlayRecordCount
+  , ListWindowState(..)
+  , listWindowSearchResults
+  , listWindowSearchInput
+  , listWindowSearchScope
+  , listWindowSearching
+  , listWindowEnterHandler
+  , listWindowNewList
+  , listWindowFetchResults
+  , listWindowRecordCount
 
   , getUsers
 
@@ -1087,7 +1087,7 @@ data HelpTopic =
               }
               deriving (Eq, Show)
 
--- | Mode type for the current contents of the post list overlay
+-- | Mode type for the current contents of the post list window
 data PostListContents =
     PostListFlagged
     | PostListPinned ChannelId
@@ -1102,11 +1102,11 @@ data Mode =
     | LeaveChannelConfirm
     | DeleteChannelConfirm
     | MessageSelectDeleteConfirm MessageInterfaceTarget
-    | PostListOverlay PostListContents
-    | UserListOverlay
-    | ReactionEmojiListOverlay
-    | ChannelListOverlay
-    | ThemeListOverlay
+    | PostListWindow PostListContents
+    | UserListWindow
+    | ReactionEmojiListWindow
+    | ChannelListWindow
+    | ThemeListWindow
     | ViewMessage
     | ManageAttachments
     | ManageAttachmentsBrowseFiles
@@ -1230,12 +1230,12 @@ data TeamState =
               -- consult the chat state for the latest *version* of any
               -- message with an ID here, to be sure that the latest
               -- version is used (e.g. if it gets edited, etc.).
-              , _tsPostListOverlay :: PostListOverlayState
-              -- ^ The state of the post list overlay.
-              , _tsUserListOverlay :: ListOverlayState UserInfo UserSearchScope
-              -- ^ The state of the user list overlay.
-              , _tsChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
-              -- ^ The state of the user list overlay.
+              , _tsPostListWindow :: PostListWindowState
+              -- ^ The state of the post list window.
+              , _tsUserListWindow :: ListWindowState UserInfo UserSearchScope
+              -- ^ The state of the user list window.
+              , _tsChannelListWindow :: ListWindowState Channel ChannelSearchScope
+              -- ^ The state of the user list window.
               , _tsNotifyPrefs :: Maybe (Form ChannelNotifyProps MHEvent Name)
               -- ^ A form for editing the notification preferences for
               -- the current channel. This is set when entering
@@ -1255,10 +1255,10 @@ data TeamState =
               -- unless this list is empty, in which case the pop does
               -- nothing. Pushing means pushing tsMode onto this list
               -- and replacing tsMode.
-              , _tsReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
-              -- ^ The state of the reaction emoji list overlay.
-              , _tsThemeListOverlay :: ListOverlayState InternalTheme ()
-              -- ^ The state of the theme list overlay.
+              , _tsReactionEmojiListWindow :: ListWindowState (Bool, T.Text) ()
+              -- ^ The state of the reaction emoji list window.
+              , _tsThemeListWindow :: ListWindowState InternalTheme ()
+              -- ^ The state of the theme list window.
               , _tsChannelListSorting :: ChannelListSorting
               -- ^ How to sort channels in this team's channel list
               -- groups
@@ -1367,9 +1367,9 @@ emptyChannelSelectState tId =
                        , _channelSelectMatches = Z.fromList []
                        }
 
--- | The state of the post list overlay.
-data PostListOverlayState =
-    PostListOverlayState { _postListPosts    :: Messages
+-- | The state of the post list window.
+data PostListWindowState =
+    PostListWindowState { _postListPosts    :: Messages
                          , _postListSelected :: Maybe PostId
                          }
 
@@ -1379,34 +1379,34 @@ data InternalTheme =
                   , internalThemeDesc :: Text
                   }
 
--- | The state of the search result list overlay. Type 'a' is the type
+-- | The state of the search result list window. Type 'a' is the type
 -- of data in the list. Type 'b' is the search scope type.
-data ListOverlayState a b =
-    ListOverlayState { _listOverlaySearchResults :: List Name a
+data ListWindowState a b =
+    ListWindowState { _listWindowSearchResults :: List Name a
                      -- ^ The list of search results currently shown in
-                     -- the overlay.
-                     , _listOverlaySearchInput :: Editor Text Name
-                     -- ^ The editor for the overlay's search input.
-                     , _listOverlaySearchScope :: b
-                     -- ^ The overlay's current search scope.
-                     , _listOverlaySearching :: Bool
+                     -- the window.
+                     , _listWindowSearchInput :: Editor Text Name
+                     -- ^ The editor for the window's search input.
+                     , _listWindowSearchScope :: b
+                     -- ^ The window's current search scope.
+                     , _listWindowSearching :: Bool
                      -- ^ Whether a search is in progress (i.e. whether
                      -- we are currently awaiting a response from a
                      -- search query to the server).
-                     , _listOverlayEnterHandler :: a -> MH Bool
+                     , _listWindowEnterHandler :: a -> MH Bool
                      -- ^ The handler to invoke on the selected element
                      -- when the user presses Enter.
-                     , _listOverlayNewList :: Vec.Vector a -> List Name a
+                     , _listWindowNewList :: Vec.Vector a -> List Name a
                      -- ^ The function to build a new brick List from a
                      -- vector of search results.
-                     , _listOverlayFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
+                     , _listWindowFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
                      -- ^ The function to call to issue a search query
                      -- to the server.
-                     , _listOverlayRecordCount :: Maybe Int
+                     , _listWindowRecordCount :: Maybe Int
                      -- ^ The total number of available records, if known.
                      }
 
--- | The scope for searching for users in a user list overlay.
+-- | The scope for searching for users in a user list window.
 data UserSearchScope =
     ChannelMembers ChannelId TeamId
     | ChannelNonMembers ChannelId TeamId
@@ -1668,8 +1668,8 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''TeamState
 makeLenses ''GlobalEditState
-makeLenses ''PostListOverlayState
-makeLenses ''ListOverlayState
+makeLenses ''PostListWindowState
+makeLenses ''ListWindowState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo

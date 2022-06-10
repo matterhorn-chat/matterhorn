@@ -47,16 +47,16 @@ app = App
                           cur <- messageInterfaceCursor ti
                           showCursorNamed cur cs
                   ChannelSelect                 -> showFirstCursor s cs
-                  UserListOverlay               -> showFirstCursor s cs
-                  ReactionEmojiListOverlay      -> showFirstCursor s cs
-                  ChannelListOverlay            -> showFirstCursor s cs
+                  UserListWindow                -> showFirstCursor s cs
+                  ReactionEmojiListWindow       -> showFirstCursor s cs
+                  ChannelListWindow             -> showFirstCursor s cs
                   ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
-                  ThemeListOverlay              -> showFirstCursor s cs
+                  ThemeListWindow               -> showFirstCursor s cs
                   ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
                   LeaveChannelConfirm           -> Nothing
                   DeleteChannelConfirm          -> Nothing
                   MessageSelectDeleteConfirm {} -> Nothing
-                  PostListOverlay _             -> Nothing
+                  PostListWindow _              -> Nothing
                   ManageAttachments             -> Nothing
                   ViewMessage                   -> Nothing
                   ShowHelp _                    -> Nothing

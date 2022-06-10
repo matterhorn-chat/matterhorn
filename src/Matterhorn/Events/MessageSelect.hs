@@ -18,7 +18,7 @@ import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.MessageSelect
-import           Matterhorn.State.ReactionEmojiListOverlay
+import           Matterhorn.State.ReactionEmojiListWindow
 import           Matterhorn.Types
 
 
@@ -114,7 +114,7 @@ messageSelectKeyHandlers tId which =
          mMsg <- use (to (getSelectedMessage which))
          case mMsg of
              Nothing -> return ()
-             Just m -> enterReactionEmojiListOverlayMode tId m
+             Just m -> enterReactionEmojiListWindowMode tId m
 
     , mkKb CopyPostLinkEvent "Copy a post's link to the clipboard" $
          copyPostLink tId which

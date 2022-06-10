@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RankNTypes #-}
-module Matterhorn.State.ReactionEmojiListOverlay
-  ( enterReactionEmojiListOverlayMode
+module Matterhorn.State.ReactionEmojiListWindow
+  ( enterReactionEmojiListWindowMode
 
   , reactionEmojiListSelectDown
   , reactionEmojiListSelectUp
@@ -24,16 +24,16 @@ import           Data.List ( nubBy )
 import           Network.Mattermost.Types
 
 import           Matterhorn.Emoji
-import           Matterhorn.State.ListOverlay
+import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
 import           Matterhorn.State.Reactions ( updateReaction )
 
 
-enterReactionEmojiListOverlayMode :: TeamId -> Message -> MH ()
-enterReactionEmojiListOverlayMode tId msg = do
+enterReactionEmojiListWindowMode :: TeamId -> Message -> MH ()
+enterReactionEmojiListWindowMode tId msg = do
     em <- use (csResources.crEmoji)
     myId <- gets myUserId
-    enterListOverlayMode tId (csTeam(tId).tsReactionEmojiListOverlay) ReactionEmojiListOverlay
+    enterListWindowMode tId (csTeam(tId).tsReactionEmojiListWindow) ReactionEmojiListWindow
         () (enterHandler msg) (fetchResults myId msg em)
 
 enterHandler :: Message -> (Bool, T.Text) -> MH Bool
@@ -75,20 +75,20 @@ fetchResults myId msg em () session searchString = do
     return $ Vec.fromList $ nubBy ((==) `on` snd) $
         matchingCurrentOtherReactions <> matchingCurrentMyReactions <> ((False,) <$> serverMatches)
 
--- | Move the selection up in the emoji list overlay by one emoji.
+-- | Move the selection up in the emoji list window by one emoji.
 reactionEmojiListSelectUp :: TeamId -> MH ()
 reactionEmojiListSelectUp tId = reactionEmojiListMove tId L.listMoveUp
 
--- | Move the selection down in the emoji list overlay by one emoji.
+-- | Move the selection down in the emoji list window by one emoji.
 reactionEmojiListSelectDown :: TeamId -> MH ()
 reactionEmojiListSelectDown tId = reactionEmojiListMove tId L.listMoveDown
 
--- | Move the selection up in the emoji list overlay by a page of emoji
+-- | Move the selection up in the emoji list window by a page of emoji
 -- (ReactionEmojiListPageSize).
 reactionEmojiListPageUp :: TeamId -> MH ()
 reactionEmojiListPageUp tId = reactionEmojiListMove tId (L.listMoveBy (-1 * reactionEmojiListPageSize))
 
--- | Move the selection down in the emoji list overlay by a page of emoji
+-- | Move the selection down in the emoji list window by a page of emoji
 -- (ReactionEmojiListPageSize).
 reactionEmojiListPageDown :: TeamId -> MH ()
 reactionEmojiListPageDown tId = reactionEmojiListMove tId (L.listMoveBy reactionEmojiListPageSize)
@@ -97,7 +97,7 @@ reactionEmojiListPageDown tId = reactionEmojiListMove tId (L.listMoveBy reaction
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 reactionEmojiListMove :: TeamId -> (L.List Name (Bool, T.Text) -> L.List Name (Bool, T.Text)) -> MH ()
-reactionEmojiListMove tId = listOverlayMove (csTeam(tId).tsReactionEmojiListOverlay)
+reactionEmojiListMove tId = listWindowMove (csTeam(tId).tsReactionEmojiListWindow)
 
 -- | The number of emoji in a "page" for cursor movement purposes.
 reactionEmojiListPageSize :: Int

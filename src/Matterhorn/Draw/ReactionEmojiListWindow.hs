@@ -1,5 +1,5 @@
-module Matterhorn.Draw.ReactionEmojiListOverlay
-  ( drawReactionEmojiListOverlay
+module Matterhorn.Draw.ReactionEmojiListWindow
+  ( drawReactionEmojiListWindow
   )
 where
 
@@ -12,29 +12,29 @@ import qualified Data.Text as T
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
+import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Types
 import           Matterhorn.Themes
 
 
-drawReactionEmojiListOverlay :: ChatState -> TeamId -> Widget Name
-drawReactionEmojiListOverlay st tId =
-    let overlay = drawListOverlay (st^.csTeam(tId).tsReactionEmojiListOverlay)
+drawReactionEmojiListWindow :: ChatState -> TeamId -> Widget Name
+drawReactionEmojiListWindow st tId =
+    let window = drawListWindow (st^.csTeam(tId).tsReactionEmojiListWindow)
                                   (const $ txt "Search Emoji")
                                   (const $ txt "No matching emoji found.")
                                   (const $ txt "Search emoji:")
                                   renderEmoji
                                   Nothing
-                                  OverlayCenter
+                                  WindowCenter
                                   80
-    in joinBorders overlay
+    in joinBorders window
 
 renderEmoji :: Bool -> (Bool, T.Text) -> Widget Name
 renderEmoji sel (mine, e) =
     let maybeForce = if sel
                      then forceAttr listSelectedFocusedAttr
                      else id
-    in clickable (ReactionEmojiListOverlayEntry (mine, e)) $
+    in clickable (ReactionEmojiListWindowEntry (mine, e)) $
        maybeForce $
        padRight Max $
        hBox [ if mine then txt " * " else txt "   "

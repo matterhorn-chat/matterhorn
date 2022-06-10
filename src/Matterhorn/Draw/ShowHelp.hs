@@ -31,13 +31,13 @@ import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.MessageInterface
-import           Matterhorn.Events.ThemeListOverlay
-import           Matterhorn.Events.PostListOverlay
+import           Matterhorn.Events.ThemeListWindow
+import           Matterhorn.Events.PostListWindow
 import           Matterhorn.Events.ShowHelp
 import           Matterhorn.Events.UrlSelect
-import           Matterhorn.Events.UserListOverlay
-import           Matterhorn.Events.ChannelListOverlay
-import           Matterhorn.Events.ReactionEmojiListOverlay
+import           Matterhorn.Events.UserListWindow
+import           Matterhorn.Events.ChannelListWindow
+import           Matterhorn.Events.ReactionEmojiListWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Windows.ViewMessage
@@ -455,17 +455,17 @@ keybindSections =
     , ("Text Editing", editingKeyHandlers editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
     , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk whichThunk)
-    , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
+    , ("User Listings", userListWindowKeyHandlers teamIdThunk)
     , ("URL Select Mode", urlSelectKeyHandlers whichThunk)
-    , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
-    , ("Channel Search Window", channelListOverlayKeyHandlers teamIdThunk)
+    , ("Theme List Window", themeListWindowKeyHandlers teamIdThunk)
+    , ("Channel Search Window", channelListWindowKeyHandlers teamIdThunk)
     , ("Message Viewer: Common", tabbedWindowKeyHandlers teamIdThunk tabbedWinThunk)
     , ("Message Viewer: Message tab", viewMessageKeyHandlers teamIdThunk)
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
     , ("Attachment List", attachmentListKeyHandlers teamIdThunk editWhichThunk)
     , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk editWhichThunk)
-    , ("Flagged Messages", postListOverlayKeyHandlers teamIdThunk)
-    , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers teamIdThunk)
+    , ("Flagged Messages", postListWindowKeyHandlers teamIdThunk)
+    , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
     ]
 
 teamIdThunk :: TeamId
