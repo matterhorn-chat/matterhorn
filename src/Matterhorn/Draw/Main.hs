@@ -233,12 +233,8 @@ drawThreadWindow st tId = withDefAttr threadAttr body
                         _ -> "Thread in "
                 in prefix <> mkChannelName st (chan^.ccInfo)
 
-        -- TODO: "Thread from ~<channel>" or "Thread with @<user>[, @<user>[, ...]]"
-        -- depending on whether it's a DM/group/public thread or not
         title = renderText' Nothing "" hs Nothing titleText
-
         focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusThread
-
         body = title <=> hBorder <=> messageUI
         messageUI = drawMessageInterface st hs
                             (ThreadWindowMessages cId)
