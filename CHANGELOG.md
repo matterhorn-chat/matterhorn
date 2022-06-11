@@ -40,7 +40,8 @@ Once the thread window is open:
    the new `showLastOpenThread` config file setting to `True`.
 
 Other enhancements:
- * Add /toggle-mouse-input command to toggle whether mouse input is enabled at runtime
+ * There is a new `/toggle-mouse-input` command to toggle whether mouse
+   input is enabled at runtime.
  * Matterhorn now starts and uses only one instance of `aspell`. Prior
    to this release, Matterhorn started one instance of `aspell` per team.
  * The message text parser now properly recognizes usernames that are
