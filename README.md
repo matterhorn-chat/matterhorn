@@ -67,6 +67,7 @@ We provide a number of avenues for getting support:
 * Optimized channel-switching modes: `M-a`, `M-s`, and `C-g`
 * Message posting, editing, replying, and deletion
 * Markdown rendering
+* Support for participating in threads via the thread window
 * Convenient URL-opening with local browser
 * Secure password entry via external command (e.g. OSX keychain)
 * Secure authentication token entry via external command (e.g. OSX
