@@ -54,7 +54,8 @@ Other enhancements:
    "@user.blah" are valid Mattermost usernames.
 
 Bug fixes:
- * Fix bug where URLs were not clickable outside of messages
+ * Fixed a bug where clickable links were not clickable outside of
+   messages. This affected clickable links in channel topics.
 
 50200.16.0
 ==========
