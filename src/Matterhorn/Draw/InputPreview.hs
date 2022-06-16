@@ -65,7 +65,8 @@ inputPreview st editWhich tId vpName hs
                                   then noPreview
                                   else prview pm $ getParentMessage st pm
                      tag = MessagePreviewViewport eName
-                     prview m p = renderMessage MessageData
+                     prview m p = freezeBorders $
+                                  renderMessage MessageData
                                   { mdMessage           = m
                                   , mdUserName          = m^.mUser.to (printableNameForUserRef st)
                                   , mdParentMessage     = p
