@@ -341,7 +341,9 @@ inputArea st which focused hs =
         maybeHighlight = if focused
                          then withDefAttr focusedEditorPromptAttr
                          else id
-        prompt = maybeHighlight $ txt $ case st^.which.esEditMode of
+        prompt = maybeHighlight $
+                 reportExtent (MessageInputPrompt $ getName editor) $
+                 txt $ case st^.which.esEditMode of
             Replying {} ->
                 if showReplyPrompt then replyPrompt else normalPrompt
             Editing {}  ->

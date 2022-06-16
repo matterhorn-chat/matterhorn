@@ -113,7 +113,7 @@ renderAutocompleteBox st tId mCurChan which ac =
        then emptyWidget
        else Widget Greedy Greedy $ do
            let verticalOffset = -1 * (visibleHeight + 2)
-           render $ relativeTo editorName (Location (-2, verticalOffset)) $
+           render $ relativeTo (MessageInputPrompt editorName) (Location (0, verticalOffset)) $
                     maybeLimit $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
