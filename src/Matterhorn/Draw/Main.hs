@@ -34,10 +34,8 @@ import qualified Matterhorn.Zipper as Z
 
 drawMain :: ChatState -> Mode -> [Widget Name]
 drawMain st mode =
-    [ connectionLayer st
-    , drawAutocompleteLayer st
-    , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
-    ]
+    (connectionLayer st : drawAutocompleteLayers st) <>
+    [joinBorders $ mainInterface st mode (st^.csCurrentTeamId)]
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =

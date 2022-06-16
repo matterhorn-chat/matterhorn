@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Autocomplete
-  ( drawAutocompleteLayer
+  ( drawAutocompleteLayers
   )
 where
 
@@ -23,20 +23,21 @@ import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 
-drawAutocompleteLayer :: ChatState -> Widget Name
-drawAutocompleteLayer st = fromMaybe emptyWidget $ do
-    tId <- st^.csCurrentTeamId
-    case st^.csTeam(tId).tsMessageInterfaceFocus of
-        FocusCurrentChannel -> do
-            cId <- st^.csCurrentChannelId(tId)
-            return $ autocompleteLayer st (channelEditor(cId))
-        FocusThread -> do
-            void $ st^.csTeam(tId).tsThreadInterface
-            let ti :: Lens' ChatState ThreadInterface
-                ti = unsafeThreadInterface(tId)
-                ed :: SimpleGetter ChatState (EditState Name)
-                ed = ti.miEditor
-            return $ autocompleteLayer st ed
+drawAutocompleteLayers :: ChatState -> [Widget Name]
+drawAutocompleteLayers st =
+    catMaybes [ do
+                    tId <- st^.csCurrentTeamId
+                    cId <- st^.csCurrentChannelId(tId)
+                    return $ autocompleteLayer st (channelEditor(cId))
+              , do
+                    tId <- st^.csCurrentTeamId
+                    void $ st^.csTeam(tId).tsThreadInterface
+                    let ti :: Lens' ChatState ThreadInterface
+                        ti = unsafeThreadInterface(tId)
+                        ed :: SimpleGetter ChatState (EditState Name)
+                        ed = ti.miEditor
+                    return $ autocompleteLayer st ed
+              ]
 
 autocompleteLayer :: ChatState -> SimpleGetter ChatState (EditState Name) -> Widget Name
 autocompleteLayer st which =
