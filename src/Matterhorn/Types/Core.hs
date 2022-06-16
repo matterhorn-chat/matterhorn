@@ -55,7 +55,6 @@ data Name =
     | ChannelSelectInput TeamId
     | AttachmentList ChannelId
     | AttachmentFileBrowser ChannelId
-    | MessageReactionsArea TeamId
     | ReactionEmojiList TeamId
     | ReactionEmojiListInput TeamId
     | TabbedWindowTabBar TeamId
