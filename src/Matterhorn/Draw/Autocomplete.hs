@@ -76,6 +76,7 @@ renderAutocompleteBox st tId mCurChan which ac =
         numResults = length elements
         elements = matchList^.listElementsL
         editorName = getName $ st^.which.esEditor
+        isMultiline = st^.which.esEphemeral.eesMultiline
         label = withDefAttr clientMessageAttr $
                 txt $ elementTypeLabel (ac^.acType) <> ": " <> (T.pack $ show numResults) <>
                      " match" <> (if numResults == 1 then "" else "es") <>
@@ -110,11 +111,18 @@ renderAutocompleteBox st tId mCurChan which ac =
                    render $ hLimit lim w
                else Nothing
 
+        -- The top left corner of the editor area is given by the
+        -- prompt, or by the editor position if multiline is enabled (in
+        -- which case no prompt is drawn).
+        editorTop = if isMultiline
+                    then editorName
+                    else MessageInputPrompt editorName
+
     in if numResults == 0
        then emptyWidget
        else Widget Greedy Greedy $ do
            let verticalOffset = -1 * (visibleHeight + 2)
-           render $ relativeTo (MessageInputPrompt editorName) (Location (0, verticalOffset)) $
+           render $ relativeTo editorTop (Location (0, verticalOffset)) $
                     maybeLimit $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
