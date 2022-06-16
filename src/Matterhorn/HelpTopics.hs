@@ -24,25 +24,23 @@ helpTopics =
 
 mainHelpTopic :: HelpTopic
 mainHelpTopic =
-    HelpTopic "main" "This help page" MainHelp HelpText
+    HelpTopic "main" "This help page" MainHelp
 
 scriptHelpTopic :: HelpTopic
 scriptHelpTopic =
-    HelpTopic "scripts" "Help on available scripts" ScriptHelp ScriptHelpText
+    HelpTopic "scripts" "Help on available scripts" ScriptHelp
 
 themeHelpTopic :: HelpTopic
 themeHelpTopic =
-    HelpTopic "themes" "Help on color themes" ThemeHelp ThemeHelpText
+    HelpTopic "themes" "Help on color themes" ThemeHelp
 
 keybindingHelpTopic :: HelpTopic
 keybindingHelpTopic =
-    HelpTopic "keybindings" "Help on overriding keybindings"
-      KeybindingHelp KeybindingHelpText
+    HelpTopic "keybindings" "Help on overriding keybindings" KeybindingHelp
 
 syntaxHighlightingHelpTopic :: HelpTopic
 syntaxHighlightingHelpTopic =
-    HelpTopic "syntax" "Help on syntax highlighing"
-      SyntaxHighlightHelp SyntaxHighlightHelpText
+    HelpTopic "syntax" "Help on syntax highlighing" SyntaxHighlightHelp
 
 lookupHelpTopic :: Text -> Maybe HelpTopic
 lookupHelpTopic topic =

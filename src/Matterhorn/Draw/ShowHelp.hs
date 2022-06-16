@@ -53,7 +53,7 @@ import           Matterhorn.Types.KeyEvents ( BindingState(..), Binding(..)
 
 drawShowHelp :: HelpTopic -> ChatState -> [Widget Name]
 drawShowHelp topic st =
-    [helpBox (helpTopicViewportName topic) $ helpTopicDraw topic st]
+    [helpBox (helpTopicScreen topic) $ helpTopicDraw topic st]
 
 helpTopicDraw :: HelpTopic -> ChatState -> Widget Name
 helpTopicDraw topic st =
@@ -483,11 +483,11 @@ editWhichThunk = error "BUG: should not evaluate editWhichThunk"
 whichThunk :: Lens' ChatState (MessageInterface n i)
 whichThunk = error "BUG: should not evaluate whichThunk"
 
-helpBox :: Name -> Widget Name -> Widget Name
-helpBox n helpText =
+helpBox :: HelpScreen -> Widget Name -> Widget Name
+helpBox scr helpText =
     withDefAttr helpAttr $
     viewport HelpViewport Vertical $
-    cached n helpText
+    cached (HelpContent scr) helpText
 
 kbColumnWidth :: Int
 kbColumnWidth = 14

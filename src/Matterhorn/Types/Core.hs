@@ -14,6 +14,7 @@ module Matterhorn.Types.Core
   , channelListGroupNames
 
   , MessageSelectState(..)
+  , HelpScreen(..)
   )
 where
 
@@ -37,12 +38,8 @@ data Name =
     | MessageInputPrompt Name
     | ChannelListViewport TeamId
     | HelpViewport
-    | HelpText
     | PostList
-    | ScriptHelpText
-    | ThemeHelpText
-    | SyntaxHighlightHelpText
-    | KeybindingHelpText
+    | HelpContent HelpScreen
     | ChannelSelectString TeamId
     | ChannelSelectEntry ChannelSelectMatch
     | CompletionAlternatives TeamId
@@ -137,6 +134,16 @@ data ChannelListEntryType =
     -- ^ A single-user DM entry
     | CLGroupDM
     -- ^ A multi-user DM entry
+    deriving (Eq, Show, Ord)
+
+-- | The 'HelpScreen' type represents the set of possible 'Help' screens
+-- we have to choose from.
+data HelpScreen =
+    MainHelp
+    | ScriptHelp
+    | ThemeHelp
+    | SyntaxHighlightHelp
+    | KeybindingHelp
     deriving (Eq, Show, Ord)
 
 data LinkTarget =

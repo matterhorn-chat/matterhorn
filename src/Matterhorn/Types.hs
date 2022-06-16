@@ -91,7 +91,6 @@ module Matterhorn.Types
   , configShowLastOpenThreadL
 
   , NotificationVersion(..)
-  , HelpScreen(..)
   , PasswordSource(..)
   , TokenSource(..)
   , MatchType(..)
@@ -1071,22 +1070,11 @@ emptyGlobalEditState =
 -- background to avoid blocking on the main loop
 type RequestChan = STM.TChan (IO (Maybe (MH ())))
 
--- | The 'HelpScreen' type represents the set of possible 'Help'
--- dialogues we have to choose from.
-data HelpScreen =
-    MainHelp
-    | ScriptHelp
-    | ThemeHelp
-    | SyntaxHighlightHelp
-    | KeybindingHelp
-    deriving (Eq, Show)
-
 -- | Help topics
 data HelpTopic =
     HelpTopic { helpTopicName         :: Text
               , helpTopicDescription  :: Text
               , helpTopicScreen       :: HelpScreen
-              , helpTopicViewportName :: Name
               }
               deriving (Eq, Show)
 
