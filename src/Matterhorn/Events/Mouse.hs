@@ -65,9 +65,7 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             -- what state it is in, which is by design since all teams
             -- have their own UI states.
             setTeam teamId
-        ClickableURLInMessage _ _ _ t ->
-            void $ openLinkTarget t
-        ClickableURL _ _ t ->
+        ClickableURL _ _ _ t ->
             void $ openLinkTarget t
         ClickableUsernameInMessage _ _ _ username ->
             changeChannelByName tId $ addUserSigil username

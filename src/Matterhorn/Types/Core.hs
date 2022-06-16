@@ -136,12 +136,11 @@ data Name =
     -- ^ The name of a clickable entry in the channel list.
     | ClickableTeamListEntry TeamId
     -- ^ The name of a clickable entry in the team list.
-    | ClickableURL Name Int LinkTarget
-    -- ^ The name of a clickable URL rendered in RichText when it is not
-    -- part of a message.
-    | ClickableURLInMessage Name MessageId Int LinkTarget
-    -- ^ The name of a clickable URL rendered in RichText when it is
-    -- part of a message.
+    | ClickableURL (Maybe MessageId) Name Int LinkTarget
+    -- ^ The name of a clickable URL rendered in RichText. If provided,
+    -- the message ID is the ID of the message in which the URL appears.
+    -- The integer is the URL index in the rich text block for unique
+    -- identification.
     | ClickableUsernameInMessage Name MessageId Int Text
     -- ^ The name of a clickable username rendered in RichText when it
     -- is part of a message.

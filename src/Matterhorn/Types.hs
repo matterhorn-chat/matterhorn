@@ -842,7 +842,7 @@ class (Show a, Eq a, Ord a) => SemEq a where
     semeq :: a -> a -> Bool
 
 instance SemEq Name where
-    semeq (ClickableURLInMessage r1 mId1 _ t1) (ClickableURLInMessage r2 mId2 _ t2) = mId1 == mId2 && t1 == t2 && r1 == r2
+    semeq (ClickableURL mId1 r1 _ t1) (ClickableURL mId2 r2 _ t2) = mId1 == mId2 && t1 == t2 && r1 == r2
     semeq (ClickableUsernameInMessage r1 mId1 _ n) (ClickableUsernameInMessage r2 mId2 _ n2) = mId1 == mId2 && n == n2 && r1 == r2
     semeq a b = a == b
 
