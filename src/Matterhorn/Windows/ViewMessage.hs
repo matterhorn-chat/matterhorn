@@ -123,7 +123,7 @@ reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
         hs = getHighlightSet st tId
 
         clickableUsernames i (EUser un) =
-            Just $ ClickableUsername (ViewMessageReactionsArea tId) i un
+            Just $ ClickableUsername Nothing (ViewMessageReactionsArea tId) i un
         clickableUsernames _ _ =
             Nothing
 

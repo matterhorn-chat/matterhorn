@@ -383,7 +383,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
             Nothing -> id
             -- We use the index (-1) since indexes for clickable
             -- usernames elsewhere in this message start at 0.
-            Just i -> clickable (ClickableUsernameInMessage mdClickableNameTag i (-1) un)
+            Just i -> clickable (ClickableUsername (Just i) mdClickableNameTag (-1) un)
 
         nameElems = case msgUsr of
           Just un
@@ -504,9 +504,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
 mkClickableInline :: Maybe MessageId -> Name -> Int -> Inline -> Maybe Name
 mkClickableInline mmId scope i (EHyperlink u _) = do
     return $ ClickableURL mmId scope i $ LinkURL u
-mkClickableInline mmId scope i (EUser name) = do
-    mId <- mmId
-    return $ ClickableUsernameInMessage scope mId i name
+mkClickableInline mmId scope i (EUser name) =
+    return $ ClickableUsername mmId scope i name
 mkClickableInline mmId scope i (EPermalink teamUrlName pId _) =
     return $ ClickableURL mmId scope i $ LinkPermalink teamUrlName pId
 mkClickableInline _ _ _ _ =

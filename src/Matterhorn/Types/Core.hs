@@ -141,17 +141,15 @@ data Name =
     -- the message ID is the ID of the message in which the URL appears.
     -- The integer is the URL index in the rich text block for unique
     -- identification.
-    | ClickableUsernameInMessage Name MessageId Int Text
-    -- ^ The name of a clickable username rendered in RichText when it
-    -- is part of a message.
     | ClickableReactionInMessage Name PostId Text (Set UserId)
     -- ^ The name of a clickable reaction rendered in RichText when it
     -- is part of a message.
     | ClickableAttachmentInMessage Name FileId
     -- ^ The name of a clickable attachment.
-    | ClickableUsername Name Int Text
-    -- ^ The name of a clickable username rendered in RichText when it
-    -- is not part of a message.
+    | ClickableUsername (Maybe MessageId) Name Int Text
+    -- ^ The name of a clickable username rendered in RichText. The
+    -- message ID and integer sequence number uniquely identify the
+    -- clickable region.
     | ClickableURLListEntry Int LinkTarget
     -- ^ The name of a clickable URL list entry. The integer is the list
     -- index.
