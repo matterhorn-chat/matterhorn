@@ -91,9 +91,7 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             changeChannelByName tId $ addUserSigil username
         ClickableAttachmentInMessage _ fId ->
             void $ openLinkTarget $ LinkFileId fId
-        ClickableReactionInMessage _ pId t uIds ->
-            void $ toggleReaction pId t uIds
-        ClickableReaction pId t uIds ->
+        ClickableReaction pId _ t uIds ->
             void $ toggleReaction pId t uIds
         ClickableChannelListGroupHeading label ->
             toggleChannelListGroupVisibility label

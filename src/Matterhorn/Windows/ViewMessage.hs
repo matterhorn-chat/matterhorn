@@ -106,8 +106,9 @@ handleEvent tId VMTabReactions =
     void . handleKeyboardEvent (viewMessageReactionsKeybindings tId)
 
 reactionsText :: ChatState -> TeamId -> Message -> Widget Name
-reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
+reactionsText st tId m = viewport vpName Vertical body
     where
+        vpName = ViewMessageReactionsArea tId
         body = case null reacList of
             True -> txt "This message has no reactions."
             False -> vBox $ mkEntry <$> reacList
@@ -123,7 +124,7 @@ reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
         hs = getHighlightSet st tId
 
         clickableUsernames i (EUser un) =
-            Just $ ClickableUsername Nothing (ViewMessageReactionsArea tId) i un
+            Just $ ClickableUsername Nothing vpName i un
         clickableUsernames _ _ =
             Nothing
 
@@ -137,7 +138,7 @@ reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
 
         makeName e us = do
             pid <- postId <$> m^.mOriginalPost
-            Just $ ClickableReaction pid e us
+            Just $ ClickableReaction pid vpName e us
 
         makeClickableName w e us =
             case makeName e us of

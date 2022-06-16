@@ -141,7 +141,7 @@ data Name =
     -- the message ID is the ID of the message in which the URL appears.
     -- The integer is the URL index in the rich text block for unique
     -- identification.
-    | ClickableReactionInMessage Name PostId Text (Set UserId)
+    | ClickableReaction PostId Name Text (Set UserId)
     -- ^ The name of a clickable reaction rendered in RichText when it
     -- is part of a message.
     | ClickableAttachmentInMessage Name FileId
@@ -153,9 +153,6 @@ data Name =
     | ClickableURLListEntry Int LinkTarget
     -- ^ The name of a clickable URL list entry. The integer is the list
     -- index.
-    | ClickableReaction PostId Text (Set UserId)
-    -- ^ The name of a clickable reaction rendered in RichText when it
-    -- is part of a message.
     | ClickableChannelListGroupHeading ChannelListGroupLabel
     -- ^ The name of a clickable channel list group heading.
     | ClickableReactionEmojiListWindowEntry (Bool, T.Text)

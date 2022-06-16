@@ -531,7 +531,7 @@ messageReactions MessageData { mdMessage = msg, .. } =
              hasAnyReactions = not $ null nonEmptyReactions
              makeName e us = do
                  pid <- postId <$> msg^.mOriginalPost
-                 Just $ ClickableReactionInMessage mdClickableNameTag pid e us
+                 Just $ ClickableReaction pid mdClickableNameTag e us
              reactionWidget = Widget Fixed Fixed $ do
                  ctx <- getContext
                  let lineW = ctx^.availWidthL
