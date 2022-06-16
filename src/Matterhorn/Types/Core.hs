@@ -41,7 +41,6 @@ data Name =
     | PostList
     | HelpContent HelpScreen
     | ChannelSelectString TeamId
-    | ChannelSelectEntry ChannelSelectMatch
     | CompletionAlternatives TeamId
     | CompletionList ChannelId
     | JoinChannelList TeamId
@@ -76,6 +75,7 @@ data Name =
     | ThreadWindowMessages ChannelId
     | ChannelTopic ChannelId
     | TeamList
+    | ClickableChannelSelectEntry ChannelSelectMatch
     | ClickableChannelListEntry ChannelId
     | ClickableTeamListEntry TeamId
     | ClickableURL Name Int LinkTarget

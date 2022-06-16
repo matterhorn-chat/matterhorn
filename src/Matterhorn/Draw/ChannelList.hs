@@ -232,7 +232,7 @@ renderChannelSelectListEntry tId curMatch st match =
                       | entryHasUnread entryData ->
                           withDefAttr unreadChannelAttr
                       | otherwise -> id
-    in clickable (ChannelSelectEntry match) $
+    in clickable (ClickableChannelSelectEntry match) $
        decorate $ maybeSelect $
        decorateEntry entryData $ decorateMentions entryData $
        padRight Max $

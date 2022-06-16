@@ -97,7 +97,7 @@ globalMouseHandler _ _ =
     return ()
 
 channelSelectMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
-channelSelectMouseHandler tId (MouseDown (ChannelSelectEntry match) _ _ _) = do
+channelSelectMouseHandler tId (MouseDown (ClickableChannelSelectEntry match) _ _ _) = do
     popMode tId
     setFocus tId $ channelListEntryChannelId $ matchEntry match
 channelSelectMouseHandler _ _ =
