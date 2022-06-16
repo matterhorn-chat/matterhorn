@@ -104,7 +104,6 @@ mainInterface st mode mtId =
                 drawMessageInterface st hs tId True
                                      (csChannelMessageInterface(cId))
                                      True
-                                     (MessagePreviewViewport tId)
                                      focused
 
             maybeThreadIface = do
@@ -230,8 +229,4 @@ drawThreadWindow st tId = withDefAttr threadAttr body
         title = renderText' Nothing "" hs Nothing titleText
         focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusThread
         body = title <=> hBorder <=> messageUI
-        messageUI = drawMessageInterface st hs tId False
-                                         ti
-                                         False
-                                         (ThreadWindowEditorPreview cId)
-                                         focused
+        messageUI = drawMessageInterface st hs tId False ti False focused

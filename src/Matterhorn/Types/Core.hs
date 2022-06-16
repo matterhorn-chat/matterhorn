@@ -59,9 +59,8 @@ data Name =
     | UrlList Name
     -- ^ The name of a URL listing for the specified message interface's
     -- editor name.
-    | MessagePreviewViewport TeamId
-    -- ^ The name of the message editor's preview area for the specified
-    -- team's current channel.
+    | MessagePreviewViewport Name
+    -- ^ The name of the message interface editor's preview area.
     | ThemeListSearchInput TeamId
     -- ^ The list of themes in the "/theme" window for the specified
     -- team.
@@ -123,9 +122,6 @@ data Name =
     -- viewport.
     | ThreadMessageInput ChannelId
     -- ^ The message editor for the specified channel's thread view.
-    | ThreadWindowEditorPreview ChannelId
-    -- ^ The message preview viewport name for the specified channel's
-    -- thread message interface.
     | ThreadEditorAttachmentList ChannelId
     -- ^ The list name for the specified channel's thread message
     -- interface's attachment list.

@@ -51,6 +51,7 @@ inputPreview st editWhich tId vpName hs
     -- to be a problem.
     curContents = getText $ (gotoEOL >>> insertChar cursorSentinel) $
                   st^.editWhich.esEditor.editContentsL
+    eName = getName $ st^.editWhich.esEditor
     curStr = T.intercalate "\n" curContents
     overrideTy = case st^.editWhich.esEditMode of
         Editing _ ty -> Just ty
@@ -63,6 +64,7 @@ inputPreview st editWhich tId vpName hs
                        Just pm -> if T.null curStr
                                   then noPreview
                                   else prview pm $ getParentMessage st pm
+                     tag = MessagePreviewViewport eName
                      prview m p = renderMessage MessageData
                                   { mdMessage           = m
                                   , mdUserName          = m^.mUser.to (printableNameForUserRef st)
@@ -81,7 +83,7 @@ inputPreview st editWhich tId vpName hs
                                   , mdMyUserId          = myUserId st
                                   , mdWrapNonhighlightedCodeBlocks = True
                                   , mdTruncateVerbatimBlocks = Nothing
-                                  , mdClickableNameTag  = MessagePreviewViewport tId
+                                  , mdClickableNameTag  = tag
                                   }
                  in (maybePreviewViewport vpName msgPreview) <=>
                     hBorderWithLabel (withDefAttr clientEmphAttr $ str "[Preview ↑]")

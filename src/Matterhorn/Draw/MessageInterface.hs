@@ -53,14 +53,15 @@ drawMessageInterface :: ChatState
                      -> Bool
                      -> Lens' ChatState (MessageInterface Name i)
                      -> Bool
-                     -> Name
                      -> Bool
                      -> Widget Name
-drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent previewVpName focused =
+drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents
     where
     inMsgSelect = st^.which.miMode == MessageSelect
-    region = MessageInterfaceMessages $ getName $ st^.which.miEditor.esEditor
+    eName = getName $ st^.which.miEditor.esEditor
+    region = MessageInterfaceMessages eName
+    previewVpName = MessagePreviewViewport eName
 
     interfaceContents =
         case st^.which.miMode of
