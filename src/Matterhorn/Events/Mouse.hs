@@ -104,7 +104,7 @@ channelSelectMouseHandler _ _ =
     return ()
 
 reactionEmojiListMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
-reactionEmojiListMouseHandler tId (MouseDown (ReactionEmojiListWindowEntry val) _ _ _) =
+reactionEmojiListMouseHandler tId (MouseDown (ClickableReactionEmojiListWindowEntry val) _ _ _) =
     listWindowActivate tId (csTeam(tId).tsReactionEmojiListWindow) val
 reactionEmojiListMouseHandler _ _ =
     return ()
