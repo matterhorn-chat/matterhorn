@@ -33,8 +33,9 @@ import           Matterhorn.Types.RichText ( URL, TeamURLName )
 -- | This 'Name' type is the type used in 'brick' to identify various
 -- parts of the interface.
 data Name =
-    ChannelMessages ChannelId
-    -- ^ The rendering of messages for the specified channel
+    MessageInterfaceMessages Name
+    -- ^ The rendering of messages for the specified message interface
+    -- (by editor name)
     | MessageInput ChannelId
     -- ^ The message editor for the specified channel's main message
     -- interface
@@ -128,9 +129,6 @@ data Name =
     | ThreadEditorAttachmentList ChannelId
     -- ^ The list name for the specified channel's thread message
     -- interface's attachment list.
-    | ThreadWindowMessages ChannelId
-    -- ^ The rendering of messages for the specified channel's open
-    -- thread.
     | ChannelTopic ChannelId
     -- ^ The mouse click area tag for a rendered channel topic.
     | TeamList

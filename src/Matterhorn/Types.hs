@@ -2103,7 +2103,7 @@ getEditedMessageCutoff cId st = do
 
 clearChannelUnreadStatus :: ChannelId -> MH ()
 clearChannelUnreadStatus cId = do
-    mh $ invalidateCacheEntry (ChannelMessages cId)
+    mh $ invalidateCacheEntry (MessageInterfaceMessages $ MessageInput cId)
     csChannel(cId) %= (clearNewMessageIndicator .
                        clearEditedThreshold)
 

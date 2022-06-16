@@ -419,8 +419,8 @@ fetchUsers rawUsernames uids = do
 
 invalidateChannelRenderingCache :: ChannelId -> MH ()
 invalidateChannelRenderingCache cId = do
-    mh $ invalidateCacheEntry $ ChannelMessages cId
-    mh $ invalidateCacheEntry $ ThreadWindowMessages cId
+    mh $ invalidateCacheEntry $ MessageInterfaceMessages $ MessageInput cId
+    mh $ invalidateCacheEntry $ MessageInterfaceMessages $ ThreadMessageInput cId
 
 invalidateMessageRenderingCacheByPostId :: PostId -> MH ()
 invalidateMessageRenderingCacheByPostId pId = do

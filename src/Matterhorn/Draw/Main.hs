@@ -92,9 +92,7 @@ mainInterface st mode mtId =
         tId <- mtId
         let hs = getHighlightSet st tId
 
-            channelHeader Nothing =
-                txt " "
-            channelHeader (Just chan) =
+            channelHeader chan =
                 withDefAttr channelHeaderAttr $
                 padRight Max $
                 renderChannelHeader st tId hs chan
@@ -102,23 +100,21 @@ mainInterface st mode mtId =
             focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusCurrentChannel &&
                       threadShowing
             threadShowing = isJust $ st^.csTeam(tId).tsThreadInterface
-            channelMessageIface cId = drawMessageInterface st hs
-                                               (ChannelMessages cId)
-                                               tId
-                                               True
-                                               (csChannelMessageInterface(cId))
-                                               True
-                                               (MessagePreviewViewport tId)
-                                               focused
+            channelMessageIface cId =
+                drawMessageInterface st hs tId True
+                                     (csChannelMessageInterface(cId))
+                                     True
+                                     (MessagePreviewViewport tId)
+                                     focused
 
             maybeThreadIface = do
                 _ <- st^.csTeam(tId).tsThreadInterface
                 return $ drawThreadWindow st tId
 
         cId <- st^.csCurrentChannelId(tId)
+        ch <- st^?csChannel(cId)
 
-        let ch = st^?csChannel(cId)
-            channelUI = channelHeader ch <=> hBorder <=> channelMessageIface cId
+        let channelUI = channelHeader ch <=> hBorder <=> channelMessageIface cId
 
         return $ fromMaybe channelUI $ do
             tui <- maybeThreadIface
@@ -234,11 +230,8 @@ drawThreadWindow st tId = withDefAttr threadAttr body
         title = renderText' Nothing "" hs Nothing titleText
         focused = st^.csTeam(tId).tsMessageInterfaceFocus == FocusThread
         body = title <=> hBorder <=> messageUI
-        messageUI = drawMessageInterface st hs
-                            (ThreadWindowMessages cId)
-                            tId
-                            False
-                            ti
-                            False
-                            (ThreadWindowEditorPreview cId)
-                            focused
+        messageUI = drawMessageInterface st hs tId False
+                                         ti
+                                         False
+                                         (ThreadWindowEditorPreview cId)
+                                         focused

@@ -49,7 +49,6 @@ import           Matterhorn.Types.RichText
 
 drawMessageInterface :: ChatState
                      -> HighlightSet
-                     -> Name
                      -> TeamId
                      -> Bool
                      -> Lens' ChatState (MessageInterface Name i)
@@ -57,10 +56,11 @@ drawMessageInterface :: ChatState
                      -> Name
                      -> Bool
                      -> Widget Name
-drawMessageInterface st hs region tId showNewMsgLine which renderReplyIndent previewVpName focused =
+drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent previewVpName focused =
     interfaceContents
     where
     inMsgSelect = st^.which.miMode == MessageSelect
+    region = MessageInterfaceMessages $ getName $ st^.which.miEditor.esEditor
 
     interfaceContents =
         case st^.which.miMode of
