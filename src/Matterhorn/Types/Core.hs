@@ -40,7 +40,6 @@ data Name =
     | HelpViewport
     | PostList
     | HelpContent HelpScreen
-    | ChannelSelectString TeamId
     | CompletionAlternatives TeamId
     | CompletionList ChannelId
     | JoinChannelList TeamId
