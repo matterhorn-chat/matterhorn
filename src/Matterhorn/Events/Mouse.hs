@@ -55,6 +55,7 @@ mouseHandlerByMode tId mode =
 -- it isn't the end of the world.
 globalMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
 globalMouseHandler tId (MouseDown n _ _ _) = do
+    st <- use id
     case n of
         ClickableChannelListEntry channelId -> do
             whenMode tId Main $ do
@@ -68,7 +69,7 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             setTeam teamId
         ClickableURL _ _ _ t ->
             void $ openLinkTarget t
-        ClickableUsername _ _ _ username -> do
+        ClickableUsername _ _ _ username | username /= myUsername st -> do
             whenMode tId ViewMessage $ do
                 -- Pop view message mode
                 popMode tId
