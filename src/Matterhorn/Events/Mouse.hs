@@ -16,6 +16,7 @@ import           Matterhorn.State.ListWindow ( listWindowActivate )
 import           Matterhorn.Types
 
 import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent )
+import           Matterhorn.State.MessageSelect ( exitMessageSelect )
 import           Matterhorn.State.Reactions ( toggleReaction )
 import           Matterhorn.State.Links ( openLinkTarget )
 
@@ -67,9 +68,25 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             setTeam teamId
         ClickableURL _ _ _ t ->
             void $ openLinkTarget t
-        ClickableUsernameInMessage _ _ _ username ->
-            changeChannelByName tId $ addUserSigil username
-        ClickableUsername _ _ username ->
+        ClickableUsername _ _ _ username -> do
+            whenMode tId ViewMessage $ do
+                -- Pop view message mode
+                popMode tId
+                -- Exit message select for the focused interface,
+                -- since that is the only way we get into message
+                -- view mode and we want to reset the focused message
+                -- interface mode so that when we return to it from the
+                -- DM channel, it's not still stuck in message selection
+                -- mode.
+                foc <- use (csTeam(tId).tsMessageInterfaceFocus)
+                case foc of
+                    FocusThread ->
+                        exitMessageSelect $ unsafeThreadInterface tId
+                    FocusCurrentChannel -> do
+                        mcId <- use (csCurrentChannelId(tId))
+                        case mcId of
+                            Nothing -> return ()
+                            Just cId -> exitMessageSelect $ csChannelMessageInterface cId
             changeChannelByName tId $ addUserSigil username
         ClickableAttachmentInMessage _ fId ->
             void $ openLinkTarget $ LinkFileId fId
