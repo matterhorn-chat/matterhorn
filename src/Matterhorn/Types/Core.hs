@@ -55,8 +55,9 @@ data Name =
     -- specified editor's autocomplete pop-up.
     | JoinChannelList TeamId
     -- ^ The name of the channel list in the "/join" window.
-    | UrlList ChannelId (Maybe PostId)
-    -- ^ The name of a URL listing in a message interface.
+    | UrlList Name
+    -- ^ The name of a URL listing for the specified message interface's
+    -- editor name.
     | MessagePreviewViewport TeamId
     -- ^ The name of the message editor's preview area for the specified
     -- team's current channel.

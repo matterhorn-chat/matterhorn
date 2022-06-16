@@ -20,6 +20,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( getName )
 import qualified Brick.BChan as BCH
 import           Brick.Main ( invalidateCache, hScrollToBeginning, viewportScroll, makeVisible )
 import           Brick.Widgets.List ( list )
@@ -292,7 +293,7 @@ newThreadInterface :: Maybe Aspell
                    -> IO ThreadInterface
 newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
     es <- emptyEditStateForThread checker eventQueue tId cId (Replying rootMsg rootPost)
-    return $ newMessageInterface cId (postId rootPost) msgs es (MITeamThread tId) (FromThreadIn cId) (UrlList cId (Just $ postId rootPost))
+    return $ newMessageInterface cId (postId rootPost) msgs es (MITeamThread tId) (FromThreadIn cId)
 
 newChannelMessageInterface :: Maybe Aspell
                            -> BCH.BChan MHEvent
@@ -302,7 +303,7 @@ newChannelMessageInterface :: Maybe Aspell
                            -> IO ChannelMessageInterface
 newChannelMessageInterface checker eventQueue tId cId msgs = do
     es <- emptyEditStateForChannel checker eventQueue tId cId
-    return $ newMessageInterface cId () msgs es (MIChannel cId) (FromChannel cId) (UrlList cId Nothing)
+    return $ newMessageInterface cId () msgs es (MIChannel cId) (FromChannel cId)
 
 newMessageInterface :: ChannelId
                     -> i
@@ -310,22 +311,23 @@ newMessageInterface :: ChannelId
                     -> EditState Name
                     -> MessageInterfaceTarget
                     -> URLListSource
-                    -> Name
                     -> MessageInterface Name i
-newMessageInterface cId pId msgs es target src urlListName =
-    MessageInterface { _miMessages = msgs
-                     , _miRootPostId = pId
-                     , _miChannelId = cId
-                     , _miMessageSelect = MessageSelectState Nothing
-                     , _miMode = Compose
-                     , _miEditor = es
-                     , _miTarget = target
-                     , _miUrlListSource = src
-                     , _miUrlList = URLList { _ulList = list urlListName mempty 2
-                                            , _ulSource = Nothing
-                                            }
-                     , _miSaveAttachmentDialog = newSaveAttachmentDialog urlListName "(unused)"
-                     }
+newMessageInterface cId pId msgs es target src =
+    let urlListName = UrlList eName
+        eName = getName $ es^.esEditor
+    in MessageInterface { _miMessages = msgs
+                        , _miRootPostId = pId
+                        , _miChannelId = cId
+                        , _miMessageSelect = MessageSelectState Nothing
+                        , _miMode = Compose
+                        , _miEditor = es
+                        , _miTarget = target
+                        , _miUrlListSource = src
+                        , _miUrlList = URLList { _ulList = list urlListName mempty 2
+                                               , _ulSource = Nothing
+                                               }
+                        , _miSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
+                        }
 
 newTeamState :: Config
              -> Team
