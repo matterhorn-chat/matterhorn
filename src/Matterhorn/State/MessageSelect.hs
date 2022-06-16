@@ -91,7 +91,10 @@ beginMessageSelect which = do
         which.miMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 exitMessageSelect :: Lens' ChatState (MessageInterface n i) -> MH ()
-exitMessageSelect which = which.miMode .= Compose
+exitMessageSelect which = do
+    m <- use (which.miMode)
+    when (m == MessageSelect) $
+        which.miMode .= Compose
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
