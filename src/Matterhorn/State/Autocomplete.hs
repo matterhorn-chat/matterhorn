@@ -8,6 +8,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( getName )
 import           Brick.Main ( viewportScroll, vScrollToBeginning )
 import           Brick.Widgets.Edit ( editContentsL )
 import qualified Brick.Widgets.List as L
@@ -371,8 +372,7 @@ setCompletionAlternatives which ctx searchString alts ty = do
     case mVal of
         Nothing -> return ()
         Just esVal -> do
-            let cId = esVal^.esChannelId
-                list = L.list (CompletionList cId) (V.fromList $ F.toList alts) 1
+            let list = L.list (CompletionList $ getName $ esVal^.esEditor) (V.fromList $ F.toList alts) 1
                 pending = esVal^.esAutocompletePending
                 state = AutocompleteState { _acPreviousSearchString = searchString
                                           , _acCompletionList =
@@ -395,7 +395,7 @@ setCompletionAlternatives which ctx searchString alts ty = do
                                         HM.insert searchString alts (oldState^.acCachedResponses)
                         in Just newState
 
-                    mh $ vScrollToBeginning $ viewportScroll $ CompletionList cId
+                    mh $ vScrollToBeginning $ viewportScroll $ CompletionList $ getName $ esVal^.esEditor
 
                     when (autocompleteFirstMatch ctx) $
                         tabComplete which Forwards

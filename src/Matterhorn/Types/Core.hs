@@ -50,9 +50,9 @@ data Name =
     -- ^ The tag for messages rendered in the post list window.
     | HelpContent HelpScreen
     -- ^ The cache key constructor for caching help screen content.
-    | CompletionList ChannelId
+    | CompletionList Name
     -- ^ The name of the list of completion alternatives in the
-    -- autocomplete pop-up.
+    -- specified editor's autocomplete pop-up.
     | JoinChannelList TeamId
     -- ^ The name of the channel list in the "/join" window.
     | UrlList ChannelId (Maybe PostId)
