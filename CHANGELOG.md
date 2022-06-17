@@ -61,7 +61,8 @@ Other enhancements:
 
 Bug fixes:
  * Fixed a bug where clickable links were not clickable outside of
-   messages. This affected clickable links in channel topics.
+   messages in some cases. This affected clickable links in channel
+   topics.
 
 50200.16.0
 ==========
