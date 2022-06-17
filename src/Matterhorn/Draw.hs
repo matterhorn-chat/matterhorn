@@ -27,44 +27,40 @@ import Matterhorn.Types
 
 
 draw :: ChatState -> [Widget Name]
-draw st =
-    case st^.csCurrentTeamId of
-        Nothing ->
-            -- ^ Without a team data structure, we just assume Main mode
-            -- and render a skeletal UI.
-            drawMain st Main
-        Just tId ->
-            let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
-                monochrome = fmap (forceAttr "invalid")
-                drawMode m ms =
-                    let rest = case ms of
-                            (a:as) -> drawMode a as
-                            _ -> []
-                    in case m of
-                        -- For this first section of modes, we only want
-                        -- to draw for the current mode and ignore the
-                        -- mode stack because we expect the current mode
-                        -- to be all we need to draw what should be on
-                        -- the screen.
-                        Main                          -> drawMain st m
-                        ShowHelp topic                -> drawShowHelp topic st
+draw st = fromMaybe (drawMain st Main) $ do
+    tId <- st^.csCurrentTeamId
+    let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
+        monochrome = fmap (forceAttr "invalid")
+        drawMode m ms =
+            let rest = case ms of
+                    (a:as) -> drawMode a as
+                    _ -> []
+            in case m of
+                -- For this first section of modes, we only want
+                -- to draw for the current mode and ignore the
+                -- mode stack because we expect the current mode
+                -- to be all we need to draw what should be on
+                -- the screen.
+                Main                          -> drawMain st m
+                ShowHelp topic                -> drawShowHelp topic st
 
-                        -- For the following modes, we want to draw the
-                        -- whole mode stack since we expect the UI to
-                        -- have layers and we want to show prior modes
-                        -- underneath.
-                        ChannelSelect                 -> drawChannelSelectPrompt st tId : drawMain st m
-                        MessageSelectDeleteConfirm {} -> drawMessageDeleteConfirm : rest
-                        ThemeListWindow               -> drawThemeListWindow st tId : rest
-                        LeaveChannelConfirm           -> drawLeaveChannelConfirm st tId : monochrome rest
-                        DeleteChannelConfirm          -> drawDeleteChannelConfirm st tId : monochrome rest
-                        PostListWindow contents       -> drawPostListWindow contents st tId : monochrome rest
-                        UserListWindow                -> drawUserListWindow st tId : monochrome rest
-                        ChannelListWindow             -> drawChannelListWindow st tId : monochrome rest
-                        ReactionEmojiListWindow       -> drawReactionEmojiListWindow st tId : monochrome rest
-                        ViewMessage                   -> drawTabbedWindow messageViewWindow st tId : monochrome rest
-                        EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
-                        ChannelTopicWindow            -> drawChannelTopicWindow st tId : monochrome rest
-                topMode = teamMode $ st^.csTeam(tId)
-                otherModes = tail $ teamModes $ st^.csTeam(tId)
-            in drawMode topMode otherModes
+                -- For the following modes, we want to draw the
+                -- whole mode stack since we expect the UI to
+                -- have layers and we want to show prior modes
+                -- underneath.
+                ChannelSelect                 -> drawChannelSelectPrompt st tId : drawMain st m
+                MessageSelectDeleteConfirm {} -> drawMessageDeleteConfirm : rest
+                ThemeListWindow               -> drawThemeListWindow st tId : rest
+                LeaveChannelConfirm           -> drawLeaveChannelConfirm st tId : monochrome rest
+                DeleteChannelConfirm          -> drawDeleteChannelConfirm st tId : monochrome rest
+                PostListWindow contents       -> drawPostListWindow contents st tId : monochrome rest
+                UserListWindow                -> drawUserListWindow st tId : monochrome rest
+                ChannelListWindow             -> drawChannelListWindow st tId : monochrome rest
+                ReactionEmojiListWindow       -> drawReactionEmojiListWindow st tId : monochrome rest
+                ViewMessage                   -> drawTabbedWindow messageViewWindow st tId : monochrome rest
+                EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
+                ChannelTopicWindow            -> drawChannelTopicWindow st tId : monochrome rest
+        topMode = teamMode $ st^.csTeam(tId)
+        otherModes = tail $ teamModes $ st^.csTeam(tId)
+
+    return $ drawMode topMode otherModes
