@@ -61,7 +61,7 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
 onBrickEvent (VtyEvent e) = do
     csLastMouseDownEvent .= Nothing
     onVtyEvent e
-onBrickEvent e@(MouseDown n button modifier _) = do
+onBrickEvent e@(MouseDown n _ _ _) = do
     lastClick <- use csLastMouseDownEvent
     let shouldHandle = case lastClick of
             Nothing -> True
