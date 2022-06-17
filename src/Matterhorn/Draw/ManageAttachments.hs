@@ -16,8 +16,6 @@ import           Brick.Widgets.List
 import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform ( Lens' )
 
-import           Network.Mattermost.Types ( TeamId )
-
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.Keybindings ( firstActiveBinding )
