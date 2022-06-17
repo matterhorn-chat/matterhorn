@@ -1195,22 +1195,27 @@ data TeamState =
     TeamState { _tsFocus :: Z.Zipper ChannelListGroup ChannelListEntry
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
+              , _tsTeam :: Team
+              -- ^ The team data.
+              , _tsRecentChannel :: Maybe ChannelId
+              -- ^ The most recently-selected channel, if any.
+              , _tsReturnChannel :: Maybe ChannelId
+              -- ^ The channel to return to after visiting one or more
+              -- unread channels.
+              , _tsModeStack :: NonemptyStack Mode
+              -- ^ The current application mode stack when viewing this
+              -- team. This is used to dispatch to different rendering
+              -- and event handling routines. The current mode is always
+              -- in at the top of the stack.
+              , _tsChannelSelectState :: ChannelSelectState
+              -- ^ The state of the user's input and selection for
+              -- channel selection mode.
               , _tsPendingChannelChange :: Maybe PendingChannelChange
               -- ^ A pending channel change that we need to apply once
               -- the channel in question is available. We set this up
               -- when we need to change to a channel in the sidebar, but
               -- it isn't even there yet because we haven't loaded its
               -- metadata.
-              , _tsRecentChannel :: Maybe ChannelId
-              -- ^ The most recently-selected channel, if any.
-              , _tsReturnChannel :: Maybe ChannelId
-              -- ^ The channel to return to after visiting one or more
-              -- unread channels.
-              , _tsTeam :: Team
-              -- ^ The team data.
-              , _tsChannelSelectState :: ChannelSelectState
-              -- ^ The state of the user's input and selection for
-              -- channel selection mode.
               , _tsViewedMessage :: Maybe (Message, TabbedWindow ChatState MH Name ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed. Note that this stores a message, not
@@ -1235,11 +1240,6 @@ data TeamState =
               , _tsChannelTopicDialog :: ChannelTopicDialogState
               -- ^ The state for the interactive channel topic editor
               -- window.
-              , _tsModeStack :: NonemptyStack Mode
-              -- ^ The current application mode stack when viewing this
-              -- team. This is used to dispatch to different rendering
-              -- and event handling routines. The current mode is always
-              -- in at the top of the stack.
               , _tsReactionEmojiListWindow :: ListWindowState (Bool, T.Text) ()
               -- ^ The state of the reaction emoji list window.
               , _tsThemeListWindow :: ListWindowState InternalTheme ()
