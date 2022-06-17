@@ -2,7 +2,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.Attachments
   ( showAttachmentList
-  , resetAttachmentList
   , showAttachmentFileBrowser
   , attachFileByPath
   , tryAddAttachment
@@ -25,8 +24,6 @@ import           GHC.Exception ( toException )
 import           Lens.Micro.Platform ( (.=), (%=), Lens' )
 import           System.Directory ( doesDirectoryExist, doesFileExist, getDirectoryContents )
 
-import           Network.Mattermost.Types ( TeamId )
-
 import           Matterhorn.Types
 
 validateAttachmentPath :: FilePath -> IO (Maybe FilePath)
@@ -42,40 +39,36 @@ validateAttachmentPath path = bool Nothing (Just path) <$> do
 defaultAttachmentsPath :: Config -> IO (Maybe FilePath)
 defaultAttachmentsPath = maybe (return Nothing) validateAttachmentPath . configDefaultAttachmentPath
 
-showAttachmentList :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
-showAttachmentList tId which = do
-    lst <- use (which.esAttachmentList)
+showAttachmentList :: Lens' ChatState (MessageInterface Name i) -> MH ()
+showAttachmentList which = do
+    lst <- use (which.miEditor.esAttachmentList)
     case length (L.listElements lst) of
-        0 -> showAttachmentFileBrowser tId which
-        _ -> pushMode tId ManageAttachments
+        0 -> showAttachmentFileBrowser which
+        _ -> which.miMode .= ManageAttachments
 
-resetAttachmentList :: Lens' ChatState (EditState Name) -> MH ()
-resetAttachmentList which = do
-    which.esAttachmentList %= L.listClear
-
-showAttachmentFileBrowser :: TeamId -> Lens' ChatState (EditState Name) -> MH ()
-showAttachmentFileBrowser tId which = do
-    cId <- use (which.esChannelId)
+showAttachmentFileBrowser :: Lens' ChatState (MessageInterface Name i) -> MH ()
+showAttachmentFileBrowser which = do
+    cId <- use (which.miEditor.esChannelId)
     config <- use (csResources.crConfiguration)
     filePath <- liftIO $ defaultAttachmentsPath config
     browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser cId) filePath
-    which.esFileBrowser .= browser
-    pushMode tId ManageAttachmentsBrowseFiles
+    which.miEditor.esFileBrowser .= browser
+    which.miMode .= BrowseFiles
 
-attachFileByPath :: TeamId -> Lens' ChatState (EditState Name) -> Text -> MH ()
-attachFileByPath tId which txtPath = do
+attachFileByPath :: Lens' ChatState (MessageInterface Name i) -> Text -> MH ()
+attachFileByPath which txtPath = do
     let strPath = unpack txtPath
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
     case FB.fileInfoFileStatus fileInfo of
         Left e -> do
             mhError $ AttachmentException (toException e)
-        Right _ -> tryAddAttachment tId which [fileInfo]
+        Right _ -> tryAddAttachment which [fileInfo]
 
 checkPathIsFile :: FB.FileInfo -> MH Bool
 checkPathIsFile = liftIO . doesFileExist . FB.fileInfoFilePath
 
-tryAddAttachment :: TeamId -> Lens' ChatState (EditState Name) -> [FB.FileInfo] -> MH ()
-tryAddAttachment tId which entries = do
+tryAddAttachment :: Lens' ChatState (MessageInterface Name i) -> [FB.FileInfo] -> MH ()
+tryAddAttachment which entries = do
     forM_ entries $ \entry -> do
         isFile <- checkPathIsFile entry
         if not isFile
@@ -83,7 +76,7 @@ tryAddAttachment tId which entries = do
             "Error attaching file. It either doesn't exist or is a directory, which is not supported.")
         else do
             -- Is the entry already present? If so, ignore the selection.
-            es <- use (which.esAttachmentList.L.listElementsL)
+            es <- use (which.miEditor.esAttachmentList.L.listElementsL)
             let matches = (== FB.fileInfoFilePath entry) .
                               FB.fileInfoFilePath .
                               attachmentDataFileInfo
@@ -92,14 +85,15 @@ tryAddAttachment tId which entries = do
                 Nothing -> do
                     tryReadAttachment entry >>= \case
                         Right a -> do
-                            oldIdx <- use (which.esAttachmentList.L.listSelectedL)
+                            oldIdx <- use (which.miEditor.esAttachmentList.L.listSelectedL)
                             let newIdx = if Vector.null es
                                          then Just 0
                                          else oldIdx
-                            which.esAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
+                            which.miEditor.esAttachmentList %= L.listReplace (Vector.snoc es a) newIdx
                         Left e -> mhError $ AttachmentException e
 
-    when (not $ null entries) $ popMode tId
+    when (not $ null entries) $
+        which.miMode .= Compose
 
 tryReadAttachment :: FB.FileInfo -> MH (Either E.SomeException AttachmentData)
 tryReadAttachment fi = do

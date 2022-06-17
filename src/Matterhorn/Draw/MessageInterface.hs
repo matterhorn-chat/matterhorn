@@ -32,6 +32,7 @@ import           Network.Mattermost.Types ( ChannelId, Type(Direct, Group)
 import           Matterhorn.Constants
 import           Matterhorn.Draw.Buttons
 import           Matterhorn.Draw.Messages
+import           Matterhorn.Draw.ManageAttachments
 import           Matterhorn.Draw.InputPreview
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
@@ -69,6 +70,8 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
             MessageSelect     -> renderMessages True
             ShowUrlList       -> drawUrlSelectWindow st hs which
             SaveAttachment {} -> drawSaveAttachmentWindow st which
+            ManageAttachments -> drawAttachmentList st which
+            BrowseFiles       -> drawFileBrowser st which
 
     renderMessages inMsgSel =
         vBox [ freezeBorders $

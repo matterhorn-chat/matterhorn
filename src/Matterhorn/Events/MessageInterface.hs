@@ -18,6 +18,7 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.SaveAttachmentWindow
+import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.UrlSelect
@@ -50,6 +51,10 @@ handleMessageInterfaceEvent tId which ev = do
             onEventUrlSelect which ev
         SaveAttachment {} ->
             onEventSaveAttachmentWindow which ev
+        ManageAttachments ->
+            onEventAttachmentList which ev
+        BrowseFiles ->
+            onEventBrowseFile which ev
 
 messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig
@@ -106,7 +111,7 @@ extraEditorKeyHandlers which =
             tabComplete editWhich Backwards
 
        , mkKb ShowAttachmentListEvent "Show the attachment list" $
-            withCurrentTeam $ \tId -> showAttachmentList tId editWhich
+            showAttachmentList which
 
        , staticKb "Send the current message"
             (Vty.EvKey Vty.KEnter []) $ do

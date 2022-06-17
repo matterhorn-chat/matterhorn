@@ -462,8 +462,8 @@ keybindSections =
     , ("Message Viewer: Common", tabbedWindowKeyHandlers teamIdThunk tabbedWinThunk)
     , ("Message Viewer: Message tab", viewMessageKeyHandlers teamIdThunk)
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
-    , ("Attachment List", attachmentListKeyHandlers teamIdThunk editWhichThunk)
-    , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk editWhichThunk)
+    , ("Attachment List", attachmentListKeyHandlers whichThunk)
+    , ("Attachment File Browser", attachmentBrowseKeyHandlers whichThunk)
     , ("Flagged Messages", postListWindowKeyHandlers teamIdThunk)
     , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
     ]
@@ -476,9 +476,6 @@ tabbedWinThunk = error "BUG: should not evaluate tabbedWinThunk"
 
 editorThunk :: Lens' ChatState (Editor Text Name)
 editorThunk = error "BUG: should not evaluate editorThunk"
-
-editWhichThunk :: Lens' ChatState (EditState Name)
-editWhichThunk = error "BUG: should not evaluate editWhichThunk"
 
 whichThunk :: Lens' ChatState (MessageInterface n i)
 whichThunk = error "BUG: should not evaluate whichThunk"

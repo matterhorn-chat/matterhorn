@@ -305,9 +305,14 @@ commandList =
         moveCurrentTeamRight
 
   , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
-        withCurrentTeam $ \tId ->
-            withCurrentChannel tId $ \cId _ ->
-                attachFileByPath tId (channelEditor(cId)) path
+        withCurrentTeam $ \tId -> do
+            foc <- use (csTeam(tId).tsMessageInterfaceFocus)
+            case foc of
+                FocusThread ->
+                    attachFileByPath (unsafeThreadInterface(tId)) path
+                FocusCurrentChannel ->
+                    withCurrentChannel tId $ \cId _ ->
+                        attachFileByPath (csChannelMessageInterface(cId)) path
 
   , Cmd "toggle-mouse-input" "Toggle whether mouse input is enabled" NoArg $ \_ ->
         toggleMouseMode

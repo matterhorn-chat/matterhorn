@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.ManageAttachments
-  ( drawManageAttachments
+  ( drawAttachmentList
+  , drawFileBrowser
   )
 where
 
@@ -23,35 +24,15 @@ import           Matterhorn.Events.Keybindings ( firstActiveBinding )
 import           Matterhorn.Themes
 
 
-drawManageAttachments :: ChatState -> TeamId -> Widget Name
-drawManageAttachments st tId =
-    topLayer
-    where
-        editWhich :: Lens' ChatState (EditState Name)
-        editWhich = case st^.csTeam(tId).tsMessageInterfaceFocus of
-            FocusCurrentChannel ->
-                let cId = fromJust $ st^.csCurrentChannelId(tId)
-                in channelEditor(cId)
-            FocusThread ->
-                unsafeThreadInterface(tId).miEditor
-        topLayer = case teamMode $ st^.csTeam(tId) of
-            ManageAttachments -> drawAttachmentList st editWhich
-            ManageAttachmentsBrowseFiles -> drawFileBrowser st editWhich
-            _ -> error "BUG: drawManageAttachments called in invalid mode"
-
-drawAttachmentList :: ChatState -> Lens' ChatState (EditState Name) -> Widget Name
-drawAttachmentList st editWhich =
+drawAttachmentList :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+drawAttachmentList st which =
     let addBinding = ppBinding $ firstActiveBinding kc AttachmentListAddEvent
         delBinding = ppBinding $ firstActiveBinding kc AttachmentListDeleteEvent
         escBinding = ppBinding $ firstActiveBinding kc CancelEvent
         openBinding = ppBinding $ firstActiveBinding kc AttachmentOpenEvent
         kc = st^.csResources.crConfiguration.configUserKeysL
-    in centerLayer $
-       hLimit 60 $
-       vLimit 15 $
-       joinBorders $
-       borderWithLabel (withDefAttr clientEmphAttr $ txt "Attachments") $
-       vBox [ renderList renderAttachmentItem True (st^.editWhich.esAttachmentList)
+    in borderWithLabel (withDefAttr clientEmphAttr $ txt "Attachments") $
+       vBox [ renderList renderAttachmentItem True (st^.which.miEditor.esAttachmentList)
             , hBorder
             , hCenter $ withDefAttr clientMessageAttr $
                         txt $ addBinding <> ":add " <>
@@ -64,13 +45,10 @@ renderAttachmentItem :: Bool -> AttachmentData -> Widget Name
 renderAttachmentItem _ d =
     padRight Max $ str $ FB.fileInfoSanitizedFilename $ attachmentDataFileInfo d
 
-drawFileBrowser :: ChatState -> Lens' ChatState (EditState Name) -> Widget Name
-drawFileBrowser st editWhich =
-    centerLayer $
-    hLimit 60 $
-    vLimit 20 $
+drawFileBrowser :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+drawFileBrowser st which =
     borderWithLabel (withDefAttr clientEmphAttr $ txt "Attach File") $
     -- invariant: cedFileBrowser is not Nothing if appMode is
     -- ManageAttachmentsBrowseFiles, and that is the only way to reach
     -- this code, ergo the fromJust.
-    FB.renderFileBrowser True $ fromJust (st^.editWhich.esFileBrowser)
+    FB.renderFileBrowser True $ fromJust (st^.which.miEditor.esFileBrowser)

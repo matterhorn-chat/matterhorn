@@ -50,14 +50,12 @@ app = App
                   UserListWindow                -> showFirstCursor s cs
                   ReactionEmojiListWindow       -> showFirstCursor s cs
                   ChannelListWindow             -> showFirstCursor s cs
-                  ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
                   ThemeListWindow               -> showFirstCursor s cs
                   ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
                   LeaveChannelConfirm           -> Nothing
                   DeleteChannelConfirm          -> Nothing
                   MessageSelectDeleteConfirm {} -> Nothing
                   PostListWindow _              -> Nothing
-                  ManageAttachments             -> Nothing
                   ViewMessage                   -> Nothing
                   ShowHelp _                    -> Nothing
                   EditNotifyPrefs               -> Nothing

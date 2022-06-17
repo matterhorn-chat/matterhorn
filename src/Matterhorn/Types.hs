@@ -1099,8 +1099,6 @@ data Mode =
     | ChannelListWindow
     | ThemeListWindow
     | ViewMessage
-    | ManageAttachments
-    | ManageAttachmentsBrowseFiles
     | EditNotifyPrefs
     | ChannelTopicWindow
     deriving (Eq, Show)

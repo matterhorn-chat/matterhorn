@@ -35,8 +35,9 @@ import           Brick ( getName )
 import           Brick.Focus ( FocusRing )
 import           Brick.Widgets.List ( List )
 import           Brick.Widgets.Edit ( Editor )
+import           Brick.Widgets.FileBrowser ( fileBrowserNameG )
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( makeLenses )
+import           Lens.Micro.Platform ( makeLenses, _Just )
 import           Network.Mattermost.Types ( ChannelId, TeamId )
 
 import           Matterhorn.Types.Core ( MessageSelectState )
@@ -78,6 +79,8 @@ messageInterfaceCursor mi =
     case _miMode mi of
         Compose           -> Just $ getName $ _esEditor $ _miEditor mi
         SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
+        BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
+        ManageAttachments -> Nothing
         MessageSelect     -> Nothing
         ShowUrlList       -> Nothing
 
@@ -90,6 +93,10 @@ data MessageInterfaceMode =
     -- ^ Show the URL listing
     | SaveAttachment LinkChoice
     -- ^ Show the attachment save UI
+    | ManageAttachments
+    -- ^ Managing the attachment list
+    | BrowseFiles
+    -- ^ Browsing the filesystem for attachment files
     deriving (Eq, Show)
 
 data URLListSource =

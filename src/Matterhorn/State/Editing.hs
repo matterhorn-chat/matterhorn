@@ -55,7 +55,6 @@ import           Matterhorn.InputHistory
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Common
 import           Matterhorn.State.Autocomplete
-import           Matterhorn.State.Attachments
 import {-# SOURCE #-} Matterhorn.State.Messages
 import {-# SOURCE #-} Matterhorn.State.ThreadWindow
 import           Matterhorn.Types hiding ( newState )
@@ -569,3 +568,7 @@ tabComplete which dir = do
                     -- hide the autocomplete listing now that we've
                     -- completed the only completion.
                     when (ac^.acCompletionList.to L.listElements.to length == 1) (resetAutocomplete which)
+
+resetAttachmentList :: Lens' ChatState (EditState Name) -> MH ()
+resetAttachmentList which = do
+    which.esAttachmentList %= L.listClear

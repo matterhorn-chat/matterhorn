@@ -22,7 +22,6 @@ import Matterhorn.Draw.UserListWindow
 import Matterhorn.Draw.ChannelListWindow
 import Matterhorn.Draw.ReactionEmojiListWindow
 import Matterhorn.Draw.TabbedWindow
-import Matterhorn.Draw.ManageAttachments
 import Matterhorn.Draw.NotifyPrefs
 import Matterhorn.Types
 
@@ -64,8 +63,6 @@ draw st =
                         ChannelListWindow             -> drawChannelListWindow st tId : monochrome rest
                         ReactionEmojiListWindow       -> drawReactionEmojiListWindow st tId : monochrome rest
                         ViewMessage                   -> drawTabbedWindow messageViewWindow st tId : monochrome rest
-                        ManageAttachments             -> drawManageAttachments st tId : monochrome rest
-                        ManageAttachmentsBrowseFiles  -> drawManageAttachments st tId : monochrome rest
                         EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
                         ChannelTopicWindow            -> drawChannelTopicWindow st tId : monochrome rest
                 topMode = teamMode $ st^.csTeam(tId)

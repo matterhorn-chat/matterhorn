@@ -10,7 +10,7 @@ import           Brick
 import qualified Data.Text as T
 import           GHC.Exception ( fromException )
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( (.=), _2, singular, _Just, Lens' )
+import           Lens.Micro.Platform ( (.=), _2, singular, _Just )
 import qualified System.IO.Error as IO
 
 import qualified Network.Mattermost.Types as MM
@@ -41,7 +41,6 @@ import           Matterhorn.Events.UserListWindow
 import           Matterhorn.Events.ChannelListWindow
 import           Matterhorn.Events.ReactionEmojiListWindow
 import           Matterhorn.Events.TabbedWindow
-import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.Mouse
 import           Matterhorn.Events.EditNotifyPrefs
 import           Matterhorn.Events.Websocket
@@ -221,10 +220,7 @@ handleTeamModeEvent e = do
     return True
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
-teamEventHandlerByMode tId mode e = do
-    st <- use id
-    let ti :: Lens' ChatState ThreadInterface
-        ti = unsafeThreadInterface tId
+teamEventHandlerByMode tId mode e =
     case mode of
         Main                       -> onEventMain tId e
         ShowHelp _                 -> void $ onEventShowHelp tId e
@@ -245,22 +241,6 @@ teamEventHandlerByMode tId mode e = do
         ViewMessage                -> void $ (handleTabbedWindowEvent
                                               (csTeam(tId).tsViewedMessage.singular _Just._2)
                                               tId e)
-        ManageAttachments -> do
-            let ed :: Lens' ChatState (EditState Name)
-                ed = case st^.csTeam(tId).tsMessageInterfaceFocus of
-                         FocusCurrentChannel -> case st^.csCurrentChannelId(tId) of
-                             Nothing -> error "BUG: should not be in ManageAttachments mode with no current channel"
-                             Just cId -> channelEditor(cId)
-                         FocusThread -> ti.miEditor
-            onEventManageAttachments tId ed e
-        ManageAttachmentsBrowseFiles -> do
-            let ed :: Lens' ChatState (EditState Name)
-                ed = case st^.csTeam(tId).tsMessageInterfaceFocus of
-                         FocusCurrentChannel -> case st^.csCurrentChannelId(tId) of
-                             Nothing -> error "BUG: should not be in ManageAttachmentsBrowseFiles mode with no current channel"
-                             Just cId -> channelEditor(cId)
-                         FocusThread -> ti.miEditor
-            onEventManageAttachments tId ed e
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
         ChannelTopicWindow         -> onEventChannelTopicWindow tId e
 
