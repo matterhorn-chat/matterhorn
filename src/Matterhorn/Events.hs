@@ -62,14 +62,12 @@ onBrickEvent (VtyEvent e) = do
     csLastMouseDownEvent .= Nothing
     onVtyEvent e
 onBrickEvent e@(MouseDown n button modifier _) = do
-    mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
     lastClick <- use csLastMouseDownEvent
     let shouldHandle = case lastClick of
             Nothing -> True
             Just (MouseDown prevN _ _ _) -> not $ prevN `semeq` n
             _ -> False
     when shouldHandle $ do
-        mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
         withCurrentTeam $ \tId -> do
             mode <- getTeamMode tId
