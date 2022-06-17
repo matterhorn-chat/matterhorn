@@ -25,8 +25,9 @@ Once the thread window is open:
    part of the thread; no explicit `C-r` or `C-s`/`r` steps are needed
    to reply.
  * The thread window is per-team; you can have a thread window open even
-   while you switch between channels to view other channels while still
-   participating in a thread.
+   while you switch between channels to view other channels in the same
+   team while still participating in a thread. Each team can have an
+   open thread window for some thread in that team's channels.
  * The thread window's base attribute can be customized in your theme
    configuration file by setting the value of `thread`.
  * The thread window's orientation relative to the currently selected
