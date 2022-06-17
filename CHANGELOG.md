@@ -53,6 +53,11 @@ Other enhancements:
    by non-whitespace characters that are valid in usernames, the entire
    token will be treated as a username as expected, since usernames like
    "@user.blah" are valid Mattermost usernames.
+ * Added additional default key bindings for the following key events:
+   * `scroll-top`: `Meta-<`
+   * `scroll-bottom`: `Meta->`
+   * `filebrowser-list-top`: `Meta-<`
+   * `filebrowser-list-bottom`: `Meta->`
 
 Bug fixes:
  * Fixed a bug where clickable links were not clickable outside of
