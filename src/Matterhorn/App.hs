@@ -29,40 +29,42 @@ import           Matterhorn.Types
 
 
 app :: App ChatState MHEvent Name
-app = App
-  { appDraw         = draw
-  , appChooseCursor = \s cs ->
-      case s^.csCurrentTeamId of
-          Nothing -> showFirstCursor s cs
-          Just tId ->
-              case teamMode $ s^.csTeam(tId) of
-                  Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
-                      FocusCurrentChannel -> do
-                          cId <- s^.csCurrentChannelId(tId)
-                          mi <- s^?maybeChannelMessageInterface(cId)
-                          cur <- messageInterfaceCursor mi
-                          showCursorNamed cur cs
-                      FocusThread -> do
-                          ti <- s^.csTeam(tId).tsThreadInterface
-                          cur <- messageInterfaceCursor ti
-                          showCursorNamed cur cs
-                  ChannelSelect                 -> showFirstCursor s cs
-                  UserListWindow                -> showFirstCursor s cs
-                  ReactionEmojiListWindow       -> showFirstCursor s cs
-                  ChannelListWindow             -> showFirstCursor s cs
-                  ThemeListWindow               -> showFirstCursor s cs
-                  ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
-                  LeaveChannelConfirm           -> Nothing
-                  DeleteChannelConfirm          -> Nothing
-                  MessageSelectDeleteConfirm {} -> Nothing
-                  PostListWindow _              -> Nothing
-                  ViewMessage                   -> Nothing
-                  ShowHelp _                    -> Nothing
-                  EditNotifyPrefs               -> Nothing
-  , appHandleEvent  = Events.onEvent
-  , appStartEvent   = return
-  , appAttrMap      = (^.csResources.crTheme)
-  }
+app =
+    App { appDraw         = draw
+        , appHandleEvent  = Events.onEvent
+        , appStartEvent   = return
+        , appAttrMap      = (^.csResources.crTheme)
+        , appChooseCursor = \s cs -> do
+            tId <- s^.csCurrentTeamId
+            cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
+        }
+
+cursorByMode :: [CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (CursorLocation Name)
+cursorByMode cs s tId mode =
+    case mode of
+        Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
+            FocusCurrentChannel -> do
+                cId <- s^.csCurrentChannelId(tId)
+                mi <- s^?maybeChannelMessageInterface(cId)
+                cur <- messageInterfaceCursor mi
+                showCursorNamed cur cs
+            FocusThread -> do
+                ti <- s^.csTeam(tId).tsThreadInterface
+                cur <- messageInterfaceCursor ti
+                showCursorNamed cur cs
+        LeaveChannelConfirm           -> Nothing
+        DeleteChannelConfirm          -> Nothing
+        MessageSelectDeleteConfirm {} -> Nothing
+        (PostListWindow {})           -> Nothing
+        ViewMessage                   -> Nothing
+        (ShowHelp {})                 -> Nothing
+        EditNotifyPrefs               -> Nothing
+        ChannelSelect                 -> showFirstCursor s cs
+        UserListWindow                -> showFirstCursor s cs
+        ReactionEmojiListWindow       -> showFirstCursor s cs
+        ChannelListWindow             -> showFirstCursor s cs
+        ThemeListWindow               -> showFirstCursor s cs
+        ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
 
 applicationMaxCPUs :: Int
 applicationMaxCPUs = 2
