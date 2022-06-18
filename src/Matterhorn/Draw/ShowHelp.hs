@@ -292,6 +292,9 @@ keybindingHelp kc = vBox $
             ]
           ]
 
+event :: KeyEvent -> Widget a
+event = withDefAttr helpKeyEventAttr . txt . keyEventName
+
 emph :: Widget a -> Widget a
 emph = withDefAttr helpEmphAttr
 
@@ -503,8 +506,8 @@ mkKeybindingHelp kc (sectionName, kbs) =
 mkKeybindHelp :: KeyConfig -> KeyEventHandler -> (Text, Widget Name)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
-        label = case kehEventTrigger h of
-            Static k -> ppBinding $ eventToBinding k
+        (label, mEv) = case kehEventTrigger h of
+            Static k -> (ppBinding $ eventToBinding k, Nothing)
             ByEvent ev ->
                 let bindings = case M.lookup ev kc of
                         Nothing ->
@@ -515,12 +518,18 @@ mkKeybindHelp kc h =
                         Just Unbound -> unbound
                         Just (BindingList bs) | not (null bs) -> ppBinding <$> bs
                                               | otherwise -> unbound
-                in T.intercalate ", " bindings
+                in (T.intercalate ", " bindings, Just ev)
 
+        renderEvent ev = txt "event: " <+> event ev
         rendering = (emph $ txt $ padTo kbColumnWidth $
                       label) <+> txt " " <+>
-                    (hLimit kbDescColumnWidth $ padRight Max $ renderText $
-                     ehDescription $ kehHandler h)
+                    (hLimit kbDescColumnWidth $
+                     padRight Max $
+                     padBottom (Pad 1) $
+                     vBox [ renderText $ ehDescription $ kehHandler h
+                          , maybe emptyWidget renderEvent mEv
+                          ]
+                     )
     in (label, rendering)
 
 mkKeybindEventSectionHelp :: KeyConfig

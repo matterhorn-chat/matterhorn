@@ -37,6 +37,7 @@ module Matterhorn.Themes
   , errorMessageAttr
   , helpAttr
   , helpEmphAttr
+  , helpKeyEventAttr
   , channelSelectPromptAttr
   , channelSelectMatchAttr
   , completionAlternativeListAttr
@@ -95,6 +96,9 @@ helpAttr = "help"
 
 helpEmphAttr :: AttrName
 helpEmphAttr = "helpEmphasis"
+
+helpKeyEventAttr :: AttrName
+helpKeyEventAttr = "helpKeyEvent"
 
 recentMarkerAttr :: AttrName
 recentMarkerAttr = "recentChannelMarker"
@@ -327,6 +331,7 @@ lightAttrs usernameColors =
        , (helpAttr,                         fg black)
        , (pinnedMessageIndicatorAttr,       black `on` cyan)
        , (helpEmphAttr,                     fg blue `withStyle` bold)
+       , (helpKeyEventAttr,                 fg magenta)
        , (channelSelectMatchAttr,           black `on` magenta `withStyle` underline)
        , (channelSelectPromptAttr,          fg black)
        , (completionAlternativeListAttr,    white `on` blue)
@@ -397,6 +402,7 @@ darkAttrs usernameColors =
      , (gapMessageAttr,                   black `on` yellow)
      , (helpAttr,                         fg white)
      , (helpEmphAttr,                     fg cyan `withStyle` bold)
+     , (helpKeyEventAttr,                 fg yellow)
      , (channelSelectMatchAttr,           black `on` magenta `withStyle` underline)
      , (channelSelectPromptAttr,          fg white)
      , (completionAlternativeListAttr,    white `on` blue)
@@ -667,6 +673,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( helpEmphAttr
       , "The help screen's emphasized text"
+      )
+    , ( helpKeyEventAttr
+      , "The help screen's mention of key event names"
       )
     , ( channelSelectPromptAttr
       , "Channel selection: prompt"
