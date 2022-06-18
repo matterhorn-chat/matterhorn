@@ -49,10 +49,10 @@ Other enhancements:
    followed immediately by periods. Previously, something like "@user."
    at the end of a sentence would not cause "@user" to be highlighted
    as a user reference. With this fix, "@user" will be highlighted as
-   long as it is followed only by a period; if the period is followed
-   by non-whitespace characters that are valid in usernames, the entire
-   token will be treated as a username as expected, since usernames like
-   "@user.blah" are valid Mattermost usernames.
+   long as it is not followed by more valid username text; if the period
+   is followed by non-whitespace characters that are valid in usernames,
+   the entire token will be treated as a username as expected, since
+   usernames like "@user.blah" are valid Mattermost usernames.
  * Added additional default key bindings for the following key events:
    * `scroll-top`: `Meta-<`
    * `scroll-bottom`: `Meta->`
