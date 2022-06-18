@@ -13,13 +13,14 @@ the `open-thread` key event.
 
 Once the thread window is open:
  * It can be closed with `Esc`.
- * The focus can be swapped between the thread window and the currently
-   selected channel with `M-o` (event: `change-message-editor-focus`).
-   The currently focused editor's prompt is highlighted when a thread
-   window is open to help you spot the focused editor. The theme
-   attribute `focusedEditorPrompt` can be customized to change the
-   focused editor prompt style.
- * All key bindings that work in a channel, such as `C-s`, work in a
+ * The editor focus can be swapped between the thread window and the
+   currently selected channel with `M-o` (the default binding for
+   the key event `change-message-editor-focus`). The currently
+   focused editor's prompt is highlighted when a thread window is
+   open to help you spot the focused editor. The theme attribute
+   `focusedEditorPrompt` can be customized to change the focused editor
+   prompt style.
+ * All of key bindings that work in a channel (such as `C-s`) work in a
    thread window, too.
  * As one would expect, in a thread window, all messages are implicitly
    part of the thread; no explicit `C-r` or `C-s`/`r` steps are needed
