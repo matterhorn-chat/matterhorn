@@ -58,6 +58,9 @@ Other enhancements:
    * `scroll-bottom`: `Meta->`
    * `filebrowser-list-top`: `Meta-<`
    * `filebrowser-list-bottom`: `Meta->`
+ * The help screen's section on keybindings now displays the key event
+   names for all rebindable keys. The theme attribute used to render the
+   key event names is `helpKeyEvent`.
 
 Bug fixes:
  * Fixed a bug where clickable links were not clickable outside of
