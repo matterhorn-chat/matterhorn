@@ -448,7 +448,8 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                 InThreadShowParent -> p <=> replyIndent
                 InThread           -> replyIndent
 
-    in if not mdRenderReplyParent
+    in freezeBorders $
+       if not mdRenderReplyParent
        then msgWidget
        else case msg^.mInReplyToMsg of
           NotAReply -> msgWidget
