@@ -2127,17 +2127,17 @@ moveRight v as =
 resultToWidget :: Result n -> Widget n
 resultToWidget = Widget Fixed Fixed . return
 
+threadInterface :: (HasCallStack) => TeamId -> Traversal' ChatState ThreadInterface
+threadInterface tId = maybeThreadInterface(tId)._Just
+
 -- An unsafe lens to get the specified team's thread interface. Assumes
 -- the interface is present; if not, this crashes. Intended for places
 -- where you know the interface will be present due to other state and
 -- don't want to deal with Maybe.
-threadInterface :: (HasCallStack) => TeamId -> Traversal' ChatState ThreadInterface
-threadInterface tId = maybeThreadInterface(tId)._Just
-
 unsafeThreadInterface :: (HasCallStack) => TeamId -> Lens' ChatState ThreadInterface
 unsafeThreadInterface tId = maybeThreadInterface(tId).singular _Just
 
--- A safe version of threadInterface.
+-- A safe version of unsafeThreadInterface.
 maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe ThreadInterface)
 maybeThreadInterface tId = csTeam(tId).tsThreadInterface
 
