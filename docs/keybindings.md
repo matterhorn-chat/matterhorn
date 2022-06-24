@@ -20,8 +20,8 @@
 | `PgUp` | `page-up` | Page up |
 | `PgDown` | `page-down` | Page down |
 | `Esc`, `C-c` | `cancel` | Close the help window |
-| `End` | `scroll-bottom` | Scroll to the end of the help |
-| `Home` | `scroll-top` | Scroll to the beginning of the help |
+| `End`, `M->` | `scroll-bottom` | Scroll to the end of the help |
+| `Home`, `M-<` | `scroll-top` | Scroll to the beginning of the help |
 
 # Main Interface
 | Keybinding | Event Name | Description |
@@ -93,8 +93,8 @@
 | `Esc`, `C-c` | `cancel` | Cancel message selection |
 | `k`, `Up` | `select-up` | Select the previous message |
 | `j`, `Down` | `select-down` | Select the next message |
-| `Home` | `scroll-top` | Scroll to top and select the oldest message |
-| `End` | `scroll-bottom` | Scroll to bottom and select the latest message |
+| `Home`, `M-<` | `scroll-top` | Scroll to top and select the oldest message |
+| `End`, `M->` | `scroll-bottom` | Scroll to bottom and select the latest message |
 | `PgUp` | `page-up` | Move the cursor up by 10 messages |
 | `PgDown` | `page-down` | Move the cursor down by 10 messages |
 | `o` | `open-message-url` | Open all URLs in the selected message |
@@ -169,8 +169,8 @@
 | `Down` | `scroll-down` | Scroll down |
 | `Left` | `scroll-left` | Scroll left |
 | `Right` | `scroll-right` | Scroll right |
-| `End` | `scroll-bottom` | Scroll to the end of the message |
-| `Home` | `scroll-top` | Scroll to the beginning of the message |
+| `End`, `M->` | `scroll-bottom` | Scroll to the end of the message |
+| `Home`, `M-<` | `scroll-top` | Scroll to the beginning of the message |
 
 # Message Viewer: Reactions tab
 | Keybinding | Event Name | Description |
@@ -179,8 +179,8 @@
 | `PgDown` | `page-down` | Page down |
 | `Up` | `scroll-up` | Scroll up |
 | `Down` | `scroll-down` | Scroll down |
-| `End` | `scroll-bottom` | Scroll to the end of the reactions list |
-| `Home` | `scroll-top` | Scroll to the beginning of the reactions list |
+| `End`, `M->` | `scroll-bottom` | Scroll to the end of the reactions list |
+| `Home`, `M-<` | `scroll-top` | Scroll to the beginning of the reactions list |
 
 # Attachment List
 | Keybinding | Event Name | Description |
@@ -204,8 +204,8 @@
 | `C-f`, `PgDown` | `filebrowser-list-page-down` | Move cursor one page down |
 | `C-u` | `filebrowser-list-half-page-up` | Move cursor one-half page up |
 | `C-d` | `filebrowser-list-half-page-down` | Move cursor one-half page down |
-| `g`, `Home` | `filebrowser-list-top` | Move cursor to top of list |
-| `G`, `End` | `filebrowser-list-bottom` | Move cursor to bottom of list |
+| `g`, `Home`, `M-<` | `filebrowser-list-top` | Move cursor to top of list |
+| `G`, `End`, `M->` | `filebrowser-list-bottom` | Move cursor to bottom of list |
 | `j`, `C-n`, `Down` | `filebrowser-list-next` | Move cursor down |
 | `k`, `C-p`, `Up` | `filebrowser-list-previous` | Move cursor up |
 
