@@ -120,7 +120,7 @@ handleWebsocketEvent we = do
 
         WMTyping
             | Just uId <- wepUserId $ weData we
-            , Just cId <- webChannelId (weBroadcast we) -> handleTypingUser uId cId
+            , Just cId <- webChannelId (weBroadcast we) -> handleTypingUser uId cId (wepParentId $ weData we)
             | otherwise -> return ()
 
         WMChannelDeleted
