@@ -1,4 +1,73 @@
 
+Next release
+============
+
+This release is mostly focused on adding support for a "thread window"
+that allows you to carry on a conversation in a thread of your
+choosing while also seeing, visiting, and switching between channels
+simultaneously.
+
+To use the thread window, select a message with `C-s` and then press
+`t`. This binding can be customized by overriding the key binding for
+the `open-thread` key event.
+
+Once the thread window is open:
+ * It can be closed with `Esc`.
+ * The editor focus can be swapped between the thread window and the
+   currently selected channel with `M-o` (the default binding for
+   the key event `change-message-editor-focus`). The currently
+   focused editor's prompt is highlighted when a thread window is
+   open to help you spot the focused editor. The theme attribute
+   `focusedEditorPrompt` can be customized to change the focused editor
+   prompt style.
+ * All of key bindings that work in a channel (such as `C-s`) work in a
+   thread window, too.
+ * As one would expect, in a thread window, all messages are implicitly
+   part of the thread; no explicit `C-r` or `C-s`/`r` steps are needed
+   to reply.
+ * The thread window is per-team; you can have a thread window open even
+   while you switch between channels to view other channels in the same
+   team while still participating in a thread. Each team can have an
+   open thread window for some thread in that team's channels.
+ * The thread window's base attribute can be customized in your theme
+   configuration file by setting the value of `thread`.
+ * The thread window's orientation relative to the currently selected
+   channel can be customized with either the `/thread-orientation`
+   command or the `threadOrientation` configuration file setting. Both
+   the command and config file setting can take one of the values
+   `above`, `below`, `left`, or `right`.
+ * By default, the thread window will not be re-opened next time
+   Matterhorn is started. If you would like to make Matterhorn always
+   re-open the last thread you had open on a per-team basis, you can set
+   the new `showLastOpenThread` config file setting to `True`.
+
+Other enhancements:
+ * There is a new `/toggle-mouse-input` command to toggle whether mouse
+   input is enabled at runtime.
+ * Matterhorn now starts and uses only one instance of `aspell`. Prior
+   to this release, Matterhorn started one instance of `aspell` per team.
+ * The message text parser now properly recognizes usernames that are
+   followed immediately by periods. Previously, something like "@user."
+   at the end of a sentence would not cause "@user" to be highlighted
+   as a user reference. With this fix, "@user" will be highlighted as
+   long as it is not followed by more valid username text; if the period
+   is followed by non-whitespace characters that are valid in usernames,
+   the entire token will be treated as a username as expected, since
+   usernames like "@user.blah" are valid Mattermost usernames.
+ * Added additional default key bindings for the following key events:
+   * `scroll-top`: `Meta-<`
+   * `scroll-bottom`: `Meta->`
+   * `filebrowser-list-top`: `Meta-<`
+   * `filebrowser-list-bottom`: `Meta->`
+ * The help screen's section on keybindings now displays the key event
+   names for all rebindable keys. The theme attribute used to render the
+   key event names is `helpKeyEvent`.
+
+Bug fixes:
+ * Fixed a bug where clickable links were not clickable outside of
+   messages in some cases. This affected clickable links in channel
+   topics.
+
 50200.16.0
 ==========
 

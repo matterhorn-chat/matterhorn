@@ -17,10 +17,17 @@ module Matterhorn.State.Common
   , postErrorMessage'
   , addEmoteFormatting
   , removeEmoteFormatting
+  , toggleMouseMode
 
   , fetchMentionedUsers
   , doPendingUserFetches
   , doPendingUserStatusFetches
+
+  , setThreadOrientationByName
+
+  -- Cache management
+  , invalidateChannelRenderingCache
+  , invalidateMessageRenderingCacheByPostId
 
   , module Matterhorn.State.Async
   )
@@ -29,7 +36,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Main ( invalidateCacheEntry )
+import           Brick.Main ( invalidateCacheEntry, invalidateCache, getVtyHandle )
 import           Control.Concurrent ( MVar, putMVar, forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
@@ -38,6 +45,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), (%=), (%~), (.~) )
 import           System.Directory ( createDirectoryIfMissing )
 import           System.Environment.XDG.BaseDir ( getUserCacheDir )
@@ -130,11 +138,11 @@ addClientMessage msg = do
     withCurrentTeam $ \tId -> do
         withCurrentChannel tId $ \cid _ -> do
             uuid <- generateUUID
-            let addCMsg = ccContents.cdMessages %~
+            let addCMsg = ccMessageInterface.miMessages %~
                     (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
             csChannels %= modifyChannelById cid addCMsg
 
-            mh $ invalidateCacheEntry $ ChannelMessages cid
+            invalidateChannelRenderingCache cid
             mh $ invalidateCacheEntry $ ChannelSidebar tId
 
             let msgTy = case msg^.cmType of
@@ -165,7 +173,7 @@ postErrorMessageIO err st = do
               Just cId -> do
                   msg <- newClientMessage Error err
                   uuid <- generateUUID_IO
-                  let addEMsg = ccContents.cdMessages %~
+                  let addEMsg = ccMessageInterface.miMessages %~
                           (addMessage $ clientMessageToMessage msg & mMessageId .~ Just (MessageUUID uuid))
                   return $ st & csChannels %~ modifyChannelById cId addEMsg
 
@@ -206,7 +214,7 @@ openWithOpener getTarget = do
                             -- current channel will be displayed as new.
                             withCurrentTeam $ \tId -> do
                                 withCurrentChannel tId $ \cId curChan -> do
-                                    let msgs = curChan^.ccContents.cdMessages
+                                    let msgs = curChan^.ccMessageInterface.miMessages
                                     case findLatestUserMessage isEditable msgs of
                                         Nothing -> return ()
                                         Just m ->
@@ -241,7 +249,7 @@ openWithOpener getTarget = do
 
                                 return $ case st^.csCurrentTeamId of
                                     Nothing -> st
-                                    Just tId -> setMode' tId Main st
+                                    Just tId -> pushMode' tId Main st
 
 runInteractiveCommand :: String
                       -> [String]
@@ -408,3 +416,41 @@ fetchUsers rawUsernames uids = do
                         forM_ results (\u -> addNewUser $ userInfoFromUser u True)
 
             return $ Just $ act1 >> act2
+
+invalidateChannelRenderingCache :: ChannelId -> MH ()
+invalidateChannelRenderingCache cId = do
+    mh $ invalidateCacheEntry $ MessageInterfaceMessages $ MessageInput cId
+    mh $ invalidateCacheEntry $ MessageInterfaceMessages $ ThreadMessageInput cId
+
+invalidateMessageRenderingCacheByPostId :: PostId -> MH ()
+invalidateMessageRenderingCacheByPostId pId = do
+    mh $ invalidateCacheEntry $ RenderedMessage $ MessagePostId pId
+
+setThreadOrientationByName :: T.Text -> MH ()
+setThreadOrientationByName o = do
+    let o' = T.strip $ T.toLower o
+    new <- case o' of
+        "above" -> return $ Just ThreadAbove
+        "below" -> return $ Just ThreadBelow
+        "left"  -> return $ Just ThreadLeft
+        "right" -> return $ Just ThreadRight
+        _ -> do
+            postErrorMessage' $ T.pack $ "Invalid orientation: " <> show o
+            return Nothing
+
+    case new of
+        Nothing -> return ()
+        Just n -> do
+            csResources.crConfiguration.configThreadOrientationL .= n
+            postInfoMessage $ "Thread orientation set to " <> o'
+            mh invalidateCache
+
+toggleMouseMode :: MH ()
+toggleMouseMode = do
+    vty <- mh getVtyHandle
+    csResources.crConfiguration.configMouseModeL %= not
+    newMode <- use (csResources.crConfiguration.configMouseModeL)
+    liftIO $ Vty.setMode (Vty.outputIface vty) Vty.Mouse newMode
+    postInfoMessage $ if newMode
+                      then "Mouse input is now enabled."
+                      else "Mouse input is now disabled."

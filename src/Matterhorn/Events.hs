@@ -28,22 +28,19 @@ import           Matterhorn.Types
 
 import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.ChannelTopicWindow
-import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.DeleteChannelConfirm
 import           Matterhorn.Events.Global
 import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.LeaveChannelConfirm
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
-import           Matterhorn.Events.ThemeListOverlay
-import           Matterhorn.Events.PostListOverlay
+import           Matterhorn.Events.ThemeListWindow
+import           Matterhorn.Events.PostListWindow
 import           Matterhorn.Events.ShowHelp
-import           Matterhorn.Events.UrlSelect
-import           Matterhorn.Events.UserListOverlay
-import           Matterhorn.Events.ChannelListOverlay
-import           Matterhorn.Events.ReactionEmojiListOverlay
+import           Matterhorn.Events.UserListWindow
+import           Matterhorn.Events.ChannelListWindow
+import           Matterhorn.Events.ReactionEmojiListWindow
 import           Matterhorn.Events.TabbedWindow
-import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.Mouse
 import           Matterhorn.Events.EditNotifyPrefs
 import           Matterhorn.Events.Websocket
@@ -64,18 +61,16 @@ onBrickEvent (VtyEvent (Vty.EvKey (Vty.KChar 'l') [Vty.MCtrl])) = do
 onBrickEvent (VtyEvent e) = do
     csLastMouseDownEvent .= Nothing
     onVtyEvent e
-onBrickEvent e@(MouseDown n button modifier _) = do
-    mhLog LogGeneral $ T.pack $ "MOUSE EVENT: " <> show (n, button, modifier)
+onBrickEvent e@(MouseDown n _ _ _) = do
     lastClick <- use csLastMouseDownEvent
     let shouldHandle = case lastClick of
             Nothing -> True
             Just (MouseDown prevN _ _ _) -> not $ prevN `semeq` n
             _ -> False
     when shouldHandle $ do
-        mhLog LogGeneral "Handling mouse event"
         csLastMouseDownEvent .= Just e
         withCurrentTeam $ \tId -> do
-            mode <- use (csTeam(tId).tsMode)
+            mode <- getTeamMode tId
             mouseHandlerByMode tId mode e
 onBrickEvent (MouseUp {}) = do
     csLastMouseDownEvent .= Nothing
@@ -192,53 +187,60 @@ formatMHError (AsyncErrEvent e) =
     "\nPlease report this error at https://github.com/matterhorn-chat/matterhorn/issues"
 
 onVtyEvent :: Vty.Event -> MH ()
-onVtyEvent e = do
-    case e of
-        (Vty.EvResize _ _) -> do
-            -- On resize, invalidate the entire rendering cache since
-            -- many things depend on the window size.
-            --
-            -- Note: we fall through after this because it is sometimes
-            -- important for modes to have their own additional logic
-            -- to run when a resize occurs, so we don't want to stop
-            -- processing here.
-            mh invalidateCache
-            withCurrentTeam $ \tId ->
-                mh $ makeVisible $ SelectedChannelListEntry tId
-        _ -> return ()
+onVtyEvent =
+    void .
+    handleEventWith [ handleResizeEvent
+                    , handleKeyboardEvent globalKeybindings
+                    , handleTeamModeEvent
+                    ]
 
-    void $ handleKeyboardEvent globalKeybindings handleTeamModeEvent e
+handleResizeEvent :: Vty.Event -> MH Bool
+handleResizeEvent (Vty.EvResize _ _) = do
+    -- On resize, invalidate the entire rendering cache since many
+    -- things depend on the window size.
+    --
+    -- Note: we fall through after this because it is sometimes
+    -- important for modes to have their own additional logic to run
+    -- when a resize occurs, so we don't want to stop processing here.
+    mh invalidateCache
+    withCurrentTeam $ \tId ->
+        mh $ makeVisible $ SelectedChannelListEntry tId
 
-handleTeamModeEvent :: Vty.Event -> MH ()
-handleTeamModeEvent e =
+    return True
+handleResizeEvent _ =
+    return False
+
+handleTeamModeEvent :: Vty.Event -> MH Bool
+handleTeamModeEvent e = do
     withCurrentTeam $ \tId -> do
-        mode <- use (csTeam(tId).tsMode)
+        mode <- getTeamMode tId
         teamEventHandlerByMode tId mode e
+    return True
 
 teamEventHandlerByMode :: MM.TeamId -> Mode -> Vty.Event -> MH ()
-teamEventHandlerByMode tId mode =
+teamEventHandlerByMode tId mode e =
     case mode of
-        Main                       -> onEventMain tId
-        ShowHelp _ _               -> void . onEventShowHelp tId
-        ChannelSelect              -> void . onEventChannelSelect tId
-        UrlSelect                  -> void . onEventUrlSelect tId
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId
-        MessageSelect              -> onEventMessageSelect tId
-        MessageSelectDeleteConfirm -> onEventMessageSelectDeleteConfirm tId
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId
-        ThemeListOverlay           -> onEventThemeListOverlay tId
-        PostListOverlay _          -> onEventPostListOverlay tId
-        UserListOverlay            -> onEventUserListOverlay tId
-        ChannelListOverlay         -> onEventChannelListOverlay tId
-        ReactionEmojiListOverlay   -> onEventReactionEmojiListOverlay tId
-        ViewMessage                -> void . (handleTabbedWindowEvent
+        Main                       -> onEventMain tId e
+        ShowHelp _                 -> void $ onEventShowHelp tId e
+        ChannelSelect              -> void $ onEventChannelSelect tId e
+        LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId e
+        MessageSelectDeleteConfirm target ->
+            case target of
+                MITeamThread tmId ->
+                    onEventMessageSelectDeleteConfirm tId (unsafeThreadInterface(tmId)) e
+                MIChannel cId ->
+                    onEventMessageSelectDeleteConfirm tId (csChannelMessageInterface(cId)) e
+        DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId e
+        ThemeListWindow            -> onEventThemeListWindow tId e
+        PostListWindow _           -> onEventPostListWindow tId e
+        UserListWindow             -> onEventUserListWindow tId e
+        ChannelListWindow          -> onEventChannelListWindow tId e
+        ReactionEmojiListWindow    -> onEventReactionEmojiListWindow tId e
+        ViewMessage                -> void $ (handleTabbedWindowEvent
                                               (csTeam(tId).tsViewedMessage.singular _Just._2)
-                                              tId)
-        ManageAttachments          -> onEventManageAttachments tId
-        ManageAttachmentsBrowseFiles -> onEventManageAttachments tId
-        EditNotifyPrefs            -> void . onEventEditNotifyPrefs tId
-        ChannelTopicWindow         -> onEventChannelTopicWindow tId
-        SaveAttachmentWindow _     -> onEventSaveAttachmentWindow tId
+                                              tId e)
+        EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
+        ChannelTopicWindow         -> onEventChannelTopicWindow tId e
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the

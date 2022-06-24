@@ -26,6 +26,7 @@ import           Network.Mattermost.Types
 import           Message_QCA
 
 import           Matterhorn.Types.DirectionalSeq
+import           Matterhorn.Types.Core
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.Posts
 import           Matterhorn.Prelude

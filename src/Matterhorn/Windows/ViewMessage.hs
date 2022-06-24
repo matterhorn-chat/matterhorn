@@ -32,7 +32,7 @@ import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), prin
 
 -- | The template for "View Message" windows triggered by message
 -- selection mode.
-viewMessageWindowTemplate :: TeamId -> TabbedWindowTemplate ViewMessageWindowTab
+viewMessageWindowTemplate :: TeamId -> TabbedWindowTemplate ChatState MH Name ViewMessageWindowTab
 viewMessageWindowTemplate tId =
     TabbedWindowTemplate { twtEntries = [ messageEntry tId
                                         , reactionsEntry tId
@@ -40,7 +40,7 @@ viewMessageWindowTemplate tId =
                          , twtTitle = const $ txt "View Message"
                          }
 
-messageEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
+messageEntry :: TeamId -> TabbedWindowEntry ChatState MH Name ViewMessageWindowTab
 messageEntry tId =
     TabbedWindowEntry { tweValue = VMTabMessage
                       , tweRender = renderTab tId
@@ -49,7 +49,7 @@ messageEntry tId =
                       , tweShowHandler = onShow tId
                       }
 
-reactionsEntry :: TeamId -> TabbedWindowEntry ViewMessageWindowTab
+reactionsEntry :: TeamId -> TabbedWindowEntry ChatState MH Name ViewMessageWindowTab
 reactionsEntry tId =
     TabbedWindowEntry { tweValue = VMTabReactions
                       , tweRender = renderTab tId
@@ -97,17 +97,18 @@ getLatestMessage cs tId m =
         Just mId -> do
             cId <- cs^.csCurrentChannelId(tId)
             chan <- cs^?csChannel(cId)
-            findMessage mId $ chan^.ccContents.cdMessages
+            findMessage mId $ chan^.ccMessageInterface.miMessages
 
 handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent tId VMTabMessage =
-    void . handleKeyboardEvent (viewMessageKeybindings tId) (const $ return ())
+    void . handleKeyboardEvent (viewMessageKeybindings tId)
 handleEvent tId VMTabReactions =
-    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId) (const $ return ())
+    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId)
 
 reactionsText :: ChatState -> TeamId -> Message -> Widget Name
-reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
+reactionsText st tId m = viewport vpName Vertical body
     where
+        vpName = ViewMessageReactionsArea tId
         body = case null reacList of
             True -> txt "This message has no reactions."
             False -> vBox $ mkEntry <$> reacList
@@ -123,7 +124,7 @@ reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
         hs = getHighlightSet st tId
 
         clickableUsernames i (EUser un) =
-            Just $ ClickableUsername (ViewMessageReactionsArea tId) i un
+            Just $ ClickableUsername Nothing vpName i un
         clickableUsernames _ _ =
             Nothing
 
@@ -137,7 +138,7 @@ reactionsText st tId m = viewport (ViewMessageReactionsArea tId) Vertical body
 
         makeName e us = do
             pid <- postId <$> m^.mOriginalPost
-            Just $ ClickableReaction pid e us
+            Just $ ClickableReaction pid vpName e us
 
         makeClickableName w e us =
             case makeName e us of
@@ -173,6 +174,8 @@ viewMessageBox st tId msg =
                                  , mdMyUserId          = myUserId st
                                  , mdWrapNonhighlightedCodeBlocks = False
                                  , mdTruncateVerbatimBlocks = Nothing
+                                 , mdClickableNameTag  = ViewMessageArea tId
+                                 , mdRenderReplyIndent = False
                                  }
             in renderMessage md
 

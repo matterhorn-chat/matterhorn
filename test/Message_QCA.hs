@@ -16,6 +16,7 @@ import Test.Tasty.QuickCheck
 
 import Matterhorn.Types.Messages
 import Matterhorn.Types.Posts
+import Matterhorn.Types.Core
 
 genMap :: Ord key => Gen key -> Gen value -> Gen (Map key value)
 genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv

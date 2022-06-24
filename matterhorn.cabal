@@ -54,30 +54,32 @@ library
                        Matterhorn.Draw.Autocomplete
                        Matterhorn.Draw.Buttons
                        Matterhorn.Draw.ChannelList
-                       Matterhorn.Draw.ChannelListOverlay
+                       Matterhorn.Draw.ChannelListWindow
+                       Matterhorn.Draw.ChannelSelectPrompt
                        Matterhorn.Draw.ChannelTopicWindow
-                       Matterhorn.Draw.SaveAttachmentWindow
                        Matterhorn.Draw.DeleteChannelConfirm
+                       Matterhorn.Draw.InputPreview
                        Matterhorn.Draw.LeaveChannelConfirm
-                       Matterhorn.Draw.ListOverlay
+                       Matterhorn.Draw.ListWindow
                        Matterhorn.Draw.Main
                        Matterhorn.Draw.ManageAttachments
+                       Matterhorn.Draw.MessageDeleteConfirm
+                       Matterhorn.Draw.MessageInterface
                        Matterhorn.Draw.Messages
                        Matterhorn.Draw.NotifyPrefs
-                       Matterhorn.Draw.PostListOverlay
-                       Matterhorn.Draw.ReactionEmojiListOverlay
+                       Matterhorn.Draw.PostListWindow
+                       Matterhorn.Draw.ReactionEmojiListWindow
                        Matterhorn.Draw.RichText
                        Matterhorn.Draw.RichText.Wrap
                        Matterhorn.Draw.RichText.Flatten
                        Matterhorn.Draw.ShowHelp
                        Matterhorn.Draw.TabbedWindow
-                       Matterhorn.Draw.ThemeListOverlay
-                       Matterhorn.Draw.URLList
-                       Matterhorn.Draw.UserListOverlay
+                       Matterhorn.Draw.ThemeListWindow
+                       Matterhorn.Draw.UserListWindow
                        Matterhorn.Draw.Util
                        Matterhorn.Emoji
                        Matterhorn.Events
-                       Matterhorn.Events.ChannelListOverlay
+                       Matterhorn.Events.ChannelListWindow
                        Matterhorn.Events.ChannelSelect
                        Matterhorn.Events.ChannelTopicWindow
                        Matterhorn.Events.SaveAttachmentWindow
@@ -89,14 +91,16 @@ library
                        Matterhorn.Events.Main
                        Matterhorn.Events.ManageAttachments
                        Matterhorn.Events.MessageSelect
+                       Matterhorn.Events.MessageInterface
                        Matterhorn.Events.Mouse
-                       Matterhorn.Events.PostListOverlay
-                       Matterhorn.Events.ReactionEmojiListOverlay
+                       Matterhorn.Events.PostListWindow
+                       Matterhorn.Events.ReactionEmojiListWindow
                        Matterhorn.Events.ShowHelp
                        Matterhorn.Events.TabbedWindow
-                       Matterhorn.Events.ThemeListOverlay
+                       Matterhorn.Events.ThemeListWindow
+                       Matterhorn.Events.ThreadWindow
                        Matterhorn.Events.UrlSelect
-                       Matterhorn.Events.UserListOverlay
+                       Matterhorn.Events.UserListWindow
                        Matterhorn.Events.Websocket
                        Matterhorn.FilePaths
                        Matterhorn.HelpTopics
@@ -111,7 +115,7 @@ library
                        Matterhorn.State.Attachments
                        Matterhorn.State.Autocomplete
                        Matterhorn.State.ChannelList
-                       Matterhorn.State.ChannelListOverlay
+                       Matterhorn.State.ChannelListWindow
                        Matterhorn.State.ChannelSelect
                        Matterhorn.State.Channels
                        Matterhorn.State.ChannelTopicWindow
@@ -121,32 +125,38 @@ library
                        Matterhorn.State.Flagging
                        Matterhorn.State.Help
                        Matterhorn.State.Links
-                       Matterhorn.State.ListOverlay
+                       Matterhorn.State.ListWindow
                        Matterhorn.State.Logging
                        Matterhorn.State.MessageSelect
                        Matterhorn.State.Messages
                        Matterhorn.State.NotifyPrefs
-                       Matterhorn.State.PostListOverlay
-                       Matterhorn.State.ReactionEmojiListOverlay
+                       Matterhorn.State.PostListWindow
+                       Matterhorn.State.ReactionEmojiListWindow
                        Matterhorn.State.Reactions
                        Matterhorn.State.Setup
                        Matterhorn.State.Setup.Threads
                        Matterhorn.State.Setup.Threads.Logging
                        Matterhorn.State.Teams
-                       Matterhorn.State.ThemeListOverlay
+                       Matterhorn.State.ThemeListWindow
+                       Matterhorn.State.ThreadWindow
                        Matterhorn.State.UrlSelect
-                       Matterhorn.State.UserListOverlay
+                       Matterhorn.State.UserListWindow
                        Matterhorn.State.Users
                        Matterhorn.Themes
                        Matterhorn.TimeUtils
                        Matterhorn.Types
                        Matterhorn.Types.Channels
                        Matterhorn.Types.Common
+                       Matterhorn.Types.Core
                        Matterhorn.Types.DirectionalSeq
+                       Matterhorn.Types.EditState
                        Matterhorn.Types.KeyEvents
                        Matterhorn.Types.Messages
+                       Matterhorn.Types.MessageInterface
+                       Matterhorn.Types.NonemptyStack
                        Matterhorn.Types.Posts
                        Matterhorn.Types.RichText
+                       Matterhorn.Types.TabbedWindow
                        Matterhorn.Types.Users
                        Matterhorn.Util
                        Matterhorn.Windows.ViewMessage
@@ -175,7 +185,7 @@ library
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
                      , microlens-platform   >= 0.3     && < 0.5
-                     , brick                >= 0.68.1  && < 0.69
+                     , brick                >= 0.70    && < 0.71
                      , brick-skylighting    >= 0.2     && < 0.4
                      , vty                  >= 5.35    && < 5.36
                      , word-wrap            >= 0.4.0   && < 0.5

@@ -37,6 +37,7 @@ module Matterhorn.Themes
   , errorMessageAttr
   , helpAttr
   , helpEmphAttr
+  , helpKeyEventAttr
   , channelSelectPromptAttr
   , channelSelectMatchAttr
   , completionAlternativeListAttr
@@ -58,6 +59,8 @@ module Matterhorn.Themes
   , tabUnselectedAttr
   , buttonAttr
   , buttonFocusedAttr
+  , threadAttr
+  , focusedEditorPromptAttr
 
   -- * Username formatting
   , colorUsername
@@ -93,6 +96,9 @@ helpAttr = "help"
 
 helpEmphAttr :: AttrName
 helpEmphAttr = "helpEmphasis"
+
+helpKeyEventAttr :: AttrName
+helpKeyEventAttr = "helpKeyEvent"
 
 recentMarkerAttr :: AttrName
 recentMarkerAttr = "recentChannelMarker"
@@ -238,6 +244,12 @@ buttonAttr = "button"
 buttonFocusedAttr :: AttrName
 buttonFocusedAttr = buttonAttr <> "focused"
 
+threadAttr :: AttrName
+threadAttr = "thread"
+
+focusedEditorPromptAttr :: AttrName
+focusedEditorPromptAttr = "focusedEditorPrompt"
+
 lookupTheme :: Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes
 
@@ -287,6 +299,8 @@ lightAttrs usernameColors =
     in [ (timeAttr,                         fg black)
        , (buttonAttr,                       black `on` cyan)
        , (buttonFocusedAttr,                black `on` yellow)
+       , (threadAttr,                       defAttr)
+       , (focusedEditorPromptAttr,          fg yellow `withStyle` bold)
        , (currentUserAttr,                  defAttr `withStyle` bold)
        , (channelHeaderAttr,                fg black)
        , (verbatimTruncateMessageAttr,      fg blue)
@@ -317,6 +331,7 @@ lightAttrs usernameColors =
        , (helpAttr,                         fg black)
        , (pinnedMessageIndicatorAttr,       black `on` cyan)
        , (helpEmphAttr,                     fg blue `withStyle` bold)
+       , (helpKeyEventAttr,                 fg magenta)
        , (channelSelectMatchAttr,           black `on` magenta `withStyle` underline)
        , (channelSelectPromptAttr,          fg black)
        , (completionAlternativeListAttr,    white `on` blue)
@@ -355,6 +370,8 @@ darkAttrs usernameColors =
   in [ (timeAttr,                         fg white)
      , (buttonAttr,                       black `on` cyan)
      , (buttonFocusedAttr,                black `on` yellow)
+     , (threadAttr,                       defAttr)
+     , (focusedEditorPromptAttr,          fg yellow `withStyle` bold)
      , (currentUserAttr,                  defAttr `withStyle` bold)
      , (channelHeaderAttr,                fg white)
      , (verbatimTruncateMessageAttr,      fg cyan)
@@ -385,6 +402,7 @@ darkAttrs usernameColors =
      , (gapMessageAttr,                   black `on` yellow)
      , (helpAttr,                         fg white)
      , (helpEmphAttr,                     fg cyan `withStyle` bold)
+     , (helpKeyEventAttr,                 fg yellow)
      , (channelSelectMatchAttr,           black `on` magenta `withStyle` underline)
      , (channelSelectPromptAttr,          fg white)
      , (completionAlternativeListAttr,    white `on` blue)
@@ -656,6 +674,9 @@ themeDocs = ThemeDocumentation $ M.fromList $
     , ( helpEmphAttr
       , "The help screen's emphasized text"
       )
+    , ( helpKeyEventAttr
+      , "The help screen's mention of key event names"
+      )
     , ( channelSelectPromptAttr
       , "Channel selection: prompt"
       )
@@ -862,6 +883,12 @@ themeDocs = ThemeDocumentation $ M.fromList $
       )
     , ( scrollbarHandleAttr
       , "Attribute for scroll bar handles"
+      )
+    , ( threadAttr
+      , "Base attribute for the thread window"
+      )
+    , ( focusedEditorPromptAttr
+      , "The attribute for the prompt of the focused message editor"
       )
     ] <> [ (usernameAttr i, T.pack $ "Username color " <> show i)
          | i <- [0..usernameColorHashBuckets-1]

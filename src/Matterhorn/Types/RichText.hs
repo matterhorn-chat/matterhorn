@@ -71,7 +71,7 @@ data TeamBaseURL = TeamBaseURL TeamURLName ServerBaseURL
 
 -- | A sequence of rich text blocks.
 newtype Blocks = Blocks (Seq Block)
-            deriving (Semigroup, Monoid, Show)
+            deriving (Semigroup, Monoid, Show, Eq)
 
 unBlocks :: Blocks -> Seq Block
 unBlocks (Blocks bs) = bs
@@ -100,7 +100,7 @@ data Block =
     -- ^ A horizontal rule.
     | Table [C.ColAlignment] [Inlines] [[Inlines]]
     -- ^ A table.
-    deriving (Show)
+    deriving (Show, Eq)
 
 -- | Returns whether two blocks have the same type.
 sameBlockType :: Block -> Block -> Bool
@@ -270,7 +270,12 @@ parseUsername = P.try $ do
         period = case C.tokenize "" "." of
             [p] -> p
             _ -> error "BUG: parseUsername: failed to tokenize basic input"
-    uts <- intersperse period <$> P.sepBy1 chunk (C.symbol '.')
+    uts <- intersperse period <$> do
+        c <- chunk
+        rest <- P.many $ P.try $ do
+            void $ C.symbol '.'
+            chunk
+        return $ c : rest
     return $ singleI $ EUser $ C.untokenize uts
 
 -- Syntax extension for parsing :emoji: references.

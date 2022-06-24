@@ -1,6 +1,4 @@
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -48,12 +46,10 @@ module Matterhorn.Types.Messages
   , mOriginalPost, mChannelId, mMarkdownSource
   , isBotMessage
   , MessageType(..)
-  , MessageId(..)
   , ThreadState(..)
   , MentionedUser(..)
   , isPostMessage
   , messagePostId
-  , messageIdPostId
   , UserRef(..)
   , ReplyState(..)
   , clientMessageToMessage
@@ -95,7 +91,6 @@ module Matterhorn.Types.Messages
   , withFirstMessage
   , msgURLs
 
-  , LinkTarget(..)
   , LinkChoice(LinkChoice, _linkTarget)
   , linkUser
   , linkTarget
@@ -109,20 +104,18 @@ import           Matterhorn.Prelude
 
 import           Control.Monad
 import qualified Data.Foldable as F
-import           Data.Hashable ( Hashable )
 import qualified Data.Map.Strict as Map
 import           Data.Sequence as Seq
 import qualified Data.Set as S
 import           Data.Tuple
-import           Data.UUID ( UUID )
-import           GHC.Generics ( Generic )
 import           Lens.Micro.Platform ( makeLenses )
 
 import           Network.Mattermost.Types ( ChannelId, PostId, Post
-                                          , ServerTime, UserId, FileId
+                                          , ServerTime, UserId
                                           )
 
 import           Matterhorn.Types.DirectionalSeq
+import           Matterhorn.Types.Core
 import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText
 
@@ -142,14 +135,6 @@ data ThreadState =
 -- ----------------------------------------------------------------------
 -- * Messages
 
-data MessageId = MessagePostId PostId
-               | MessageUUID UUID
-               deriving (Eq, Read, Ord, Show, Generic, Hashable)
-
-messageIdPostId :: MessageId -> Maybe PostId
-messageIdPostId (MessagePostId p) = Just p
-messageIdPostId _ = Nothing
-
 -- | A 'Message' is any message we might want to render, either from
 --   Mattermost itself or from a client-internal source.
 data Message = Message
@@ -168,7 +153,7 @@ data Message = Message
   , _mFlagged       :: Bool
   , _mPinned        :: Bool
   , _mChannelId     :: Maybe ChannelId
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 isPostMessage :: Message -> Bool
 isPostMessage m =
@@ -257,7 +242,7 @@ isJoinLeave m = case _mType m of
 --   the union of both kinds of post types.
 data MessageType = C ClientMessageType
                  | CP ClientPostType
-                 deriving (Show)
+                 deriving (Show, Eq)
 
 -- | There may be no user (usually an internal message), a reference to
 -- a user (by Id), or the server may have supplied a specific username
@@ -279,12 +264,6 @@ data ReplyState =
     NotAReply
     | InReplyTo PostId
     deriving (Show, Eq)
-
-data LinkTarget =
-    LinkURL URL
-    | LinkFileId FileId
-    | LinkPermalink TeamURLName PostId
-    deriving (Eq, Show, Ord)
 
 -- | This type represents links to things in the 'open links' view.
 data LinkChoice =

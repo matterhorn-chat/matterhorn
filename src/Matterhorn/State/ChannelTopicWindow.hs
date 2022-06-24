@@ -11,6 +11,7 @@ import           Lens.Micro.Platform ( (.=) )
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
+import           Matterhorn.State.Teams ( newChannelTopicDialog )
 import           Matterhorn.State.Channels ( getCurrentChannelTopic )
 
 
@@ -21,4 +22,4 @@ openChannelTopicWindow tId = do
         Nothing -> return ()
         Just topic -> do
             csTeam(tId).tsChannelTopicDialog .= newChannelTopicDialog tId topic
-            setMode tId ChannelTopicWindow
+            pushMode tId ChannelTopicWindow

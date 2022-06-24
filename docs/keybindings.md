@@ -19,7 +19,7 @@
 | `Down` | `scroll-down` | Scroll down |
 | `PgUp` | `page-up` | Page up |
 | `PgDown` | `page-down` | Page down |
-| `Esc`, `C-c` | `cancel` | Return to the previous interface |
+| `Esc`, `C-c` | `cancel` | Close the help window |
 | `End` | `scroll-bottom` | Scroll to the end of the help |
 | `Home` | `scroll-top` | Scroll to the beginning of the help |
 
@@ -27,31 +27,36 @@
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `F1` | `show-help` | Show this help screen |
-| `C-s` | `select-mode` | Select a message to edit/reply/delete |
-| `C-r` | `reply-recent` | Reply to the most recent message |
-| `M-k` | `invoke-editor` | Invoke `$EDITOR` to edit the current message |
 | `C-g` | `enter-fast-select` | Enter fast channel selection mode |
-| `Tab` | (non-customizable key) | Tab-complete forward |
-| `BackTab` | (non-customizable key) | Tab-complete backward |
 | `C-Up` | `channel-list-scroll-up` | Scroll up in the channel list |
 | `C-Down` | `channel-list-scroll-down` | Scroll down in the channel list |
 | `F4` | `cycle-channel-list-sorting` | Cycle through channel list sorting modes |
-| `Up` | `scroll-up` | Scroll up in the channel input history |
-| `Down` | `scroll-down` | Scroll down in the channel input history |
-| `PgUp` | `page-up` | Page up in the channel message list (enters message select mode) |
-| `S-Home` | `select-oldest-message` | Scroll to top of channel message list |
+| `C-r` | `reply-recent` | Reply to the most recent message |
+| `M-o` | `change-message-editor-focus` | Cycle between message editors when a thread is open |
 | `C-n` | `focus-next-channel` | Change to the next channel in the channel list |
 | `C-p` | `focus-prev-channel` | Change to the previous channel in the channel list |
 | `M-a` | `focus-next-unread` | Change to the next channel with unread messages or return to the channel marked '~' |
-| `C-x` | `show-attachment-list` | Show the attachment list |
 | (unbound) | `focus-next-unread-user-or-channel` | Change to the next channel with unread messages preferring direct messages |
 | `M-s` | `focus-last-channel` | Change to the most recently-focused channel |
-| `Enter` | (non-customizable key) | Send the current message |
-| `C-o` | `enter-url-open` | Select and open a URL posted to the current channel |
 | `M-l` | `clear-unread` | Clear the current channel's unread / edited indicators |
+| `M-8` | `show-flagged-posts` | View currently flagged posts |
+| `C-s` | `select-mode` | Select a message to edit/reply/delete |
+| `PgUp` | `page-up` | Page up in the message list (enters message select mode) |
+| `S-Home` | `select-oldest-message` | Scroll to top of message list |
+| `C-o` | `enter-url-open` | Select and open a URL from the current message list |
+
+# Message Editing
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
 | `M-e` | `toggle-multiline` | Toggle multi-line message compose mode |
 | `Esc`, `C-c` | `cancel` | Cancel autocomplete, message reply, or edit, in that order |
-| `M-8` | `show-flagged-posts` | View currently flagged posts |
+| `M-k` | `invoke-editor` | Invoke `$EDITOR` to edit the current message |
+| `Tab` | (non-customizable key) | Tab-complete forward |
+| `BackTab` | (non-customizable key) | Tab-complete backward |
+| `C-x` | `show-attachment-list` | Show the attachment list |
+| `Enter` | (non-customizable key) | Send the current message |
+| `Up` | `scroll-up` | Scroll up in the channel input history |
+| `Down` | `scroll-down` | Scroll down in the channel input history |
 
 # Text Editing
 | Keybinding | Event Name | Description |
@@ -61,7 +66,6 @@
 | `C-e` | `editor-end-of-line` | Go to the end of the current line |
 | `C-d` | `editor-delete-char` | Delete the character at the cursor |
 | `C-u` | `editor-kill-to-beginning-of-line` | Delete from the cursor to the start of the current line |
-| `C-k` | `editor-kill-to-end-of-line` | Kill the line to the right of the current position and copy it |
 | `C-f` | `editor-next-char` | Move one character to the right |
 | `C-b` | `editor-prev-char` | Move one character to the left |
 | `M-f` | `editor-next-word` | Move one word to the right |
@@ -70,6 +74,7 @@
 | `M-d` | `editor-delete-next-word` | Delete the word to the right of the cursor |
 | `Home` | `editor-home` | Move the cursor to the beginning of the input |
 | `End` | `editor-end` | Move the cursor to the end of the input |
+| `C-k` | `editor-kill-to-end-of-line` | Kill the line to the right of the current position and copy it |
 | `C-y` | `editor-yank` | Paste the current buffer contents at the cursor |
 
 # Channel Select Mode
@@ -101,6 +106,7 @@
 | `p` | `pin-message` | Toggle whether the selected message is pinned |
 | `f` | `flag-message` | Flag the selected message |
 | `v` | `view-message` | View the selected message |
+| `t` | `open-thread` | Open the selected message's thread in a thread window |
 | `Enter` | `fetch-for-gap` | Fetch messages for the selected gap |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 | `l` | `copy-post-link` | Copy a post's link to the clipboard |

@@ -55,6 +55,7 @@ data KeyEvent
   | ToggleChannelListVisibleEvent
   | ToggleExpandedChannelTopicsEvent
   | ShowAttachmentListEvent
+  | ChangeMessageEditorFocus
 
   | EditorKillToBolEvent
   | EditorKillToEolEvent
@@ -117,6 +118,7 @@ data KeyEvent
   | FillGapEvent
   | CopyPostLinkEvent
   | FlagMessageEvent
+  | OpenThreadEvent
   | PinMessageEvent
   | YankMessageEvent
   | YankWholeMessageEvent
@@ -181,6 +183,8 @@ allEvents =
 
   , ShowAttachmentListEvent
 
+  , ChangeMessageEditorFocus
+
   , EditorKillToBolEvent
   , EditorKillToEolEvent
   , EditorBolEvent
@@ -236,6 +240,7 @@ allEvents =
   , MoveCurrentTeamLeftEvent
   , MoveCurrentTeamRightEvent
 
+  , OpenThreadEvent
   , FlagMessageEvent
   , PinMessageEvent
   , ViewMessageEvent
@@ -427,6 +432,8 @@ keyEventName ev = case ev of
 
   ShowAttachmentListEvent   -> "show-attachment-list"
 
+  ChangeMessageEditorFocus  -> "change-message-editor-focus"
+
   EditorKillToBolEvent        -> "editor-kill-to-beginning-of-line"
   EditorKillToEolEvent        -> "editor-kill-to-end-of-line"
   EditorBolEvent              -> "editor-beginning-of-line"
@@ -484,6 +491,7 @@ keyEventName ev = case ev of
 
   ActivateListItemEvent -> "activate-list-item"
 
+  OpenThreadEvent    -> "open-thread"
   FlagMessageEvent   -> "flag-message"
   PinMessageEvent   -> "pin-message"
   ViewMessageEvent   -> "view-message"

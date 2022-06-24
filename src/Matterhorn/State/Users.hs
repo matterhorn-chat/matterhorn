@@ -13,6 +13,7 @@ import           Matterhorn.Prelude
 
 import qualified Data.Text as T
 import qualified Data.Foldable as F
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import           Data.Time ( getCurrentTime )
 import           Lens.Micro.Platform
@@ -39,13 +40,25 @@ handleNewUsers newUserIds after = do
 
 -- | Handle the typing events from the websocket to show the currently
 -- typing users on UI
-handleTypingUser :: UserId -> ChannelId -> MH ()
-handleTypingUser uId cId = do
+handleTypingUser :: UserId -> ChannelId -> Maybe PostId -> MH ()
+handleTypingUser uId cId threadRootPostId = do
     config <- use (csResources.crConfiguration)
     when (configShowTypingIndicator config) $ do
         withFetchedUser (UserFetchById uId) $ const $ do
             ts <- liftIO getCurrentTime
-            csChannels %= modifyChannelById cId (addChannelTypingUser uId ts)
+
+            -- Indicate that the user is typing in the specified
+            -- channel.
+            csChannel(cId).ccMessageInterface.miEditor.esEphemeral %= addEphemeralStateTypingUser uId ts
+
+            -- If the typing is occurring in a thread and that thread is
+            -- open in some team, also indicate that the user is typing
+            -- in that thread's window.
+            teams <- use csTeams
+            forM_ (HM.keys teams) $ \tId -> do
+                pId <- preuse (threadInterface(tId).miRootPostId)
+                when (pId == threadRootPostId) $ do
+                    threadInterface(tId).miEditor.esEphemeral %= addEphemeralStateTypingUser uId ts
 
 -- | Handle the websocket event for when a user is updated, e.g. has changed
 -- their nickname

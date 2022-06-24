@@ -10,50 +10,57 @@ import Brick
 import Lens.Micro.Platform ( _2, singular, _Just )
 
 import Matterhorn.Draw.ChannelTopicWindow
-import Matterhorn.Draw.SaveAttachmentWindow
+import Matterhorn.Draw.ChannelSelectPrompt
+import Matterhorn.Draw.MessageDeleteConfirm
 import Matterhorn.Draw.DeleteChannelConfirm
 import Matterhorn.Draw.LeaveChannelConfirm
 import Matterhorn.Draw.Main
-import Matterhorn.Draw.ThemeListOverlay
-import Matterhorn.Draw.PostListOverlay
+import Matterhorn.Draw.ThemeListWindow
+import Matterhorn.Draw.PostListWindow
 import Matterhorn.Draw.ShowHelp
-import Matterhorn.Draw.UserListOverlay
-import Matterhorn.Draw.ChannelListOverlay
-import Matterhorn.Draw.ReactionEmojiListOverlay
+import Matterhorn.Draw.UserListWindow
+import Matterhorn.Draw.ChannelListWindow
+import Matterhorn.Draw.ReactionEmojiListWindow
 import Matterhorn.Draw.TabbedWindow
-import Matterhorn.Draw.ManageAttachments
 import Matterhorn.Draw.NotifyPrefs
 import Matterhorn.Types
 
 
 draw :: ChatState -> [Widget Name]
-draw st =
-    let mainLayers = drawMain True st
-        mainLayersMonochrome = drawMain False st
-    in case st^.csCurrentTeamId of
-        Nothing ->
-            -- ^ Without a team data structure, we just assume Main mode
-            -- and render a skeletal UI.
-            mainLayers
-        Just tId ->
-            let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
-            in case st^.csTeam(tId).tsMode of
-                Main                         -> mainLayers
-                UrlSelect                    -> mainLayers
-                ChannelSelect                -> mainLayers
-                MessageSelect                -> mainLayers
-                MessageSelectDeleteConfirm   -> mainLayers
-                ShowHelp topic _             -> drawShowHelp topic st
-                ThemeListOverlay             -> drawThemeListOverlay st tId : mainLayers
-                LeaveChannelConfirm          -> drawLeaveChannelConfirm st tId : mainLayersMonochrome
-                DeleteChannelConfirm         -> drawDeleteChannelConfirm st tId : mainLayersMonochrome
-                PostListOverlay contents     -> drawPostListOverlay contents st tId : mainLayersMonochrome
-                UserListOverlay              -> drawUserListOverlay st tId : mainLayersMonochrome
-                ChannelListOverlay           -> drawChannelListOverlay st tId : mainLayersMonochrome
-                ReactionEmojiListOverlay     -> drawReactionEmojiListOverlay st tId : mainLayersMonochrome
-                ViewMessage                  -> drawTabbedWindow messageViewWindow st tId : mainLayersMonochrome
-                ManageAttachments            -> drawManageAttachments st tId : mainLayersMonochrome
-                ManageAttachmentsBrowseFiles -> drawManageAttachments st tId : mainLayersMonochrome
-                EditNotifyPrefs              -> drawNotifyPrefs st tId : mainLayersMonochrome
-                ChannelTopicWindow           -> drawChannelTopicWindow st tId : mainLayersMonochrome
-                SaveAttachmentWindow _       -> drawSaveAttachmentWindow st tId : mainLayersMonochrome
+draw st = fromMaybe (drawMain st Main) $ do
+    tId <- st^.csCurrentTeamId
+    let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
+        monochrome = fmap (forceAttr "invalid")
+        drawMode m ms =
+            let rest = case ms of
+                    (a:as) -> drawMode a as
+                    _ -> []
+            in case m of
+                -- For this first section of modes, we only want
+                -- to draw for the current mode and ignore the
+                -- mode stack because we expect the current mode
+                -- to be all we need to draw what should be on
+                -- the screen.
+                Main                          -> drawMain st m
+                ShowHelp topic                -> drawShowHelp topic st
+
+                -- For the following modes, we want to draw the
+                -- whole mode stack since we expect the UI to
+                -- have layers and we want to show prior modes
+                -- underneath.
+                ChannelSelect                 -> drawChannelSelectPrompt st tId : drawMain st m
+                MessageSelectDeleteConfirm {} -> drawMessageDeleteConfirm : rest
+                ThemeListWindow               -> drawThemeListWindow st tId : rest
+                LeaveChannelConfirm           -> drawLeaveChannelConfirm st tId : monochrome rest
+                DeleteChannelConfirm          -> drawDeleteChannelConfirm st tId : monochrome rest
+                PostListWindow contents       -> drawPostListWindow contents st tId : monochrome rest
+                UserListWindow                -> drawUserListWindow st tId : monochrome rest
+                ChannelListWindow             -> drawChannelListWindow st tId : monochrome rest
+                ReactionEmojiListWindow       -> drawReactionEmojiListWindow st tId : monochrome rest
+                ViewMessage                   -> drawTabbedWindow messageViewWindow st tId : monochrome rest
+                EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
+                ChannelTopicWindow            -> drawChannelTopicWindow st tId : monochrome rest
+        topMode = teamMode $ st^.csTeam(tId)
+        otherModes = tail $ teamModes $ st^.csTeam(tId)
+
+    return $ drawMode topMode otherModes

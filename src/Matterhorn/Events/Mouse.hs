@@ -12,10 +12,11 @@ import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.State.Channels
 import           Matterhorn.State.Teams ( setTeam )
-import           Matterhorn.State.ListOverlay ( listOverlayActivate )
+import           Matterhorn.State.ListWindow ( listWindowActivate )
 import           Matterhorn.Types
 
 import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent )
+import           Matterhorn.State.MessageSelect ( exitMessageSelect )
 import           Matterhorn.State.Reactions ( toggleReaction )
 import           Matterhorn.State.Links ( openLinkTarget )
 
@@ -26,9 +27,8 @@ mouseHandlerByMode :: TeamId -> Mode -> BrickEvent Name MHEvent -> MH ()
 mouseHandlerByMode tId mode =
     case mode of
         ChannelSelect            -> channelSelectMouseHandler tId
-        EditNotifyPrefs          -> handleEditNotifyPrefsEvent tId
-        ReactionEmojiListOverlay -> reactionEmojiListMouseHandler tId
-        UrlSelect                -> urlListMouseHandler
+        EditNotifyPrefs          -> void . handleEditNotifyPrefsEvent tId
+        ReactionEmojiListWindow -> reactionEmojiListMouseHandler tId
         _                        -> globalMouseHandler tId
 
 -- Handle global mouse click events (when mode is not important).
@@ -55,34 +55,48 @@ mouseHandlerByMode tId mode =
 -- it isn't the end of the world.
 globalMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
 globalMouseHandler tId (MouseDown n _ _ _) = do
+    st <- use id
     case n of
         ClickableChannelListEntry channelId -> do
             whenMode tId Main $ do
                 resetReturnChannel tId
                 setFocus tId channelId
-                setMode tId Main
         ClickableTeamListEntry teamId ->
             -- We deliberately handle this event in all modes; this
             -- allows us to switch the UI to another team regardless of
             -- what state it is in, which is by design since all teams
             -- have their own UI states.
             setTeam teamId
-        ClickableURLInMessage _ _ t ->
+        ClickableURL _ _ _ t ->
             void $ openLinkTarget t
-        ClickableURL _ _ t ->
-            void $ openLinkTarget t
-        ClickableUsernameInMessage _ _ username ->
+        ClickableUsername _ _ _ username | username /= myUsername st -> do
+            whenMode tId ViewMessage $ do
+                -- Pop view message mode
+                popMode tId
+                -- Exit message select for the focused interface,
+                -- since that is the only way we get into message
+                -- view mode and we want to reset the focused message
+                -- interface mode so that when we return to it from the
+                -- DM channel, it's not still stuck in message selection
+                -- mode.
+                foc <- use (csTeam(tId).tsMessageInterfaceFocus)
+                case foc of
+                    FocusThread ->
+                        exitMessageSelect $ unsafeThreadInterface tId
+                    FocusCurrentChannel -> do
+                        mcId <- use (csCurrentChannelId(tId))
+                        case mcId of
+                            Nothing -> return ()
+                            Just cId -> exitMessageSelect $ csChannelMessageInterface cId
             changeChannelByName tId $ addUserSigil username
-        ClickableUsername _ _ username ->
-            changeChannelByName tId $ addUserSigil username
-        ClickableAttachment fId ->
+        ClickableAttachmentInMessage _ fId ->
             void $ openLinkTarget $ LinkFileId fId
-        ClickableReactionInMessage pId t uIds ->
-            void $ toggleReaction pId t uIds
-        ClickableReaction pId t uIds ->
+        ClickableReaction pId _ t uIds ->
             void $ toggleReaction pId t uIds
         ClickableChannelListGroupHeading label ->
             toggleChannelListGroupVisibility label
+        ClickableURLListEntry _ t ->
+            void $ openLinkTarget t
         VScrollBar e vpName -> do
             let vp = viewportScroll vpName
             mh $ case e of
@@ -96,21 +110,15 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
 globalMouseHandler _ _ =
     return ()
 
-urlListMouseHandler :: BrickEvent Name MHEvent -> MH ()
-urlListMouseHandler (MouseDown (ClickableURLListEntry _ t) _ _ _) =
-    void $ openLinkTarget t
-urlListMouseHandler _ =
-    return ()
-
 channelSelectMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
-channelSelectMouseHandler tId (MouseDown (ChannelSelectEntry match) _ _ _) = do
-    setMode tId Main
+channelSelectMouseHandler tId (MouseDown (ClickableChannelSelectEntry match) _ _ _) = do
+    popMode tId
     setFocus tId $ channelListEntryChannelId $ matchEntry match
 channelSelectMouseHandler _ _ =
     return ()
 
 reactionEmojiListMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
-reactionEmojiListMouseHandler tId (MouseDown (ReactionEmojiListOverlayEntry val) _ _ _) =
-    listOverlayActivate tId (csTeam(tId).tsReactionEmojiListOverlay) val
+reactionEmojiListMouseHandler tId (MouseDown (ClickableReactionEmojiListWindowEntry val) _ _ _) =
+    listWindowActivate tId (csTeam(tId).tsReactionEmojiListWindow) val
 reactionEmojiListMouseHandler _ _ =
     return ()

@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.Scripts
   ( findAndRunScript
   , listScripts
@@ -10,9 +11,8 @@ import           Matterhorn.Prelude
 import           Control.Concurrent ( takeMVar, newEmptyMVar )
 import qualified Control.Concurrent.STM as STM
 import qualified Data.Text as T
+import           Lens.Micro.Platform ( Lens' )
 import           System.Exit ( ExitCode(..) )
-
-import           Network.Mattermost.Types ( TeamId, ChannelId )
 
 import           Matterhorn.FilePaths ( Script(..), getAllScripts, locateScriptPath )
 import           Matterhorn.State.Common
@@ -20,13 +20,13 @@ import           Matterhorn.State.Messages ( sendMessage )
 import           Matterhorn.Types
 
 
-findAndRunScript :: TeamId -> ChannelId -> Text -> Text -> MH ()
-findAndRunScript tId cId scriptName input = do
+findAndRunScript :: Lens' ChatState (EditState Name) -> Text -> Text -> MH ()
+findAndRunScript which scriptName input = do
     fpMb <- liftIO $ locateScriptPath (T.unpack scriptName)
     outputChan <- use (csResources.crSubprocessLog)
     case fpMb of
       ScriptPath scriptPath -> do
-        doAsyncWith Preempt $ runScript tId cId outputChan scriptPath input
+        doAsyncWith Preempt $ runScript which outputChan scriptPath input
       NonexecScriptPath scriptPath -> do
         let msg = ("The script `" <> T.pack scriptPath <> "` cannot be " <>
              "executed. Try running\n" <>
@@ -38,8 +38,12 @@ findAndRunScript tId cId scriptName input = do
       ScriptNotFound -> do
         mhError $ NoSuchScript scriptName
 
-runScript :: TeamId -> ChannelId -> STM.TChan ProgramOutput -> FilePath -> Text -> IO (Maybe (MH ()))
-runScript tId cId outputChan fp text = do
+runScript :: Lens' ChatState (EditState Name)
+          -> STM.TChan ProgramOutput
+          -> FilePath
+          -> Text
+          -> IO (Maybe (MH ()))
+runScript which outputChan fp text = do
   outputVar <- newEmptyMVar
   runLoggedCommand outputChan fp [] (Just $ T.unpack text) (Just outputVar)
   po <- takeMVar outputVar
@@ -47,7 +51,8 @@ runScript tId cId outputChan fp text = do
     ExitSuccess -> do
         case null $ programStderr po of
             True -> Just $ do
-                mode <- use (csTeam(tId).tsEditState.cedEditMode)
+                mode <- use (which.esEditMode)
+                cId <- use (which.esChannelId)
                 sendMessage cId mode (T.pack $ programStdout po) []
             False -> Nothing
     ExitFailure _ -> Nothing

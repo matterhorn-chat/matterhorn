@@ -32,14 +32,14 @@ import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelTopicWindow
 import           Matterhorn.State.ChannelSelect
+import           Matterhorn.State.Common
 import           Matterhorn.State.Logging
-import           Matterhorn.State.PostListOverlay
-import           Matterhorn.State.UserListOverlay
-import           Matterhorn.State.ChannelListOverlay
-import           Matterhorn.State.ThemeListOverlay
+import           Matterhorn.State.PostListWindow
+import           Matterhorn.State.UserListWindow
+import           Matterhorn.State.ChannelListWindow
+import           Matterhorn.State.ThemeListWindow
 import           Matterhorn.State.Messages
 import           Matterhorn.State.NotifyPrefs
-import           Matterhorn.State.Common ( postInfoMessage )
 import           Matterhorn.State.Teams
 import           Matterhorn.State.Users
 import           Matterhorn.Themes ( attrForUsername )
@@ -137,7 +137,7 @@ commandList =
         withCurrentTeam startLeaveCurrentChannel
 
   , Cmd "join" "Find a channel to join" NoArg $ \ () -> do
-        withCurrentTeam enterChannelListOverlayMode
+        withCurrentTeam enterChannelListWindowMode
 
   , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) -> do
         withCurrentTeam $ \tId ->
@@ -182,8 +182,9 @@ commandList =
         withCurrentTeam $ \tId ->
             withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
                 case foundUser of
-                    Just user -> createOrFocusDMChannel tId user $ Just $ \cId -> do
-                        handleInputSubmission tId cId msg
+                    Just user -> createOrFocusDMChannel tId user $ Just $ \_ -> do
+                        withCurrentChannel tId $ \cId _ ->
+                            handleInputSubmission (channelEditor(cId)) msg
                     Nothing -> mhError $ NoSuchUser name
 
   , Cmd "log-start" "Begin logging debug information to the specified path"
@@ -240,6 +241,9 @@ commandList =
   , Cmd "cycle-channel-list-sorting" "Cycle through channel list sorting modes for this team" NoArg $ \_ ->
         withCurrentTeam cycleChannelListSortingMode
 
+  , Cmd "thread-orientation" "Set the orientation of the thread UI" (LineArg "left|right|above|below") $ \o ->
+        setThreadOrientationByName o
+
   , Cmd "focus" "Focus on a channel or user"
     (ChannelArg NoArg) $ \ (name, ()) -> do
         withCurrentTeam $ \tId ->
@@ -275,7 +279,7 @@ commandList =
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
         withCurrentTeam $ \tId ->
             withCurrentChannel tId $ \cId _ -> do
-                findAndRunScript tId cId script text
+                findAndRunScript (channelEditor(cId)) script text
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
@@ -301,8 +305,17 @@ commandList =
         moveCurrentTeamRight
 
   , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
-        withCurrentTeam $ \tId ->
-            attachFileByPath tId path
+        withCurrentTeam $ \tId -> do
+            foc <- use (csTeam(tId).tsMessageInterfaceFocus)
+            case foc of
+                FocusThread ->
+                    attachFileByPath (unsafeThreadInterface(tId)) path
+                FocusCurrentChannel ->
+                    withCurrentChannel tId $ \cId _ ->
+                        attachFileByPath (csChannelMessageInterface(cId)) path
+
+  , Cmd "toggle-mouse-input" "Toggle whether mouse input is enabled" NoArg $ \_ ->
+        toggleMouseMode
 
   , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
         withCurrentTeam toggleChannelFavoriteStatus
@@ -326,7 +339,7 @@ execMMCommand :: MM.TeamId -> Text -> Text -> MH ()
 execMMCommand tId name rest = do
   withCurrentChannel tId $ \cId _ -> do
       session  <- getSession
-      em       <- use (csTeam(tId).tsEditState.cedEditMode)
+      em       <- use (channelEditor(cId).esEditMode)
       let mc = MM.MinCommand
                  { MM.minComChannelId = cId
                  , MM.minComCommand   = "/" <> name <> " " <> rest

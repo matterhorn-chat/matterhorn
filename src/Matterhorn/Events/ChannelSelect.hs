@@ -16,14 +16,19 @@ import           Matterhorn.Types
 import qualified Matterhorn.Zipper as Z
 
 
-onEventChannelSelect :: TeamId -> Vty.Event -> MH Bool
+onEventChannelSelect :: TeamId -> Vty.Event -> MH ()
 onEventChannelSelect tId =
-  handleKeyboardEvent (channelSelectKeybindings tId) $ \e -> do
-      handled <- handleKeyboardEvent (editingKeybindings tId (csTeam(tId).tsChannelSelectState.channelSelectInput)) (const $ return ()) e
-      when (not handled) $
-          mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent e
-
-      updateChannelSelectMatches tId
+    void .
+    handleEventWith [ handleKeyboardEvent (channelSelectKeybindings tId)
+                    , \e -> do
+                        void $ handleEventWith [ handleKeyboardEvent (editingKeybindings (csTeam(tId).tsChannelSelectState.channelSelectInput))
+                                               , \ev -> do
+                                                   mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent ev
+                                                   return True
+                                               ] e
+                        updateChannelSelectMatches tId
+                        return True
+                    ]
 
 channelSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
 channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
@@ -36,10 +41,10 @@ channelSelectKeyHandlers tId =
              case Z.focus matches of
                  Nothing -> return ()
                  Just match -> do
-                     setMode tId Main
+                     popMode tId
                      setFocus tId $ channelListEntryChannelId $ matchEntry match
 
-    , mkKb CancelEvent "Cancel channel selection" $ setMode tId Main
+    , mkKb CancelEvent "Cancel channel selection" $ popMode tId
     , mkKb NextChannelEvent "Select next match" $ channelSelectNext tId
     , mkKb PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
     , mkKb NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId

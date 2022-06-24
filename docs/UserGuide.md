@@ -162,13 +162,18 @@ To mute or unmute a channel, use the server command `/mute` in that
 channel. When muted, a channel will appear with `(m)` next to it in the
 sidebar.
 
-To quickly show a list of URLs mentioned in the current channel and then
-open one in your local browser, use the default binding of `C-o` and
-configure the `urlOpenCommand` configuration setting.
+To quickly show a list of URLs mentioned in the current channel or
+thread, use the default binding of `C-o`. Once you've configured the
+`urlOpenCommand` configuration setting, you can use the URL list to open
+URLs from Matterhorn.
 
-To edit, delete, flag, or reply to a message, select a message with
-the default binding of `C-s`. Use the default binding of `C-c` to
-cancel these operations.
+To edit, delete, flag, or reply to a message in a channel or thread,
+select a message with the default binding of `C-s`. Use the default
+binding of `C-c` to cancel these operations.
+
+To participate in a thread associated with a message, select a message
+with `C-s` and then press `t`. To switch between the team's thread
+window and its currently selected channel, press `M-o`.
 
 Messages that have been flagged can be viewed with either the `/flags`
 command or `M-8`. This view allows you to select and unflag particular
@@ -187,6 +192,44 @@ selected directory or selects the current file for attachment, and arrow
 keys change selection. Once you've attached a file, you'll see the text
 `(1 attachment)` above your message editor. You can attach additional
 files or remove existing attachments by pressing `C-x` again.
+
+# Thread Windows
+
+Matterhorn provides a "thread window" that allows you to carry on a
+conversation in a thread of your choosing while also seeing, visiting,
+and switching between channels simultaneously.
+
+To use the thread window, select a message with `C-s` and then press
+`t`. This binding can be customized by overriding the key binding for
+the `open-thread` key event.
+
+Once the thread window is open:
+ * It can be closed with `Esc`.
+ * The focus can be swapped between the thread window and the currently
+   selected channel with `M-o` (event: `change-message-editor-focus`).
+   The currently focused editor's prompt is highlighted when a thread
+   window is open to help you spot the focused editor. The theme
+   attribute `focusedEditorPrompt` can be customized to change the
+   focused editor prompt style.
+ * All key bindings that work in a channel, such as `C-s`, work in a
+   thread window, too.
+ * As one would expect, in a thread window, all messages are implicitly
+   part of the thread; no explicit `C-r` or `C-s`/`r` steps are needed
+   to reply.
+ * The thread window is per-team; you can have a thread window open even
+   while you switch between channels to view other channels while still
+   participating in a thread.
+ * The thread window's base attribute can be customized in your theme
+   configuration file by setting the value of `thread`.
+ * The thread window's orientation relative to the currently selected
+   channel can be customized with either the `/thread-orientation`
+   command or the `threadOrientation` configuration file setting. Both
+   the command and config file setting can take one of the values
+   `above`, `below`, `left`, or `right`.
+ * By default, the thread window will not be re-opened next time
+   Matterhorn is started. If you would like to make Matterhorn always
+   re-open the last thread you had open on a per-team basis, you can set
+   the new `showLastOpenThread` config file setting to `True`.
 
 # Mouse Support
 

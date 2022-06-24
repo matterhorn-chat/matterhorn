@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.Teams
   ( nextTeam
   , prevTeam
@@ -8,33 +9,54 @@ module Matterhorn.State.Teams
   , moveCurrentTeamLeft
   , moveCurrentTeamRight
   , setTeam
+  , newSaveAttachmentDialog
+  , newChannelTopicDialog
+  , newThreadInterface
+  , makeClientChannel
+  , cycleTeamMessageInterfaceFocus
   )
 where
 
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( getName )
+import qualified Brick.BChan as BCH
 import           Brick.Main ( invalidateCache, hScrollToBeginning, viewportScroll, makeVisible )
+import           Brick.Widgets.List ( list )
+import           Brick.Widgets.Edit ( editor, applyEdit )
+import           Brick.Focus ( focusRing )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time.Clock ( getCurrentTime )
+import qualified Data.Text.Zipper as Z2
 import qualified Data.HashMap.Strict as HM
 import           Lens.Micro.Platform ( (%=), (.=), at )
+import           Text.Aspell ( Aspell )
 
-import           Network.Mattermost.Lenses ( userIdL )
-import           Network.Mattermost.Types ( TeamId, Team, User, userId
+import           Network.Mattermost.Lenses ( userIdL, channelTypeL, channelPurposeL
+                                           , channelHeaderL, channelTeamIdL, channelIdL
+                                           , channelLastPostAtL
+                                           )
+import           Network.Mattermost.Types ( TeamId, Team, Channel, User, userId
                                           , getId, channelId, teamId, UserParam(..)
-                                          , teamOrderPref
+                                          , teamOrderPref, Post, ChannelId, postId
+                                          , emptyChannelNotifyProps, UserId
+                                          , channelName, Type(..), channelDisplayName
                                           )
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Types
+import           Matterhorn.Types.Common
+import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
+import           Matterhorn.Types.NonemptyStack
 import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Channels
-import           Matterhorn.State.Messages
-import           Matterhorn.State.Setup.Threads ( maybeStartSpellChecker )
+import {-# SOURCE #-} Matterhorn.State.ThreadWindow
+import {-# SOURCE #-} Matterhorn.State.Messages
+import           Matterhorn.State.Setup.Threads ( newSpellCheckTimer )
 import qualified Matterhorn.Zipper as Z
 
 
@@ -168,16 +190,16 @@ buildTeamState cr me team = do
     let tId = teamId team
         session = getResourceSession cr
         config = cr^.crConfiguration
+        eventQueue = cr^.crEventQueue
 
-    -- Create a predicate to find the last selected channel by reading
-    -- the run state file. If unable to read or decode or validate the
-    -- file, this predicate is just `isTownSquare`.
-    isLastSelectedChannel <- do
-        result <- readLastRunState tId
-        case result of
-            Right lrs | isValidLastRunState cr me lrs -> return $ \c ->
-                 Just (channelId c) == lrs^.lrsSelectedChannelId
-            _ -> return isTownSquare
+    lrsResult <- readLastRunState tId
+    let mLrs = case lrsResult of
+            Right lrs | isValidLastRunState cr me lrs -> Just lrs
+            _ -> Nothing
+
+        -- Create a predicate to find the last selected channel by
+        -- checking the last run state.
+        isLastSelectedChannel = maybe isTownSquare (\lrs c -> Just (channelId c) == lrs^.lrsSelectedChannelId) mLrs
 
     -- Get all channels, but filter down to just the one we want
     -- to start in. We get all, rather than requesting by name or
@@ -194,11 +216,8 @@ buildTeamState cr me team = do
     -- Since the only channel we are dealing with is by construction the
     -- last channel, we don't have to consider other cases here:
     chanPairs <- forM (toList chans) $ \c -> do
-        cChannel <- makeClientChannel (userId me) c
+        cChannel <- makeClientChannel eventQueue (cr^.crSpellChecker) (userId me) (Just tId) c
         return (getId c, cChannel)
-
-    -- Start the spell checker and spell check timer, if configured
-    spResult <- maybeStartSpellChecker tId config (cr^.crEventQueue)
 
     now <- getCurrentTime
     let chanIds = mkChannelZipperList (config^.configChannelListSortingL) now config tId
@@ -207,7 +226,17 @@ buildTeamState cr me team = do
         chanZip = Z.fromList chanIds
         clientChans = foldr (uncurry addChannel) noChannels chanPairs
 
-    return (newTeamState config team chanZip spResult, clientChans)
+    -- If the configuration says to open any last open thread, then
+    -- schedule it to be opened.
+    when (configShowLastOpenThread config) $ do
+        let maybeOpenThread = do
+                lrs <- mLrs
+                (cId, pId) <- lrs^.lrsOpenThread
+                return $ scheduleMH cr (openThreadWindow tId cId pId)
+        fromMaybe (return ()) maybeOpenThread
+
+    let ts = newTeamState config team chanZip
+    return (ts, clientChans)
 
 -- | Add a new 'TeamState' and corresponding channels to the application
 -- state.
@@ -231,3 +260,208 @@ removeTeam :: TeamId -> MH ()
 removeTeam tId = do
     csTeams.at tId .= Nothing
     setTeamFocusWith $ Z.filterZipper (/= tId)
+
+cycleTeamMessageInterfaceFocus :: TeamId -> MH ()
+cycleTeamMessageInterfaceFocus tId =
+    csTeam(tId) %= messageInterfaceFocusNext
+
+emptyEditStateForChannel :: Maybe Aspell -> BCH.BChan MHEvent -> Maybe TeamId -> ChannelId -> IO (EditState Name)
+emptyEditStateForChannel checker eventQueue tId cId = do
+    reset <- case checker of
+        Nothing -> return Nothing
+        Just as -> Just <$> (newSpellCheckTimer as eventQueue $ MIChannel cId)
+    let editorName = MessageInput cId
+        attachmentListName = AttachmentList cId
+    return $ newEditState editorName attachmentListName tId cId NewPost True reset
+
+emptyEditStateForThread :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> EditMode -> IO (EditState Name)
+emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
+    reset <- case checker of
+        Nothing -> return Nothing
+        Just as -> Just <$> (newSpellCheckTimer as eventQueue $ MITeamThread tId)
+    let editorName = ThreadMessageInput cId
+        attachmentListName = ThreadEditorAttachmentList cId
+    return $ newEditState editorName attachmentListName (Just tId) cId initialEditMode False reset
+
+newThreadInterface :: Maybe Aspell
+                   -> BCH.BChan MHEvent
+                   -> TeamId
+                   -> ChannelId
+                   -> Message
+                   -> Post
+                   -> Messages
+                   -> IO ThreadInterface
+newThreadInterface checker eventQueue tId cId rootMsg rootPost msgs = do
+    es <- emptyEditStateForThread checker eventQueue tId cId (Replying rootMsg rootPost)
+    return $ newMessageInterface cId (postId rootPost) msgs es (MITeamThread tId) (FromThreadIn cId)
+
+newChannelMessageInterface :: Maybe Aspell
+                           -> BCH.BChan MHEvent
+                           -> Maybe TeamId
+                           -> ChannelId
+                           -> Messages
+                           -> IO ChannelMessageInterface
+newChannelMessageInterface checker eventQueue tId cId msgs = do
+    es <- emptyEditStateForChannel checker eventQueue tId cId
+    return $ newMessageInterface cId () msgs es (MIChannel cId) (FromChannel cId)
+
+newMessageInterface :: ChannelId
+                    -> i
+                    -> Messages
+                    -> EditState Name
+                    -> MessageInterfaceTarget
+                    -> URLListSource
+                    -> MessageInterface Name i
+newMessageInterface cId pId msgs es target src =
+    let urlListName = UrlList eName
+        eName = getName $ es^.esEditor
+    in MessageInterface { _miMessages = msgs
+                        , _miRootPostId = pId
+                        , _miChannelId = cId
+                        , _miMessageSelect = MessageSelectState Nothing
+                        , _miMode = Compose
+                        , _miEditor = es
+                        , _miTarget = target
+                        , _miUrlListSource = src
+                        , _miUrlList = URLList { _ulList = list urlListName mempty 2
+                                               , _ulSource = Nothing
+                                               }
+                        , _miSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
+                        }
+
+newTeamState :: Config
+             -> Team
+             -> Z.Zipper ChannelListGroup ChannelListEntry
+             -> TeamState
+newTeamState config team chanList =
+    let tId = teamId team
+    in TeamState { _tsModeStack                = newStack Main
+                 , _tsFocus                    = chanList
+                 , _tsTeam                     = team
+                 , _tsPostListWindow           = PostListWindowState emptyDirSeq Nothing
+                 , _tsUserListWindow           = nullUserListWindowState tId
+                 , _tsChannelListWindow        = nullChannelListWindowState tId
+                 , _tsChannelSelectState       = emptyChannelSelectState tId
+                 , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
+                 , _tsNotifyPrefs              = Nothing
+                 , _tsPendingChannelChange     = Nothing
+                 , _tsRecentChannel            = Nothing
+                 , _tsReturnChannel            = Nothing
+                 , _tsViewedMessage            = Nothing
+                 , _tsThemeListWindow          = nullThemeListWindowState tId
+                 , _tsReactionEmojiListWindow  = nullEmojiListWindowState tId
+                 , _tsChannelListSorting       = configChannelListSorting config
+                 , _tsThreadInterface          = Nothing
+                 , _tsMessageInterfaceFocus    = FocusCurrentChannel
+                 }
+
+nullChannelListWindowState :: TeamId -> ListWindowState Channel ChannelSearchScope
+nullChannelListWindowState tId =
+    let newList rs = list (JoinChannelList tId) rs 2
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                       , _listWindowSearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = AllChannels
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
+
+nullThemeListWindowState :: TeamId -> ListWindowState InternalTheme ()
+nullThemeListWindowState tId =
+    let newList rs = list (ThemeListSearchResults tId) rs 3
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                       , _listWindowSearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = ()
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
+
+nullUserListWindowState :: TeamId -> ListWindowState UserInfo UserSearchScope
+nullUserListWindowState tId =
+    let newList rs = list (UserListSearchResults tId) rs 1
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                       , _listWindowSearchInput    = editor (UserListSearchInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = AllUsers Nothing
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
+
+nullEmojiListWindowState :: TeamId -> ListWindowState (Bool, T.Text) ()
+nullEmojiListWindowState tId =
+    let newList rs = list (ReactionEmojiList tId) rs 1
+    in ListWindowState { _listWindowSearchResults  = newList mempty
+                       , _listWindowSearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
+                       , _listWindowSearchScope    = ()
+                       , _listWindowSearching      = False
+                       , _listWindowEnterHandler   = const $ return False
+                       , _listWindowNewList        = newList
+                       , _listWindowFetchResults   = const $ const $ const $ return mempty
+                       , _listWindowRecordCount    = Nothing
+                       }
+
+-- | Make a new channel topic editor window state.
+newChannelTopicDialog :: TeamId -> T.Text -> ChannelTopicDialogState
+newChannelTopicDialog tId t =
+    ChannelTopicDialogState { _channelTopicDialogEditor = editor (ChannelTopicEditor tId) Nothing t
+                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor tId
+                                                                   , ChannelTopicSaveButton tId
+                                                                   , ChannelTopicCancelButton tId
+                                                                   ]
+                            }
+
+-- | Make a new attachment-saving editor window state.
+newSaveAttachmentDialog :: Name -> T.Text -> SaveAttachmentDialogState Name
+newSaveAttachmentDialog n t =
+    SaveAttachmentDialogState { _attachmentPathEditor = applyEdit Z2.gotoEOL $
+                                                        editor (AttachmentPathEditor n) (Just 1) t
+                              , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor n
+                                                                       , AttachmentPathSaveButton n
+                                                                       , AttachmentPathCancelButton n
+                                                                       ]
+                              }
+
+makeClientChannel :: (MonadIO m)
+                  => BCH.BChan MHEvent
+                  -> Maybe Aspell
+                  -> UserId
+                  -> Maybe TeamId
+                  -> Channel
+                  -> m ClientChannel
+makeClientChannel eventQueue spellChecker myId tId nc = do
+    msgs <- emptyChannelMessages
+    mi <- liftIO $ newChannelMessageInterface spellChecker eventQueue tId (getId nc) msgs
+    return ClientChannel { _ccInfo = initialChannelInfo myId nc
+                         , _ccMessageInterface = mi
+                         }
+
+initialChannelInfo :: UserId -> Channel -> ChannelInfo
+initialChannelInfo myId chan =
+    let updated  = chan ^. channelLastPostAtL
+    in ChannelInfo { _cdChannelId              = chan^.channelIdL
+                   , _cdTeamId                 = chan^.channelTeamIdL
+                   , _cdViewed                 = Nothing
+                   , _cdNewMessageIndicator    = Hide
+                   , _cdEditedMessageThreshold = Nothing
+                   , _cdMentionCount           = 0
+                   , _cdUpdated                = updated
+                   , _cdName                   = preferredChannelName chan
+                   , _cdDisplayName            = sanitizeUserText $ channelDisplayName chan
+                   , _cdHeader                 = sanitizeUserText $ chan^.channelHeaderL
+                   , _cdPurpose                = sanitizeUserText $ chan^.channelPurposeL
+                   , _cdType                   = chan^.channelTypeL
+                   , _cdNotifyProps            = emptyChannelNotifyProps
+                   , _cdDMUserId               = if chan^.channelTypeL == Direct
+                                                 then userIdForDMChannel myId $
+                                                      sanitizeUserText $ channelName chan
+                                                 else Nothing
+                   , _cdSidebarShowOverride    = Nothing
+                   , _cdFetchPending           = False
+                   }

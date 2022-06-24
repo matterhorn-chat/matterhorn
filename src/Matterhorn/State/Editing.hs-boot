@@ -1,11 +1,12 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.Editing
   ( Direction(..)
   , tabComplete
   )
 where
 
-import Network.Mattermost.Types ( TeamId )
-import Matterhorn.Types ( MH )
+import Matterhorn.Types ( MH, ChatState, EditState, Name )
+import Lens.Micro.Platform ( Traversal' )
 
 data Direction = Forwards | Backwards
-tabComplete :: TeamId -> Direction -> MH ()
+tabComplete :: Traversal' ChatState (EditState Name) -> Direction -> MH ()

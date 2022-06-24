@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Matterhorn.Draw.ThemeListOverlay
-  ( drawThemeListOverlay
+module Matterhorn.Draw.ThemeListWindow
+  ( drawThemeListWindow
   )
 where
 
@@ -16,22 +16,22 @@ import           Brick.Widgets.Center ( hCenter )
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
+import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents ( ppBinding )
 import           Matterhorn.Events.Keybindings
 
 
-drawThemeListOverlay :: ChatState -> TeamId -> Widget Name
-drawThemeListOverlay st tId =
-    let overlay = drawListOverlay (st^.csTeam(tId).tsThemeListOverlay)
+drawThemeListWindow :: ChatState -> TeamId -> Widget Name
+drawThemeListWindow st tId =
+    let window = drawListWindow (st^.csTeam(tId).tsThemeListWindow)
                                   (const $ txt "Themes")
                                   (const $ txt "No matching themes found.")
                                   (const $ txt "Search built-in themes:")
                                   renderInternalTheme
                                   (Just footer)
-                                  OverlayUpperRight
+                                  WindowUpperRight
                                   50
         footer = hBorder <=>
                  (hCenter $ hBox [ enter
@@ -43,7 +43,7 @@ drawThemeListOverlay st tId =
         close = emph $ txt $ ppBinding (firstActiveBinding kc CancelEvent)
         kc = st^.csResources.crConfiguration.configUserKeysL
         emph = withDefAttr clientEmphAttr
-    in joinBorders overlay
+    in joinBorders window
 
 renderInternalTheme :: Bool -> InternalTheme -> Widget Name
 renderInternalTheme foc it =

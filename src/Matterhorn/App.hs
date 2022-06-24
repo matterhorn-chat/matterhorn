@@ -9,7 +9,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
-import qualified Data.HashMap.Strict as HM
 import qualified Graphics.Vty as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
@@ -30,36 +29,42 @@ import           Matterhorn.Types
 
 
 app :: App ChatState MHEvent Name
-app = App
-  { appDraw         = draw
-  , appChooseCursor = \s cs ->
-      case s^.csCurrentTeamId of
-          Nothing -> showFirstCursor s cs
-          Just tId ->
-              case s^.csTeam(tId).tsMode of
-                  Main                          -> showFirstCursor s cs
-                  ChannelSelect                 -> showFirstCursor s cs
-                  UserListOverlay               -> showFirstCursor s cs
-                  ReactionEmojiListOverlay      -> showFirstCursor s cs
-                  ChannelListOverlay            -> showFirstCursor s cs
-                  ManageAttachmentsBrowseFiles  -> showFirstCursor s cs
-                  ThemeListOverlay              -> showFirstCursor s cs
-                  ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
-                  SaveAttachmentWindow _        -> showCursorNamed (AttachmentPathEditor tId) cs
-                  LeaveChannelConfirm           -> Nothing
-                  DeleteChannelConfirm          -> Nothing
-                  MessageSelect                 -> Nothing
-                  MessageSelectDeleteConfirm    -> Nothing
-                  PostListOverlay _             -> Nothing
-                  ManageAttachments             -> Nothing
-                  ViewMessage                   -> Nothing
-                  ShowHelp _ _                  -> Nothing
-                  UrlSelect                     -> Nothing
-                  EditNotifyPrefs               -> Nothing
-  , appHandleEvent  = Events.onEvent
-  , appStartEvent   = return
-  , appAttrMap      = (^.csResources.crTheme)
-  }
+app =
+    App { appDraw         = draw
+        , appHandleEvent  = Events.onEvent
+        , appStartEvent   = return
+        , appAttrMap      = (^.csResources.crTheme)
+        , appChooseCursor = \s cs -> do
+            tId <- s^.csCurrentTeamId
+            cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
+        }
+
+cursorByMode :: [CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (CursorLocation Name)
+cursorByMode cs s tId mode =
+    case mode of
+        Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
+            FocusCurrentChannel -> do
+                cId <- s^.csCurrentChannelId(tId)
+                mi <- s^?maybeChannelMessageInterface(cId)
+                cur <- messageInterfaceCursor mi
+                showCursorNamed cur cs
+            FocusThread -> do
+                ti <- s^.csTeam(tId).tsThreadInterface
+                cur <- messageInterfaceCursor ti
+                showCursorNamed cur cs
+        LeaveChannelConfirm           -> Nothing
+        DeleteChannelConfirm          -> Nothing
+        MessageSelectDeleteConfirm {} -> Nothing
+        (PostListWindow {})           -> Nothing
+        ViewMessage                   -> Nothing
+        (ShowHelp {})                 -> Nothing
+        EditNotifyPrefs               -> Nothing
+        ChannelSelect                 -> showFirstCursor s cs
+        UserListWindow                -> showFirstCursor s cs
+        ReactionEmojiListWindow       -> showFirstCursor s cs
+        ChannelListWindow             -> showFirstCursor s cs
+        ThemeListWindow               -> showFirstCursor s cs
+        ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
 
 applicationMaxCPUs :: Int
 applicationMaxCPUs = 2
@@ -94,10 +99,9 @@ runMatterhorn opts config = do
     (st, vty) <- setupState mkVty (optLogLocation opts) config
     finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
 
-    forM_ (HM.elems $ finalSt^.csTeams) $ \ts ->
-        case ts^.tsEditState.cedSpellChecker of
-            Nothing -> return ()
-            Just (s, _) -> stopAspell s
+    case st^.csResources.crSpellChecker of
+        Nothing -> return ()
+        Just s -> stopAspell s
 
     return finalSt
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Matterhorn.Draw.PostListOverlay where
+module Matterhorn.Draw.PostListWindow where
 
 import           Prelude ()
 import           Matterhorn.Prelude
@@ -30,16 +30,16 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
-drawPostListOverlay :: PostListContents -> ChatState -> TeamId -> Widget Name
-drawPostListOverlay contents st tId = joinBorders $ drawPostsBox contents st tId
+drawPostListWindow :: PostListContents -> ChatState -> TeamId -> Widget Name
+drawPostListWindow contents st tId = joinBorders $ drawPostsBox contents st tId
 
--- | Draw a PostListOverlay as a floating overlay on top of whatever
+-- | Draw a PostListWindow as a floating window on top of whatever
 -- is rendered beneath it
 drawPostsBox :: PostListContents -> ChatState -> TeamId -> Widget Name
 drawPostsBox contents st tId =
   centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
     padRight (Pad 1) messageListContents
-  where -- The 'window title' of the overlay
+  where -- The 'window title' of the window
         hs = getHighlightSet st tId
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
           PostListFlagged -> "Flagged posts"
@@ -52,7 +52,7 @@ drawPostsBox contents st tId =
             then ": " <> terms
             else " (" <> (T.pack . show . length) entries <> "): " <> terms
 
-        entries = filterMessages knownChannel $ st^.csTeam(tId).tsPostListOverlay.postListPosts
+        entries = filterMessages knownChannel $ st^.csTeam(tId).tsPostListWindow.postListPosts
         messages = insertDateMarkers
                      entries
                      (getDateFormat st)
@@ -80,8 +80,8 @@ drawPostsBox contents st tId =
           | otherwise = vBox renderedMessageList
 
         -- The render-message function we're using
-        renderMessageForOverlay msg tState =
-          let renderedMsg = renderSingleMessage st hs Nothing msg tState
+        renderMessageForWindow msg tState tag =
+          let renderedMsg = renderSingleMessage st hs True Nothing msg tState tag
           in case msg^.mOriginalPost of
             -- We should factor out some of the channel name logic at
             -- some point, but we can do that later
@@ -100,10 +100,11 @@ drawPostsBox contents st tId =
         -- The full message list, rendered with the current selection
         renderedMessageList =
           let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
-              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csTeam(tId).tsPostListOverlay.postListSelected)
+              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csTeam(tId).tsPostListWindow.postListSelected)
               messagesWithStates = (, InThreadShowParent) <$> messages
+              tag = PostList
           in case s of
             Nothing ->
-                map (uncurry renderMessageForOverlay) (toList messagesWithStates)
+                map (\(m, tst) -> renderMessageForWindow m tst tag) (toList messagesWithStates)
             Just curMsg ->
-              [unsafeRenderMessageSelection (curMsg, (before, after)) renderMessageForOverlay]
+              [unsafeRenderMessageSelection (curMsg, (before, after)) renderMessageForWindow tag]

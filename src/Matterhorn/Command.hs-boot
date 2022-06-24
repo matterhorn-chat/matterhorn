@@ -1,6 +1,7 @@
 module Matterhorn.Command where
 
-import Data.Text ( Text )
+import Prelude ()
+import Matterhorn.Prelude
 
 import Network.Mattermost.Types ( TeamId )
 import Matterhorn.Types ( MH, Cmd, CmdArgs )

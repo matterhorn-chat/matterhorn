@@ -23,7 +23,7 @@ import qualified Matterhorn.Zipper as Z
 
 beginChannelSelect :: MM.TeamId -> MH ()
 beginChannelSelect tId = do
-    setMode tId ChannelSelect
+    pushMode tId ChannelSelect
     csTeam(tId).tsChannelSelectState .= emptyChannelSelectState tId
     updateChannelSelectMatches tId
 

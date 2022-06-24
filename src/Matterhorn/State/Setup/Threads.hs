@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Matterhorn.State.Setup.Threads
   ( startUserStatusUpdateThread
@@ -5,6 +6,7 @@ module Matterhorn.State.Setup.Threads
   , startSubprocessLoggerThread
   , startTimezoneMonitorThread
   , maybeStartSpellChecker
+  , newSpellCheckTimer
   , startAsyncWorkerThread
   , startSyntaxMapLoaderThread
   , module Matterhorn.State.Setup.Threads.Logging
@@ -89,8 +91,8 @@ startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
       STM.atomically $ STM.writeTChan requestChan $ return $ Just $ do
         now <- liftIO getCurrentTime
         let expiry = addUTCTime (- userTypingExpiryInterval) now
-        let expireUsers c = c & ccInfo.cdTypingUsers %~ expireTypingUsers expiry
-        csChannels . mapped %= expireUsers
+            expireUsers c = c & ccMessageInterface.miEditor.esEphemeral.eesTypingUsers %~ expireTypingUsers expiry
+        csChannels . chanMap . mapped %= expireUsers
 
       threadDelay refreshIntervalMicros
 
@@ -159,21 +161,22 @@ startTimezoneMonitorThread tz requestChan = do
 
   void $ forkIO (timezoneMonitor tz)
 
-maybeStartSpellChecker :: TeamId -> Config -> BChan MHEvent -> IO (Maybe (Aspell, IO ()))
-maybeStartSpellChecker tId config eventQueue = do
+spellCheckerTimeout :: Int
+spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
+
+maybeStartSpellChecker :: Config -> IO (Maybe Aspell)
+maybeStartSpellChecker config = do
   case configEnableAspell config of
       False -> return Nothing
       True -> do
           let aspellOpts = catMaybes [ UseDictionary <$> (configAspellDictionary config)
                                      ]
-              spellCheckerTimeout = 500 * 1000 -- 500k us = 500ms
-          asResult <- either (const Nothing) Just <$> startAspell aspellOpts
-          case asResult of
-              Nothing -> return Nothing
-              Just as -> do
-                  resetSCChan <- startSpellCheckerThread tId eventQueue spellCheckerTimeout
-                  let resetSCTimer = STM.atomically $ STM.writeTChan resetSCChan ()
-                  return $ Just (as, resetSCTimer)
+          either (const Nothing) Just <$> startAspell aspellOpts
+
+newSpellCheckTimer :: Aspell -> BChan MHEvent -> MessageInterfaceTarget -> IO (IO ())
+newSpellCheckTimer checker eventQueue target = do
+    resetSCChan <- startSpellCheckerThread checker eventQueue target spellCheckerTimeout
+    return $ STM.atomically $ STM.writeTChan resetSCChan ()
 
 -- Start the background spell checker delay thread.
 --
@@ -201,14 +204,18 @@ maybeStartSpellChecker tId config eventQueue = do
 -- The worker thread works by reading a timer from its queue, waiting
 -- until the timer expires, and then injecting an event into the main
 -- event loop to request a spell check.
-startSpellCheckerThread :: TeamId
+startSpellCheckerThread :: Aspell
+                        -- ^ The spell checker handle to use
                         -> BChan MHEvent
                         -- ^ The main event loop's event channel.
+                        -> MessageInterfaceTarget
+                        -- ^ The target of the editor whose contents
+                        -- should be spell checked
                         -> Int
                         -- ^ The number of microseconds to wait before
                         -- requesting a spell check.
                         -> IO (STM.TChan ())
-startSpellCheckerThread tId eventChan spellCheckTimeout = do
+startSpellCheckerThread checker eventChan target spellCheckTimeout = do
   delayWakeupChan <- STM.atomically STM.newTChan
   delayWorkerChan <- STM.atomically STM.newTChan
   delVar <- STM.atomically $ STM.newTVar Nothing
@@ -217,7 +224,7 @@ startSpellCheckerThread tId eventChan spellCheckTimeout = do
   -- requests a spell check.
   void $ forkIO $ forever $ do
     STM.atomically $ waitDelay =<< STM.readTChan delayWorkerChan
-    writeBChan eventChan (RespEvent $ requestSpellCheck tId)
+    writeBChan eventChan (RespEvent $ requestSpellCheck checker target)
 
   -- The delay manager waits for requests to start a delay timer and
   -- signals the worker to begin waiting.

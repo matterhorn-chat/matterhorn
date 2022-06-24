@@ -5,6 +5,7 @@ module Matterhorn.LastRunState
   , lrsPort
   , lrsUserId
   , lrsSelectedChannelId
+  , lrsOpenThread
   , writeLastRunStates
   , readLastRunState
   , isValidLastRunState
@@ -40,6 +41,7 @@ data LastRunState =
                  , _lrsPort              :: Port      -- ^ Post of the server
                  , _lrsUserId            :: UserId    -- ^ ID of the logged-in user
                  , _lrsSelectedChannelId :: Maybe ChannelId -- ^ ID of the last selected channel
+                 , _lrsOpenThread        :: Maybe (ChannelId, PostId)
                  }
 
 instance A.ToJSON LastRunState where
@@ -47,6 +49,7 @@ instance A.ToJSON LastRunState where
                           , "port"           A..= _lrsPort lrs
                           , "user_id"        A..= _lrsUserId lrs
                           , "sel_channel_id" A..= _lrsSelectedChannelId lrs
+                          , "open_thread"    A..= _lrsOpenThread lrs
                           ]
 
 instance A.FromJSON LastRunState where
@@ -56,6 +59,7 @@ instance A.FromJSON LastRunState where
         <*> v A..: "port"
         <*> v A..: "user_id"
         <*> v A..: "sel_channel_id"
+        <*> v A..:? "open_thread"
 
 makeLenses ''LastRunState
 
@@ -65,6 +69,9 @@ toLastRunState cs tId =
                  , _lrsPort              = cs^.csResources.crConn.cdPortL
                  , _lrsUserId            = myUserId cs
                  , _lrsSelectedChannelId = cs^.csCurrentChannelId(tId)
+                 , _lrsOpenThread = do
+                     ti <- cs^.csTeam(tId).tsThreadInterface
+                     return (ti^.miChannelId, ti^.miRootPostId)
                  }
 
 lastRunStateFileMode :: P.FileMode

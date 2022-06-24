@@ -41,19 +41,30 @@ updateMessageFlag pId f = do
     Just msg
       | Just cId <- msg^.mChannelId -> withChannel cId $ \chan -> do
       let isTargetMessage m = m^.mMessageId == Just (MessagePostId pId)
-      csChannel(cId).ccContents.cdMessages.traversed.filtered isTargetMessage.mFlagged .= f
+      csChannelMessages(cId).traversed.filtered isTargetMessage.mFlagged .= f
       csPostMap.ix(pId).mFlagged .= f
 
+      invalidateChannelRenderingCache cId
+      invalidateMessageRenderingCacheByPostId pId
+
       let mTId = chan^.ccInfo.cdTeamId
-          updatePostOverlay :: TeamId -> MH ()
-          updatePostOverlay tId = do
-              -- We also want to update the post overlay if this happens
+          updateTeam :: TeamId -> MH ()
+          updateTeam tId = do
+              -- Update the thread window for this team, if its channel
+              -- is the one that the post is in.
+              mTi <- preuse (threadInterface(tId))
+              case mTi of
+                  Just ti | ti^.miChannelId == cId ->
+                      threadInterface(tId).miMessages.traversed.filtered isTargetMessage.mFlagged .= f
+                  _ -> return ()
+
+              -- We also want to update the post window if this happens
               -- while we're we're observing it
-              mode <- use (csTeam tId.tsMode)
+              mode <- getTeamMode tId
               case mode of
-                PostListOverlay PostListFlagged
+                PostListWindow PostListFlagged
                   | f ->
-                      csTeam tId.tsPostListOverlay.postListPosts %=
+                      csTeam tId.tsPostListWindow.postListPosts %=
                         addMessage (msg & mFlagged .~ True)
 
                   -- deleting here is tricky, because it means that we
@@ -61,20 +72,20 @@ updateMessageFlag pId f = do
                   -- it _up_ unless we can't, in which case we'll try
                   -- moving it down.
                   | otherwise -> do
-                      selId <- use (csTeam tId.tsPostListOverlay.postListSelected)
-                      posts <- use (csTeam tId.tsPostListOverlay.postListPosts)
+                      selId <- use (csTeam tId.tsPostListWindow.postListSelected)
+                      posts <- use (csTeam tId.tsPostListWindow.postListPosts)
                       let nextId = case getNextPostId selId posts of
                             Nothing -> getPrevPostId selId posts
                             Just x  -> Just x
-                      csTeam tId.tsPostListOverlay.postListSelected .= nextId
-                      csTeam tId.tsPostListOverlay.postListPosts %=
+                      csTeam tId.tsPostListWindow.postListSelected .= nextId
+                      csTeam tId.tsPostListWindow.postListPosts %=
                         filterMessages (((/=) `on` _mMessageId) msg)
                 _ -> return ()
 
       case mTId of
           Nothing -> do
               ts <- use csTeams
-              forM_ (HM.keys ts) updatePostOverlay
-          Just tId -> updatePostOverlay tId
+              forM_ (HM.keys ts) updateTeam
+          Just tId -> updateTeam tId
 
     _ -> return ()

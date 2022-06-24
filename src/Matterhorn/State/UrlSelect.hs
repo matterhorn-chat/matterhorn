@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.State.UrlSelect
   (
   -- * URL selection mode
@@ -10,40 +11,42 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick.Widgets.List ( list, listMoveTo, listSelectedElement )
+import           Brick.Widgets.List ( listSelectedElement, listReplace )
 import qualified Data.Vector as V
-import           Lens.Micro.Platform ( (.=), to )
-
-import           Network.Mattermost.Types ( TeamId )
+import           Lens.Micro.Platform ( (.=), (%=), to, Lens' )
 
 import           Matterhorn.State.Links
 import           Matterhorn.Types
 import           Matterhorn.Util
 
 
-startUrlSelect :: TeamId -> MH ()
-startUrlSelect tId = do
-    withCurrentChannel tId $ \_ chan -> do
-        let urls = V.fromList $ findUrls chan
-            urlsWithIndexes = V.indexed urls
-        setMode tId UrlSelect
-        csTeam(tId).tsUrlList .= (listMoveTo (length urls - 1) $ list (UrlList tId) urlsWithIndexes 2)
+startUrlSelect :: Lens' ChatState (MessageInterface n i)
+               -> MH ()
+startUrlSelect which = do
+    msgs <- use (which.miMessages)
+    src <- use (which.miUrlListSource)
+    let urls = V.fromList $ findUrls msgs
+        urlsWithIndexes = V.indexed urls
+    which.miMode .= ShowUrlList
+    which.miUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
+    which.miUrlList.ulSource .= Just src
 
-stopUrlSelect :: TeamId -> MH ()
-stopUrlSelect tId = do
-    setMode tId Main
+stopUrlSelect :: Lens' ChatState (MessageInterface n i)
+              -> MH ()
+stopUrlSelect which = do
+    which.miMode .= Compose
 
-openSelectedURL :: TeamId -> MH ()
-openSelectedURL tId = whenMode tId UrlSelect $ do
-    selected <- use (csTeam(tId).tsUrlList.to listSelectedElement)
+openSelectedURL :: Lens' ChatState (MessageInterface n i) -> MH ()
+openSelectedURL which = do
+    selected <- use (which.miUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)
-    setMode tId Main
+    stopUrlSelect which
 
-findUrls :: ClientChannel -> [LinkChoice]
-findUrls chan =
-    let msgs = filterMessages (not . _mDeleted) $ chan^.ccContents.cdMessages
+findUrls :: Messages -> [LinkChoice]
+findUrls ms =
+    let msgs = filterMessages (not . _mDeleted) ms
     in removeDuplicates $ concat $ toList $ toList <$> msgURLs <$> msgs
 
 removeDuplicates :: [LinkChoice] -> [LinkChoice]

@@ -80,24 +80,21 @@ lookupKeybinding :: Vty.Event -> KeyHandlerMap -> Maybe KeyHandler
 lookupKeybinding e (KeyHandlerMap m) = M.lookup e m
 
 -- | Handle a keyboard event by looking it up in a map of bindings and
--- invoking the matching binding's handler. If no match can be found,
--- invoke a fallback action instead. Return True if the key event was
--- handled with a matching binding; False if not (the fallback case).
+-- invoking the matching binding's handler. Return True if the key event
+-- was handled with a matching binding; False if not (the fallback
+-- case).
 handleKeyboardEvent :: (KeyConfig -> KeyHandlerMap)
                     -- ^ The function to build a key handler map from a
                     -- key configuration.
-                    -> (Vty.Event -> MH ())
-                    -- ^ The fallback action to invoke if no matching
-                    -- binding can be found.
                     -> Vty.Event
                     -- ^ The event to handle.
                     -> MH Bool
-handleKeyboardEvent mkKeyMap fallthrough e = do
+handleKeyboardEvent mkKeyMap e = do
   conf <- use (csResources.crConfiguration)
   let keyMap = mkKeyMap (configUserKeys conf)
   case lookupKeybinding e keyMap of
     Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
-    Nothing -> fallthrough e >> return False
+    Nothing -> return False
 
 mkHandler :: Text -> MH () -> EventHandler
 mkHandler msg action =
@@ -178,6 +175,7 @@ defaultBindings ev =
         PrevChannelEventAlternate     -> [ kb Vty.KUp ]
         NextUnreadChannelEvent        -> [ meta (key 'a') ]
         ShowAttachmentListEvent       -> [ ctrl (key 'x') ]
+        ChangeMessageEditorFocus      -> [ meta (key 'o') ]
         NextUnreadUserOrChannelEvent  -> [ ]
         LastChannelEvent              -> [ meta (key 's') ]
         EnterOpenURLModeEvent         -> [ ctrl (key 'o') ]
@@ -201,8 +199,8 @@ defaultBindings ev =
         PageDownEvent                 -> [ kb Vty.KPageDown ]
         PageLeftEvent                 -> [ shift (kb Vty.KLeft) ]
         PageRightEvent                -> [ shift (kb Vty.KRight) ]
-        ScrollTopEvent                -> [ kb Vty.KHome ]
-        ScrollBottomEvent             -> [ kb Vty.KEnd ]
+        ScrollTopEvent                -> [ kb Vty.KHome, meta $ key '<' ]
+        ScrollBottomEvent             -> [ kb Vty.KEnd, meta $ key '>' ]
         SelectOldestMessageEvent      -> [ shift (kb Vty.KHome) ]
         SelectUpEvent                 -> [ key 'k', kb Vty.KUp ]
         SelectDownEvent               -> [ key 'j', kb Vty.KDown ]
@@ -213,6 +211,7 @@ defaultBindings ev =
         FillGapEvent                  -> [ kb Vty.KEnter ]
         CopyPostLinkEvent             -> [ key 'l' ]
         FlagMessageEvent              -> [ key 'f' ]
+        OpenThreadEvent               -> [ key 't' ]
         PinMessageEvent               -> [ key 'p' ]
         YankMessageEvent              -> [ key 'y' ]
         YankWholeMessageEvent         -> [ key 'Y' ]
@@ -247,8 +246,8 @@ defaultBindings ev =
         FileBrowserListPageDownEvent     -> [ ctrl (key 'f'), kb Vty.KPageDown ]
         FileBrowserListHalfPageUpEvent   -> [ ctrl (key 'u') ]
         FileBrowserListHalfPageDownEvent -> [ ctrl (key 'd') ]
-        FileBrowserListTopEvent          -> [ key 'g', kb Vty.KHome ]
-        FileBrowserListBottomEvent       -> [ key 'G', kb Vty.KEnd ]
+        FileBrowserListTopEvent          -> [ key 'g', kb Vty.KHome, meta $ key '<' ]
+        FileBrowserListBottomEvent       -> [ key 'G', kb Vty.KEnd, meta $ key '>' ]
         FileBrowserListNextEvent         -> [ key 'j', ctrl (key 'n'), kb Vty.KDown ]
         FileBrowserListPrevEvent         -> [ key 'k', ctrl (key 'p'), kb Vty.KUp ]
         FormSubmitEvent               -> [ kb Vty.KEnter ]

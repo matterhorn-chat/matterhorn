@@ -8,25 +8,17 @@
 
 module Matterhorn.Types.Channels
   ( ClientChannel(..)
-  , ChannelContents(..)
   , ChannelInfo(..)
   , ClientChannels -- constructor remains internal
+  , chanMap
   , NewMessageIndicator(..)
-  , EphemeralEditState(..)
-  , EditMode(..)
-  , eesMultiline, eesInputHistoryPosition, eesLastInput
-  , defaultEphemeralEditState
   -- * Lenses created for accessing ClientChannel fields
-  , ccContents, ccInfo, ccEditState
+  , ccInfo, ccMessageInterface
   -- * Lenses created for accessing ChannelInfo fields
   , cdViewed, cdNewMessageIndicator, cdEditedMessageThreshold, cdUpdated
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
-  , cdMentionCount, cdTypingUsers, cdDMUserId, cdChannelId
-  , cdSidebarShowOverride, cdNotifyProps, cdTeamId
-  -- * Lenses created for accessing ChannelContents fields
-  , cdMessages, cdFetchPending
-  -- * Creating ClientChannel objects
-  , makeClientChannel
+  , cdMentionCount, cdDMUserId, cdChannelId
+  , cdSidebarShowOverride, cdNotifyProps, cdTeamId, cdFetchPending
   -- * Managing ClientChannel collections
   , noChannels, addChannel, removeChannel, findChannelById, modifyChannelById
   , channelByIdL, maybeChannelByIdL
@@ -41,7 +33,6 @@ module Matterhorn.Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
-  , addChannelTypingUser
   -- * Notification settings
   , notifyPreference
   , isMuted
@@ -57,6 +48,7 @@ module Matterhorn.Types.Channels
   , getDmChannelFor
   , allDmChannelMappings
   , getChannelNameSet
+  , emptyChannelMessages
   )
 where
 
@@ -65,7 +57,6 @@ import           Matterhorn.Prelude
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
-import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), (.~), Traversal', Lens'
                                      , makeLenses, ix, at
                                      , to, non )
@@ -81,14 +72,14 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , WithDefault(..)
                                           , ServerTime
                                           , TeamId
-                                          , emptyChannelNotifyProps
                                           )
 
 import           Matterhorn.Types.Messages ( Messages, noMessages, addMessage
-                                           , clientMessageToMessage, Message, MessageType )
+                                           , clientMessageToMessage )
 import           Matterhorn.Types.Posts ( ClientMessageType(UnknownGapBefore)
                                         , newClientMessage )
-import           Matterhorn.Types.Users ( TypingUsers, noTypingUsers, addTypingUser )
+import           Matterhorn.Types.MessageInterface
+import           Matterhorn.Types.Core ( Name )
 import           Matterhorn.Types.Common
 
 
@@ -97,37 +88,11 @@ import           Matterhorn.Types.Common
 -- | A 'ClientChannel' contains both the message
 --   listing and the metadata about a channel
 data ClientChannel = ClientChannel
-  { _ccContents :: ChannelContents
-    -- ^ A list of 'Message's in the channel
-  , _ccInfo :: ChannelInfo
+  { _ccInfo :: ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
-  , _ccEditState :: EphemeralEditState
-    -- ^ Editor state that we swap in and out as the current channel is
-    -- changed.
+  , _ccMessageInterface :: MessageInterface Name ()
+    -- ^ The channel's message interface
   }
-
--- | The input state associated with the message editor.
-data EditMode =
-    NewPost
-    -- ^ The input is for a new post.
-    | Editing Post MessageType
-    -- ^ The input is ultimately to replace the body of an existing post
-    -- of the specified type.
-    | Replying Message Post
-    -- ^ The input is to be used as a new post in reply to the specified
-    -- post.
-    deriving (Show)
-
-data EphemeralEditState =
-    EphemeralEditState { _eesMultiline :: Bool
-                       -- ^ Whether the editor is in multiline mode
-                       , _eesInputHistoryPosition :: Maybe Int
-                       -- ^ The input history position, if any
-                       , _eesLastInput :: (T.Text, EditMode)
-                       -- ^ The input entered into the text editor last
-                       -- time the user was focused on the channel
-                       -- associated with this state.
-                       }
 
 -- Get a channel's name, depending on its type
 preferredChannelName :: Channel -> Text
@@ -140,30 +105,6 @@ data NewMessageIndicator =
     | NewPostsAfterServerTime ServerTime
     | NewPostsStartingAt ServerTime
     deriving (Eq, Show)
-
-initialChannelInfo :: UserId -> Channel -> ChannelInfo
-initialChannelInfo myId chan =
-    let updated  = chan ^. channelLastPostAtL
-    in ChannelInfo { _cdChannelId              = chan^.channelIdL
-                   , _cdTeamId                 = chan^.channelTeamIdL
-                   , _cdViewed                 = Nothing
-                   , _cdNewMessageIndicator    = Hide
-                   , _cdEditedMessageThreshold = Nothing
-                   , _cdMentionCount           = 0
-                   , _cdUpdated                = updated
-                   , _cdName                   = preferredChannelName chan
-                   , _cdDisplayName            = sanitizeUserText $ channelDisplayName chan
-                   , _cdHeader                 = sanitizeUserText $ chan^.channelHeaderL
-                   , _cdPurpose                = sanitizeUserText $ chan^.channelPurposeL
-                   , _cdType                   = chan^.channelTypeL
-                   , _cdNotifyProps            = emptyChannelNotifyProps
-                   , _cdTypingUsers            = noTypingUsers
-                   , _cdDMUserId               = if chan^.channelTypeL == Direct
-                                                 then userIdForDMChannel myId $
-                                                      sanitizeUserText $ channelName chan
-                                                 else Nothing
-                   , _cdSidebarShowOverride    = Nothing
-                   }
 
 channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
 channelInfoFromChannelWithData chan chanMember ci =
@@ -183,25 +124,15 @@ channelInfoFromChannelWithData chan chanMember ci =
           , _cdNotifyProps      = chanMember^.to channelMemberNotifyProps
           }
 
--- | The 'ChannelContents' is a wrapper for a list of
---   'Message' values
-data ChannelContents = ChannelContents
-  { _cdMessages :: Messages
-  , _cdFetchPending :: Bool
-  }
-
--- | An initial empty 'ChannelContents' value.  This also contains an
--- UnknownGapBefore, which is a signal that causes actual content fetching.
--- The initial Gap's timestamp is the local client time, but
+-- | An initial empty channel message list. This also contains an
+-- UnknownGapBefore, which is a signal that causes actual content
+-- fetching. The initial Gap's timestamp is the local client time, but
 -- subsequent fetches will synchronize with the server (and eventually
 -- eliminate this Gap as well).
-emptyChannelContents :: MonadIO m => m ChannelContents
-emptyChannelContents = do
+emptyChannelMessages :: MonadIO m => m Messages
+emptyChannelMessages = do
   gapMsg <- clientMessageToMessage <$> newClientMessage UnknownGapBefore "--Fetching messages--"
-  return $ ChannelContents { _cdMessages = addMessage gapMsg noMessages
-                           , _cdFetchPending = False
-                           }
-
+  return $ addMessage gapMsg noMessages
 
 ------------------------------------------------------------------------
 
@@ -234,8 +165,6 @@ data ChannelInfo = ChannelInfo
     -- ^ The type of a channel: public, private, or DM
   , _cdNotifyProps      :: ChannelNotifyProps
     -- ^ The user's notification settings for this channel
-  , _cdTypingUsers      :: TypingUsers
-    -- ^ The users who are currently typing in this channel
   , _cdDMUserId         :: Maybe UserId
     -- ^ The user associated with this channel, if it is a DM channel
   , _cdSidebarShowOverride :: Maybe UTCTime
@@ -243,14 +172,14 @@ data ChannelInfo = ChannelInfo
     -- considerations as long as the specified timestamp meets a cutoff.
     -- Otherwise fall back to other application policy to determine
     -- whether to show the channel.
+  , _cdFetchPending :: Bool
+    -- ^ Whether a fetch in this channel is pending
   }
 
 -- ** Channel-related Lenses
 
-makeLenses ''ChannelContents
 makeLenses ''ChannelInfo
 makeLenses ''ClientChannel
-makeLenses ''EphemeralEditState
 
 isMuted :: ClientChannel -> Bool
 isMuted cc = cc^.ccInfo.cdNotifyProps.channelNotifyPropsMarkUnreadL ==
@@ -265,38 +194,18 @@ notifyPreference u cc =
 
 -- ** Miscellaneous channel operations
 
-makeClientChannel :: (MonadIO m) => UserId -> Channel -> m ClientChannel
-makeClientChannel myId nc = emptyChannelContents >>= \contents ->
-  return ClientChannel
-  { _ccContents = contents
-  , _ccInfo = initialChannelInfo myId nc
-  , _ccEditState = defaultEphemeralEditState
-  }
-
-defaultEphemeralEditState :: EphemeralEditState
-defaultEphemeralEditState =
-    EphemeralEditState { _eesMultiline = False
-                       , _eesInputHistoryPosition = Nothing
-                       , _eesLastInput = ("", NewPost)
-                       }
-
 canLeaveChannel :: ChannelInfo -> Bool
 canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 
 -- ** Manage the collection of all Channels
 
-data ChannelCollection a =
-    ChannelCollection { _chanMap :: HashMap ChannelId a
-                      , _channelNameSet :: HashMap TeamId (S.Set Text)
-                      , _userChannelMap :: HashMap UserId ChannelId
-                      }
-                      deriving (Functor, Foldable, Traversable)
+data ClientChannels =
+    ClientChannels { _chanMap :: HashMap ChannelId ClientChannel
+                   , _channelNameSet :: HashMap TeamId (S.Set Text)
+                   , _userChannelMap :: HashMap UserId ChannelId
+                   }
 
--- | Define the exported typename which universally binds the
--- collection to the ChannelInfo type.
-type ClientChannels = ChannelCollection ClientChannel
-
-makeLenses ''ChannelCollection
+makeLenses ''ClientChannels
 
 getChannelNameSet :: TeamId -> ClientChannels -> S.Set Text
 getChannelNameSet tId cs = case cs^.channelNameSet.at tId of
@@ -306,10 +215,10 @@ getChannelNameSet tId cs = case cs^.channelNameSet.at tId of
 -- | Initial collection of Channels with no members
 noChannels :: ClientChannels
 noChannels =
-    ChannelCollection { _chanMap = HM.empty
-                      , _channelNameSet = HM.empty
-                      , _userChannelMap = HM.empty
-                      }
+    ClientChannels { _chanMap = HM.empty
+                   , _channelNameSet = HM.empty
+                   , _userChannelMap = HM.empty
+                   }
 
 -- | Add a channel to the existing collection.
 addChannel :: ChannelId -> ClientChannel -> ClientChannels -> ClientChannels
@@ -338,12 +247,12 @@ removeChannel cId cs =
           & removeChannelName
           & userChannelMap %~ HM.filter (/= cId)
 
-instance Semigroup (ChannelCollection ClientChannel) where
+instance Semigroup ClientChannels where
     a <> b =
         let pairs = HM.toList $ _chanMap a
         in foldr (uncurry addChannel) b pairs
 
-instance Monoid (ChannelCollection ClientChannel) where
+instance Monoid ClientChannels where
     mempty = noChannels
 #if !MIN_VERSION_base(4,11,0)
     mappend = (<>)
@@ -393,10 +302,6 @@ filteredChannels f cc = filter f $ cc^.chanMap.to HM.toList
 
 -- * Channel State management
 
-
--- | Add user to the list of users in this channel who are currently typing.
-addChannelTypingUser :: UserId -> UTCTime -> ClientChannel -> ClientChannel
-addChannelTypingUser uId ts = ccInfo.cdTypingUsers %~ (addTypingUser uId ts)
 
 -- | Clear the new message indicator for the specified channel
 clearNewMessageIndicator :: ClientChannel -> ClientChannel

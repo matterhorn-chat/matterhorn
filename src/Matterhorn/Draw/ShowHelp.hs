@@ -30,13 +30,14 @@ import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
-import           Matterhorn.Events.ThemeListOverlay
-import           Matterhorn.Events.PostListOverlay
+import           Matterhorn.Events.MessageInterface
+import           Matterhorn.Events.ThemeListWindow
+import           Matterhorn.Events.PostListWindow
 import           Matterhorn.Events.ShowHelp
 import           Matterhorn.Events.UrlSelect
-import           Matterhorn.Events.UserListOverlay
-import           Matterhorn.Events.ChannelListOverlay
-import           Matterhorn.Events.ReactionEmojiListOverlay
+import           Matterhorn.Events.UserListWindow
+import           Matterhorn.Events.ChannelListWindow
+import           Matterhorn.Events.ReactionEmojiListWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.TabbedWindow
 import           Matterhorn.Windows.ViewMessage
@@ -52,7 +53,7 @@ import           Matterhorn.Types.KeyEvents ( BindingState(..), Binding(..)
 
 drawShowHelp :: HelpTopic -> ChatState -> [Widget Name]
 drawShowHelp topic st =
-    [helpBox (helpTopicViewportName topic) $ helpTopicDraw topic st]
+    [helpBox (helpTopicScreen topic) $ helpTopicDraw topic st]
 
 helpTopicDraw :: HelpTopic -> ChatState -> Widget Name
 helpTopicDraw topic st =
@@ -83,7 +84,8 @@ mainHelp kc = summary
     mkCommandHelpText :: Widget Name
     mkCommandHelpText =
       let commandNameWidth = 2 + (maximum $ T.length <$> fst <$> commandHelpInfo)
-      in vBox [ (emph $ txt $ padTo commandNameWidth info) <+> renderText desc
+      in vBox [ (emph $ txt $ padTo commandNameWidth info) <=>
+                (padBottom (Pad 1) $ padLeft (Pad 2) $ renderText desc)
               | (info, desc) <- commandHelpInfo
               ]
 
@@ -114,9 +116,12 @@ commandMarkdownTable =
     , "| Command | Description |"
     , "| ------- | ----------- |"
     ] <>
-    [ "| `" <> info <> "` | " <> desc <> " |"
+    [ "| `" <> escapePipes info <> "` | " <> escapePipes desc <> " |"
     | (info, desc) <- commandHelpInfo
     ]
+
+escapePipes :: Text -> Text
+escapePipes = T.replace "|" "\\|"
 
 drawHelpTopics :: Widget Name
 drawHelpTopics =
@@ -287,6 +292,9 @@ keybindingHelp kc = vBox $
             ]
           ]
 
+event :: KeyEvent -> Widget a
+event = withDefAttr helpKeyEventAttr . txt . keyEventName
+
 emph :: Widget a -> Widget a
 emph = withDefAttr helpEmphAttr
 
@@ -445,37 +453,42 @@ keybindSections :: [(Text, [KeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
-    , ("Main Interface", mainKeyHandlers teamIdThunk)
-    , ("Text Editing", editingKeyHandlers teamIdThunk editorThunk)
+    , ("Main Interface", mainKeyHandlers teamIdThunk <>
+                         messageInterfaceKeyHandlers whichThunk)
+    , ("Message Editing", extraEditorKeyHandlers whichThunk)
+    , ("Text Editing", editingKeyHandlers editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
-    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk)
-    , ("User Listings", userListOverlayKeyHandlers teamIdThunk)
-    , ("URL Select Mode", urlSelectKeyHandlers teamIdThunk)
-    , ("Theme List Window", themeListOverlayKeyHandlers teamIdThunk)
-    , ("Channel Search Window", channelListOverlayKeyHandlers teamIdThunk)
+    , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk whichThunk)
+    , ("User Listings", userListWindowKeyHandlers teamIdThunk)
+    , ("URL Select Mode", urlSelectKeyHandlers whichThunk)
+    , ("Theme List Window", themeListWindowKeyHandlers teamIdThunk)
+    , ("Channel Search Window", channelListWindowKeyHandlers teamIdThunk)
     , ("Message Viewer: Common", tabbedWindowKeyHandlers teamIdThunk tabbedWinThunk)
     , ("Message Viewer: Message tab", viewMessageKeyHandlers teamIdThunk)
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
-    , ("Attachment List", attachmentListKeyHandlers teamIdThunk)
-    , ("Attachment File Browser", attachmentBrowseKeyHandlers teamIdThunk)
-    , ("Flagged Messages", postListOverlayKeyHandlers teamIdThunk)
-    , ("Reaction Emoji Search Window", reactionEmojiListOverlayKeyHandlers teamIdThunk)
+    , ("Attachment List", attachmentListKeyHandlers whichThunk)
+    , ("Attachment File Browser", attachmentBrowseKeyHandlers whichThunk)
+    , ("Flagged Messages", postListWindowKeyHandlers teamIdThunk)
+    , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
     ]
 
 teamIdThunk :: TeamId
 teamIdThunk = error "BUG: should not evaluate teamIdThunk"
 
-tabbedWinThunk :: Lens' ChatState (TabbedWindow Int)
+tabbedWinThunk :: Lens' ChatState (TabbedWindow ChatState MH Name Int)
 tabbedWinThunk = error "BUG: should not evaluate tabbedWinThunk"
 
 editorThunk :: Lens' ChatState (Editor Text Name)
 editorThunk = error "BUG: should not evaluate editorThunk"
 
-helpBox :: Name -> Widget Name -> Widget Name
-helpBox n helpText =
+whichThunk :: Lens' ChatState (MessageInterface n i)
+whichThunk = error "BUG: should not evaluate whichThunk"
+
+helpBox :: HelpScreen -> Widget Name -> Widget Name
+helpBox scr helpText =
     withDefAttr helpAttr $
     viewport HelpViewport Vertical $
-    cached n helpText
+    cached (HelpContent scr) helpText
 
 kbColumnWidth :: Int
 kbColumnWidth = 14
@@ -493,8 +506,8 @@ mkKeybindingHelp kc (sectionName, kbs) =
 mkKeybindHelp :: KeyConfig -> KeyEventHandler -> (Text, Widget Name)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
-        label = case kehEventTrigger h of
-            Static k -> ppBinding $ eventToBinding k
+        (label, mEv) = case kehEventTrigger h of
+            Static k -> (ppBinding $ eventToBinding k, Nothing)
             ByEvent ev ->
                 let bindings = case M.lookup ev kc of
                         Nothing ->
@@ -505,12 +518,18 @@ mkKeybindHelp kc h =
                         Just Unbound -> unbound
                         Just (BindingList bs) | not (null bs) -> ppBinding <$> bs
                                               | otherwise -> unbound
-                in T.intercalate ", " bindings
+                in (T.intercalate ", " bindings, Just ev)
 
+        renderEvent ev = txt "event: " <+> event ev
         rendering = (emph $ txt $ padTo kbColumnWidth $
                       label) <+> txt " " <+>
-                    (hLimit kbDescColumnWidth $ padRight Max $ renderText $
-                     ehDescription $ kehHandler h)
+                    (hLimit kbDescColumnWidth $
+                     padRight Max $
+                     padBottom (Pad 1) $
+                     vBox [ renderText $ ehDescription $ kehHandler h
+                          , maybe emptyWidget renderEvent mEv
+                          ]
+                     )
     in (label, rendering)
 
 mkKeybindEventSectionHelp :: KeyConfig

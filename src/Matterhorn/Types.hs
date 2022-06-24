@@ -5,40 +5,26 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE FlexibleInstances #-}
 module Matterhorn.Types
   ( ConnectionStatus(..)
   , HelpTopic(..)
-  , MessageSelectState(..)
   , ProgramOutput(..)
   , MHEvent(..)
   , InternalEvent(..)
-  , Name(..)
-  , ChannelSelectMatch(..)
   , StartupStateInfo(..)
   , MHError(..)
-  , AttachmentData(..)
   , CPUUsagePolicy(..)
   , SemEq(..)
-  , tabbedWindow
-  , getCurrentTabbedWindowEntry
-  , tabbedWindowNextTab
-  , tabbedWindowPreviousTab
-  , runTabShowHandlerFor
+  , handleEventWith
   , getServerBaseUrl
   , serverBaseUrl
-  , TabbedWindow(..)
-  , TabbedWindowEntry(..)
-  , TabbedWindowTemplate(..)
   , ConnectionInfo(..)
   , SidebarUpdate(..)
   , PendingChannelChange(..)
   , ViewMessageWindowTab(..)
   , clearChannelUnreadStatus
-  , ChannelListEntry(..)
-  , ChannelListEntryType(..)
   , ChannelListSorting(..)
+  , ThreadOrientation(..)
   , ChannelListOrientation(..)
   , channelListEntryUserId
   , userIdsFromZipper
@@ -51,17 +37,11 @@ module Matterhorn.Types
   , ciPassword
   , ciType
   , ciAccessToken
-  , newChannelTopicDialog
   , ChannelTopicDialogState(..)
   , channelTopicDialogEditor
   , channelTopicDialogFocus
 
   , resultToWidget
-
-  , newSaveAttachmentDialog
-  , SaveAttachmentDialogState(..)
-  , attachmentPathEditor
-  , attachmentPathDialogFocus
 
   , Config(..)
   , configUserL
@@ -106,10 +86,11 @@ module Matterhorn.Types
   , configCpuUsagePolicyL
   , configDefaultAttachmentPathL
   , configChannelListOrientationL
+  , configThreadOrientationL
   , configMouseModeL
+  , configShowLastOpenThreadL
 
   , NotificationVersion(..)
-  , HelpScreen(..)
   , PasswordSource(..)
   , TokenSource(..)
   , MatchType(..)
@@ -132,9 +113,18 @@ module Matterhorn.Types
   , teamZipperIds
   , mkChannelZipperList
   , ChannelListGroup(..)
-  , ChannelListGroupLabel(..)
   , nonDMChannelListGroupUnread
-  , channelListGroupNames
+
+  , ThreadInterface
+  , ChannelMessageInterface
+
+  , threadInterface
+  , unsafeThreadInterface
+  , maybeThreadInterface
+  , threadInterfaceEmpty
+  , threadInterfaceDeleteWhere
+  , modifyThreadMessages
+  , modifyEachThreadMessage
 
   , trimChannelSigil
 
@@ -145,29 +135,36 @@ module Matterhorn.Types
 
   , TeamState(..)
   , tsFocus
-  , tsMode
   , tsPendingChannelChange
   , tsRecentChannel
   , tsReturnChannel
-  , tsEditState
-  , tsMessageSelect
   , tsTeam
   , tsChannelSelectState
-  , tsUrlList
   , tsViewedMessage
-  , tsPostListOverlay
-  , tsUserListOverlay
-  , tsChannelListOverlay
+  , tsPostListWindow
+  , tsUserListWindow
+  , tsChannelListWindow
   , tsNotifyPrefs
   , tsChannelTopicDialog
-  , tsReactionEmojiListOverlay
-  , tsThemeListOverlay
-  , tsSaveAttachmentDialog
+  , tsReactionEmojiListWindow
+  , tsThemeListWindow
   , tsChannelListSorting
+  , tsThreadInterface
+  , tsMessageInterfaceFocus
+
+  , teamMode
+  , teamModes
+  , getTeamMode
+
+  , MessageInterfaceFocus(..)
+  , messageInterfaceFocusNext
+  , messageInterfaceFocusPrev
+
+  , channelEditor
+  , channelMessageSelect
 
   , ChatState
   , newState
-  , newTeamState
 
   , withCurrentChannel
   , withCurrentChannel'
@@ -179,6 +176,7 @@ module Matterhorn.Types
   , csChannelListOrientation
   , csResources
   , csLastMouseDownEvent
+  , csGlobalEditState
   , csVerbatimTruncateSetting
   , csCurrentChannelId
   , csCurrentTeamId
@@ -188,62 +186,40 @@ module Matterhorn.Types
   , csConnectionStatus
   , csWorkerIsBusy
   , csChannel
+  , csChannelMessages
+  , csChannelMessageInterface
+  , maybeChannelMessageInterface
   , csChannels
   , csClientConfig
   , csInputHistory
   , csMe
   , timeZone
   , whenMode
-  , setMode
-  , setMode'
+  , pushMode
+  , pushMode'
+  , popMode
+  , replaceMode
 
-  , ChatEditState
-  , emptyEditState
-  , cedAttachmentList
-  , cedFileBrowser
-  , unsafeCedFileBrowser
-  , cedYankBuffer
-  , cedSpellChecker
-  , cedMisspellings
-  , cedEditMode
-  , cedEphemeral
-  , cedEditor
-  , cedAutocomplete
-  , cedAutocompletePending
-  , cedJustCompleted
+  , GlobalEditState(..)
+  , emptyGlobalEditState
+  , gedYankBuffer
 
-  , AutocompleteState(..)
-  , acPreviousSearchString
-  , acCompletionList
-  , acCachedResponses
-  , acType
-
-  , AutocompletionType(..)
-
-  , CompletionSource(..)
-  , AutocompleteAlternative(..)
-  , autocompleteAlternativeReplacement
-  , SpecialMention(..)
-  , specialMentionName
-  , isSpecialMention
-
-  , PostListOverlayState
+  , PostListWindowState(..)
   , postListSelected
   , postListPosts
 
   , UserSearchScope(..)
   , ChannelSearchScope(..)
 
-  , ListOverlayState
-  , listOverlaySearchResults
-  , listOverlaySearchInput
-  , listOverlaySearchScope
-  , listOverlaySearching
-  , listOverlayEnterHandler
-  , listOverlayNewList
-  , listOverlayFetchResults
-  , listOverlayRecordCount
-  , listOverlayReturnMode
+  , ListWindowState(..)
+  , listWindowSearchResults
+  , listWindowSearchInput
+  , listWindowSearchScope
+  , listWindowSearching
+  , listWindowEnterHandler
+  , listWindowNewList
+  , listWindowFetchResults
+  , listWindowRecordCount
 
   , getUsers
 
@@ -261,6 +237,7 @@ module Matterhorn.Types
   , crConfiguration
   , crSyntaxMap
   , crLogManager
+  , crSpellChecker
   , crEmoji
   , getSession
   , getResourceSession
@@ -329,7 +306,6 @@ module Matterhorn.Types
   , getMessageForPostId
   , getParentMessage
   , getReplyRootMessage
-  , resetSpellCheckTimer
   , withChannel
   , withChannelOrDefault
   , userList
@@ -364,8 +340,12 @@ module Matterhorn.Types
   , moveLeft
   , moveRight
 
+  , module Matterhorn.Types.Core
   , module Matterhorn.Types.Channels
+  , module Matterhorn.Types.EditState
   , module Matterhorn.Types.Messages
+  , module Matterhorn.Types.MessageInterface
+  , module Matterhorn.Types.TabbedWindow
   , module Matterhorn.Types.Posts
   , module Matterhorn.Types.Users
   )
@@ -374,18 +354,18 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import qualified Graphics.Vty as Vty
+import           GHC.Stack ( HasCallStack )
+
 import qualified Brick
 import           Brick ( EventM, Next, Widget(..), Size(..), Result )
-import           Brick.Focus ( FocusRing, focusRing )
+import           Brick.Focus ( FocusRing )
 import           Brick.Themes ( Theme )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
 import           Brick.AttrMap ( AttrMap )
 import qualified Brick.BChan as BCH
 import           Brick.Forms (Form)
-import           Brick.Widgets.Edit ( Editor, editor, applyEdit )
-import           Brick.Widgets.List ( List, list )
-import qualified Brick.Widgets.FileBrowser as FB
+import           Brick.Widgets.Edit ( Editor, editor )
+import           Brick.Widgets.List ( List )
 import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
@@ -394,23 +374,22 @@ import qualified Control.Monad.Fail as MHF
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
-import qualified Data.ByteString as BS
 import qualified Data.Foldable as F
 import           Data.Function ( on )
 import qualified Data.Kind as K
 import           Data.Maybe ( fromJust )
 import           Data.Ord ( comparing )
 import qualified Data.HashMap.Strict as HM
-import           Data.List ( sortBy, nub, elemIndex, partition )
+import           Data.List ( sortBy, elemIndex, partition )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
-import qualified Data.Text.Zipper as Z2
 import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
+import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
-                                     , (%=), (.~), _Just, Traversal', to
-                                     , SimpleGetter
+                                     , (%=), (%~), (.~), _Just, Traversal', to
+                                     , SimpleGetter, filtered, traversed, singular
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
 import           Skylighting.Types ( SyntaxMap )
@@ -429,12 +408,16 @@ import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.InputHistory
 import           Matterhorn.Emoji
 import           Matterhorn.Types.Common
+import           Matterhorn.Types.Core
 import           Matterhorn.Types.Channels
-import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
+import           Matterhorn.Types.EditState
 import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
+import           Matterhorn.Types.MessageInterface
+import           Matterhorn.Types.NonemptyStack
 import           Matterhorn.Types.Posts
 import           Matterhorn.Types.RichText ( TeamBaseURL(..), TeamURLName(..) )
+import           Matterhorn.Types.TabbedWindow
 import           Matterhorn.Types.Users
 import qualified Matterhorn.Zipper as Z
 
@@ -470,46 +453,11 @@ data ChannelListGroup =
                      }
                      deriving (Eq, Show)
 
-data ChannelListGroupLabel =
-    ChannelGroupPublicChannels
-    | ChannelGroupPrivateChannels
-    | ChannelGroupFavoriteChannels
-    | ChannelGroupDirectMessages
-    deriving (Eq, Ord, Show)
-
-channelListGroupNames :: [(T.Text, ChannelListGroupLabel)]
-channelListGroupNames =
-    [ ("public", ChannelGroupPublicChannels)
-    , ("private", ChannelGroupPrivateChannels)
-    , ("favorite", ChannelGroupFavoriteChannels)
-    , ("direct", ChannelGroupDirectMessages)
-    ]
-
 nonDMChannelListGroupUnread :: ChannelListGroup -> Int
 nonDMChannelListGroupUnread g =
     case channelListGroupLabel g of
         ChannelGroupDirectMessages -> 0
         _ -> channelListGroupUnread g
-
--- | The type of channel list entries.
-data ChannelListEntry =
-    ChannelListEntry { channelListEntryChannelId :: ChannelId
-                     , channelListEntryType :: ChannelListEntryType
-                     , channelListEntryUnread :: Bool
-                     , channelListEntrySortValue :: T.Text
-                     , channelListEntryFavorite :: Bool
-                     , channelListEntryMuted :: Bool
-                     }
-                     deriving (Eq, Show, Ord)
-
-data ChannelListEntryType =
-    CLChannel
-    -- ^ A non-DM entry
-    | CLUserDM UserId
-    -- ^ A single-user DM entry
-    | CLGroupDM
-    -- ^ A multi-user DM entry
-    deriving (Eq, Show, Ord)
 
 data ChannelListSorting =
     ChannelListSortDefault
@@ -611,8 +559,14 @@ data Config =
            -- ^ The default path for browsing attachments
            , configChannelListOrientation :: ChannelListOrientation
            -- ^ The orientation of the channel list.
+           , configThreadOrientation :: ThreadOrientation
+           -- ^ The orientation of the thread window relative to the
+           -- main channel message window.
            , configMouseMode :: Bool
            -- ^ Whether to enable mouse support in matterhorn
+           , configShowLastOpenThread :: Bool
+           -- ^ Whether to re-open a thread that was open the last time
+           -- Matterhorn quit
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.
@@ -880,72 +834,6 @@ groupChannelShowPreference ps cId = HM.lookup cId (_userPrefGroupChannelPrefs ps
 favoriteChannelPreference :: UserPreferences -> ChannelId -> Maybe Bool
 favoriteChannelPreference ps cId = HM.lookup cId (_userPrefFavoriteChannelPrefs ps)
 
--- * Internal Names and References
-
--- | This 'Name' type is the type used in 'brick' to identify various
--- parts of the interface.
-data Name =
-    ChannelMessages ChannelId
-    | MessageInput TeamId
-    | ChannelList TeamId
-    | HelpViewport
-    | HelpText
-    | ScriptHelpText
-    | ThemeHelpText
-    | SyntaxHighlightHelpText
-    | KeybindingHelpText
-    | ChannelSelectString TeamId
-    | ChannelSelectEntry ChannelSelectMatch
-    | CompletionAlternatives TeamId
-    | CompletionList TeamId
-    | JoinChannelList TeamId
-    | UrlList TeamId
-    | MessagePreviewViewport TeamId
-    | ThemeListSearchInput TeamId
-    | UserListSearchInput TeamId
-    | JoinChannelListSearchInput TeamId
-    | UserListSearchResults TeamId
-    | ThemeListSearchResults TeamId
-    | ViewMessageArea TeamId
-    | ViewMessageReactionsArea TeamId
-    | ChannelSidebar TeamId
-    | ChannelSelectInput TeamId
-    | AttachmentList TeamId
-    | AttachmentFileBrowser TeamId
-    | MessageReactionsArea TeamId
-    | ReactionEmojiList TeamId
-    | ReactionEmojiListInput TeamId
-    | TabbedWindowTabBar TeamId
-    | MuteToggleField TeamId
-    | ChannelMentionsField TeamId
-    | DesktopNotificationsField TeamId (WithDefault NotifyOption)
-    | PushNotificationsField TeamId (WithDefault NotifyOption)
-    | ChannelTopicEditor TeamId
-    | ChannelTopicSaveButton TeamId
-    | ChannelTopicCancelButton TeamId
-    | ChannelTopicEditorPreview TeamId
-    | ChannelTopic ChannelId
-    | TeamList
-    | ClickableChannelListEntry ChannelId
-    | ClickableTeamListEntry TeamId
-    | ClickableURL Name Int LinkTarget
-    | ClickableURLInMessage MessageId Int LinkTarget
-    | ClickableUsernameInMessage MessageId Int Text
-    | ClickableUsername Name Int Text
-    | ClickableURLListEntry Int LinkTarget
-    | ClickableReactionInMessage PostId Text (Set UserId)
-    | ClickableReaction PostId Text (Set UserId)
-    | ClickableAttachment FileId
-    | ClickableChannelListGroupHeading ChannelListGroupLabel
-    | AttachmentPathEditor TeamId
-    | AttachmentPathSaveButton TeamId
-    | AttachmentPathCancelButton TeamId
-    | RenderedMessage MessageId
-    | ReactionEmojiListOverlayEntry (Bool, T.Text)
-    | SelectedChannelListEntry TeamId
-    | VScrollBar Brick.ClickableScrollbarElement Name
-    deriving (Eq, Show, Ord)
-
 -- | Types that provide a "semantically equal" operation. Two values may
 -- be semantically equal even if they are not equal according to Eq if,
 -- for example, they are equal on the basis of some fields that are more
@@ -954,8 +842,8 @@ class (Show a, Eq a, Ord a) => SemEq a where
     semeq :: a -> a -> Bool
 
 instance SemEq Name where
-    semeq (ClickableURLInMessage mId1 _ t1) (ClickableURLInMessage mId2 _ t2) = mId1 == mId2 && t1 == t2
-    semeq (ClickableUsernameInMessage mId1 _ n) (ClickableUsernameInMessage mId2 _ n2) = mId1 == mId2 && n == n2
+    semeq (ClickableURL mId1 r1 _ t1) (ClickableURL mId2 r2 _ t2) = mId1 == mId2 && t1 == t2 && r1 == r2
+    semeq (ClickableUsername mId1 r1 _ n) (ClickableUsername mId2 r2 _ n2) = mId1 == mId2 && n == n2 && r1 == r2
     semeq a b = a == b
 
 instance SemEq a => SemEq (Maybe a) where
@@ -1003,26 +891,6 @@ data PostRef
     deriving (Eq, Show)
 
 -- ** Channel-matching types
-
--- | A match in channel selection mode.
-data ChannelSelectMatch =
-    ChannelSelectMatch { nameBefore :: Text
-                       -- ^ The content of the match before the user's
-                       -- matching input.
-                       , nameMatched :: Text
-                       -- ^ The potion of the name that matched the
-                       -- user's input.
-                       , nameAfter :: Text
-                       -- ^ The portion of the name that came after the
-                       -- user's matching input.
-                       , matchFull :: Text
-                       -- ^ The full string for this entry so it doesn't
-                       -- have to be reassembled from the parts above.
-                       , matchEntry :: ChannelListEntry
-                       -- ^ The original entry data corresponding to the
-                       -- text match.
-                       }
-                       deriving (Eq, Show, Ord)
 
 data ChannelSelectPattern = CSP MatchType Text
                           | CSPAny
@@ -1184,179 +1052,33 @@ data ChatResources =
                   , _crSyntaxMap           :: SyntaxMap
                   , _crLogManager          :: LogManager
                   , _crEmoji               :: EmojiCollection
+                  , _crSpellChecker        :: Maybe Aspell
                   }
 
--- | A "special" mention that does not map to a specific user, but is an
--- alias that the server uses to notify users.
-data SpecialMention =
-    MentionAll
-    -- ^ @all: notify everyone in the channel.
-    | MentionChannel
-    -- ^ @channel: notify everyone in the channel.
+-- | The 'GlobalEditState' value contains state not specific to any
+-- single editor.
+data GlobalEditState =
+    GlobalEditState { _gedYankBuffer :: Text
+                    }
 
-data AutocompleteAlternative =
-    UserCompletion User Bool
-    -- ^ User, plus whether the user is in the channel that triggered
-    -- the autocomplete
-    | SpecialMention SpecialMention
-    -- ^ A special mention.
-    | ChannelCompletion Bool Channel
-    -- ^ Channel, plus whether the user is a member of the channel
-    | SyntaxCompletion Text
-    -- ^ Name of a skylighting syntax definition
-    | CommandCompletion CompletionSource Text Text Text
-    -- ^ Source, name of a slash command, argspec, and description
-    | EmojiCompletion Text
-    -- ^ The text of an emoji completion
-
--- | The source of an autocompletion alternative.
-data CompletionSource = Server | Client
-                      deriving (Eq, Show)
-
-specialMentionName :: SpecialMention -> Text
-specialMentionName MentionChannel = "channel"
-specialMentionName MentionAll = "all"
-
-isSpecialMention :: T.Text -> Bool
-isSpecialMention n = isJust $ lookup (T.toLower $ trimUserSigil n) pairs
-    where
-        pairs = mkPair <$> mentions
-        mentions = [ MentionChannel
-                   , MentionAll
-                   ]
-        mkPair v = (specialMentionName v, v)
-
-autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
-autocompleteAlternativeReplacement (EmojiCompletion e) =
-    ":" <> e <> ":"
-autocompleteAlternativeReplacement (SpecialMention m) =
-    addUserSigil $ specialMentionName m
-autocompleteAlternativeReplacement (UserCompletion u _) =
-    addUserSigil $ userUsername u
-autocompleteAlternativeReplacement (ChannelCompletion _ c) =
-    normalChannelSigil <> (sanitizeUserText $ channelName c)
-autocompleteAlternativeReplacement (SyntaxCompletion t) =
-    "```" <> t
-autocompleteAlternativeReplacement (CommandCompletion _ t _ _) =
-    "/" <> t
-
--- | The type of data that the autocompletion logic supports. We use
--- this to track the kind of completion underway in case the type of
--- completion needs to change.
-data AutocompletionType =
-    ACUsers
-    | ACChannels
-    | ACCodeBlockLanguage
-    | ACEmoji
-    | ACCommands
-    deriving (Eq, Show)
-
-data AutocompleteState =
-    AutocompleteState { _acPreviousSearchString :: Text
-                      -- ^ The search string used for the
-                      -- currently-displayed autocomplete results, for
-                      -- use in deciding whether to issue another server
-                      -- query
-                      , _acCompletionList :: List Name AutocompleteAlternative
-                      -- ^ The list of alternatives that the user
-                      -- selects from
-                      , _acType :: AutocompletionType
-                      -- ^ The type of data that we're completing
-                      , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
-                      -- ^ A cache of alternative lists, keyed on search
-                      -- string, for use in avoiding server requests.
-                      -- The idea here is that users type quickly enough
-                      -- (and edit their input) that would normally lead
-                      -- to rapid consecutive requests, some for the
-                      -- same strings during editing, that we can avoid
-                      -- that by caching them here. Note that this cache
-                      -- gets destroyed whenever autocompletion is not
-                      -- on, so this cache does not live very long.
-                      }
-
--- | The 'ChatEditState' value contains the editor widget itself as well
--- as history and metadata we need for editing-related operations.
-data ChatEditState =
-    ChatEditState { _cedEditor :: Editor Text Name
-                  , _cedEditMode :: EditMode
-                  , _cedEphemeral :: EphemeralEditState
-                  , _cedYankBuffer :: Text
-                  , _cedSpellChecker :: Maybe (Aspell, IO ())
-                  , _cedMisspellings :: Set Text
-                  , _cedAutocomplete :: Maybe AutocompleteState
-                  -- ^ The autocomplete state. The autocompletion UI is
-                  -- showing only when this state is present.
-                  , _cedAutocompletePending :: Maybe Text
-                  -- ^ The search string associated with the latest
-                  -- in-flight autocompletion request. This is used to
-                  -- determine whether any (potentially late-arriving)
-                  -- API responses are for stale queries since the user
-                  -- can type more quickly than the server can get us
-                  -- the results, and we wouldn't want to show results
-                  -- associated with old editor states.
-                  , _cedAttachmentList :: List Name AttachmentData
-                  -- ^ The list of attachments to be uploaded with the
-                  -- post being edited.
-                  , _cedFileBrowser :: Maybe (FB.FileBrowser Name)
-                  -- ^ The browser for selecting attachment files.
-                  -- This is a Maybe because the instantiation of the
-                  -- FileBrowser causes it to read and ingest the
-                  -- target directory, so this action is deferred
-                  -- until the browser is needed.
-                  , _cedJustCompleted :: Bool
-                  -- A flag that indicates whether the most recent
-                  -- editing event was a tab-completion. This is used by
-                  -- the smart trailing space handling.
-                  }
-
--- | An attachment.
-data AttachmentData =
-    AttachmentData { attachmentDataFileInfo :: FB.FileInfo
-                   , attachmentDataBytes :: BS.ByteString
-                   }
-                   deriving (Eq, Show)
-
--- | We can initialize a new 'ChatEditState' value with just an edit
--- history, which we save locally.
-emptyEditState :: TeamId -> ChatEditState
-emptyEditState tId =
-    ChatEditState { _cedEditor               = editor (MessageInput tId) Nothing ""
-                  , _cedEphemeral            = defaultEphemeralEditState
-                  , _cedEditMode             = NewPost
-                  , _cedYankBuffer           = ""
-                  , _cedSpellChecker         = Nothing
-                  , _cedMisspellings         = mempty
-                  , _cedAutocomplete         = Nothing
-                  , _cedAutocompletePending  = Nothing
-                  , _cedAttachmentList       = list (AttachmentList tId) mempty 1
-                  , _cedFileBrowser          = Nothing
-                  , _cedJustCompleted        = False
-                  }
+emptyGlobalEditState :: GlobalEditState
+emptyGlobalEditState =
+    GlobalEditState { _gedYankBuffer   = ""
+                    }
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
 -- background to avoid blocking on the main loop
 type RequestChan = STM.TChan (IO (Maybe (MH ())))
-
--- | The 'HelpScreen' type represents the set of possible 'Help'
--- dialogues we have to choose from.
-data HelpScreen =
-    MainHelp
-    | ScriptHelp
-    | ThemeHelp
-    | SyntaxHighlightHelp
-    | KeybindingHelp
-    deriving (Eq, Show)
 
 -- | Help topics
 data HelpTopic =
     HelpTopic { helpTopicName         :: Text
               , helpTopicDescription  :: Text
               , helpTopicScreen       :: HelpScreen
-              , helpTopicViewportName :: Name
               }
               deriving (Eq, Show)
 
--- | Mode type for the current contents of the post list overlay
+-- | Mode type for the current contents of the post list window
 data PostListContents =
     PostListFlagged
     | PostListPinned ChannelId
@@ -1366,204 +1088,43 @@ data PostListContents =
 -- | The 'Mode' represents the current dominant UI activity
 data Mode =
     Main
-    | ShowHelp HelpTopic Mode
+    | ShowHelp HelpTopic
     | ChannelSelect
-    | UrlSelect
     | LeaveChannelConfirm
     | DeleteChannelConfirm
-    | MessageSelect
-    | MessageSelectDeleteConfirm
-    | PostListOverlay PostListContents
-    | UserListOverlay
-    | ReactionEmojiListOverlay
-    | ChannelListOverlay
-    | ThemeListOverlay
+    | MessageSelectDeleteConfirm MessageInterfaceTarget
+    | PostListWindow PostListContents
+    | UserListWindow
+    | ReactionEmojiListWindow
+    | ChannelListWindow
+    | ThemeListWindow
     | ViewMessage
-    | ManageAttachments
-    | ManageAttachmentsBrowseFiles
     | EditNotifyPrefs
     | ChannelTopicWindow
-    | SaveAttachmentWindow LinkChoice
     deriving (Eq, Show)
 
 -- | We're either connected or we're not.
 data ConnectionStatus = Connected | Disconnected deriving (Eq)
 
--- | An entry in a tabbed window corresponding to a tab and its content.
--- Parameterized over an abstract handle type ('a') for the tabs so we
--- can give each a unique handle.
-data TabbedWindowEntry a =
-    TabbedWindowEntry { tweValue :: a
-                      -- ^ The handle for this tab.
-                      , tweRender :: a -> ChatState -> Widget Name
-                      -- ^ The rendering function to use when this tab
-                      -- is selected.
-                      , tweHandleEvent :: a -> Vty.Event -> MH ()
-                      -- ^ The event-handling function to use when this
-                      -- tab is selected.
-                      , tweTitle :: a -> Bool -> T.Text
-                      -- ^ Title function for this tab, with a boolean
-                      -- indicating whether this is the current tab.
-                      , tweShowHandler :: a -> MH ()
-                      -- ^ A handler to be invoked when this tab is
-                      -- shown.
-                      }
-
--- | The definition of a tabbed window. Note that this does not track
--- the *state* of the window; it merely provides a collection of tab
--- window entries (see above). To track the state of a tabbed window,
--- use a TabbedWindow.
---
--- Parameterized over an abstract handle type ('a') for the tabs so we
--- can give each a unique handle.
-data TabbedWindowTemplate a =
-    TabbedWindowTemplate { twtEntries :: [TabbedWindowEntry a]
-                         -- ^ The entries in tabbed windows with this
-                         -- structure.
-                         , twtTitle :: a -> Widget Name
-                         -- ^ The title-rendering function for this kind
-                         -- of tabbed window.
-                         }
-
--- | An instantiated tab window. This is based on a template and tracks
--- the state of the tabbed window (current tab).
---
--- Parameterized over an abstract handle type ('a') for the tabs so we
--- can give each a unique handle.
-data TabbedWindow a =
-    TabbedWindow { twValue :: a
-                 -- ^ The handle of the currently-selected tab.
-                 , twReturnMode :: Mode
-                 -- ^ The mode to return to when the tab is closed.
-                 , twTemplate :: TabbedWindowTemplate a
-                 -- ^ The template to use as a basis for rendering the
-                 -- window and handling user input.
-                 , twWindowWidth :: Int
-                 , twWindowHeight :: Int
-                 -- ^ Window dimensions
-                 }
-
--- | Construct a new tabbed window from a template. This will raise an
--- exception if the initially-selected tab does not exist in the window
--- template, or if the window template has any duplicated tab handles.
---
--- Note that the caller is responsible for determining whether to call
--- the initially-selected tab's on-show handler.
-tabbedWindow :: (Show a, Eq a)
-             => a
-             -- ^ The handle corresponding to the tab that should be
-             -- selected initially.
-             -> TabbedWindowTemplate a
-             -- ^ The template for the window to construct.
-             -> Mode
-             -- ^ When the window is closed, return to this application
-             -- mode.
-             -> (Int, Int)
-             -- ^ The window dimensions (width, height).
-             -> TabbedWindow a
-tabbedWindow initialVal t retMode (width, height) =
-    let handles = tweValue <$> twtEntries t
-    in if | null handles ->
-              error "BUG: tabbed window template must provide at least one entry"
-          | length handles /= length (nub handles) ->
-              error "BUG: tabbed window should have one entry per handle"
-          | not (initialVal `elem` handles) ->
-              error $ "BUG: tabbed window handle " <>
-                      show initialVal <> " not present in template"
-          | otherwise ->
-              TabbedWindow { twTemplate = t
-                           , twValue = initialVal
-                           , twReturnMode = retMode
-                           , twWindowWidth = width
-                           , twWindowHeight = height
-                           }
-
--- | Get the currently-selected tab entry for a tabbed window. Raise
--- an exception if the window's selected tab handle is not found in its
--- template (which is a bug in the tabbed window infrastructure).
-getCurrentTabbedWindowEntry :: (Show a, Eq a)
-                            => TabbedWindow a
-                            -> TabbedWindowEntry a
-getCurrentTabbedWindowEntry w =
-    lookupTabbedWindowEntry (twValue w) w
-
--- | Run the on-show handler for the window tab entry with the specified
--- handle.
-runTabShowHandlerFor :: (Eq a, Show a) => a -> TabbedWindow a -> MH ()
-runTabShowHandlerFor handle w = do
-    let entry = lookupTabbedWindowEntry handle w
-    tweShowHandler entry handle
-
--- | Look up a tabbed window entry by handle. Raises an exception if no
--- such entry exists.
-lookupTabbedWindowEntry :: (Eq a, Show a)
-                        => a
-                        -> TabbedWindow a
-                        -> TabbedWindowEntry a
-lookupTabbedWindowEntry handle w =
-    let matchesVal e = tweValue e == handle
-    in case filter matchesVal (twtEntries $ twTemplate w) of
-        [e] -> e
-        _ -> error $ "BUG: tabbed window entry for " <> show (twValue w) <>
-                     " should have matched a single entry"
-
--- | Switch a tabbed window's selected tab to its next tab, cycling back
--- to the first tab if the last tab is the selected tab. This also
--- invokes the on-show handler for the newly-selected tab.
---
--- Note that this does nothing if the window has only one tab.
-tabbedWindowNextTab :: (Show a, Eq a)
-                    => TabbedWindow a
-                    -> MH (TabbedWindow a)
-tabbedWindowNextTab w | length (twtEntries $ twTemplate w) == 1 = return w
-tabbedWindowNextTab w = do
-    let curIdx = case elemIndex (tweValue curEntry) allHandles of
-            Nothing ->
-                error $ "BUG: tabbedWindowNextTab: could not find " <>
-                        "current handle in handle list"
-            Just i -> i
-        nextIdx = if curIdx == length allHandles - 1
-                  then 0
-                  else curIdx + 1
-        newHandle = allHandles !! nextIdx
-        allHandles = tweValue <$> twtEntries (twTemplate w)
-        curEntry = getCurrentTabbedWindowEntry w
-        newWin = w { twValue = newHandle }
-
-    runTabShowHandlerFor newHandle newWin
-    return newWin
-
--- | Switch a tabbed window's selected tab to its previous tab, cycling
--- to the last tab if the first tab is the selected tab. This also
--- invokes the on-show handler for the newly-selected tab.
---
--- Note that this does nothing if the window has only one tab.
-tabbedWindowPreviousTab :: (Show a, Eq a)
-                        => TabbedWindow a
-                        -> MH (TabbedWindow a)
-tabbedWindowPreviousTab w | length (twtEntries $ twTemplate w) == 1 = return w
-tabbedWindowPreviousTab w = do
-    let curIdx = case elemIndex (tweValue curEntry) allHandles of
-            Nothing ->
-                error $ "BUG: tabbedWindowPreviousTab: could not find " <>
-                        "current handle in handle list"
-            Just i -> i
-        nextIdx = if curIdx == 0
-                  then length allHandles - 1
-                  else curIdx - 1
-        newHandle = allHandles !! nextIdx
-        allHandles = tweValue <$> twtEntries (twTemplate w)
-        curEntry = getCurrentTabbedWindowEntry w
-        newWin = w { twValue = newHandle }
-
-    runTabShowHandlerFor newHandle newWin
-    return newWin
+type ThreadInterface = MessageInterface Name PostId
+type ChannelMessageInterface = MessageInterface Name ()
 
 data ChannelListOrientation =
     ChannelListLeft
     -- ^ Show the channel list to the left of the message area.
     | ChannelListRight
     -- ^ Show the channel list to the right of the message area.
+    deriving (Eq, Show)
+
+data ThreadOrientation =
+    ThreadBelow
+    -- ^ Show the thread below the channel message area.
+    | ThreadAbove
+    -- ^ Show the thread above the channel message area.
+    | ThreadLeft
+    -- ^ Show the thread to the left of the channel message area.
+    | ThreadRight
+    -- ^ Show the thread to the right of the channel message area.
     deriving (Eq, Show)
 
 -- | This type represents the current state of our application at any
@@ -1616,6 +1177,8 @@ data ChatState =
               -- for other per-channel state) since keeping it
               -- under the InputHistory banner lets us use a nicer
               -- startup/shutdown disk file management API.
+              , _csGlobalEditState :: GlobalEditState
+              -- ^ Bits of global state common to all editors.
               }
 
 -- | All application state specific to a team, along with state specific
@@ -1630,31 +1193,28 @@ data TeamState =
     TeamState { _tsFocus :: Z.Zipper ChannelListGroup ChannelListEntry
               -- ^ The channel sidebar zipper that tracks which channel
               -- is selected.
+              , _tsTeam :: Team
+              -- ^ The team data.
+              , _tsRecentChannel :: Maybe ChannelId
+              -- ^ The most recently-selected channel, if any.
+              , _tsReturnChannel :: Maybe ChannelId
+              -- ^ The channel to return to after visiting one or more
+              -- unread channels.
+              , _tsModeStack :: NonemptyStack Mode
+              -- ^ The current application mode stack when viewing this
+              -- team. This is used to dispatch to different rendering
+              -- and event handling routines. The current mode is always
+              -- in at the top of the stack.
+              , _tsChannelSelectState :: ChannelSelectState
+              -- ^ The state of the user's input and selection for
+              -- channel selection mode.
               , _tsPendingChannelChange :: Maybe PendingChannelChange
               -- ^ A pending channel change that we need to apply once
               -- the channel in question is available. We set this up
               -- when we need to change to a channel in the sidebar, but
               -- it isn't even there yet because we haven't loaded its
               -- metadata.
-              , _tsRecentChannel :: Maybe ChannelId
-              -- ^ The most recently-selected channel, if any.
-              , _tsReturnChannel :: Maybe ChannelId
-              -- ^ The channel to return to after visiting one or more
-              -- unread channels.
-              , _tsEditState :: ChatEditState
-              -- ^ The state of the input box used for composing and
-              -- editing messages and commands.
-              , _tsMessageSelect :: MessageSelectState
-              -- ^ The state of message selection mode.
-              , _tsTeam :: Team
-              -- ^ The team data.
-              , _tsChannelSelectState :: ChannelSelectState
-              -- ^ The state of the user's input and selection for
-              -- channel selection mode.
-              , _tsUrlList :: List Name (Int, LinkChoice)
-              -- ^ The URL list used to show URLs drawn from messages in
-              -- a channel.
-              , _tsViewedMessage :: Maybe (Message, TabbedWindow ViewMessageWindowTab)
+              , _tsViewedMessage :: Maybe (Message, TabbedWindow ChatState MH Name ViewMessageWindowTab)
               -- ^ Set when the ViewMessage mode is active. The message
               -- being viewed. Note that this stores a message, not
               -- a message ID. That's because not all messages have
@@ -1664,12 +1224,12 @@ data TeamState =
               -- consult the chat state for the latest *version* of any
               -- message with an ID here, to be sure that the latest
               -- version is used (e.g. if it gets edited, etc.).
-              , _tsPostListOverlay :: PostListOverlayState
-              -- ^ The state of the post list overlay.
-              , _tsUserListOverlay :: ListOverlayState UserInfo UserSearchScope
-              -- ^ The state of the user list overlay.
-              , _tsChannelListOverlay :: ListOverlayState Channel ChannelSearchScope
-              -- ^ The state of the user list overlay.
+              , _tsPostListWindow :: PostListWindowState
+              -- ^ The state of the post list window.
+              , _tsUserListWindow :: ListWindowState UserInfo UserSearchScope
+              -- ^ The state of the user list window.
+              , _tsChannelListWindow :: ListWindowState Channel ChannelSearchScope
+              -- ^ The state of the user list window.
               , _tsNotifyPrefs :: Maybe (Form ChannelNotifyProps MHEvent Name)
               -- ^ A form for editing the notification preferences for
               -- the current channel. This is set when entering
@@ -1678,21 +1238,52 @@ data TeamState =
               , _tsChannelTopicDialog :: ChannelTopicDialogState
               -- ^ The state for the interactive channel topic editor
               -- window.
-              , _tsMode :: Mode
-              -- ^ The current application mode when viewing this team.
-              -- This is used to dispatch to different rendering and
-              -- event handling routines.
-              , _tsReactionEmojiListOverlay :: ListOverlayState (Bool, T.Text) ()
-              -- ^ The state of the reaction emoji list overlay.
-              , _tsThemeListOverlay :: ListOverlayState InternalTheme ()
-              -- ^ The state of the theme list overlay.
-              , _tsSaveAttachmentDialog :: SaveAttachmentDialogState
-              -- ^ The state for the interactive attachment-saving
-              -- editor window.
+              , _tsReactionEmojiListWindow :: ListWindowState (Bool, T.Text) ()
+              -- ^ The state of the reaction emoji list window.
+              , _tsThemeListWindow :: ListWindowState InternalTheme ()
+              -- ^ The state of the theme list window.
               , _tsChannelListSorting :: ChannelListSorting
               -- ^ How to sort channels in this team's channel list
               -- groups
+              , _tsThreadInterface :: Maybe ThreadInterface
+              -- ^ The thread interface for this team for participating
+              -- in a single thread
+              , _tsMessageInterfaceFocus :: MessageInterfaceFocus
+              -- ^ Which message interface is focused for editing input
               }
+
+data MessageInterfaceFocus =
+    FocusThread
+    | FocusCurrentChannel
+    deriving (Eq, Show)
+
+messageInterfaceFocusList :: [MessageInterfaceFocus]
+messageInterfaceFocusList =
+    [ FocusCurrentChannel
+    , FocusThread
+    ]
+
+messageInterfaceFocusNext :: TeamState -> TeamState
+messageInterfaceFocusNext = messageInterfaceFocusWith messageInterfaceFocusList
+
+messageInterfaceFocusPrev :: TeamState -> TeamState
+messageInterfaceFocusPrev = messageInterfaceFocusWith (reverse messageInterfaceFocusList)
+
+messageInterfaceFocusWith :: [MessageInterfaceFocus] -> TeamState -> TeamState
+messageInterfaceFocusWith lst ts =
+    let next = fromJust $ cycleElemAfter cur lst
+        cur = _tsMessageInterfaceFocus ts
+        noThread = isNothing $ _tsThreadInterface ts
+        newFocus = if next == FocusThread && noThread
+                   then fromJust $ cycleElemAfter FocusThread lst
+                   else next
+    in ts { _tsMessageInterfaceFocus = newFocus }
+
+cycleElemAfter :: (Eq a) => a -> [a] -> Maybe a
+cycleElemAfter e es =
+    if e `notElem` es
+    then Nothing
+    else Just $ head $ drop 1 $ dropWhile (/= e) $ cycle es
 
 -- | Handles for the View Message window's tabs.
 data ViewMessageWindowTab =
@@ -1725,14 +1316,6 @@ data ChannelTopicDialogState =
                             -- ^ The window focus state (editor/buttons)
                             }
 
--- | The state of the attachment path window.
-data SaveAttachmentDialogState =
-    SaveAttachmentDialogState { _attachmentPathEditor :: Editor T.Text Name
-                              -- ^ The attachment path editor state.
-                              , _attachmentPathDialogFocus :: FocusRing Name
-                              -- ^ The window focus state (editor/buttons)
-                              }
-
 sortTeams :: [Team] -> [Team]
 sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
 
@@ -1755,112 +1338,6 @@ mkTeamZipperFromIds tIds = Z.fromList [((), tIds)]
 teamZipperIds :: Z.Zipper () TeamId -> [TeamId]
 teamZipperIds = concat . fmap snd . Z.toList
 
-newTeamState :: Config
-             -> Team
-             -> Z.Zipper ChannelListGroup ChannelListEntry
-             -> Maybe (Aspell, IO ())
-             -> TeamState
-newTeamState config team chanList spellChecker =
-    let tId = teamId team
-    in TeamState { _tsMode                     = Main
-                 , _tsFocus                    = chanList
-                 , _tsEditState                = (emptyEditState tId) { _cedSpellChecker = spellChecker }
-                 , _tsTeam                     = team
-                 , _tsUrlList                  = list (UrlList tId) mempty 2
-                 , _tsPostListOverlay          = PostListOverlayState emptyDirSeq Nothing
-                 , _tsUserListOverlay          = nullUserListOverlayState tId
-                 , _tsChannelListOverlay       = nullChannelListOverlayState tId
-                 , _tsChannelSelectState       = emptyChannelSelectState tId
-                 , _tsChannelTopicDialog       = newChannelTopicDialog tId ""
-                 , _tsMessageSelect            = MessageSelectState Nothing
-                 , _tsNotifyPrefs              = Nothing
-                 , _tsPendingChannelChange     = Nothing
-                 , _tsRecentChannel            = Nothing
-                 , _tsReturnChannel            = Nothing
-                 , _tsViewedMessage            = Nothing
-                 , _tsThemeListOverlay         = nullThemeListOverlayState tId
-                 , _tsReactionEmojiListOverlay = nullEmojiListOverlayState tId
-                 , _tsSaveAttachmentDialog     = newSaveAttachmentDialog tId ""
-                 , _tsChannelListSorting       = configChannelListSorting config
-                 }
-
--- | Make a new channel topic editor window state.
-newChannelTopicDialog :: TeamId -> T.Text -> ChannelTopicDialogState
-newChannelTopicDialog tId t =
-    ChannelTopicDialogState { _channelTopicDialogEditor = editor (ChannelTopicEditor tId) Nothing t
-                            , _channelTopicDialogFocus = focusRing [ ChannelTopicEditor tId
-                                                                   , ChannelTopicSaveButton tId
-                                                                   , ChannelTopicCancelButton tId
-                                                                   ]
-                            }
-
--- | Make a new attachment-saving editor window state.
-newSaveAttachmentDialog :: TeamId -> T.Text -> SaveAttachmentDialogState
-newSaveAttachmentDialog tId t =
-    SaveAttachmentDialogState { _attachmentPathEditor = applyEdit Z2.gotoEOL $
-                                                        editor (AttachmentPathEditor tId) (Just 1) t
-                              , _attachmentPathDialogFocus = focusRing [ AttachmentPathEditor tId
-                                                                       , AttachmentPathSaveButton tId
-                                                                       , AttachmentPathCancelButton tId
-                                                                       ]
-                              }
-
-nullChannelListOverlayState :: TeamId -> ListOverlayState Channel ChannelSearchScope
-nullChannelListOverlayState tId =
-    let newList rs = list (JoinChannelList tId) rs 2
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (JoinChannelListSearchInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = AllChannels
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = Main
-                        }
-
-nullThemeListOverlayState :: TeamId -> ListOverlayState InternalTheme ()
-nullThemeListOverlayState tId =
-    let newList rs = list (ThemeListSearchResults tId) rs 3
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (ThemeListSearchInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = ()
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = Main
-                        }
-
-nullUserListOverlayState :: TeamId -> ListOverlayState UserInfo UserSearchScope
-nullUserListOverlayState tId =
-    let newList rs = list (UserListSearchResults tId) rs 1
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (UserListSearchInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = AllUsers Nothing
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = Main
-                        }
-
-nullEmojiListOverlayState :: TeamId -> ListOverlayState (Bool, T.Text) ()
-nullEmojiListOverlayState tId =
-    let newList rs = list (ReactionEmojiList tId) rs 1
-    in ListOverlayState { _listOverlaySearchResults  = newList mempty
-                        , _listOverlaySearchInput    = editor (ReactionEmojiListInput tId) (Just 1) ""
-                        , _listOverlaySearchScope    = ()
-                        , _listOverlaySearching      = False
-                        , _listOverlayEnterHandler   = const $ return False
-                        , _listOverlayNewList        = newList
-                        , _listOverlayFetchResults   = const $ const $ const $ return mempty
-                        , _listOverlayRecordCount    = Nothing
-                        , _listOverlayReturnMode     = MessageSelect
-                        }
-
 -- | The state of channel selection mode.
 data ChannelSelectState =
     ChannelSelectState { _channelSelectInput :: Editor Text Name
@@ -1873,14 +1350,9 @@ emptyChannelSelectState tId =
                        , _channelSelectMatches = Z.fromList []
                        }
 
--- | The state of message selection mode.
-data MessageSelectState =
-    MessageSelectState { selectMessageId :: Maybe MessageId
-                       }
-
--- | The state of the post list overlay.
-data PostListOverlayState =
-    PostListOverlayState { _postListPosts    :: Messages
+-- | The state of the post list window.
+data PostListWindowState =
+    PostListWindowState { _postListPosts    :: Messages
                          , _postListSelected :: Maybe PostId
                          }
 
@@ -1890,36 +1362,34 @@ data InternalTheme =
                   , internalThemeDesc :: Text
                   }
 
--- | The state of the search result list overlay. Type 'a' is the type
+-- | The state of the search result list window. Type 'a' is the type
 -- of data in the list. Type 'b' is the search scope type.
-data ListOverlayState a b =
-    ListOverlayState { _listOverlaySearchResults :: List Name a
+data ListWindowState a b =
+    ListWindowState { _listWindowSearchResults :: List Name a
                      -- ^ The list of search results currently shown in
-                     -- the overlay.
-                     , _listOverlaySearchInput :: Editor Text Name
-                     -- ^ The editor for the overlay's search input.
-                     , _listOverlaySearchScope :: b
-                     -- ^ The overlay's current search scope.
-                     , _listOverlaySearching :: Bool
+                     -- the window.
+                     , _listWindowSearchInput :: Editor Text Name
+                     -- ^ The editor for the window's search input.
+                     , _listWindowSearchScope :: b
+                     -- ^ The window's current search scope.
+                     , _listWindowSearching :: Bool
                      -- ^ Whether a search is in progress (i.e. whether
                      -- we are currently awaiting a response from a
                      -- search query to the server).
-                     , _listOverlayEnterHandler :: a -> MH Bool
+                     , _listWindowEnterHandler :: a -> MH Bool
                      -- ^ The handler to invoke on the selected element
                      -- when the user presses Enter.
-                     , _listOverlayNewList :: Vec.Vector a -> List Name a
+                     , _listWindowNewList :: Vec.Vector a -> List Name a
                      -- ^ The function to build a new brick List from a
                      -- vector of search results.
-                     , _listOverlayFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
+                     , _listWindowFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
                      -- ^ The function to call to issue a search query
                      -- to the server.
-                     , _listOverlayRecordCount :: Maybe Int
+                     , _listWindowRecordCount :: Maybe Int
                      -- ^ The total number of available records, if known.
-                     , _listOverlayReturnMode :: Mode
-                     -- ^ The mode to return to when the window closes.
                      }
 
--- | The scope for searching for users in a user list overlay.
+-- | The scope for searching for users in a user list window.
 data UserSearchScope =
     ChannelMembers ChannelId TeamId
     | ChannelNonMembers ChannelId TeamId
@@ -2180,16 +1650,28 @@ data MHError =
 makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''TeamState
-makeLenses ''ChatEditState
-makeLenses ''AutocompleteState
-makeLenses ''PostListOverlayState
-makeLenses ''ListOverlayState
+makeLenses ''GlobalEditState
+makeLenses ''PostListWindowState
+makeLenses ''ListWindowState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
-makeLenses ''SaveAttachmentDialogState
 Brick.suffixLenses ''Config
+
+-- | Given a list of event handlers and an event, try to handle the
+-- event with the handlers in the specified order. If a handler returns
+-- False (indicating it did not handle the event), try the next handler
+-- until either a handler returns True or all handlers are tried.
+-- Returns True if any handler handled the event or False otherwise.
+handleEventWith :: [Vty.Event -> MH Bool] -> Vty.Event -> MH Bool
+handleEventWith [] _ =
+    return False
+handleEventWith (handler:rest) e = do
+    handled <- handler e
+    if handled
+       then return True
+       else handleEventWith rest e
 
 applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
 applyTeamOrderPref Nothing st = st
@@ -2218,6 +1700,7 @@ newState (StartupStateInfo {..}) =
     in applyTeamOrderPref (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
        ChatState { _csResources                   = startupStateResources
                  , _csLastMouseDownEvent          = Nothing
+                 , _csGlobalEditState             = emptyGlobalEditState
                  , _csVerbatimTruncateSetting     = configTruncateVerbatimBlocks config
                  , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
                                                     mkTeamZipper startupStateTeams
@@ -2246,11 +1729,6 @@ serverBaseUrl st tId =
         tName = teamName $ st^.csTeam(tId).tsTeam
     in TeamBaseURL (TeamURLName $ sanitizeUserText tName) baseUrl
 
-unsafeCedFileBrowser :: Lens' ChatEditState (FB.FileBrowser Name)
-unsafeCedFileBrowser =
-     lens (\st   -> st^.cedFileBrowser ^?! _Just)
-          (\st t -> st & cedFileBrowser .~ Just t)
-
 getSession :: MH Session
 getSession = use (csResources.crSession)
 
@@ -2259,22 +1737,33 @@ getResourceSession = _crSession
 
 whenMode :: TeamId -> Mode -> MH () -> MH ()
 whenMode tId m act = do
-    curMode <- use (csTeam(tId).tsMode)
+    curMode <- top <$> use (csTeam(tId).tsModeStack)
     when (curMode == m) act
 
-setMode :: TeamId -> Mode -> MH ()
-setMode tId m = do
-    csTeam(tId).tsMode .= m
+pushMode :: TeamId -> Mode -> MH ()
+pushMode tId m = do
+    St.modify (pushMode' tId m)
     mh invalidateCache
 
-setMode' :: TeamId -> Mode -> ChatState -> ChatState
-setMode' tId m = csTeam(tId).tsMode .~ m
+replaceMode :: TeamId -> Mode -> MH ()
+replaceMode tId m = popMode tId >> pushMode tId m
 
-resetSpellCheckTimer :: ChatEditState -> IO ()
-resetSpellCheckTimer s =
-    case s^.cedSpellChecker of
+popMode :: TeamId -> MH ()
+popMode tId = do
+    s <- use (csTeam(tId).tsModeStack)
+    let (s', topVal) = pop s
+    case topVal of
         Nothing -> return ()
-        Just (_, reset) -> reset
+        Just _ -> do
+            csTeam(tId).tsModeStack .= s'
+            mh invalidateCache
+
+pushMode' :: TeamId -> Mode -> ChatState -> ChatState
+pushMode' tId m st =
+    let s = st^.csTeam(tId).tsModeStack
+    in if top s == m
+       then st
+       else st & csTeam(tId).tsModeStack %~ (push m)
 
 -- ** Utility Lenses
 csCurrentChannelId :: TeamId -> SimpleGetter ChatState (Maybe ChannelId)
@@ -2313,10 +1802,35 @@ withCurrentChannel' tId f = do
 csCurrentTeamId :: SimpleGetter ChatState (Maybe TeamId)
 csCurrentTeamId = csTeamZipper.to Z.focus
 
+csChannelMessageInterface :: ChannelId -> Lens' ChatState ChannelMessageInterface
+csChannelMessageInterface cId =
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface
+
+maybeChannelMessageInterface :: ChannelId -> Traversal' ChatState ChannelMessageInterface
+maybeChannelMessageInterface cId =
+    csChannels.maybeChannelByIdL cId._Just.ccMessageInterface
+
+channelEditor :: ChannelId -> Lens' ChatState (EditState Name)
+channelEditor cId =
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miEditor
+
+channelMessageSelect :: ChannelId -> Lens' ChatState MessageSelectState
+channelMessageSelect cId =
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miMessageSelect
+
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
     lens (\ st -> st ^. csTeams . at tId ^?! _Just)
          (\ st t -> st & csTeams . at tId .~ Just t)
+
+teamMode :: TeamState -> Mode
+teamMode = top . _tsModeStack
+
+teamModes :: TeamState -> [Mode]
+teamModes = stackToList . _tsModeStack
+
+getTeamMode :: TeamId -> MH Mode
+getTeamMode tId = teamMode <$> use (csTeam(tId))
 
 channelListEntryUserId :: ChannelListEntry -> Maybe UserId
 channelListEntryUserId e =
@@ -2338,6 +1852,10 @@ entryIsDMEntry e =
 csChannel :: ChannelId -> Traversal' ChatState ClientChannel
 csChannel cId =
     csChannels . channelByIdL cId
+
+csChannelMessages :: ChannelId -> Traversal' ChatState Messages
+csChannelMessages cId =
+    csChannelMessageInterface(cId).miMessages
 
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()
@@ -2459,10 +1977,10 @@ data SidebarUpdate =
     deriving (Eq, Show)
 
 
-resetAutocomplete :: TeamId -> MH ()
-resetAutocomplete tId = do
-    csTeam(tId).tsEditState.cedAutocomplete .= Nothing
-    csTeam(tId).tsEditState.cedAutocompletePending .= Nothing
+resetAutocomplete :: Traversal' ChatState (EditState n) -> MH ()
+resetAutocomplete which = do
+    which.esAutocomplete .= Nothing
+    which.esAutocompletePending .= Nothing
 
 
 -- * Slash Commands
@@ -2583,7 +2101,7 @@ getEditedMessageCutoff cId st = do
 
 clearChannelUnreadStatus :: ChannelId -> MH ()
 clearChannelUnreadStatus cId = do
-    mh $ invalidateCacheEntry (ChannelMessages cId)
+    mh $ invalidateCacheEntry (MessageInterfaceMessages $ MessageInput cId)
     csChannel(cId) %= (clearNewMessageIndicator .
                        clearEditedThreshold)
 
@@ -2608,3 +2126,47 @@ moveRight v as =
 
 resultToWidget :: Result n -> Widget n
 resultToWidget = Widget Fixed Fixed . return
+
+threadInterface :: (HasCallStack) => TeamId -> Traversal' ChatState ThreadInterface
+threadInterface tId = maybeThreadInterface(tId)._Just
+
+-- An unsafe lens to get the specified team's thread interface. Assumes
+-- the interface is present; if not, this crashes. Intended for places
+-- where you know the interface will be present due to other state and
+-- don't want to deal with Maybe.
+unsafeThreadInterface :: (HasCallStack) => TeamId -> Lens' ChatState ThreadInterface
+unsafeThreadInterface tId = maybeThreadInterface(tId).singular _Just
+
+-- A safe version of unsafeThreadInterface.
+maybeThreadInterface :: TeamId -> Lens' ChatState (Maybe ThreadInterface)
+maybeThreadInterface tId = csTeam(tId).tsThreadInterface
+
+threadInterfaceEmpty :: TeamId -> MH Bool
+threadInterfaceEmpty tId = do
+    mLen <- preuse (maybeThreadInterface(tId)._Just.miMessages.to messagesLength)
+    case mLen of
+        Nothing -> return True
+        Just len -> return $ len == 0
+
+withThreadInterface :: TeamId -> ChannelId -> MH () -> MH ()
+withThreadInterface tId cId act = do
+    mCid <- preuse (maybeThreadInterface(tId)._Just.miChannelId)
+    case mCid of
+        Just i | i == cId -> act
+        _ -> return ()
+
+threadInterfaceDeleteWhere :: TeamId -> ChannelId -> (Message -> Bool) -> MH ()
+threadInterfaceDeleteWhere tId cId f =
+    withThreadInterface tId cId $ do
+        maybeThreadInterface(tId)._Just.miMessages.traversed.filtered f %=
+            (& mDeleted .~ True)
+
+modifyThreadMessages :: TeamId -> ChannelId -> (Messages -> Messages) -> MH ()
+modifyThreadMessages tId cId f = do
+    withThreadInterface tId cId $ do
+        maybeThreadInterface(tId)._Just.miMessages %= f
+
+modifyEachThreadMessage :: TeamId -> ChannelId -> (Message -> Message) -> MH ()
+modifyEachThreadMessage tId cId f = do
+    withThreadInterface tId cId $ do
+        maybeThreadInterface(tId)._Just.miMessages.traversed %= f

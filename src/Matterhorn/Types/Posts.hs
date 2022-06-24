@@ -100,7 +100,7 @@ data ClientMessageType =
     | UnknownGapAfter  -- ^ a region where server may have messages
                        -- after the given timestamp that are not known
                        -- locally by this client
-    deriving (Show)
+    deriving (Show, Eq)
 
 -- ** 'ClientMessage' Lenses
 

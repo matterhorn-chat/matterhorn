@@ -1,5 +1,5 @@
-module Matterhorn.Draw.ChannelListOverlay
-  ( drawChannelListOverlay
+module Matterhorn.Draw.ChannelListWindow
+  ( drawChannelListWindow
   )
 where
 
@@ -13,21 +13,21 @@ import           Text.Wrap ( defaultWrapSettings, preserveIndentation )
 import           Network.Mattermost.Types
 import           Network.Mattermost.Lenses
 
-import           Matterhorn.Draw.ListOverlay ( drawListOverlay, OverlayPosition(..) )
+import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 import           Matterhorn.Themes
 
 
-drawChannelListOverlay :: ChatState -> TeamId -> Widget Name
-drawChannelListOverlay st tId =
-    let overlay = drawListOverlay (st^.csTeam(tId).tsChannelListOverlay) channelSearchScopeHeader
+drawChannelListWindow :: ChatState -> TeamId -> Widget Name
+drawChannelListWindow st tId =
+    let window = drawListWindow (st^.csTeam(tId).tsChannelListWindow) channelSearchScopeHeader
                                   channelSearchScopeNoResults channelSearchScopePrompt
                                   renderChannel
                                   Nothing
-                                  OverlayCenter
+                                  WindowCenter
                                   80
-    in joinBorders overlay
+    in joinBorders window
 
 channelSearchScopePrompt :: ChannelSearchScope -> Widget Name
 channelSearchScopePrompt scope =

@@ -1,5 +1,6 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Autocomplete
-  ( autocompleteLayer
+  ( drawAutocompleteLayers
   )
 where
 
@@ -12,23 +13,45 @@ import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFoc
                                     , listSelectedElement
                                     )
 import qualified Data.Text as T
+import           Lens.Micro.Platform ( SimpleGetter, Lens' )
 
 import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
 
 import           Matterhorn.Constants ( normalChannelSigil )
-import           Matterhorn.Draw.Util
+import           Matterhorn.Draw.Util ( mkChannelName )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 
+drawAutocompleteLayers :: ChatState -> [Widget Name]
+drawAutocompleteLayers st =
+    catMaybes [ do
+                    tId <- st^.csCurrentTeamId
+                    cId <- st^.csCurrentChannelId(tId)
+                    return $ autocompleteLayer st (channelEditor(cId))
+              , do
+                    tId <- st^.csCurrentTeamId
+                    void $ st^.csTeam(tId).tsThreadInterface
+                    let ti :: Lens' ChatState ThreadInterface
+                        ti = unsafeThreadInterface(tId)
+                        ed :: SimpleGetter ChatState (EditState Name)
+                        ed = ti.miEditor
+                    return $ autocompleteLayer st ed
+              ]
 
-autocompleteLayer :: ChatState -> TeamId -> Widget Name
-autocompleteLayer st tId =
-    case st^.csTeam(tId).tsEditState.cedAutocomplete of
+autocompleteLayer :: ChatState -> SimpleGetter ChatState (EditState Name) -> Widget Name
+autocompleteLayer st which =
+    case st^.which.esAutocomplete of
         Nothing ->
             emptyWidget
         Just ac ->
-            renderAutocompleteBox st tId ac
+            fromMaybe emptyWidget $ do
+                tId <- st^.csCurrentTeamId
+                let mcId = st^.csCurrentChannelId(tId)
+                    mCurChan = do
+                        cId <- mcId
+                        st^?csChannel(cId)
+                return $ renderAutocompleteBox st tId mCurChan which ac
 
 userNotInChannelMarker :: T.Text
 userNotInChannelMarker = "*"
@@ -40,63 +63,91 @@ elementTypeLabel ACCodeBlockLanguage = "Languages"
 elementTypeLabel ACEmoji = "Emoji"
 elementTypeLabel ACCommands = "Commands"
 
-renderAutocompleteBox :: ChatState -> TeamId -> AutocompleteState -> Widget Name
-renderAutocompleteBox st tId ac =
+renderAutocompleteBox :: ChatState
+                      -> TeamId
+                      -> Maybe ClientChannel
+                      -> SimpleGetter ChatState (EditState Name)
+                      -> AutocompleteState Name
+                      -> Widget Name
+renderAutocompleteBox st tId mCurChan which ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
         numResults = length elements
         elements = matchList^.listElementsL
+        editorName = getName $ st^.which.esEditor
+        isMultiline = st^.which.esEphemeral.eesMultiline
         label = withDefAttr clientMessageAttr $
                 txt $ elementTypeLabel (ac^.acType) <> ": " <> (T.pack $ show numResults) <>
                      " match" <> (if numResults == 1 then "" else "es") <>
                      " (Tab/Shift-Tab to select)"
 
         selElem = snd <$> listSelectedElement matchList
-        mcId = st^.csCurrentChannelId(tId)
-        mCurChan = mcId >>= (\cId -> st^?csChannel(cId))
         footer = case mCurChan of
             Nothing ->
                 hBorder
             Just curChan ->
-                case renderAutocompleteFooterFor curChan =<< selElem of
+                case renderAutocompleteFooterFor st curChan =<< selElem of
                     Just w -> hBorderWithLabel w
                     _ -> hBorder
         curUser = myUsername st
+        cfg = st^.csResources.crConfiguration
+        showingChanList = configShowChannelList cfg
+        chanListWidth = configChannelListWidth cfg
+        maybeLimit = fromMaybe id $ do
+            let sub = if showingChanList
+                      then chanListWidth + 1
+                      else 0
+                threadNarrow = threadShowing && (cfg^.configThreadOrientationL `elem` [ThreadLeft, ThreadRight])
+                threadShowing = isJust $ st^.csTeam(tId).tsThreadInterface
+
+            if threadNarrow || sub > 0
+               then return $ \w -> Widget Greedy Greedy $ do
+                   ctx <- getContext
+                   let adjusted = ctx^.availWidthL - sub
+                       lim = if threadNarrow
+                             then (adjusted - 1) `div` 2
+                             else adjusted
+                   render $ hLimit lim w
+               else Nothing
+
+        -- The top left corner of the editor area is given by the
+        -- prompt, or by the editor position if multiline is enabled (in
+        -- which case no prompt is drawn).
+        editorTop = if isMultiline
+                    then editorName
+                    else MessageInputPrompt editorName
 
     in if numResults == 0
        then emptyWidget
        else Widget Greedy Greedy $ do
-           ctx <- getContext
-           let rowOffset = ctx^.availHeightL - 3 - editorOffset - visibleHeight
-               editorOffset = if st^.csTeam(tId).tsEditState.cedEphemeral.eesMultiline
-                              then multilineHeightLimit
-                              else 0
-           render $ translateBy (Location (0, rowOffset)) $
+           let verticalOffset = -1 * (visibleHeight + 2)
+           render $ relativeTo editorTop (Location (0, verticalOffset)) $
+                    maybeLimit $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
                            renderList (renderAutocompleteAlternative curUser) True matchList
                          , footer
                          ]
 
-renderAutocompleteFooterFor :: ClientChannel -> AutocompleteAlternative -> Maybe (Widget Name)
-renderAutocompleteFooterFor _ (SpecialMention MentionChannel) = Nothing
-renderAutocompleteFooterFor _ (SpecialMention MentionAll) = Nothing
-renderAutocompleteFooterFor ch (UserCompletion _ False) =
+renderAutocompleteFooterFor :: ChatState -> ClientChannel -> AutocompleteAlternative -> Maybe (Widget Name)
+renderAutocompleteFooterFor _ _ (SpecialMention MentionChannel) = Nothing
+renderAutocompleteFooterFor _ _ (SpecialMention MentionAll) = Nothing
+renderAutocompleteFooterFor st ch (UserCompletion _ False) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
                 , txt ": not a member of "
-                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> ch^.ccInfo.cdName)
+                , withDefAttr channelNameAttr (txt $ mkChannelName st (ch^.ccInfo))
                 , txt ")"
                 ]
-renderAutocompleteFooterFor _ (ChannelCompletion False ch) =
+renderAutocompleteFooterFor _ _ (ChannelCompletion False ch) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
                 , txt ": you are not a member of "
-                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> sanitizeUserText (channelName ch))
+                , withDefAttr channelNameAttr (txt $ normalChannelSigil <> preferredChannelName ch)
                 , txt ")"
                 ]
-renderAutocompleteFooterFor _ (CommandCompletion src _ _ _) =
+renderAutocompleteFooterFor _ _ (CommandCompletion src _ _ _) =
     case src of
         Server ->
             Just $ hBox [ txt $ "("
@@ -104,7 +155,7 @@ renderAutocompleteFooterFor _ (CommandCompletion src _ _ _) =
                         , txt ": command provided by the server)"
                         ]
         Client -> Nothing
-renderAutocompleteFooterFor _ _ =
+renderAutocompleteFooterFor _ _ _ =
     Nothing
 
 serverCommandMarker :: Text

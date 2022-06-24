@@ -1,4 +1,4 @@
-module Matterhorn.State.UserListOverlay
+module Matterhorn.State.UserListWindow
   ( enterChannelMembersUserList
   , enterChannelInviteUserList
   , enterDMSearchUserList
@@ -26,11 +26,11 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.State.Async ( doAsyncWith, AsyncPriority(Preempt) )
 import           Matterhorn.State.Channels ( createOrFocusDMChannel, addUserToCurrentChannel )
-import           Matterhorn.State.ListOverlay
+import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
 
 
--- | Show the user list overlay for searching/showing members of the
+-- | Show the user list window for searching/showing members of the
 -- current channel.
 enterChannelMembersUserList :: TeamId -> MH ()
 enterChannelMembersUserList myTId = do
@@ -47,7 +47,7 @@ enterChannelMembersUserList myTId = do
                     False -> return False
                   )
 
--- | Show the user list overlay for showing users that are not members
+-- | Show the user list window for showing users that are not members
 -- of the current channel for the purpose of adding them to the
 -- channel.
 enterChannelInviteUserList :: TeamId -> MH ()
@@ -60,7 +60,7 @@ enterChannelInviteUserList myTId = do
             False -> return False
           )
 
--- | Show the user list overlay for showing all users for the purpose of
+-- | Show the user list window for showing all users for the purpose of
 -- starting a direct message channel with another user.
 enterDMSearchUserList :: TeamId -> MH ()
 enterDMSearchUserList myTId = do
@@ -75,31 +75,31 @@ enterDMSearchUserList myTId = do
         False -> return False
       )
 
--- | Show the user list overlay with the given search scope, and issue a
+-- | Show the user list window with the given search scope, and issue a
 -- request to gather the first search results.
 enterUserListMode :: TeamId -> UserSearchScope -> Maybe Int -> (UserInfo -> MH Bool) -> MH ()
 enterUserListMode tId scope resultCount enterHandler = do
-    csTeam(tId).tsUserListOverlay.listOverlayRecordCount .= resultCount
-    enterListOverlayMode tId (csTeam(tId).tsUserListOverlay) UserListOverlay scope enterHandler getUserSearchResults
+    csTeam(tId).tsUserListWindow.listWindowRecordCount .= resultCount
+    enterListWindowMode tId (csTeam(tId).tsUserListWindow) UserListWindow scope enterHandler getUserSearchResults
 
 userInfoFromPair :: User -> Text -> UserInfo
 userInfoFromPair u status =
     userInfoFromUser u True & uiStatus .~ statusFromText status
 
--- | Move the selection up in the user list overlay by one user.
+-- | Move the selection up in the user list window by one user.
 userListSelectUp :: TeamId -> MH ()
 userListSelectUp tId = userListMove tId L.listMoveUp
 
--- | Move the selection down in the user list overlay by one user.
+-- | Move the selection down in the user list window by one user.
 userListSelectDown :: TeamId -> MH ()
 userListSelectDown tId = userListMove tId L.listMoveDown
 
--- | Move the selection up in the user list overlay by a page of users
+-- | Move the selection up in the user list window by a page of users
 -- (userListPageSize).
 userListPageUp :: TeamId -> MH ()
 userListPageUp tId = userListMove tId (L.listMoveBy (-1 * userListPageSize))
 
--- | Move the selection down in the user list overlay by a page of users
+-- | Move the selection down in the user list window by a page of users
 -- (userListPageSize).
 userListPageDown :: TeamId -> MH ()
 userListPageDown tId = userListMove tId (L.listMoveBy userListPageSize)
@@ -108,7 +108,7 @@ userListPageDown tId = userListMove tId (L.listMoveBy userListPageSize)
 -- cursor, and then check to see whether the modification warrants a
 -- prefetch of more search results.
 userListMove :: TeamId -> (L.List Name UserInfo -> L.List Name UserInfo) -> MH ()
-userListMove tId = listOverlayMove (csTeam(tId).tsUserListOverlay)
+userListMove tId = listWindowMove (csTeam(tId).tsUserListWindow)
 
 -- | The number of users in a "page" for cursor movement purposes.
 userListPageSize :: Int

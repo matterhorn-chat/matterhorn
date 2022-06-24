@@ -24,7 +24,9 @@ import           Matterhorn.Prelude
 import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center (hCenter)
+import           Brick.Widgets.Edit ( editContentsL )
 import qualified Data.Text as T
+import qualified Data.Text.Zipper as TZ
 import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform (non)
 
@@ -94,8 +96,8 @@ renderChannelList st tId =
                  withVScrollBars sbOrientation $
                  withVScrollBarHandles $
                  withClickableVScrollBars VScrollBar $
-                 viewport (ChannelList tId) Vertical $ sbPad body
-        body = case st^.csTeam(tId).tsMode of
+                 viewport (ChannelListViewport tId) Vertical $ sbPad body
+        body = case teamMode $ st^.csTeam(tId) of
             ChannelSelect ->
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
                     matches = if Z.isEmpty zipper
@@ -182,12 +184,14 @@ mkChannelEntryData st tId e =
         prevEditSigil = "»"
         sigil = if current
                 then fromMaybe "" normalSigil
-                else case chan^.ccEditState.eesInputHistoryPosition of
+                else case chan^.ccMessageInterface.miEditor.esEphemeral.eesInputHistoryPosition of
                     Just _ -> prevEditSigil
                     Nothing ->
-                        case chan^.ccEditState.eesLastInput of
-                            ("", _) -> fromMaybe "" normalSigil
-                            _       -> prevEditSigil
+                        let emptyEditor = T.null $ T.concat $ TZ.getText $
+                                          chan^.ccMessageInterface.miEditor.esEditor.editContentsL
+                        in if emptyEditor
+                           then fromMaybe "" normalSigil
+                           else prevEditSigil
         mentions = chan^.ccInfo.cdMentionCount
 
 -- | Render an individual Channel List entry (in Normal mode) with
@@ -228,7 +232,7 @@ renderChannelSelectListEntry tId curMatch st match =
                       | entryHasUnread entryData ->
                           withDefAttr unreadChannelAttr
                       | otherwise -> id
-    in clickable (ChannelSelectEntry match) $
+    in clickable (ClickableChannelSelectEntry match) $
        decorate $ maybeSelect $
        decorateEntry entryData $ decorateMentions entryData $
        padRight Max $
