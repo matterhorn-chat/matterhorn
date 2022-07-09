@@ -2,7 +2,7 @@ module Matterhorn.Types.KeyEvents
   (
   -- * Types
     KeyEvent(..)
-  , KeyConfig
+  , KeyConfig(keyConfigEvents)
   , Binding(..)
   , BindingState(..)
   , lookupKeyConfigBindings
@@ -163,6 +163,7 @@ data KeyEvent
     deriving (Eq, Show, Ord, Enum)
 
 data KeyEvents e = KeyEvents (B.Bimap Text e)
+                 deriving (Eq, Show)
 
 keyEvents :: (Ord e) => [(Text, e)] -> KeyEvents e
 keyEvents pairs = KeyEvents $ B.fromList pairs
@@ -285,12 +286,14 @@ data BindingState =
 
 data KeyConfig e =
     KeyConfig { keyConfigBindingMap :: M.Map e BindingState
+              , keyConfigEvents :: KeyEvents e
               }
               deriving (Show, Eq)
 
-keyConfigFromList :: (Ord e) => [(e, BindingState)] -> KeyConfig e
-keyConfigFromList pairs =
+keyConfigFromList :: (Ord e) => KeyEvents e -> [(e, BindingState)] -> KeyConfig e
+keyConfigFromList evs pairs =
     KeyConfig { keyConfigBindingMap = M.fromList pairs
+              , keyConfigEvents = evs
               }
 
 lookupKeyConfigBindings :: (Ord e) => KeyConfig e -> e -> Maybe BindingState

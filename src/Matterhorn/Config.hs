@@ -152,7 +152,7 @@ fromIni = do
       (configMouseMode defaultConfig)
 
     let configAbsPath = Nothing
-        configUserKeys = keyConfigFromList []
+        configUserKeys = keyConfigFromList allEvents []
     return Config { .. }
   keys <- sectionMb "keybindings" $ do
       fmap catMaybes $ forM (keyEventsList allEvents) $ \(evName, ev) -> do
@@ -160,7 +160,7 @@ fromIni = do
           case kb of
               Nothing      -> return Nothing
               Just binding -> return (Just (ev, binding))
-  return conf { configUserKeys = keyConfigFromList $ fromMaybe mempty keys }
+  return conf { configUserKeys = keyConfigFromList allEvents $ fromMaybe mempty keys }
 
 channelListOrientationField :: Text -> Either String ChannelListOrientation
 channelListOrientationField t =
@@ -306,7 +306,7 @@ defaultConfig =
            , configChannelListWidth            = 22
            , configLogMaxBufferSize            = 200
            , configShowOlderEdits              = True
-           , configUserKeys                    = keyConfigFromList []
+           , configUserKeys                    = keyConfigFromList allEvents []
            , configShowTypingIndicator         = False
            , configSendTypingNotifications     = False
            , configHyperlinkingMode            = True
