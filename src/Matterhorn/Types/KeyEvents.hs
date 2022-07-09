@@ -286,7 +286,11 @@ data BindingState =
 
 data KeyConfig e =
     KeyConfig { keyConfigBindingMap :: M.Map e BindingState
+              -- ^ The map of custom bindings for events with custom
+              -- bindings
               , keyConfigEvents :: KeyEvents e
+              -- ^ The base mapping of events and their names that is
+              -- used in this configuration
               }
               deriving (Show, Eq)
 
