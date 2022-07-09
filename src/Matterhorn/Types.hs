@@ -544,7 +544,7 @@ data Config =
            , configAbsPath :: Maybe FilePath
            -- ^ A book-keeping field for the absolute path to the
            -- configuration. (Not a user setting.)
-           , configUserKeys :: KeyConfig
+           , configUserKeys :: KeyConfig KeyEvent
            -- ^ The user's keybinding configuration.
            , configHyperlinkingMode :: Bool
            -- ^ Whether to enable terminal hyperlinking mode.

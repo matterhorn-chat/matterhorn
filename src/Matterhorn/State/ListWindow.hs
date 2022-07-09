@@ -26,7 +26,7 @@ import qualified Graphics.Vty as Vty
 import           Matterhorn.Types
 import           Matterhorn.State.Common
 import           Matterhorn.State.Editing ( editingKeybindings )
-import           Matterhorn.Events.Keybindings ( KeyConfig, KeyHandlerMap, handleKeyboardEvent )
+import           Matterhorn.Events.Keybindings ( KeyConfig, KeyEvent, KeyHandlerMap, handleKeyboardEvent )
 
 
 -- | Activate the specified list window's selected item by invoking the
@@ -129,7 +129,7 @@ resetListWindowSearch which = do
 -- window's editor if the editor contents change.
 onEventListWindow :: Lens' ChatState (ListWindowState a b)
                    -- ^ Which window to dispatch to?
-                   -> (KeyConfig -> KeyHandlerMap)
+                   -> (KeyConfig KeyEvent -> KeyHandlerMap)
                    -- ^ The keybinding builder
                    -> Vty.Event
                    -- ^ The event

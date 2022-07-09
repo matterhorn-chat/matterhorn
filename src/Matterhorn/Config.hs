@@ -20,7 +20,6 @@ import           Control.Monad.Trans.Class ( lift )
 import           Data.Char ( isDigit, isAlpha )
 import           Data.List ( isPrefixOf )
 import           Data.List.Split ( splitOn )
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           System.Directory ( makeAbsolute, getHomeDirectory )
@@ -153,15 +152,15 @@ fromIni = do
       (configMouseMode defaultConfig)
 
     let configAbsPath = Nothing
-        configUserKeys = mempty
+        configUserKeys = keyConfigFromList []
     return Config { .. }
   keys <- sectionMb "keybindings" $ do
-      fmap (M.fromList . catMaybes) $ forM (keyEventsList allEvents) $ \(evName, ev) -> do
+      fmap catMaybes $ forM (keyEventsList allEvents) $ \(evName, ev) -> do
           kb <- fieldMbOf evName parseBindingList
           case kb of
               Nothing      -> return Nothing
               Just binding -> return (Just (ev, binding))
-  return conf { configUserKeys = fromMaybe mempty keys }
+  return conf { configUserKeys = keyConfigFromList $ fromMaybe mempty keys }
 
 channelListOrientationField :: Text -> Either String ChannelListOrientation
 channelListOrientationField t =
@@ -307,7 +306,7 @@ defaultConfig =
            , configChannelListWidth            = 22
            , configLogMaxBufferSize            = 200
            , configShowOlderEdits              = True
-           , configUserKeys                    = mempty
+           , configUserKeys                    = keyConfigFromList []
            , configShowTypingIndicator         = False
            , configSendTypingNotifications     = False
            , configHyperlinkingMode            = True

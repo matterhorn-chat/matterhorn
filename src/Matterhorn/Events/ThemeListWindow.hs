@@ -19,7 +19,7 @@ onEventThemeListWindow tId =
         (themeListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list window
-themeListWindowKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+themeListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
 themeListWindowKeybindings tId = mkKeybindings (themeListWindowKeyHandlers tId)
 
 themeListWindowKeyHandlers :: TeamId -> [KeyEventHandler]

@@ -23,7 +23,7 @@ onEventChannelListWindow tId =
     void . onEventListWindow (csTeam(tId).tsChannelListWindow) (channelListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a channel list window
-channelListWindowKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+channelListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
 channelListWindowKeybindings tId = mkKeybindings (channelListWindowKeyHandlers tId)
 
 channelListWindowKeyHandlers :: TeamId -> [KeyEventHandler]

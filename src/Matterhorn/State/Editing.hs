@@ -128,7 +128,7 @@ editingPermitted st which =
     (length (getEditContents $ st^.which.esEditor) == 1) ||
     st^.which.esEphemeral.eesMultiline
 
-editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig -> KeyHandlerMap
+editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig KeyEvent -> KeyHandlerMap
 editingKeybindings editor = mkKeybindings $ editingKeyHandlers editor
 
 editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [KeyEventHandler]

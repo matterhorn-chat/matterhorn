@@ -43,7 +43,7 @@ onEventMessageSelectDeleteConfirm tId _ _ = do
 
 messageSelectKeybindings :: TeamId
                          -> Lens' ChatState (MessageInterface n i)
-                         -> KeyConfig
+                         -> KeyConfig KeyEvent
                          -> KeyHandlerMap
 messageSelectKeybindings tId which =
     mkKeybindings (messageSelectKeyHandlers tId which)

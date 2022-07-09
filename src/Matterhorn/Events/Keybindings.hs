@@ -79,7 +79,7 @@ lookupKeybinding e (KeyHandlerMap m) = M.lookup e m
 -- invoking the matching binding's handler. Return True if the key event
 -- was handled with a matching binding; False if not (the fallback
 -- case).
-handleKeyboardEvent :: (KeyConfig -> KeyHandlerMap)
+handleKeyboardEvent :: (KeyConfig KeyEvent -> KeyHandlerMap)
                     -- ^ The function to build a key handler map from a
                     -- key configuration.
                     -> Vty.Event
@@ -104,15 +104,15 @@ mkKb ev msg action =
         , kehEventTrigger = ByEvent ev
         }
 
-keyHandlerFromConfig :: KeyConfig -> KeyEventHandler -> [KeyHandler]
-keyHandlerFromConfig conf eh =
+keyHandlerFromConfig :: KeyConfig KeyEvent -> KeyEventHandler -> [KeyHandler]
+keyHandlerFromConfig kc eh =
     case kehEventTrigger eh of
         Static key ->
             [ KH eh key ]
         ByEvent ev ->
             [ KH eh (bindingToEvent b) | b <- allBindings ]
-            where allBindings | Just (BindingList ks) <- M.lookup ev conf = ks
-                              | Just Unbound <- M.lookup ev conf = []
+            where allBindings | Just (BindingList ks) <- lookupKeyConfigBindings kc ev = ks
+                              | Just Unbound <- lookupKeyConfigBindings kc ev = []
                               | otherwise = defaultBindings ev
 
 staticKb :: Text -> Vty.Event -> MH () -> KeyEventHandler
@@ -121,10 +121,10 @@ staticKb msg event action =
         , kehEventTrigger = Static event
         }
 
-mkKeybindings :: [KeyEventHandler] -> KeyConfig -> KeyHandlerMap
+mkKeybindings :: [KeyEventHandler] -> KeyConfig KeyEvent -> KeyHandlerMap
 mkKeybindings ks conf = KeyHandlerMap $ M.fromList $ keyHandlerMapPairs ks conf
 
-keyHandlerMapPairs :: [KeyEventHandler] -> KeyConfig -> [(Vty.Event, KeyHandler)]
+keyHandlerMapPairs :: [KeyEventHandler] -> KeyConfig KeyEvent -> [(Vty.Event, KeyHandler)]
 keyHandlerMapPairs ks conf = pairs
     where
         pairs = mkPair <$> handlers
@@ -135,9 +135,9 @@ bindingToEvent :: Binding -> Vty.Event
 bindingToEvent binding =
   Vty.EvKey (kbKey binding) (kbMods binding)
 
-firstActiveBinding :: KeyConfig -> KeyEvent -> Binding
+firstActiveBinding :: KeyConfig KeyEvent -> KeyEvent -> Binding
 firstActiveBinding kc ev = fromMaybe (getFirstDefaultBinding ev) $ do
-    bState <- M.lookup ev kc
+    bState <- lookupKeyConfigBindings kc ev
     case bState of
         BindingList (b:_) -> Just b
         _ -> Nothing
@@ -258,14 +258,14 @@ defaultBindings ev =
 -- basic usability (i.e. we shouldn't be binding events which can appear
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
-ensureKeybindingConsistency :: KeyConfig -> [(T.Text, [KeyEventHandler])] -> Either String ()
+ensureKeybindingConsistency :: KeyConfig KeyEvent -> [(T.Text, [KeyEventHandler])] -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the
     -- keybinding/event associations that are going to be used with the
     -- provided key configuration.
     allBindings = groupWith fst $ concat
-      [ case M.lookup ev kc of
+      [ case lookupKeyConfigBindings kc ev of
           Nothing -> zip (defaultBindings ev) (repeat (False, ev))
           Just (BindingList bs) -> zip bs (repeat (True, ev))
           Just Unbound -> []

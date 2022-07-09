@@ -37,7 +37,7 @@ onEventAttachmentList which =
                     ]
 
 attachmentListKeybindings :: Lens' ChatState (MessageInterface Name i)
-                          -> KeyConfig
+                          -> KeyConfig KeyEvent
                           -> KeyHandlerMap
 attachmentListKeybindings which = mkKeybindings (attachmentListKeyHandlers which)
 
@@ -59,7 +59,7 @@ attachmentListKeyHandlers which =
     ]
 
 attachmentBrowseKeybindings :: Lens' ChatState (MessageInterface Name i)
-                            -> KeyConfig
+                            -> KeyConfig KeyEvent
                             -> KeyHandlerMap
 attachmentBrowseKeybindings which =
     mkKeybindings (attachmentBrowseKeyHandlers which)

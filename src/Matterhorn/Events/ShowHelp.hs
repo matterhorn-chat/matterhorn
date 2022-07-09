@@ -25,7 +25,7 @@ closeHelp tId (Vty.EvKey {}) = do
     return True
 closeHelp _ _ = return False
 
-helpKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+helpKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
 helpKeybindings tId = mkKeybindings (helpKeyHandlers tId)
 
 helpKeyHandlers :: TeamId -> [KeyEventHandler]

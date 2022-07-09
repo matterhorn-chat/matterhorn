@@ -108,7 +108,7 @@ mkChannelName st c = T.append sigil t
 -- string.
 keyEventBindings :: ChatState
                  -- ^ The current application state
-                 -> (KeyConfig -> KeyHandlerMap)
+                 -> (KeyConfig KeyEvent -> KeyHandlerMap)
                  -- ^ The function to obtain the relevant key handler
                  -- map
                  -> KeyEvent

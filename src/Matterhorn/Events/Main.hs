@@ -37,7 +37,7 @@ onEventMain tId =
                                     Just cId -> handleMessageInterfaceEvent tId (csChannelMessageInterface(cId)) e
                     ]
 
-mainKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+mainKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
 mainKeyHandlers :: TeamId -> [KeyEventHandler]

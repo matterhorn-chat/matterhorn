@@ -13,7 +13,7 @@ import           Matterhorn.State.Teams
 import           Matterhorn.Events.Keybindings
 
 
-globalKeybindings :: KeyConfig -> KeyHandlerMap
+globalKeybindings :: KeyConfig KeyEvent -> KeyHandlerMap
 globalKeybindings = mkKeybindings globalKeyHandlers
 
 globalKeyHandlers :: [KeyEventHandler]

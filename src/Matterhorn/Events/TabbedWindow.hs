@@ -40,7 +40,7 @@ forwardEvent w e = do
 tabbedWindowKeybindings :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow ChatState MH Name a)
                         -> TeamId
-                        -> KeyConfig
+                        -> KeyConfig KeyEvent
                         -> KeyHandlerMap
 tabbedWindowKeybindings target tId = mkKeybindings $ tabbedWindowKeyHandlers tId target
 

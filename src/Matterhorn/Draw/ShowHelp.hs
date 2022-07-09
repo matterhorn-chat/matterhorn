@@ -66,7 +66,7 @@ helpTopicDraw topic st =
         SyntaxHighlightHelp -> syntaxHighlightHelp (configSyntaxDirs $ st^.csResources.crConfiguration)
         KeybindingHelp -> keybindingHelp allEvents (configUserKeys (st^.csResources.crConfiguration))
 
-mainHelp :: KeyEvents KeyEvent -> KeyConfig -> Widget Name
+mainHelp :: KeyEvents KeyEvent -> KeyConfig KeyEvent -> Widget Name
 mainHelp evs kc = summary
   where
     summary = vBox entries
@@ -174,7 +174,7 @@ scriptHelp = heading "Using Scripts" <=> vBox scriptHelpText
            , [ "> *> /sh rot13 Hello, world!*" ]
            ]
 
-keybindingMarkdownTable :: KeyEvents KeyEvent -> KeyConfig -> Text
+keybindingMarkdownTable :: KeyEvents KeyEvent -> KeyConfig KeyEvent -> Text
 keybindingMarkdownTable evs kc = title <> keybindSectionStrings
     where title = "# Keybindings\n"
           keybindSectionStrings = T.concat $ sectionText <$> keybindSections
@@ -184,7 +184,7 @@ keybindingMarkdownTable evs kc = title <> keybindSectionStrings
               "\n| Keybinding | Event Name | Description |" <>
               "\n| ---------- | ---------- | ----------- |"
 
-keybindingTextTable :: KeyEvents KeyEvent -> KeyConfig -> Text
+keybindingTextTable :: KeyEvents KeyEvent -> KeyConfig KeyEvent -> Text
 keybindingTextTable evs kc = title <> keybindSectionStrings
     where title = "Keybindings\n===========\n"
           keybindSectionStrings = T.concat $ sectionText <$> keybindSections
@@ -195,7 +195,7 @@ keybindingTextTable evs kc = title <> keybindSectionStrings
               "\n" <> n <>
               "\n" <> (T.replicate (T.length n) "=")
 
-keybindingHelp :: KeyEvents KeyEvent -> KeyConfig -> Widget Name
+keybindingHelp :: KeyEvents KeyEvent -> KeyConfig KeyEvent -> Widget Name
 keybindingHelp evs kc = vBox $
   [ heading "Configurable Keybindings"
   , padBottom (Pad 1) $ vBox keybindingHelpText
@@ -495,20 +495,20 @@ kbColumnWidth = 14
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
 
-mkKeybindingHelp :: KeyEvents KeyEvent -> KeyConfig -> (Text, [KeyEventHandler]) -> Widget Name
+mkKeybindingHelp :: KeyEvents KeyEvent -> KeyConfig KeyEvent -> (Text, [KeyEventHandler]) -> Widget Name
 mkKeybindingHelp evs kc (sectionName, kbs) =
     (heading sectionName) <=>
     (padTop (Pad 1) $ hCenter $ vBox $ snd <$> sortWith fst results)
     where
         results = mkKeybindHelp evs kc <$> kbs
 
-mkKeybindHelp :: KeyEvents KeyEvent -> KeyConfig -> KeyEventHandler -> (Text, Widget Name)
+mkKeybindHelp :: KeyEvents KeyEvent -> KeyConfig KeyEvent -> KeyEventHandler -> (Text, Widget Name)
 mkKeybindHelp evs kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
             Static k -> (ppBinding $ eventToBinding k, Nothing)
             ByEvent ev ->
-                let bindings = case M.lookup ev kc of
+                let bindings = case lookupKeyConfigBindings kc ev of
                         Nothing ->
                             let bs = defaultBindings ev
                             in if not $ null bs
@@ -532,7 +532,7 @@ mkKeybindHelp evs kc h =
     in (label, rendering)
 
 mkKeybindEventSectionHelp :: KeyEvents KeyEvent
-                          -> KeyConfig
+                          -> KeyConfig KeyEvent
                           -> ((TextHunk, Text, [TextHunk]) -> a)
                           -> ([a] -> a)
                           -> (Text -> a)
@@ -579,13 +579,13 @@ keybindEventHelpText width eventNameWidth (evName, desc, evs) =
        padTo eventNameWidth (getText evName) <> " " <>
        desc
 
-mkKeybindEventHelp :: KeyEvents KeyEvent -> KeyConfig -> KeyEventHandler -> (TextHunk, Text, [TextHunk])
+mkKeybindEventHelp :: KeyEvents KeyEvent -> KeyConfig KeyEvent -> KeyEventHandler -> (TextHunk, Text, [TextHunk])
 mkKeybindEventHelp evs kc h =
   let trig = kehEventTrigger h
       unbound = [Comment "(unbound)"]
       (label, evText) = case trig of
           Static key -> (Comment "(non-customizable key)", [Verbatim $ ppBinding $ eventToBinding key])
-          ByEvent ev -> case M.lookup ev kc of
+          ByEvent ev -> case lookupKeyConfigBindings kc ev of
               Nothing ->
                   let name = fromJust $ keyEventName evs ev
                   in if not (null (defaultBindings ev))

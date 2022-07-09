@@ -58,7 +58,7 @@ handleMessageInterfaceEvent tId which ev = do
             onEventBrowseFile which ev
 
 messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
-                            -> KeyConfig
+                            -> KeyConfig KeyEvent
                             -> KeyHandlerMap
 messageInterfaceKeybindings which =
     mkKeybindings (messageInterfaceKeyHandlers which)
@@ -82,7 +82,7 @@ messageInterfaceKeyHandlers which =
     ]
 
 extraEditorKeybindings :: Lens' ChatState (MessageInterface Name i)
-                       -> KeyConfig
+                       -> KeyConfig KeyEvent
                        -> KeyHandlerMap
 extraEditorKeybindings which =
     mkKeybindings (extraEditorKeyHandlers which)

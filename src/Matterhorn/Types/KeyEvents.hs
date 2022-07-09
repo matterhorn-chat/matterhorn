@@ -5,6 +5,8 @@ module Matterhorn.Types.KeyEvents
   , KeyConfig
   , Binding(..)
   , BindingState(..)
+  , lookupKeyConfigBindings
+  , keyConfigFromList
 
   -- * Data
   , allEvents
@@ -281,7 +283,18 @@ data BindingState =
     | Unbound
     deriving (Show, Eq, Ord)
 
-type KeyConfig = M.Map KeyEvent BindingState
+data KeyConfig e =
+    KeyConfig { keyConfigBindingMap :: M.Map e BindingState
+              }
+              deriving (Show, Eq)
+
+keyConfigFromList :: (Ord e) => [(e, BindingState)] -> KeyConfig e
+keyConfigFromList pairs =
+    KeyConfig { keyConfigBindingMap = M.fromList pairs
+              }
+
+lookupKeyConfigBindings :: (Ord e) => KeyConfig e -> e -> Maybe BindingState
+lookupKeyConfigBindings kc e = M.lookup e $ keyConfigBindingMap kc
 
 parseBinding :: Text -> Either String Binding
 parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []

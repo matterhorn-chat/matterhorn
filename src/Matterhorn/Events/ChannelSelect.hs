@@ -31,7 +31,7 @@ onEventChannelSelect tId =
                         return True
                     ]
 
-channelSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
+channelSelectKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
 channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
 
 channelSelectKeyHandlers :: TeamId -> [KeyEventHandler]

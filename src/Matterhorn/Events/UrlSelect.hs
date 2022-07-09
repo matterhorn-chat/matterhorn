@@ -20,7 +20,7 @@ onEventUrlSelect which =
                     , \e -> mhHandleEventLensed (which.miUrlList.ulList) handleListEvent e >> return True
                     ]
 
-urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig -> KeyHandlerMap
+urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig KeyEvent -> KeyHandlerMap
 urlSelectKeybindings which = mkKeybindings (urlSelectKeyHandlers which)
 
 urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [KeyEventHandler]
