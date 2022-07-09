@@ -274,10 +274,10 @@ eventToBinding :: Vty.Event -> Binding
 eventToBinding (Vty.EvKey k mods) = Binding mods k
 eventToBinding k = error $ "BUG: invalid keybinding " <> show k
 
-data Binding = Binding
-  { kbMods :: [Vty.Modifier]
-  , kbKey  :: Vty.Key
-  } deriving (Eq, Show, Ord)
+data Binding =
+    Binding { kbMods :: [Vty.Modifier]
+            , kbKey  :: Vty.Key
+            } deriving (Eq, Show, Ord)
 
 data BindingState =
     BindingList [Binding]
