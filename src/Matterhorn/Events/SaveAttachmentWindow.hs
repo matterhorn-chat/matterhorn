@@ -9,6 +9,7 @@ import           Matterhorn.Prelude
 
 import qualified Control.Exception as E
 
+import           Brick ( BrickEvent(VtyEvent) )
 import           Brick.Focus
 import           Brick.Widgets.Edit ( handleEditorEvent, getEditContents )
 import qualified Data.Text as T
@@ -71,7 +72,7 @@ onEventSaveAttachmentWindow which e = do
     case focusGetCurrent f of
         Just (AttachmentPathEditor {}) -> do
             mhHandleEventLensed (which.miSaveAttachmentDialog.attachmentPathEditor)
-                                handleEditorEvent e
+                                handleEditorEvent (VtyEvent e)
             return True
         _ ->
             return False
