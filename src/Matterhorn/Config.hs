@@ -22,6 +22,7 @@ import           Data.List ( isPrefixOf )
 import           Data.List.Split ( splitOn )
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Graphics.Vty as Vty
 import           System.Directory ( makeAbsolute, getHomeDirectory )
 import           System.Environment ( getExecutablePath )
 import           System.FilePath ( (</>), takeDirectory, splitPath, joinPath )
@@ -152,7 +153,7 @@ fromIni = do
       (configMouseMode defaultConfig)
 
     let configAbsPath = Nothing
-        configUserKeys = keyConfigFromList allEvents []
+        configUserKeys = newKeyConfig allEvents [] []
     return Config { .. }
   keys <- sectionMb "keybindings" $ do
       fmap catMaybes $ forM (keyEventsList allEvents) $ \(evName, ev) -> do
@@ -160,7 +161,111 @@ fromIni = do
           case kb of
               Nothing      -> return Nothing
               Just binding -> return (Just (ev, binding))
-  return conf { configUserKeys = keyConfigFromList allEvents $ fromMaybe mempty keys }
+  return conf { configUserKeys = newKeyConfig allEvents (fromMaybe mempty keys) defaultBindings }
+
+defaultBindings :: [(KeyEvent, [Binding])]
+defaultBindings =
+  let meta binding = binding { kbMods = Vty.MMeta : kbMods binding }
+      ctrl binding = binding { kbMods = Vty.MCtrl : kbMods binding }
+      shift binding = binding { kbMods = Vty.MShift : kbMods binding }
+      kb k = Binding { kbMods = [], kbKey = k }
+      key c = Binding { kbMods = [], kbKey = Vty.KChar c }
+      fn n = Binding { kbMods = [], kbKey = Vty.KFun n }
+  in [ (VtyRefreshEvent                  , [ ctrl (key 'l') ])
+     , (ShowHelpEvent                    , [ fn 1 ])
+     , (EnterSelectModeEvent             , [ ctrl (key 's') ])
+     , (ReplyRecentEvent                 , [ ctrl (key 'r') ])
+     , (ToggleMessagePreviewEvent        , [ meta (key 'p') ])
+     , (InvokeEditorEvent                , [ meta (key 'k') ])
+     , (EnterFastSelectModeEvent         , [ ctrl (key 'g') ])
+     , (QuitEvent                        , [ ctrl (key 'q') ])
+     , (NextChannelEvent                 , [ ctrl (key 'n') ])
+     , (PrevChannelEvent                 , [ ctrl (key 'p') ])
+     , (NextChannelEventAlternate        , [ kb Vty.KDown ])
+     , (PrevChannelEventAlternate        , [ kb Vty.KUp ])
+     , (NextUnreadChannelEvent           , [ meta (key 'a') ])
+     , (ShowAttachmentListEvent          , [ ctrl (key 'x') ])
+     , (ChangeMessageEditorFocus         , [ meta (key 'o') ])
+     , (NextUnreadUserOrChannelEvent     , [ ])
+     , (LastChannelEvent                 , [ meta (key 's') ])
+     , (EnterOpenURLModeEvent            , [ ctrl (key 'o') ])
+     , (ClearUnreadEvent                 , [ meta (key 'l') ])
+     , (ToggleMultiLineEvent             , [ meta (key 'e') ])
+     , (EnterFlaggedPostsEvent           , [ meta (key '8') ])
+     , (ToggleChannelListVisibleEvent    , [ fn 2 ])
+     , (ToggleExpandedChannelTopicsEvent , [ fn 3 ])
+     , (CycleChannelListSorting          , [ fn 4 ])
+     , (SelectNextTabEvent               , [ key '\t' ])
+     , (SelectPreviousTabEvent           , [ kb Vty.KBackTab ])
+     , (SaveAttachmentEvent              , [ key 's' ])
+     , (LoadMoreEvent                    , [ ctrl (key 'b') ])
+     , (ScrollUpEvent                    , [ kb Vty.KUp ])
+     , (ScrollDownEvent                  , [ kb Vty.KDown ])
+     , (ScrollLeftEvent                  , [ kb Vty.KLeft ])
+     , (ScrollRightEvent                 , [ kb Vty.KRight ])
+     , (ChannelListScrollUpEvent         , [ ctrl (kb Vty.KUp) ])
+     , (ChannelListScrollDownEvent       , [ ctrl (kb Vty.KDown) ])
+     , (PageUpEvent                      , [ kb Vty.KPageUp ])
+     , (PageDownEvent                    , [ kb Vty.KPageDown ])
+     , (PageLeftEvent                    , [ shift (kb Vty.KLeft) ])
+     , (PageRightEvent                   , [ shift (kb Vty.KRight) ])
+     , (ScrollTopEvent                   , [ kb Vty.KHome, meta $ key '<' ])
+     , (ScrollBottomEvent                , [ kb Vty.KEnd, meta $ key '>' ])
+     , (SelectOldestMessageEvent         , [ shift (kb Vty.KHome) ])
+     , (SelectUpEvent                    , [ key 'k', kb Vty.KUp ])
+     , (SelectDownEvent                  , [ key 'j', kb Vty.KDown ])
+     , (ActivateListItemEvent            , [ kb Vty.KEnter ])
+     , (SearchSelectUpEvent              , [ ctrl (key 'p'), kb Vty.KUp ])
+     , (SearchSelectDownEvent            , [ ctrl (key 'n'), kb Vty.KDown ])
+     , (ViewMessageEvent                 , [ key 'v' ])
+     , (FillGapEvent                     , [ kb Vty.KEnter ])
+     , (CopyPostLinkEvent                , [ key 'l' ])
+     , (FlagMessageEvent                 , [ key 'f' ])
+     , (OpenThreadEvent                  , [ key 't' ])
+     , (PinMessageEvent                  , [ key 'p' ])
+     , (YankMessageEvent                 , [ key 'y' ])
+     , (YankWholeMessageEvent            , [ key 'Y' ])
+     , (DeleteMessageEvent               , [ key 'd' ])
+     , (EditMessageEvent                 , [ key 'e' ])
+     , (ReplyMessageEvent                , [ key 'r' ])
+     , (ReactToMessageEvent              , [ key 'a' ])
+     , (OpenMessageURLEvent              , [ key 'o' ])
+     , (AttachmentListAddEvent           , [ key 'a' ])
+     , (AttachmentListDeleteEvent        , [ key 'd' ])
+     , (AttachmentOpenEvent              , [ key 'o' ])
+     , (CancelEvent                      , [ kb Vty.KEsc, ctrl (key 'c') ])
+     , (EditorBolEvent                   , [ ctrl (key 'a') ])
+     , (EditorEolEvent                   , [ ctrl (key 'e') ])
+     , (EditorTransposeCharsEvent        , [ ctrl (key 't') ])
+     , (EditorDeleteCharacter            , [ ctrl (key 'd') ])
+     , (EditorKillToBolEvent             , [ ctrl (key 'u') ])
+     , (EditorKillToEolEvent             , [ ctrl (key 'k') ])
+     , (EditorPrevCharEvent              , [ ctrl (key 'b') ])
+     , (EditorNextCharEvent              , [ ctrl (key 'f') ])
+     , (EditorPrevWordEvent              , [ meta (key 'b') ])
+     , (EditorNextWordEvent              , [ meta (key 'f') ])
+     , (EditorDeleteNextWordEvent        , [ meta (key 'd') ])
+     , (EditorDeletePrevWordEvent        , [ ctrl (key 'w'), meta (kb Vty.KBS) ])
+     , (EditorHomeEvent                  , [ kb Vty.KHome ])
+     , (EditorEndEvent                   , [ kb Vty.KEnd ])
+     , (EditorYankEvent                  , [ ctrl (key 'y') ])
+     , (FileBrowserBeginSearchEvent      , [ key '/' ])
+     , (FileBrowserSelectEnterEvent      , [ kb Vty.KEnter ])
+     , (FileBrowserSelectCurrentEvent    , [ kb (Vty.KChar ' ') ])
+     , (FileBrowserListPageUpEvent       , [ ctrl (key 'b'), kb Vty.KPageUp ])
+     , (FileBrowserListPageDownEvent     , [ ctrl (key 'f'), kb Vty.KPageDown ])
+     , (FileBrowserListHalfPageUpEvent   , [ ctrl (key 'u') ])
+     , (FileBrowserListHalfPageDownEvent , [ ctrl (key 'd') ])
+     , (FileBrowserListTopEvent          , [ key 'g', kb Vty.KHome, meta $ key '<' ])
+     , (FileBrowserListBottomEvent       , [ key 'G', kb Vty.KEnd, meta $ key '>' ])
+     , (FileBrowserListNextEvent         , [ key 'j', ctrl (key 'n'), kb Vty.KDown ])
+     , (FileBrowserListPrevEvent         , [ key 'k', ctrl (key 'p'), kb Vty.KUp ])
+     , (FormSubmitEvent                  , [ kb Vty.KEnter ])
+     , (NextTeamEvent                    , [ ctrl (kb Vty.KRight) ])
+     , (PrevTeamEvent                    , [ ctrl (kb Vty.KLeft) ])
+     , (MoveCurrentTeamLeftEvent         , [ ])
+     , (MoveCurrentTeamRightEvent        , [ ])
+     ]
 
 channelListOrientationField :: Text -> Either String ChannelListOrientation
 channelListOrientationField t =
@@ -306,7 +411,7 @@ defaultConfig =
            , configChannelListWidth            = 22
            , configLogMaxBufferSize            = 200
            , configShowOlderEdits              = True
-           , configUserKeys                    = keyConfigFromList allEvents []
+           , configUserKeys                    = newKeyConfig allEvents [] []
            , configShowTypingIndicator         = False
            , configSendTypingNotifications     = False
            , configHyperlinkingMode            = True

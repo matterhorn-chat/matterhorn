@@ -1,7 +1,5 @@
 module Matterhorn.Events.Keybindings
-  ( defaultBindings
-  , lookupKeybinding
-  , firstActiveBinding
+  ( lookupKeybinding
 
   , mkKb
   , staticKb
@@ -113,7 +111,7 @@ keyHandlerFromConfig kc eh =
             [ KH eh (bindingToEvent b) | b <- allBindings ]
             where allBindings | Just (BindingList ks) <- lookupKeyConfigBindings kc ev = ks
                               | Just Unbound <- lookupKeyConfigBindings kc ev = []
-                              | otherwise = defaultBindings ev
+                              | otherwise = allDefaultBindings kc ev
 
 staticKb :: Text -> Vty.Event -> MH () -> KeyEventHandler
 staticKb msg event action =
@@ -135,123 +133,6 @@ bindingToEvent :: Binding -> Vty.Event
 bindingToEvent binding =
   Vty.EvKey (kbKey binding) (kbMods binding)
 
-firstActiveBinding :: KeyConfig KeyEvent -> KeyEvent -> Binding
-firstActiveBinding kc ev = fromMaybe (getFirstDefaultBinding ev) $ do
-    bState <- lookupKeyConfigBindings kc ev
-    case bState of
-        BindingList (b:_) -> Just b
-        _ -> Nothing
-
-getFirstDefaultBinding :: KeyEvent -> Binding
-getFirstDefaultBinding ev =
-    case defaultBindings ev of
-        [] -> error $ "BUG: event " <> show ev <> " has no default bindings!"
-        (b:_) -> b
-
-defaultBindings :: KeyEvent -> [Binding]
-defaultBindings ev =
-  let meta binding = binding { kbMods = Vty.MMeta : kbMods binding }
-      ctrl binding = binding { kbMods = Vty.MCtrl : kbMods binding }
-      shift binding = binding { kbMods = Vty.MShift : kbMods binding }
-      kb k = Binding { kbMods = [], kbKey = k }
-      key c = Binding { kbMods = [], kbKey = Vty.KChar c }
-      fn n = Binding { kbMods = [], kbKey = Vty.KFun n }
-  in case ev of
-        VtyRefreshEvent               -> [ ctrl (key 'l') ]
-        ShowHelpEvent                 -> [ fn 1 ]
-        EnterSelectModeEvent          -> [ ctrl (key 's') ]
-        ReplyRecentEvent              -> [ ctrl (key 'r') ]
-        ToggleMessagePreviewEvent     -> [ meta (key 'p') ]
-        InvokeEditorEvent             -> [ meta (key 'k') ]
-        EnterFastSelectModeEvent      -> [ ctrl (key 'g') ]
-        QuitEvent                     -> [ ctrl (key 'q') ]
-        NextChannelEvent              -> [ ctrl (key 'n') ]
-        PrevChannelEvent              -> [ ctrl (key 'p') ]
-        NextChannelEventAlternate     -> [ kb Vty.KDown ]
-        PrevChannelEventAlternate     -> [ kb Vty.KUp ]
-        NextUnreadChannelEvent        -> [ meta (key 'a') ]
-        ShowAttachmentListEvent       -> [ ctrl (key 'x') ]
-        ChangeMessageEditorFocus      -> [ meta (key 'o') ]
-        NextUnreadUserOrChannelEvent  -> [ ]
-        LastChannelEvent              -> [ meta (key 's') ]
-        EnterOpenURLModeEvent         -> [ ctrl (key 'o') ]
-        ClearUnreadEvent              -> [ meta (key 'l') ]
-        ToggleMultiLineEvent          -> [ meta (key 'e') ]
-        EnterFlaggedPostsEvent        -> [ meta (key '8') ]
-        ToggleChannelListVisibleEvent -> [ fn 2 ]
-        ToggleExpandedChannelTopicsEvent -> [ fn 3 ]
-        CycleChannelListSorting       -> [ fn 4 ]
-        SelectNextTabEvent            -> [ key '\t' ]
-        SelectPreviousTabEvent        -> [ kb Vty.KBackTab ]
-        SaveAttachmentEvent           -> [ key 's' ]
-        LoadMoreEvent                 -> [ ctrl (key 'b') ]
-        ScrollUpEvent                 -> [ kb Vty.KUp ]
-        ScrollDownEvent               -> [ kb Vty.KDown ]
-        ScrollLeftEvent               -> [ kb Vty.KLeft ]
-        ScrollRightEvent              -> [ kb Vty.KRight ]
-        ChannelListScrollUpEvent      -> [ ctrl (kb Vty.KUp) ]
-        ChannelListScrollDownEvent    -> [ ctrl (kb Vty.KDown) ]
-        PageUpEvent                   -> [ kb Vty.KPageUp ]
-        PageDownEvent                 -> [ kb Vty.KPageDown ]
-        PageLeftEvent                 -> [ shift (kb Vty.KLeft) ]
-        PageRightEvent                -> [ shift (kb Vty.KRight) ]
-        ScrollTopEvent                -> [ kb Vty.KHome, meta $ key '<' ]
-        ScrollBottomEvent             -> [ kb Vty.KEnd, meta $ key '>' ]
-        SelectOldestMessageEvent      -> [ shift (kb Vty.KHome) ]
-        SelectUpEvent                 -> [ key 'k', kb Vty.KUp ]
-        SelectDownEvent               -> [ key 'j', kb Vty.KDown ]
-        ActivateListItemEvent         -> [ kb Vty.KEnter ]
-        SearchSelectUpEvent           -> [ ctrl (key 'p'), kb Vty.KUp ]
-        SearchSelectDownEvent         -> [ ctrl (key 'n'), kb Vty.KDown ]
-        ViewMessageEvent              -> [ key 'v' ]
-        FillGapEvent                  -> [ kb Vty.KEnter ]
-        CopyPostLinkEvent             -> [ key 'l' ]
-        FlagMessageEvent              -> [ key 'f' ]
-        OpenThreadEvent               -> [ key 't' ]
-        PinMessageEvent               -> [ key 'p' ]
-        YankMessageEvent              -> [ key 'y' ]
-        YankWholeMessageEvent         -> [ key 'Y' ]
-        DeleteMessageEvent            -> [ key 'd' ]
-        EditMessageEvent              -> [ key 'e' ]
-        ReplyMessageEvent             -> [ key 'r' ]
-        ReactToMessageEvent           -> [ key 'a' ]
-        OpenMessageURLEvent           -> [ key 'o' ]
-        AttachmentListAddEvent        -> [ key 'a' ]
-        AttachmentListDeleteEvent     -> [ key 'd' ]
-        AttachmentOpenEvent           -> [ key 'o' ]
-        CancelEvent                   -> [ kb Vty.KEsc, ctrl (key 'c') ]
-        EditorBolEvent                -> [ ctrl (key 'a') ]
-        EditorEolEvent                -> [ ctrl (key 'e') ]
-        EditorTransposeCharsEvent     -> [ ctrl (key 't') ]
-        EditorDeleteCharacter         -> [ ctrl (key 'd') ]
-        EditorKillToBolEvent          -> [ ctrl (key 'u') ]
-        EditorKillToEolEvent          -> [ ctrl (key 'k') ]
-        EditorPrevCharEvent           -> [ ctrl (key 'b') ]
-        EditorNextCharEvent           -> [ ctrl (key 'f') ]
-        EditorPrevWordEvent           -> [ meta (key 'b') ]
-        EditorNextWordEvent           -> [ meta (key 'f') ]
-        EditorDeleteNextWordEvent     -> [ meta (key 'd') ]
-        EditorDeletePrevWordEvent     -> [ ctrl (key 'w'), meta (kb Vty.KBS) ]
-        EditorHomeEvent               -> [ kb Vty.KHome ]
-        EditorEndEvent                -> [ kb Vty.KEnd ]
-        EditorYankEvent               -> [ ctrl (key 'y') ]
-        FileBrowserBeginSearchEvent      -> [ key '/' ]
-        FileBrowserSelectEnterEvent      -> [ kb Vty.KEnter ]
-        FileBrowserSelectCurrentEvent    -> [ kb (Vty.KChar ' ') ]
-        FileBrowserListPageUpEvent       -> [ ctrl (key 'b'), kb Vty.KPageUp ]
-        FileBrowserListPageDownEvent     -> [ ctrl (key 'f'), kb Vty.KPageDown ]
-        FileBrowserListHalfPageUpEvent   -> [ ctrl (key 'u') ]
-        FileBrowserListHalfPageDownEvent -> [ ctrl (key 'd') ]
-        FileBrowserListTopEvent          -> [ key 'g', kb Vty.KHome, meta $ key '<' ]
-        FileBrowserListBottomEvent       -> [ key 'G', kb Vty.KEnd, meta $ key '>' ]
-        FileBrowserListNextEvent         -> [ key 'j', ctrl (key 'n'), kb Vty.KDown ]
-        FileBrowserListPrevEvent         -> [ key 'k', ctrl (key 'p'), kb Vty.KUp ]
-        FormSubmitEvent               -> [ kb Vty.KEnter ]
-        NextTeamEvent                 -> [ ctrl (kb Vty.KRight) ]
-        PrevTeamEvent                 -> [ ctrl (kb Vty.KLeft) ]
-        MoveCurrentTeamLeftEvent      -> [ ]
-        MoveCurrentTeamRightEvent     -> [ ]
-
 -- | Given a configuration, we want to check it for internal consistency
 -- (i.e. that a given keybinding isn't associated with multiple events
 -- which both need to get generated in the same UI mode) and also for
@@ -266,7 +147,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
     -- provided key configuration.
     allBindings = groupWith fst $ concat
       [ case lookupKeyConfigBindings kc ev of
-          Nothing -> zip (defaultBindings ev) (repeat (False, ev))
+          Nothing -> zip (allDefaultBindings kc ev) (repeat (False, ev))
           Just (BindingList bs) -> zip bs (repeat (True, ev))
           Just Unbound -> []
       | (_, ev) <- keyEventsList (keyConfigEvents kc)

@@ -6,7 +6,10 @@ module Matterhorn.Types.KeyEvents
   , Binding(..)
   , BindingState(..)
   , lookupKeyConfigBindings
-  , keyConfigFromList
+  , newKeyConfig
+  , getFirstDefaultBinding
+  , firstActiveBinding
+  , allDefaultBindings
 
   -- * Data
   , allEvents
@@ -15,6 +18,7 @@ module Matterhorn.Types.KeyEvents
   , parseBinding
   , parseBindingList
   , ppBinding
+  , ppMaybeBinding
   , nonCharKeys
   , eventToBinding
 
@@ -284,6 +288,7 @@ data BindingState =
     | Unbound
     deriving (Show, Eq, Ord)
 
+-- | A configuration of custom key bindings.
 data KeyConfig e =
     KeyConfig { keyConfigBindingMap :: M.Map e BindingState
               -- ^ The map of custom bindings for events with custom
@@ -291,14 +296,46 @@ data KeyConfig e =
               , keyConfigEvents :: KeyEvents e
               -- ^ The base mapping of events and their names that is
               -- used in this configuration
+              , keyConfigDefaultBindings :: M.Map e [Binding]
+              -- ^ A mapping of events and their default key bindings,
+              -- if any
               }
               deriving (Show, Eq)
 
-keyConfigFromList :: (Ord e) => KeyEvents e -> [(e, BindingState)] -> KeyConfig e
-keyConfigFromList evs pairs =
-    KeyConfig { keyConfigBindingMap = M.fromList pairs
+newKeyConfig :: (Ord e)
+             => KeyEvents e
+             -- ^ The base mapping of key events to use
+             -> [(e, BindingState)]
+             -- ^ Custom bindings by key event
+             -> [(e, [Binding])]
+             -- ^ Default bindings by key event
+             -> KeyConfig e
+newKeyConfig evs bindings defaults =
+    KeyConfig { keyConfigBindingMap = M.fromList bindings
               , keyConfigEvents = evs
+              , keyConfigDefaultBindings = M.fromList defaults
               }
+
+getFirstDefaultBinding :: (Show e, Ord e) => KeyConfig e -> e -> Maybe Binding
+getFirstDefaultBinding kc ev = do
+    bs <- M.lookup ev (keyConfigDefaultBindings kc)
+    case bs of
+        (b:_) -> Just b
+        _ -> Nothing
+
+allDefaultBindings :: (Ord e) => KeyConfig e -> e -> [Binding]
+allDefaultBindings kc ev =
+    fromMaybe [] $ M.lookup ev (keyConfigDefaultBindings kc)
+
+firstActiveBinding :: (Show e, Ord e) => KeyConfig e -> e -> Maybe Binding
+firstActiveBinding kc ev = foundBinding <|> defaultBinding
+    where
+        defaultBinding = getFirstDefaultBinding kc ev
+        foundBinding = do
+            bState <- lookupKeyConfigBindings kc ev
+            case bState of
+                BindingList (b:_) -> Just b
+                _ -> Nothing
 
 lookupKeyConfigBindings :: (Ord e) => KeyConfig e -> e -> Maybe BindingState
 lookupKeyConfigBindings kc e = M.lookup e $ keyConfigBindingMap kc
@@ -359,6 +396,12 @@ parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
 ppBinding :: Binding -> Text
 ppBinding (Binding mods k) =
     T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
+
+ppMaybeBinding :: Maybe Binding -> Text
+ppMaybeBinding Nothing =
+    "(no binding)"
+ppMaybeBinding (Just b) =
+    ppBinding b
 
 ppKey :: Vty.Key -> Text
 ppKey (Vty.KChar c)   = ppChar c

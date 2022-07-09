@@ -257,8 +257,8 @@ keybindingHelp kc = vBox $
             , "values, are as follows:"
             ]
            ]
-        nextChanBinding = ppBinding (firstActiveBinding kc NextChannelEvent)
-        prevChanBinding = ppBinding (firstActiveBinding kc PrevChannelEvent)
+        nextChanBinding = ppMaybeBinding (firstActiveBinding kc NextChannelEvent)
+        prevChanBinding = ppMaybeBinding (firstActiveBinding kc PrevChannelEvent)
         validKeys = map paraL
           [ [ "The syntax used for key sequences consists of zero or more "
             , "single-character modifier characters followed by a keystroke, "
@@ -510,9 +510,9 @@ mkKeybindHelp kc h =
             ByEvent ev ->
                 let bindings = case lookupKeyConfigBindings kc ev of
                         Nothing ->
-                            let bs = defaultBindings ev
+                            let bs = allDefaultBindings kc ev
                             in if not $ null bs
-                               then ppBinding <$> defaultBindings ev
+                               then ppBinding <$> bs
                                else unbound
                         Just Unbound -> unbound
                         Just (BindingList bs) | not (null bs) -> ppBinding <$> bs
@@ -588,8 +588,8 @@ mkKeybindEventHelp kc h =
               let name = fromJust $ keyEventName (keyConfigEvents kc) ev
               in case lookupKeyConfigBindings kc ev of
                   Nothing ->
-                      if not (null (defaultBindings ev))
-                      then (Verbatim name, Verbatim <$> ppBinding <$> defaultBindings ev)
+                      if not (null (allDefaultBindings kc ev))
+                      then (Verbatim name, Verbatim <$> ppBinding <$> allDefaultBindings kc ev)
                       else (Verbatim name, unbound)
                   Just Unbound ->
                       (Verbatim name, unbound)

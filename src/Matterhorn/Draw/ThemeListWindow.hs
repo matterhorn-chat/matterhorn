@@ -38,8 +38,8 @@ drawThemeListWindow st tId =
                                  , close
                                  , txt ":close"
                                  ])
-        enter = emph $ txt $ ppBinding (firstActiveBinding kc ActivateListItemEvent)
-        close = emph $ txt $ ppBinding (firstActiveBinding kc CancelEvent)
+        enter = emph $ txt $ ppMaybeBinding (firstActiveBinding kc ActivateListItemEvent)
+        close = emph $ txt $ ppMaybeBinding (firstActiveBinding kc CancelEvent)
         kc = st^.csResources.crConfiguration.configUserKeysL
         emph = withDefAttr clientEmphAttr
     in joinBorders window

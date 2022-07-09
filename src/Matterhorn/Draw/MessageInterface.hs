@@ -115,7 +115,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                        txt $ "(" <> (T.pack $ show count) <> " attachment" <>
                              (if count == 1 then "" else "s") <> "; "
                      , withDefAttr clientEmphAttr $
-                       txt $ ppBinding (firstActiveBinding kc ShowAttachmentListEvent)
+                       txt $ ppMaybeBinding (firstActiveBinding kc ShowAttachmentListEvent)
                      , txt " to manage)"
                      ]
 
@@ -395,7 +395,7 @@ inputArea st which focused hs =
             _ -> emptyWidget
 
         kc = st^.csResources.crConfiguration.configUserKeysL
-        multiLineToggleKey = ppBinding $ firstActiveBinding kc ToggleMultiLineEvent
+        multiLineToggleKey = ppMaybeBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
         commandBox = case st^.which.esEphemeral.eesMultiline of
             False ->

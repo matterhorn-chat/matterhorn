@@ -61,7 +61,7 @@ renderUTCTime fmt tz t =
 
 renderKeybindingHelp :: ChatState -> Text -> [KeyEvent] -> Widget Name
 renderKeybindingHelp st label evs =
-  let ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (firstActiveBinding kc ev))
+  let ppEv ev = withDefAttr clientEmphAttr $ txt (ppMaybeBinding (firstActiveBinding kc ev))
       kc = st^.csResources.crConfiguration.configUserKeysL
   in hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
 
