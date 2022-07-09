@@ -16,8 +16,11 @@ module Matterhorn.Types.KeyEvents
   , nonCharKeys
   , eventToBinding
 
-  -- * Key event name resolution
-  , keyEventFromName
+  -- * Key event collection
+  , KeyEvents
+  , keyEvents
+  , keyEventsList
+  , lookupKeyEvent
   , keyEventName
   )
 where
@@ -25,6 +28,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import qualified Data.Bimap as B
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
@@ -156,120 +160,112 @@ data KeyEvent
   | MoveCurrentTeamRightEvent
     deriving (Eq, Show, Ord, Enum)
 
-allEvents :: [KeyEvent]
+data KeyEvents e = KeyEvents (B.Bimap Text e)
+
+keyEvents :: (Ord e) => [(Text, e)] -> KeyEvents e
+keyEvents pairs = KeyEvents $ B.fromList pairs
+
+keyEventsList :: KeyEvents e -> [(Text, e)]
+keyEventsList (KeyEvents m) = B.toList m
+
+allEvents :: KeyEvents KeyEvent
 allEvents =
-  [ QuitEvent
-  , VtyRefreshEvent
-  , ClearUnreadEvent
-
-  , ToggleMessagePreviewEvent
-  , InvokeEditorEvent
-  , ToggleMultiLineEvent
-  , CancelEvent
-  , ReplyRecentEvent
-  , SelectNextTabEvent
-  , SelectPreviousTabEvent
-
-  , SaveAttachmentEvent
-
-  , EnterFastSelectModeEvent
-  , NextChannelEvent
-  , PrevChannelEvent
-  , NextChannelEventAlternate
-  , PrevChannelEventAlternate
-  , NextUnreadChannelEvent
-  , NextUnreadUserOrChannelEvent
-  , LastChannelEvent
-
-  , ShowAttachmentListEvent
-
-  , ChangeMessageEditorFocus
-
-  , EditorKillToBolEvent
-  , EditorKillToEolEvent
-  , EditorBolEvent
-  , EditorEolEvent
-  , EditorTransposeCharsEvent
-  , EditorDeleteCharacter
-  , EditorPrevCharEvent
-  , EditorNextCharEvent
-  , EditorPrevWordEvent
-  , EditorNextWordEvent
-  , EditorDeleteNextWordEvent
-  , EditorDeletePrevWordEvent
-  , EditorHomeEvent
-  , EditorEndEvent
-  , EditorYankEvent
-
-  , CycleChannelListSorting
-
-  , EnterFlaggedPostsEvent
-  , ToggleChannelListVisibleEvent
-  , ToggleExpandedChannelTopicsEvent
-  , ShowHelpEvent
-  , EnterSelectModeEvent
-  , EnterOpenURLModeEvent
-
-  , LoadMoreEvent
-  , OpenMessageURLEvent
-
-  , ScrollUpEvent
-  , ScrollDownEvent
-  , ScrollLeftEvent
-  , ScrollRightEvent
-  , ChannelListScrollUpEvent
-  , ChannelListScrollDownEvent
-  , PageUpEvent
-  , PageDownEvent
-  , PageLeftEvent
-  , PageRightEvent
-  , ScrollTopEvent
-  , ScrollBottomEvent
-  , SelectOldestMessageEvent
-
-  , SelectUpEvent
-  , SelectDownEvent
-
-  , ActivateListItemEvent
-
-  , SearchSelectUpEvent
-  , SearchSelectDownEvent
-
-  , NextTeamEvent
-  , PrevTeamEvent
-  , MoveCurrentTeamLeftEvent
-  , MoveCurrentTeamRightEvent
-
-  , OpenThreadEvent
-  , FlagMessageEvent
-  , PinMessageEvent
-  , ViewMessageEvent
-  , FillGapEvent
-  , CopyPostLinkEvent
-  , YankMessageEvent
-  , YankWholeMessageEvent
-  , DeleteMessageEvent
-  , EditMessageEvent
-  , ReplyMessageEvent
-  , ReactToMessageEvent
-  , AttachmentListAddEvent
-  , AttachmentListDeleteEvent
-  , AttachmentOpenEvent
-
-  , FileBrowserBeginSearchEvent
-  , FileBrowserSelectEnterEvent
-  , FileBrowserSelectCurrentEvent
-  , FileBrowserListPageUpEvent
-  , FileBrowserListPageDownEvent
-  , FileBrowserListHalfPageUpEvent
-  , FileBrowserListHalfPageDownEvent
-  , FileBrowserListTopEvent
-  , FileBrowserListBottomEvent
-  , FileBrowserListNextEvent
-  , FileBrowserListPrevEvent
-
-  , FormSubmitEvent
-  ]
+    keyEvents
+    [ ("quit", QuitEvent)
+    , ("vty-refresh", VtyRefreshEvent)
+    , ("clear-unread", ClearUnreadEvent)
+    , ("cancel", CancelEvent)
+    , ("toggle-message-preview", ToggleMessagePreviewEvent)
+    , ("invoke-editor", InvokeEditorEvent)
+    , ("toggle-multiline", ToggleMultiLineEvent)
+    , ("reply-recent", ReplyRecentEvent)
+    , ("enter-fast-select", EnterFastSelectModeEvent)
+    , ("focus-next-channel", NextChannelEvent)
+    , ("focus-prev-channel", PrevChannelEvent)
+    , ("focus-next-channel-alternate", NextChannelEventAlternate)
+    , ("focus-prev-channel-alternate", PrevChannelEventAlternate)
+    , ("focus-next-unread", NextUnreadChannelEvent)
+    , ("focus-next-unread-user-or-channel", NextUnreadUserOrChannelEvent)
+    , ("focus-last-channel", LastChannelEvent)
+    , ("select-next-tab", SelectNextTabEvent)
+    , ("select-previous-tab", SelectPreviousTabEvent)
+    , ("save-attachment", SaveAttachmentEvent)
+    , ("show-attachment-list", ShowAttachmentListEvent)
+    , ("change-message-editor-focus", ChangeMessageEditorFocus)
+    , ("editor-kill-to-beginning-of-line", EditorKillToBolEvent)
+    , ("editor-kill-to-end-of-line", EditorKillToEolEvent)
+    , ("editor-beginning-of-line", EditorBolEvent)
+    , ("editor-end-of-line", EditorEolEvent)
+    , ("editor-transpose-chars", EditorTransposeCharsEvent)
+    , ("editor-delete-char", EditorDeleteCharacter)
+    , ("editor-prev-char", EditorPrevCharEvent)
+    , ("editor-next-char", EditorNextCharEvent)
+    , ("editor-prev-word", EditorPrevWordEvent)
+    , ("editor-next-word", EditorNextWordEvent)
+    , ("editor-delete-next-word", EditorDeleteNextWordEvent)
+    , ("editor-delete-prev-word", EditorDeletePrevWordEvent)
+    , ("editor-home", EditorHomeEvent)
+    , ("editor-end", EditorEndEvent)
+    , ("editor-yank", EditorYankEvent)
+    , ("cycle-channel-list-sorting", CycleChannelListSorting)
+    , ("next-team", NextTeamEvent)
+    , ("prev-team", PrevTeamEvent)
+    , ("move-current-team-left", MoveCurrentTeamLeftEvent)
+    , ("move-current-team-right", MoveCurrentTeamRightEvent)
+    , ("show-flagged-posts", EnterFlaggedPostsEvent)
+    , ("toggle-channel-list-visibility", ToggleChannelListVisibleEvent)
+    , ("toggle-expanded-channel-topics", ToggleExpandedChannelTopicsEvent)
+    , ("show-help", ShowHelpEvent)
+    , ("select-mode", EnterSelectModeEvent)
+    , ("enter-url-open", EnterOpenURLModeEvent)
+    , ("load-more", LoadMoreEvent)
+    , ("open-message-url", OpenMessageURLEvent)
+    , ("scroll-up", ScrollUpEvent)
+    , ("scroll-down", ScrollDownEvent)
+    , ("scroll-left", ScrollLeftEvent)
+    , ("scroll-right", ScrollRightEvent)
+    , ("channel-list-scroll-up", ChannelListScrollUpEvent)
+    , ("channel-list-scroll-down", ChannelListScrollDownEvent)
+    , ("page-up", PageUpEvent)
+    , ("page-down", PageDownEvent)
+    , ("page-left", PageLeftEvent)
+    , ("page-right", PageRightEvent)
+    , ("scroll-top", ScrollTopEvent)
+    , ("scroll-bottom", ScrollBottomEvent)
+    , ("select-oldest-message", SelectOldestMessageEvent)
+    , ("select-up", SelectUpEvent)
+    , ("select-down", SelectDownEvent)
+    , ("search-select-up", SearchSelectUpEvent)
+    , ("search-select-down", SearchSelectDownEvent)
+    , ("activate-list-item", ActivateListItemEvent)
+    , ("open-thread", OpenThreadEvent)
+    , ("flag-message", FlagMessageEvent)
+    , ("pin-message", PinMessageEvent)
+    , ("view-message", ViewMessageEvent)
+    , ("fetch-for-gap", FillGapEvent)
+    , ("copy-post-link", CopyPostLinkEvent)
+    , ("yank-message", YankMessageEvent)
+    , ("yank-whole-message", YankWholeMessageEvent)
+    , ("delete-message", DeleteMessageEvent)
+    , ("edit-message", EditMessageEvent)
+    , ("reply-message", ReplyMessageEvent)
+    , ("react-to-message", ReactToMessageEvent)
+    , ("add-to-attachment-list", AttachmentListAddEvent)
+    , ("delete-from-attachment-list", AttachmentListDeleteEvent)
+    , ("open-attachment", AttachmentOpenEvent)
+    , ("filebrowser-begin-search", FileBrowserBeginSearchEvent)
+    , ("filebrowser-select-file-or-enter-directory", FileBrowserSelectEnterEvent)
+    , ("filebrowser-select-current", FileBrowserSelectCurrentEvent)
+    , ("filebrowser-list-page-up", FileBrowserListPageUpEvent)
+    , ("filebrowser-list-page-down", FileBrowserListPageDownEvent)
+    , ("filebrowser-list-half-page-up", FileBrowserListHalfPageUpEvent)
+    , ("filebrowser-list-half-page-down", FileBrowserListHalfPageDownEvent)
+    , ("filebrowser-list-top", FileBrowserListTopEvent)
+    , ("filebrowser-list-bottom", FileBrowserListBottomEvent)
+    , ("filebrowser-list-next", FileBrowserListNextEvent)
+    , ("filebrowser-list-previous", FileBrowserListPrevEvent)
+    , ("submit-form", FormSubmitEvent)
+    ]
 
 eventToBinding :: Vty.Event -> Binding
 eventToBinding (Vty.EvKey k mods) = Binding mods k
@@ -397,127 +393,8 @@ parseBindingList t =
     then return Unbound
     else BindingList <$> mapM (parseBinding . T.strip) (T.splitOn "," t)
 
-keyEventFromName :: Text -> Either String KeyEvent
-keyEventFromName t =
-    let mapping = M.fromList [ (keyEventName e, e) | e <- allEvents ]
-    in case M.lookup t mapping of
-        Just e -> return e
-        Nothing -> Left ("Unknown event: " ++ show t)
+lookupKeyEvent :: (Ord e) => KeyEvents e -> Text -> Maybe e
+lookupKeyEvent (KeyEvents m) name = B.lookup name m
 
-keyEventName :: KeyEvent -> Text
-keyEventName ev = case ev of
-  QuitEvent                 -> "quit"
-  VtyRefreshEvent           -> "vty-refresh"
-  ClearUnreadEvent          -> "clear-unread"
-  CancelEvent               -> "cancel"
-
-  ToggleMessagePreviewEvent -> "toggle-message-preview"
-  InvokeEditorEvent         -> "invoke-editor"
-  ToggleMultiLineEvent      -> "toggle-multiline"
-  ReplyRecentEvent          -> "reply-recent"
-
-  EnterFastSelectModeEvent  -> "enter-fast-select"
-  NextChannelEvent          -> "focus-next-channel"
-  PrevChannelEvent          -> "focus-prev-channel"
-  NextChannelEventAlternate -> "focus-next-channel-alternate"
-  PrevChannelEventAlternate -> "focus-prev-channel-alternate"
-  NextUnreadChannelEvent    -> "focus-next-unread"
-  NextUnreadUserOrChannelEvent  -> "focus-next-unread-user-or-channel"
-  LastChannelEvent          -> "focus-last-channel"
-
-  SelectNextTabEvent        -> "select-next-tab"
-  SelectPreviousTabEvent    -> "select-previous-tab"
-
-  SaveAttachmentEvent       -> "save-attachment"
-
-  ShowAttachmentListEvent   -> "show-attachment-list"
-
-  ChangeMessageEditorFocus  -> "change-message-editor-focus"
-
-  EditorKillToBolEvent        -> "editor-kill-to-beginning-of-line"
-  EditorKillToEolEvent        -> "editor-kill-to-end-of-line"
-  EditorBolEvent              -> "editor-beginning-of-line"
-  EditorEolEvent              -> "editor-end-of-line"
-  EditorTransposeCharsEvent   -> "editor-transpose-chars"
-  EditorDeleteCharacter       -> "editor-delete-char"
-  EditorPrevCharEvent         -> "editor-prev-char"
-  EditorNextCharEvent         -> "editor-next-char"
-  EditorPrevWordEvent         -> "editor-prev-word"
-  EditorNextWordEvent         -> "editor-next-word"
-  EditorDeleteNextWordEvent   -> "editor-delete-next-word"
-  EditorDeletePrevWordEvent   -> "editor-delete-prev-word"
-  EditorHomeEvent             -> "editor-home"
-  EditorEndEvent              -> "editor-end"
-  EditorYankEvent             -> "editor-yank"
-
-  CycleChannelListSorting     -> "cycle-channel-list-sorting"
-
-  NextTeamEvent               -> "next-team"
-  PrevTeamEvent               -> "prev-team"
-  MoveCurrentTeamLeftEvent    -> "move-current-team-left"
-  MoveCurrentTeamRightEvent   -> "move-current-team-right"
-
-  EnterFlaggedPostsEvent    -> "show-flagged-posts"
-  ToggleChannelListVisibleEvent -> "toggle-channel-list-visibility"
-  ToggleExpandedChannelTopicsEvent -> "toggle-expanded-channel-topics"
-  ShowHelpEvent             -> "show-help"
-  EnterSelectModeEvent      -> "select-mode"
-  EnterOpenURLModeEvent     -> "enter-url-open"
-
-  LoadMoreEvent             -> "load-more"
-  OpenMessageURLEvent       -> "open-message-url"
-
-  ScrollUpEvent     -> "scroll-up"
-  ScrollDownEvent   -> "scroll-down"
-  ScrollLeftEvent   -> "scroll-left"
-  ScrollRightEvent  -> "scroll-right"
-
-  ChannelListScrollUpEvent     -> "channel-list-scroll-up"
-  ChannelListScrollDownEvent   -> "channel-list-scroll-down"
-
-  PageUpEvent       -> "page-up"
-  PageDownEvent     -> "page-down"
-  PageLeftEvent     -> "page-left"
-  PageRightEvent    -> "page-right"
-  ScrollTopEvent    -> "scroll-top"
-  ScrollBottomEvent -> "scroll-bottom"
-  SelectOldestMessageEvent -> "select-oldest-message"
-
-  SelectUpEvent   -> "select-up"
-  SelectDownEvent -> "select-down"
-
-  SearchSelectUpEvent   -> "search-select-up"
-  SearchSelectDownEvent -> "search-select-down"
-
-  ActivateListItemEvent -> "activate-list-item"
-
-  OpenThreadEvent    -> "open-thread"
-  FlagMessageEvent   -> "flag-message"
-  PinMessageEvent   -> "pin-message"
-  ViewMessageEvent   -> "view-message"
-  FillGapEvent       -> "fetch-for-gap"
-  CopyPostLinkEvent  -> "copy-post-link"
-  YankMessageEvent   -> "yank-message"
-  YankWholeMessageEvent   -> "yank-whole-message"
-  DeleteMessageEvent -> "delete-message"
-  EditMessageEvent   -> "edit-message"
-  ReplyMessageEvent  -> "reply-message"
-  ReactToMessageEvent -> "react-to-message"
-
-  AttachmentListAddEvent    -> "add-to-attachment-list"
-  AttachmentListDeleteEvent -> "delete-from-attachment-list"
-  AttachmentOpenEvent       -> "open-attachment"
-
-  FileBrowserBeginSearchEvent      -> "filebrowser-begin-search"
-  FileBrowserSelectEnterEvent      -> "filebrowser-select-file-or-enter-directory"
-  FileBrowserSelectCurrentEvent    -> "filebrowser-select-current"
-  FileBrowserListPageUpEvent       -> "filebrowser-list-page-up"
-  FileBrowserListPageDownEvent     -> "filebrowser-list-page-down"
-  FileBrowserListHalfPageUpEvent   -> "filebrowser-list-half-page-up"
-  FileBrowserListHalfPageDownEvent -> "filebrowser-list-half-page-down"
-  FileBrowserListTopEvent          -> "filebrowser-list-top"
-  FileBrowserListBottomEvent       -> "filebrowser-list-bottom"
-  FileBrowserListNextEvent         -> "filebrowser-list-next"
-  FileBrowserListPrevEvent         -> "filebrowser-list-previous"
-
-  FormSubmitEvent -> "submit-form"
+keyEventName :: (Ord e) => KeyEvents e -> e -> Maybe Text
+keyEventName (KeyEvents m) e = B.lookupR e m

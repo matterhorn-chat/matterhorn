@@ -19,7 +19,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents ( ppBinding )
 import           Matterhorn.Events.Keybindings
 
 

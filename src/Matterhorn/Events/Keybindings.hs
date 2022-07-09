@@ -15,15 +15,10 @@ module Matterhorn.Events.Keybindings
   , KeyEventTrigger(..)
   , KeyHandlerMap(..)
 
-  -- Re-exports:
-  , KeyEvent (..)
-  , KeyConfig
-  , allEvents
-  , parseBinding
-  , keyEventName
-  , keyEventFromName
-
   , ensureKeybindingConsistency
+
+  -- Re-exports:
+  , module Matterhorn.Types.KeyEvents
   )
 where
 
@@ -32,6 +27,7 @@ import           Matterhorn.Prelude
 
 import qualified Data.Text as T
 import qualified Data.Map.Strict as M
+import           Data.Maybe (fromJust)
 import qualified Graphics.Vty as Vty
 
 import           Matterhorn.Types
@@ -273,7 +269,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
           Nothing -> zip (defaultBindings ev) (repeat (False, ev))
           Just (BindingList bs) -> zip bs (repeat (True, ev))
           Just Unbound -> []
-      | ev <- allEvents
+      | (_, ev) <- keyEventsList allEvents
       ]
 
     -- The invariant here is that each call to checkGroup is made with a
@@ -305,7 +301,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
              T.unpack (ppBinding b) :
              "`:\n" :
              concat [ [ " - `"
-                      , T.unpack (keyEventName ev)
+                      , T.unpack (fromJust $ keyEventName allEvents ev)
                       , "` "
                       , if isFromUser
                           then "(via user configuration)"
@@ -333,7 +329,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
           ]
 
     -- Events get some nice formatting!
-    ppEvent ev = "`" ++ T.unpack (keyEventName ev) ++ "`"
+    ppEvent ev = "`" ++ T.unpack (fromJust $ keyEventName allEvents ev) ++ "`"
 
     -- This check should get more nuanced, but as a first approximation,
     -- we shouldn't bind to any bare character key in the main mode.

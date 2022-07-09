@@ -44,7 +44,6 @@ import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.RichText
 
 

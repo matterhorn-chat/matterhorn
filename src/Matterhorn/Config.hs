@@ -156,8 +156,8 @@ fromIni = do
         configUserKeys = mempty
     return Config { .. }
   keys <- sectionMb "keybindings" $ do
-      fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
-          kb <- fieldMbOf (keyEventName ev) parseBindingList
+      fmap (M.fromList . catMaybes) $ forM (keyEventsList allEvents) $ \(evName, ev) -> do
+          kb <- fieldMbOf evName parseBindingList
           case kb of
               Nothing      -> return Nothing
               Just binding -> return (Just (ev, binding))
