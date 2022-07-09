@@ -17,7 +17,6 @@ import Network.Mattermost.Types ( TeamId )
 
 import Matterhorn.Draw.Util (renderKeybindingHelp)
 import Matterhorn.Types
-import Matterhorn.Types.KeyEvents
 import Matterhorn.Themes
 
 drawNotifyPrefs :: ChatState -> TeamId -> Widget Name
