@@ -106,6 +106,7 @@ library
                        Matterhorn.HelpTopics
                        Matterhorn.IOUtil
                        Matterhorn.InputHistory
+                       Matterhorn.KeybindingConsistency
                        Matterhorn.LastRunState
                        Matterhorn.Login
                        Matterhorn.Options

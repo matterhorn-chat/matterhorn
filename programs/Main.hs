@@ -9,7 +9,7 @@ import Matterhorn.Prelude
 import Matterhorn.Config
 import Matterhorn.Options
 import Matterhorn.App
-import Matterhorn.Events.Keybindings ( ensureKeybindingConsistency )
+import Matterhorn.KeybindingConsistency
 import Matterhorn.Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable
                                 , commandMarkdownTable, commandTextTable
                                 , keybindSections )
