@@ -383,7 +383,12 @@ keyHandlersFromConfig kc eh =
                               | Just Unbound <- lookupKeyConfigBindings kc ev = []
                               | otherwise = allDefaultBindings kc ev
 
+-- | The class of types that can be converted into 'Binding's.
+--
+-- This is provided to make it easy to write and modify bindings in less
+-- verbose ways.
 class ToBinding a where
+    -- | Binding constructor.
     toBinding :: a -> Binding
 
 instance ToBinding Vty.Key where
