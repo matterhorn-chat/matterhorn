@@ -77,7 +77,7 @@ data BindingState =
     | Unbound
     deriving (Show, Eq, Ord)
 
--- | A configuration of custom key bindings.
+-- | A configuration of custom key bindings. A 'KeyConfig' stores everything needed to resolve a key event into one or more key bindings
 data KeyConfig e =
     KeyConfig { keyConfigBindingMap :: M.Map e BindingState
               -- ^ The map of custom bindings for events with custom
@@ -286,8 +286,8 @@ lookupEvent _ _ = Nothing
 
 -- | Handle a keyboard event by looking it up in a map of bindings and
 -- invoking the matching binding's handler. Return True if the key event
--- was handled with a matching binding; False if not (the fallback
--- case).
+-- was handled with a matching binding; False if no matching binding was
+-- found (the fallback case).
 handleKeyboardEvent :: (Monad m)
                     => KeyHandlerMap e m
                     -- ^ The handler map to query for a handler for this
@@ -318,6 +318,15 @@ onKey k mods msg action =
         , kehEventTrigger = Static $ keyToBinding k mods
         }
 
+-- | Build a 'KeyHandlerMap'.
+--
+-- This works by taking a list of abstract key event handlers and
+-- building a map of event handlers based on specific Vty keys, using
+-- the provided 'KeyConfig' to map between abstract key events and Vty
+-- keys.
+--
+-- Once you have a 'KeyHandlerMap', you can dispatch a key event to it
+-- and invoke the corresponding handler with 'handleKeyboardEvent'.
 mkKeybindings :: (Ord e)
               => [KeyEventHandler e m]
               -> KeyConfig e
