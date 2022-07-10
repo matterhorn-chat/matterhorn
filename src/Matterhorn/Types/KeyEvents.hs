@@ -325,13 +325,28 @@ mkHandler msg action =
        , ehAction = action
        }
 
-onEvent :: e -> Text -> m () -> KeyEventHandler e m
+-- | Specify a handler for the specified key event.
+onEvent :: e
+        -- ^ The key event whose bindings should trigger this handler.
+        -> Text
+        -- ^ The description of the handler.
+        -> m ()
+        -- ^ The handler to invoke.
+        -> KeyEventHandler e m
 onEvent ev msg action =
     KEH { kehHandler = mkHandler msg action
         , kehEventTrigger = ByEvent ev
         }
 
-onKey :: (ToBinding a) => a -> Text -> m () -> KeyEventHandler e m
+-- | Specify a handler for the specified key.
+onKey :: (ToBinding a)
+      => a
+      -- ^ The binding that should trigger this handler.
+      -> Text
+      -- ^ The description of the handler.
+      -> m ()
+      -- ^ The handler to invoke.
+      -> KeyEventHandler e m
 onKey b msg action =
     KEH { kehHandler = mkHandler msg action
         , kehEventTrigger = Static $ toBinding b
