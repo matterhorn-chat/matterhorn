@@ -330,13 +330,13 @@ keyHandlerMapPairs ks conf = pairs
     where
         pairs = mkPair <$> handlers
         mkPair h = (khKey h, h)
-        handlers = concat $ keyHandlerFromConfig conf <$> ks
+        handlers = concat $ keyHandlersFromConfig conf <$> ks
 
-keyHandlerFromConfig :: (Ord e)
-                     => KeyConfig e
-                     -> KeyEventHandler e m
-                     -> [KeyHandler e m]
-keyHandlerFromConfig kc eh =
+keyHandlersFromConfig :: (Ord e)
+                      => KeyConfig e
+                      -> KeyEventHandler e m
+                      -> [KeyHandler e m]
+keyHandlersFromConfig kc eh =
     case kehEventTrigger eh of
         Static binding ->
             [ KH eh binding ]
