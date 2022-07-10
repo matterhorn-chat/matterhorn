@@ -12,10 +12,10 @@ import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.ChannelListWindow
 import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 onEventChannelListWindow :: TeamId -> Vty.Event -> MH ()
@@ -23,10 +23,10 @@ onEventChannelListWindow tId =
     void . onEventListWindow (csTeam(tId).tsChannelListWindow) (channelListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a channel list window
-channelListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+channelListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 channelListWindowKeybindings tId = mkKeybindings (channelListWindowKeyHandlers tId)
 
-channelListWindowKeyHandlers :: TeamId -> [KeyEventHandler]
+channelListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 channelListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the channel search list" (exitListWindow tId (csTeam(tId).tsChannelListWindow))
     , mkKb SearchSelectUpEvent "Select the previous channel" $ channelListSelectUp tId

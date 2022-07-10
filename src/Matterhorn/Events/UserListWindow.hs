@@ -7,10 +7,10 @@ import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.UserListWindow
 import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 onEventUserListWindow :: TeamId -> Vty.Event -> MH ()
@@ -18,10 +18,10 @@ onEventUserListWindow tId =
     void . onEventListWindow (csTeam(tId).tsUserListWindow) (userListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list window
-userListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+userListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 userListWindowKeybindings tId = mkKeybindings (userListWindowKeyHandlers tId)
 
-userListWindowKeyHandlers :: TeamId -> [KeyEventHandler]
+userListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 userListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the user search list" (exitListWindow tId (csTeam(tId).tsUserListWindow))
     , mkKb SearchSelectUpEvent "Select the previous user" $ userListSelectUp tId

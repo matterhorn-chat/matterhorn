@@ -85,7 +85,6 @@ library
                        Matterhorn.Events.SaveAttachmentWindow
                        Matterhorn.Events.DeleteChannelConfirm
                        Matterhorn.Events.EditNotifyPrefs
-                       Matterhorn.Events.Keybindings
                        Matterhorn.Events.LeaveChannelConfirm
                        Matterhorn.Events.Global
                        Matterhorn.Events.Main

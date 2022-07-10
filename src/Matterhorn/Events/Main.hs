@@ -11,7 +11,6 @@ import qualified Graphics.Vty as Vty
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.HelpTopics
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.MessageInterface
 import           Matterhorn.Events.ThreadWindow
 import           Matterhorn.State.ChannelSelect
@@ -21,11 +20,12 @@ import           Matterhorn.State.Help
 import           Matterhorn.State.Teams
 import           Matterhorn.State.PostListWindow ( enterFlaggedPostListMode )
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 onEventMain :: TeamId -> Vty.Event -> MH ()
 onEventMain tId =
     void .
-    handleEventWith [ handleKeyboardEvent (mainKeybindings tId)
+    handleEventWith [ mhHandleKeyboardEvent (mainKeybindings tId)
                     , \e -> do
                         st <- use id
                         case st^.csTeam(tId).tsMessageInterfaceFocus of
@@ -37,10 +37,10 @@ onEventMain tId =
                                     Just cId -> handleMessageInterfaceEvent tId (csChannelMessageInterface(cId)) e
                     ]
 
-mainKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+mainKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
-mainKeyHandlers :: TeamId -> [KeyEventHandler]
+mainKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 mainKeyHandlers tId =
     [ mkKb ShowHelpEvent
         "Show this help screen" $ do

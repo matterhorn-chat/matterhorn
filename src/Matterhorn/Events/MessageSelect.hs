@@ -16,10 +16,10 @@ import           Lens.Micro.Platform ( Lens', to )
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.ReactionEmojiListWindow
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 messagesPerPageOperation :: Int
@@ -30,7 +30,7 @@ onEventMessageSelect :: TeamId
                      -> Vty.Event
                      -> MH Bool
 onEventMessageSelect tId which =
-    handleKeyboardEvent (messageSelectKeybindings tId which)
+    mhHandleKeyboardEvent (messageSelectKeybindings tId which)
 
 onEventMessageSelectDeleteConfirm :: TeamId -> Lens' ChatState (MessageInterface Name i) -> Vty.Event -> MH ()
 onEventMessageSelectDeleteConfirm tId which (Vty.EvKey (Vty.KChar 'y') []) = do
@@ -44,13 +44,13 @@ onEventMessageSelectDeleteConfirm tId _ _ = do
 messageSelectKeybindings :: TeamId
                          -> Lens' ChatState (MessageInterface n i)
                          -> KeyConfig KeyEvent
-                         -> KeyHandlerMap
+                         -> KeyHandlerMap KeyEvent MH
 messageSelectKeybindings tId which =
     mkKeybindings (messageSelectKeyHandlers tId which)
 
 messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState (MessageInterface n i)
-                         -> [KeyEventHandler]
+                         -> [KeyEventHandler KeyEvent MH]
 messageSelectKeyHandlers tId which =
     [ mkKb CancelEvent "Cancel message selection" $
         exitMessageSelect which

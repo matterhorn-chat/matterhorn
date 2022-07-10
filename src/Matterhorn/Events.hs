@@ -30,7 +30,6 @@ import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.ChannelTopicWindow
 import           Matterhorn.Events.DeleteChannelConfirm
 import           Matterhorn.Events.Global
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.LeaveChannelConfirm
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
@@ -190,7 +189,7 @@ onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent =
     void .
     handleEventWith [ handleResizeEvent
-                    , handleKeyboardEvent globalKeybindings
+                    , mhHandleKeyboardEvent globalKeybindings
                     , handleTeamModeEvent
                     ]
 

@@ -23,9 +23,9 @@ import           Lens.Micro.Platform ( to )
 import           Network.Mattermost.Types ( TeamId, Post (postId) )
 
 import           Matterhorn.Constants
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Themes
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.RichText ( Inline(EUser) )
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), printableNameForUserRef )
@@ -101,9 +101,9 @@ getLatestMessage cs tId m =
 
 handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent tId VMTabMessage =
-    void . handleKeyboardEvent (viewMessageKeybindings tId)
+    void . mhHandleKeyboardEvent (viewMessageKeybindings tId)
 handleEvent tId VMTabReactions =
-    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId)
+    void . mhHandleKeyboardEvent (viewMessageReactionsKeybindings tId)
 
 reactionsText :: ChatState -> TeamId -> Message -> Widget Name
 reactionsText st tId m = viewport vpName Vertical body
@@ -183,10 +183,10 @@ viewMessageBox st tId msg =
         ctx <- getContext
         render $ maybeWarn $ viewport (ViewMessageArea tId) Both $ mkBody (ctx^.availWidthL)
 
-viewMessageKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+viewMessageKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 viewMessageKeybindings tId = mkKeybindings (viewMessageKeyHandlers tId)
 
-viewMessageKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 viewMessageKeyHandlers tId =
     let vs = viewportScroll . ViewMessageArea
     in [ mkKb PageUpEvent "Page up" $ do
@@ -220,10 +220,10 @@ viewMessageKeyHandlers tId =
            mh $ vScrollToBeginning (vs tId)
        ]
 
-viewMessageReactionsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+viewMessageReactionsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 viewMessageReactionsKeybindings tId = mkKeybindings (viewMessageReactionsKeyHandlers tId)
 
-viewMessageReactionsKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageReactionsKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 viewMessageReactionsKeyHandlers tId =
     let vs = viewportScroll . ViewMessageReactionsArea
     in [ mkKb PageUpEvent "Page up" $ do

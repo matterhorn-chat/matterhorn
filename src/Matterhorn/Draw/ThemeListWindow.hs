@@ -19,7 +19,7 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Events.Keybindings
+import           Matterhorn.Types.KeyEvents
 
 
 drawThemeListWindow :: ChatState -> TeamId -> Widget Name

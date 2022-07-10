@@ -36,13 +36,13 @@ import           Matterhorn.Draw.ManageAttachments
 import           Matterhorn.Draw.InputPreview
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.RichText
 

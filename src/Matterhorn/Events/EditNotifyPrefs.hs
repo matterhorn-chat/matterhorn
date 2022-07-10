@@ -20,13 +20,12 @@ import           Lens.Micro.Platform (_Just, (.=), singular)
 
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.NotifyPrefs
 import           Matterhorn.State.Async
 
 onEventEditNotifyPrefs :: TeamId -> V.Event -> MH Bool
 onEventEditNotifyPrefs tId =
-    handleEventWith [ handleKeyboardEvent (editNotifyPrefsKeybindings tId)
+    handleEventWith [ mhHandleKeyboardEvent (editNotifyPrefsKeybindings tId)
                     , handleEditNotifyPrefsEvent tId . VtyEvent
                     ]
 
@@ -37,10 +36,10 @@ handleEditNotifyPrefsEvent tId e = do
     csTeam(tId).tsNotifyPrefs .= Just updatedForm
     return True
 
-editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 editNotifyPrefsKeybindings tId = mkKeybindings (editNotifyPrefsKeyHandlers tId)
 
-editNotifyPrefsKeyHandlers :: TeamId -> [KeyEventHandler]
+editNotifyPrefsKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 editNotifyPrefsKeyHandlers tId =
     [ mkKb CancelEvent "Close channel notification preferences" $
         exitEditNotifyPrefsMode tId

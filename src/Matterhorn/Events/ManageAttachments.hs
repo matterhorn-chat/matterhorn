@@ -23,7 +23,6 @@ import           Lens.Micro.Platform ( (?=), (%=), to, Lens', (.=) )
 
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.Common
 
@@ -32,17 +31,17 @@ onEventAttachmentList :: Lens' ChatState (MessageInterface Name i)
                       -> V.Event
                       -> MH Bool
 onEventAttachmentList which =
-    handleEventWith [ handleKeyboardEvent (attachmentListKeybindings which)
+    handleEventWith [ mhHandleKeyboardEvent (attachmentListKeybindings which)
                     , \e -> mhHandleEventLensed (which.miEditor.esAttachmentList) L.handleListEvent e >> return True
                     ]
 
 attachmentListKeybindings :: Lens' ChatState (MessageInterface Name i)
                           -> KeyConfig KeyEvent
-                          -> KeyHandlerMap
+                          -> KeyHandlerMap KeyEvent MH
 attachmentListKeybindings which = mkKeybindings (attachmentListKeyHandlers which)
 
 attachmentListKeyHandlers :: Lens' ChatState (MessageInterface Name i)
-                          -> [KeyEventHandler]
+                          -> [KeyEventHandler KeyEvent MH]
 attachmentListKeyHandlers which =
     [ mkKb CancelEvent "Close attachment list" $
           which.miMode .= Compose
@@ -60,12 +59,12 @@ attachmentListKeyHandlers which =
 
 attachmentBrowseKeybindings :: Lens' ChatState (MessageInterface Name i)
                             -> KeyConfig KeyEvent
-                            -> KeyHandlerMap
+                            -> KeyHandlerMap KeyEvent MH
 attachmentBrowseKeybindings which =
     mkKeybindings (attachmentBrowseKeyHandlers which)
 
 attachmentBrowseKeyHandlers :: Lens' ChatState (MessageInterface Name i)
-                            -> [KeyEventHandler]
+                            -> [KeyEventHandler KeyEvent MH]
 attachmentBrowseKeyHandlers which =
     [ mkKb CancelEvent "Cancel attachment file browse" $
       cancelAttachmentBrowse which
@@ -145,7 +144,7 @@ onEventBrowseFile which e = do
     withFileBrowser which $ \b -> do
         case FB.fileBrowserIsSearching b of
             False ->
-                void $ handleEventWith [ handleKeyboardEvent (attachmentBrowseKeybindings which)
+                void $ handleEventWith [ mhHandleKeyboardEvent (attachmentBrowseKeybindings which)
                                        , \_ -> handleFileBrowserEvent which e >> return True
                                        ] e
             True ->

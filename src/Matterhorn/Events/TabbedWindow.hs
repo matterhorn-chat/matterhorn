@@ -16,7 +16,7 @@ import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings
+
 
 handleTabbedWindowEvent :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow ChatState MH Name a)
@@ -25,7 +25,7 @@ handleTabbedWindowEvent :: (Show a, Eq a)
                         -> MH Bool
 handleTabbedWindowEvent target tId e = do
     w <- use target
-    handleEventWith [ handleKeyboardEvent (tabbedWindowKeybindings target tId)
+    handleEventWith [ mhHandleKeyboardEvent (tabbedWindowKeybindings target tId)
                     , \_ -> forwardEvent w e >> return True
                     ] e
 
@@ -41,13 +41,13 @@ tabbedWindowKeybindings :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow ChatState MH Name a)
                         -> TeamId
                         -> KeyConfig KeyEvent
-                        -> KeyHandlerMap
+                        -> KeyHandlerMap KeyEvent MH
 tabbedWindowKeybindings target tId = mkKeybindings $ tabbedWindowKeyHandlers tId target
 
 tabbedWindowKeyHandlers :: (Show a, Eq a)
                         => TeamId
                         -> Lens' ChatState (TabbedWindow ChatState MH Name a)
-                        -> [KeyEventHandler]
+                        -> [KeyEventHandler KeyEvent MH]
 tabbedWindowKeyHandlers tId target =
     [ mkKb CancelEvent "Close window" $
         popMode tId

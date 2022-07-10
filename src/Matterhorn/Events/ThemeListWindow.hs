@@ -7,10 +7,10 @@ import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.ThemeListWindow
 import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 onEventThemeListWindow :: TeamId -> Vty.Event -> MH ()
@@ -19,10 +19,10 @@ onEventThemeListWindow tId =
         (themeListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list window
-themeListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+themeListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 themeListWindowKeybindings tId = mkKeybindings (themeListWindowKeyHandlers tId)
 
-themeListWindowKeyHandlers :: TeamId -> [KeyEventHandler]
+themeListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 themeListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the theme list"
       (exitListWindow tId (csTeam(tId).tsThemeListWindow))

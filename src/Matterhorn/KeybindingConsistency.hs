@@ -13,7 +13,6 @@ import qualified Graphics.Vty as Vty
 
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings
 
 -- | Given a configuration, we want to check it for internal consistency
 -- (i.e. that a given keybinding isn't associated with multiple events
@@ -21,7 +20,9 @@ import           Matterhorn.Events.Keybindings
 -- basic usability (i.e. we shouldn't be binding events which can appear
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
-ensureKeybindingConsistency :: KeyConfig KeyEvent -> [(T.Text, [KeyEventHandler])] -> Either String ()
+ensureKeybindingConsistency :: KeyConfig KeyEvent
+                            -> [(T.Text, [KeyEventHandler KeyEvent MH])]
+                            -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where
     -- This is a list of lists, grouped by keybinding, of all the

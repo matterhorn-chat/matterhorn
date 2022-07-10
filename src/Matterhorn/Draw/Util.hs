@@ -27,7 +27,6 @@ import           Matterhorn.Themes
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
 import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings
 
 
 defaultTimeFormat :: Text
@@ -108,7 +107,7 @@ mkChannelName st c = T.append sigil t
 -- string.
 keyEventBindings :: ChatState
                  -- ^ The current application state
-                 -> (KeyConfig KeyEvent -> KeyHandlerMap)
+                 -> (KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH)
                  -- ^ The function to obtain the relevant key handler
                  -- map
                  -> KeyEvent

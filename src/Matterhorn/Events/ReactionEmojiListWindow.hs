@@ -12,10 +12,10 @@ import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.ReactionEmojiListWindow
 import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 onEventReactionEmojiListWindow :: TeamId -> Vty.Event -> MH ()
@@ -24,10 +24,10 @@ onEventReactionEmojiListWindow tId =
            (reactionEmojiListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing an emoji list window
-reactionEmojiListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+reactionEmojiListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 reactionEmojiListWindowKeybindings tId = mkKeybindings (reactionEmojiListWindowKeyHandlers tId)
 
-reactionEmojiListWindowKeyHandlers :: TeamId -> [KeyEventHandler]
+reactionEmojiListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 reactionEmojiListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the emoji search window"
       (exitListWindow tId (csTeam(tId).tsReactionEmojiListWindow))

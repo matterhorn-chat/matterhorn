@@ -6,17 +6,16 @@ where
 
 import           Matterhorn.Command
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Teams
 
-import           Matterhorn.Events.Keybindings
 
-
-globalKeybindings :: KeyConfig KeyEvent -> KeyHandlerMap
+globalKeybindings :: KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 globalKeybindings = mkKeybindings globalKeyHandlers
 
-globalKeyHandlers :: [KeyEventHandler]
+globalKeyHandlers :: [KeyEventHandler KeyEvent MH]
 globalKeyHandlers =
     [ mkKb ToggleMessagePreviewEvent "Toggle message preview"
         toggleMessagePreview

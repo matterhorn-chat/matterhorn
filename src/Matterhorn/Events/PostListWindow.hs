@@ -8,19 +8,19 @@ import qualified Graphics.Vty as Vty
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
-import           Matterhorn.Events.Keybindings
+import           Matterhorn.Types.KeyEvents
 import           Matterhorn.State.PostListWindow
 
 
 onEventPostListWindow :: TeamId -> Vty.Event -> MH ()
 onEventPostListWindow tId =
-    void . handleKeyboardEvent (postListWindowKeybindings tId)
+    void . mhHandleKeyboardEvent (postListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a post list window
-postListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+postListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 postListWindowKeybindings tId = mkKeybindings (postListWindowKeyHandlers tId)
 
-postListWindowKeyHandlers :: TeamId -> [KeyEventHandler]
+postListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 postListWindowKeyHandlers tId =
   [ mkKb CancelEvent "Exit post browsing" $ exitPostListMode tId
   , mkKb SelectUpEvent "Select the previous message" $ postListSelectUp tId

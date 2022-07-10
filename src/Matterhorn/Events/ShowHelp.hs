@@ -9,13 +9,13 @@ import qualified Graphics.Vty as Vty
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Constants
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 onEventShowHelp :: TeamId -> Vty.Event -> MH Bool
 onEventShowHelp tId =
-    handleEventWith [ handleKeyboardEvent (helpKeybindings tId)
+    handleEventWith [ mhHandleKeyboardEvent (helpKeybindings tId)
                     , closeHelp tId
                     ]
 
@@ -25,10 +25,10 @@ closeHelp tId (Vty.EvKey {}) = do
     return True
 closeHelp _ _ = return False
 
-helpKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap
+helpKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 helpKeybindings tId = mkKeybindings (helpKeyHandlers tId)
 
-helpKeyHandlers :: TeamId -> [KeyEventHandler]
+helpKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
 helpKeyHandlers tId =
     [ mkKb ScrollUpEvent "Scroll up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1)

@@ -8,22 +8,22 @@ import           Brick.Widgets.List
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens' )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.State.SaveAttachmentWindow
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 onEventUrlSelect :: Lens' ChatState (MessageInterface Name i) -> Vty.Event -> MH Bool
 onEventUrlSelect which =
-    handleEventWith [ handleKeyboardEvent (urlSelectKeybindings which)
+    handleEventWith [ mhHandleKeyboardEvent (urlSelectKeybindings which)
                     , \e -> mhHandleEventLensed (which.miUrlList.ulList) handleListEvent e >> return True
                     ]
 
-urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig KeyEvent -> KeyHandlerMap
+urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 urlSelectKeybindings which = mkKeybindings (urlSelectKeyHandlers which)
 
-urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [KeyEventHandler]
+urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [KeyEventHandler KeyEvent MH]
 urlSelectKeyHandlers which =
     [ staticKb "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $

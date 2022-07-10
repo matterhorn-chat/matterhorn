@@ -53,12 +53,12 @@ import           Network.Mattermost.Types ( Post(..) )
 import           Matterhorn.Config
 import {-# SOURCE #-} Matterhorn.Command ( dispatchCommand )
 import           Matterhorn.InputHistory
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Common
 import           Matterhorn.State.Autocomplete
 import {-# SOURCE #-} Matterhorn.State.Messages
 import {-# SOURCE #-} Matterhorn.State.ThreadWindow
 import           Matterhorn.Types hiding ( newState )
+import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Common ( sanitizeUserText' )
 
 
@@ -128,10 +128,10 @@ editingPermitted st which =
     (length (getEditContents $ st^.which.esEditor) == 1) ||
     st^.which.esEphemeral.eesMultiline
 
-editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig KeyEvent -> KeyHandlerMap
+editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 editingKeybindings editor = mkKeybindings $ editingKeyHandlers editor
 
-editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [KeyEventHandler]
+editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [KeyEventHandler KeyEvent MH]
 editingKeyHandlers editor =
   [ mkKb EditorTransposeCharsEvent
     "Transpose the final two characters"

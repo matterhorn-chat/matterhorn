@@ -43,6 +43,8 @@ module Matterhorn.Types
 
   , resultToWidget
 
+  , mhHandleKeyboardEvent
+
   , Config(..)
   , configUserL
   , configHostL
@@ -1866,6 +1868,16 @@ withChannelOrDefault cId deflt mote = do
     case chan of
         Nothing -> return deflt
         Just c  -> mote c
+
+mhHandleKeyboardEvent :: (KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH)
+                      -- ^ The function to build a key handler map from
+                      -- a key configuration.
+                      -> Vty.Event
+                      -- ^ The event to handle.
+                      -> MH Bool
+mhHandleKeyboardEvent mkKeyMap e = do
+    config <- use (csResources.crConfiguration)
+    handleKeyboardEvent (configUserKeys config) mkKeyMap e
 
 -- ** 'ChatState' Helper Functions
 

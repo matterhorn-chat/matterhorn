@@ -27,7 +27,6 @@ import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Matterhorn.Command
 import           Matterhorn.Events.ChannelSelect
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
@@ -48,6 +47,7 @@ import           Matterhorn.Options ( mhVersion )
 import           Matterhorn.State.Editing ( editingKeyHandlers )
 import           Matterhorn.Themes
 import           Matterhorn.Types
+import           Matterhorn.Types.KeyEvents
 
 
 drawShowHelp :: HelpTopic -> ChatState -> [Widget Name]
@@ -448,7 +448,7 @@ themeHelp = vBox
     in vBox $ mkEntry <$> names
   ]
 
-keybindSections :: [(Text, [KeyEventHandler])]
+keybindSections :: [(Text, [KeyEventHandler KeyEvent MH])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
@@ -495,14 +495,14 @@ kbColumnWidth = 14
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
 
-mkKeybindingHelp :: KeyConfig KeyEvent -> (Text, [KeyEventHandler]) -> Widget Name
+mkKeybindingHelp :: KeyConfig KeyEvent -> (Text, [KeyEventHandler KeyEvent MH]) -> Widget Name
 mkKeybindingHelp kc (sectionName, kbs) =
     (heading sectionName) <=>
     (padTop (Pad 1) $ hCenter $ vBox $ snd <$> sortWith fst results)
     where
         results = mkKeybindHelp kc <$> kbs
 
-mkKeybindHelp :: KeyConfig KeyEvent -> KeyEventHandler -> (Text, Widget Name)
+mkKeybindHelp :: KeyConfig KeyEvent -> KeyEventHandler KeyEvent MH -> (Text, Widget Name)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
@@ -535,7 +535,7 @@ mkKeybindEventSectionHelp :: KeyConfig KeyEvent
                           -> ((TextHunk, Text, [TextHunk]) -> a)
                           -> ([a] -> a)
                           -> (Text -> a)
-                          -> (Text, [KeyEventHandler])
+                          -> (Text, [KeyEventHandler KeyEvent MH])
                           -> a
 mkKeybindEventSectionHelp kc mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs) =
   vertCat $ (mkHeading sectionName) :
@@ -578,7 +578,7 @@ keybindEventHelpText width eventNameWidth (evName, desc, evs) =
        padTo eventNameWidth (getText evName) <> " " <>
        desc
 
-mkKeybindEventHelp :: KeyConfig KeyEvent -> KeyEventHandler -> (TextHunk, Text, [TextHunk])
+mkKeybindEventHelp :: KeyConfig KeyEvent -> KeyEventHandler KeyEvent MH -> (TextHunk, Text, [TextHunk])
 mkKeybindEventHelp kc h =
   let trig = kehEventTrigger h
       unbound = [Comment "(unbound)"]
