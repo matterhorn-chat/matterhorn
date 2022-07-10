@@ -495,7 +495,7 @@ mkKeybindHelp :: (Ord e)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
-            Static binding -> (ppBinding binding, Nothing)
+            ByKey binding -> (ppBinding binding, Nothing)
             ByEvent ev ->
                 let bindings = case lookupKeyConfigBindings kc ev of
                         Nothing ->
