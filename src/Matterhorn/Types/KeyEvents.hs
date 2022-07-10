@@ -95,9 +95,11 @@ newKeyConfig :: (Ord e)
              => KeyEvents e
              -- ^ The base mapping of key events to use
              -> [(e, BindingState)]
-             -- ^ Custom bindings by key event
+             -- ^ Custom bindings by key event, such as from a
+             -- configuration file
              -> [(e, [Binding])]
-             -- ^ Default bindings by key event
+             -- ^ Default bindings by key event, such as from a
+             -- configuration file or embedded code
              -> KeyConfig e
 newKeyConfig evs bindings defaults =
     KeyConfig { keyConfigBindingMap = M.fromList bindings
