@@ -1,16 +1,18 @@
 module Matterhorn.Types.KeyEvents
   (
-  -- * Types
+  -- * Key binding configurations
     KeyConfig(keyConfigEvents)
   , Binding(..)
   , BindingState(..)
-  , lookupKeyConfigBindings
   , newKeyConfig
+  , lookupKeyConfigBindings
+
+  -- * Querying key binding configurations
   , getFirstDefaultBinding
   , firstActiveBinding
   , allDefaultBindings
 
-  -- * Parsing and pretty-printing
+  -- * Parsing and pretty-printing of bindings
   , parseBinding
   , parseBindingList
   , ppBinding
@@ -18,27 +20,29 @@ module Matterhorn.Types.KeyEvents
   , nonCharKeys
   , eventToBinding
 
-  -- * Key event collection
+  -- * Key event collections
   , KeyEvents
   , keyEvents
   , keyEventsList
   , lookupKeyEvent
   , keyEventName
 
-  , lookupKeybinding
-
-  , mkKb
-  , staticKb
+  -- * Key event handler maps
+  , KeyHandlerMap(..)
   , mkKeybindings
-  , keyHandlerMapPairs
-
-  , handleKeyboardEvent
-
-  , EventHandler(..)
+  , lookupKeybinding
+  , Handler(..)
   , KeyHandler(..)
   , KeyEventHandler(..)
   , KeyEventTrigger(..)
-  , KeyHandlerMap(..)
+
+  -- * Building handlers
+  , mkKb
+  , staticKb
+  , keyHandlerMapPairs
+
+  -- * Handling events
+  , handleKeyboardEvent
   )
 where
 
@@ -248,8 +252,9 @@ lookupKeyEvent (KeyEvents m) name = B.lookup name m
 keyEventName :: (Ord e) => KeyEvents e -> e -> Maybe Text
 keyEventName (KeyEvents m) e = B.lookupR e m
 
--- | An 'EventHandler' represents a event handler.
-data EventHandler m =
+-- | An 'Handler' represents a handler implementation to be invoked in
+-- response to some event.
+data Handler m =
     EH { ehDescription :: Text
        -- ^ The description of this handler's behavior.
        , ehAction :: m ()
@@ -267,7 +272,7 @@ data KeyEventTrigger e =
 
 -- | A handler for an abstract key event.
 data KeyEventHandler e m =
-    KEH { kehHandler :: EventHandler m
+    KEH { kehHandler :: Handler m
         -- ^ The handler to invoke.
         , kehEventTrigger :: KeyEventTrigger e
         -- ^ The trigger for the handler.
@@ -306,7 +311,7 @@ handleKeyboardEvent kc mkKeyMap e = do
     Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
     Nothing -> return False
 
-mkHandler :: Text -> m () -> EventHandler m
+mkHandler :: Text -> m () -> Handler m
 mkHandler msg action =
     EH { ehDescription = msg
        , ehAction = action
