@@ -34,7 +34,7 @@ onEventChannelSelect tId =
 channelSelectKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
 
-channelSelectKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+channelSelectKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelSelectKeyHandlers tId =
     [ staticKb "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do

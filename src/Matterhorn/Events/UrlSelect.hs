@@ -23,7 +23,7 @@ onEventUrlSelect which =
 urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 urlSelectKeybindings which = mkKeybindings (urlSelectKeyHandlers which)
 
-urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [KeyEventHandler KeyEvent MH]
+urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [MHKeyEventHandler]
 urlSelectKeyHandlers which =
     [ staticKb "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $

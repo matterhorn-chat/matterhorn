@@ -20,7 +20,7 @@ onEventPostListWindow tId =
 postListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 postListWindowKeybindings tId = mkKeybindings (postListWindowKeyHandlers tId)
 
-postListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+postListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 postListWindowKeyHandlers tId =
   [ mkKb CancelEvent "Exit post browsing" $ exitPostListMode tId
   , mkKb SelectUpEvent "Select the previous message" $ postListSelectUp tId

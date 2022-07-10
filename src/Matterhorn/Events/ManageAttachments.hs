@@ -41,7 +41,7 @@ attachmentListKeybindings :: Lens' ChatState (MessageInterface Name i)
 attachmentListKeybindings which = mkKeybindings (attachmentListKeyHandlers which)
 
 attachmentListKeyHandlers :: Lens' ChatState (MessageInterface Name i)
-                          -> [KeyEventHandler KeyEvent MH]
+                          -> [MHKeyEventHandler]
 attachmentListKeyHandlers which =
     [ mkKb CancelEvent "Close attachment list" $
           which.miMode .= Compose
@@ -64,7 +64,7 @@ attachmentBrowseKeybindings which =
     mkKeybindings (attachmentBrowseKeyHandlers which)
 
 attachmentBrowseKeyHandlers :: Lens' ChatState (MessageInterface Name i)
-                            -> [KeyEventHandler KeyEvent MH]
+                            -> [MHKeyEventHandler]
 attachmentBrowseKeyHandlers which =
     [ mkKb CancelEvent "Cancel attachment file browse" $
       cancelAttachmentBrowse which

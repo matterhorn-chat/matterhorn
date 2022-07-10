@@ -21,7 +21,7 @@ import           Matterhorn.Types.KeyEvents
 -- in the main UI to a key like @e@, which would prevent us from being
 -- able to type messages containing an @e@ in them!
 ensureKeybindingConsistency :: KeyConfig KeyEvent
-                            -> [(T.Text, [KeyEventHandler KeyEvent MH])]
+                            -> [(T.Text, [MHKeyEventHandler])]
                             -> Either String ()
 ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
   where

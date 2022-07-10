@@ -21,7 +21,7 @@ onEventUserListWindow tId =
 userListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 userListWindowKeybindings tId = mkKeybindings (userListWindowKeyHandlers tId)
 
-userListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+userListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 userListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the user search list" (exitListWindow tId (csTeam(tId).tsUserListWindow))
     , mkKb SearchSelectUpEvent "Select the previous user" $ userListSelectUp tId

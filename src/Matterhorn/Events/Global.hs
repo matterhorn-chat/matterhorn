@@ -15,7 +15,7 @@ import           Matterhorn.State.Teams
 globalKeybindings :: KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 globalKeybindings = mkKeybindings globalKeyHandlers
 
-globalKeyHandlers :: [KeyEventHandler KeyEvent MH]
+globalKeyHandlers :: [MHKeyEventHandler]
 globalKeyHandlers =
     [ mkKb ToggleMessagePreviewEvent "Toggle message preview"
         toggleMessagePreview

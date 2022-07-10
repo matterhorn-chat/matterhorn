@@ -448,7 +448,7 @@ themeHelp = vBox
     in vBox $ mkEntry <$> names
   ]
 
-keybindSections :: [(Text, [KeyEventHandler KeyEvent MH])]
+keybindSections :: [(Text, [MHKeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
@@ -495,14 +495,14 @@ kbColumnWidth = 14
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
 
-mkKeybindingHelp :: KeyConfig KeyEvent -> (Text, [KeyEventHandler KeyEvent MH]) -> Widget Name
+mkKeybindingHelp :: KeyConfig KeyEvent -> (Text, [MHKeyEventHandler]) -> Widget Name
 mkKeybindingHelp kc (sectionName, kbs) =
     (heading sectionName) <=>
     (padTop (Pad 1) $ hCenter $ vBox $ snd <$> sortWith fst results)
     where
         results = mkKeybindHelp kc <$> kbs
 
-mkKeybindHelp :: KeyConfig KeyEvent -> KeyEventHandler KeyEvent MH -> (Text, Widget Name)
+mkKeybindHelp :: KeyConfig KeyEvent -> MHKeyEventHandler -> (Text, Widget Name)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
@@ -535,7 +535,7 @@ mkKeybindEventSectionHelp :: KeyConfig KeyEvent
                           -> ((TextHunk, Text, [TextHunk]) -> a)
                           -> ([a] -> a)
                           -> (Text -> a)
-                          -> (Text, [KeyEventHandler KeyEvent MH])
+                          -> (Text, [MHKeyEventHandler])
                           -> a
 mkKeybindEventSectionHelp kc mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs) =
   vertCat $ (mkHeading sectionName) :
@@ -578,7 +578,7 @@ keybindEventHelpText width eventNameWidth (evName, desc, evs) =
        padTo eventNameWidth (getText evName) <> " " <>
        desc
 
-mkKeybindEventHelp :: KeyConfig KeyEvent -> KeyEventHandler KeyEvent MH -> (TextHunk, Text, [TextHunk])
+mkKeybindEventHelp :: KeyConfig KeyEvent -> MHKeyEventHandler -> (TextHunk, Text, [TextHunk])
 mkKeybindEventHelp kc h =
   let trig = kehEventTrigger h
       unbound = [Comment "(unbound)"]

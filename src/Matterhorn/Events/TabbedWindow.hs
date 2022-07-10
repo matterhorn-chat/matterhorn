@@ -47,7 +47,7 @@ tabbedWindowKeybindings target tId = mkKeybindings $ tabbedWindowKeyHandlers tId
 tabbedWindowKeyHandlers :: (Show a, Eq a)
                         => TeamId
                         -> Lens' ChatState (TabbedWindow ChatState MH Name a)
-                        -> [KeyEventHandler KeyEvent MH]
+                        -> [MHKeyEventHandler]
 tabbedWindowKeyHandlers tId target =
     [ mkKb CancelEvent "Close window" $
         popMode tId

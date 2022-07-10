@@ -50,7 +50,7 @@ messageSelectKeybindings tId which =
 
 messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState (MessageInterface n i)
-                         -> [KeyEventHandler KeyEvent MH]
+                         -> [MHKeyEventHandler]
 messageSelectKeyHandlers tId which =
     [ mkKb CancelEvent "Cancel message selection" $
         exitMessageSelect which

@@ -27,7 +27,7 @@ onEventReactionEmojiListWindow tId =
 reactionEmojiListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 reactionEmojiListWindowKeybindings tId = mkKeybindings (reactionEmojiListWindowKeyHandlers tId)
 
-reactionEmojiListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+reactionEmojiListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 reactionEmojiListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the emoji search window"
       (exitListWindow tId (csTeam(tId).tsReactionEmojiListWindow))

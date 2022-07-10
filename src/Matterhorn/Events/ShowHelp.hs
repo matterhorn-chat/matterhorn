@@ -28,7 +28,7 @@ closeHelp _ _ = return False
 helpKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 helpKeybindings tId = mkKeybindings (helpKeyHandlers tId)
 
-helpKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+helpKeyHandlers :: TeamId -> [MHKeyEventHandler]
 helpKeyHandlers tId =
     [ mkKb ScrollUpEvent "Scroll up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1)

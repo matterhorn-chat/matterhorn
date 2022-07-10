@@ -26,7 +26,7 @@ onEventChannelListWindow tId =
 channelListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 channelListWindowKeybindings tId = mkKeybindings (channelListWindowKeyHandlers tId)
 
-channelListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+channelListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the channel search list" (exitListWindow tId (csTeam(tId).tsChannelListWindow))
     , mkKb SearchSelectUpEvent "Select the previous channel" $ channelListSelectUp tId

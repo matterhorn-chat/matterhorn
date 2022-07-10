@@ -39,7 +39,7 @@ handleEditNotifyPrefsEvent tId e = do
 editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 editNotifyPrefsKeybindings tId = mkKeybindings (editNotifyPrefsKeyHandlers tId)
 
-editNotifyPrefsKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+editNotifyPrefsKeyHandlers :: TeamId -> [MHKeyEventHandler]
 editNotifyPrefsKeyHandlers tId =
     [ mkKb CancelEvent "Close channel notification preferences" $
         exitEditNotifyPrefsMode tId

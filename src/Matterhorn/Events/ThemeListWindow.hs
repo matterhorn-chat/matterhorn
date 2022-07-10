@@ -22,7 +22,7 @@ onEventThemeListWindow tId =
 themeListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 themeListWindowKeybindings tId = mkKeybindings (themeListWindowKeyHandlers tId)
 
-themeListWindowKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+themeListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 themeListWindowKeyHandlers tId =
     [ mkKb CancelEvent "Close the theme list"
       (exitListWindow tId (csTeam(tId).tsThemeListWindow))

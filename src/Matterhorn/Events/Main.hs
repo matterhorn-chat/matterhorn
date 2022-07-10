@@ -40,7 +40,7 @@ onEventMain tId =
 mainKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
-mainKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+mainKeyHandlers :: TeamId -> [MHKeyEventHandler]
 mainKeyHandlers tId =
     [ mkKb ShowHelpEvent
         "Show this help screen" $ do

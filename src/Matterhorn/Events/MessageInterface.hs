@@ -63,7 +63,7 @@ messageInterfaceKeybindings which =
     mkKeybindings (messageInterfaceKeyHandlers which)
 
 messageInterfaceKeyHandlers :: Lens' ChatState (MessageInterface n i)
-                            -> [KeyEventHandler KeyEvent MH]
+                            -> [MHKeyEventHandler]
 messageInterfaceKeyHandlers which =
     [ mkKb EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
@@ -87,7 +87,7 @@ extraEditorKeybindings which =
     mkKeybindings (extraEditorKeyHandlers which)
 
 extraEditorKeyHandlers :: Lens' ChatState (MessageInterface Name i)
-                       -> [KeyEventHandler KeyEvent MH]
+                       -> [MHKeyEventHandler]
 extraEditorKeyHandlers which =
     let editWhich :: Lens' ChatState (EditState Name)
         editWhich = which.miEditor

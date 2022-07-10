@@ -131,7 +131,7 @@ editingPermitted st which =
 editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 editingKeybindings editor = mkKeybindings $ editingKeyHandlers editor
 
-editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [KeyEventHandler KeyEvent MH]
+editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [MHKeyEventHandler]
 editingKeyHandlers editor =
   [ mkKb EditorTransposeCharsEvent
     "Transpose the final two characters"

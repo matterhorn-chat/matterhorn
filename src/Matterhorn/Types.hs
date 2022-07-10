@@ -43,6 +43,7 @@ module Matterhorn.Types
 
   , resultToWidget
 
+  , MHKeyEventHandler
   , mhHandleKeyboardEvent
 
   , Config(..)
@@ -1868,6 +1869,8 @@ withChannelOrDefault cId deflt mote = do
     case chan of
         Nothing -> return deflt
         Just c  -> mote c
+
+type MHKeyEventHandler = KeyEventHandler KeyEvent MH
 
 mhHandleKeyboardEvent :: (KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH)
                       -- ^ The function to build a key handler map from

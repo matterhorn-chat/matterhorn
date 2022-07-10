@@ -186,7 +186,7 @@ viewMessageBox st tId msg =
 viewMessageKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 viewMessageKeybindings tId = mkKeybindings (viewMessageKeyHandlers tId)
 
-viewMessageKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+viewMessageKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageKeyHandlers tId =
     let vs = viewportScroll . ViewMessageArea
     in [ mkKb PageUpEvent "Page up" $ do
@@ -223,7 +223,7 @@ viewMessageKeyHandlers tId =
 viewMessageReactionsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
 viewMessageReactionsKeybindings tId = mkKeybindings (viewMessageReactionsKeyHandlers tId)
 
-viewMessageReactionsKeyHandlers :: TeamId -> [KeyEventHandler KeyEvent MH]
+viewMessageReactionsKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageReactionsKeyHandlers tId =
     let vs = viewportScroll . ViewMessageReactionsArea
     in [ mkKb PageUpEvent "Page up" $ do
