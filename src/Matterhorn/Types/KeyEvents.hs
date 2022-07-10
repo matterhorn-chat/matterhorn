@@ -337,8 +337,8 @@ keyHandlerFromConfig kc eh =
                               | Just Unbound <- lookupKeyConfigBindings kc ev = []
                               | otherwise = allDefaultBindings kc ev
 
-onKey :: Text -> Vty.Event -> m () -> KeyEventHandler e m
-onKey msg event action =
+onKey :: Vty.Event -> Text -> m () -> KeyEventHandler e m
+onKey event msg action =
     KEH { kehHandler = mkHandler msg action
         , kehEventTrigger = Static event
         }

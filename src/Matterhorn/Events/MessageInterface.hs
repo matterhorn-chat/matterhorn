@@ -102,19 +102,19 @@ extraEditorKeyHandlers which =
            "Invoke `$EDITOR` to edit the current message" $
            invokeExternalEditor editWhich
 
-       , onKey "Tab-complete forward"
-            (Vty.EvKey (Vty.KChar '\t') []) $
+       , onKey (Vty.EvKey (Vty.KChar '\t') [])
+            "Tab-complete forward" $
             tabComplete editWhich Forwards
 
-       , onKey "Tab-complete backward"
-            (Vty.EvKey (Vty.KBackTab) []) $
+       , onKey (Vty.EvKey (Vty.KBackTab) [])
+            "Tab-complete backward" $
             tabComplete editWhich Backwards
 
        , onEvent ShowAttachmentListEvent "Show the attachment list" $
             showAttachmentList which
 
-       , onKey "Send the current message"
-            (Vty.EvKey Vty.KEnter []) $ do
+       , onKey (Vty.EvKey Vty.KEnter [])
+            "Send the current message" $ do
                 isMultiline <- use (editWhich.esEphemeral.eesMultiline)
                 case isMultiline of
                     -- Normally, this event causes the current message to
