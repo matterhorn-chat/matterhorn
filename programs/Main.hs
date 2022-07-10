@@ -10,8 +10,8 @@ import Matterhorn.Config
 import Matterhorn.Options
 import Matterhorn.App
 import Matterhorn.KeybindingConsistency
-import Matterhorn.Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable
-                                , commandMarkdownTable, commandTextTable
+import Matterhorn.Types.KeyEvents ( keybindingTextTable, keybindingMarkdownTable )
+import Matterhorn.Draw.ShowHelp ( commandMarkdownTable, commandTextTable
                                 , keybindSections )
 
 

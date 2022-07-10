@@ -52,11 +52,19 @@ module Matterhorn.Types.KeyEvents
   , meta
   , ctrl
   , shift
+
+  -- * Documentation generation
+  , keybindingTextTable
+  , keybindingMarkdownTable
+  , keybindingSectionWidget
   )
 where
 
 import           Prelude ()
 import           Matterhorn.Prelude
+
+import           Brick
+import           Data.Maybe ( fromJust )
 
 import qualified Data.Bimap as B
 import qualified Data.Map.Strict as M
@@ -448,3 +456,107 @@ char = toBinding
 -- | Function key binding.
 fn :: Int -> Binding
 fn = toBinding . Vty.KFun
+
+data TextHunk = Verbatim Text
+              | Comment Text
+
+keybindingMarkdownTable :: (Ord e) => KeyConfig e -> [(Text, [KeyEventHandler e m])] -> Text
+keybindingMarkdownTable kc sections = title <> keybindSectionStrings
+    where title = "# Keybindings\n"
+          keybindSectionStrings = T.concat $ sectionText <$> sections
+          sectionText = mkKeybindEventSectionHelp kc keybindEventHelpMarkdown T.unlines mkHeading
+          mkHeading n =
+              "\n# " <> n <>
+              "\n| Keybinding | Event Name | Description |" <>
+              "\n| ---------- | ---------- | ----------- |"
+
+keybindingTextTable :: (Ord e) => KeyConfig e -> [(Text, [KeyEventHandler e m])] -> Text
+keybindingTextTable kc sections = title <> keybindSectionStrings
+    where title = "Keybindings\n===========\n"
+          keybindSectionStrings = T.concat $ sectionText <$> sections
+          sectionText = mkKeybindEventSectionHelp kc (keybindEventHelpText keybindingWidth eventNameWidth) T.unlines mkHeading
+          keybindingWidth = 15
+          eventNameWidth = 30
+          mkHeading n =
+              "\n" <> n <>
+              "\n" <> (T.replicate (T.length n) "=")
+
+keybindEventHelpText :: Int -> Int -> (TextHunk, Text, [TextHunk]) -> Text
+keybindEventHelpText width eventNameWidth (evName, desc, evs) =
+    let getText (Comment s) = s
+        getText (Verbatim s) = s
+    in padTo width (T.intercalate ", " $ getText <$> evs) <> " " <>
+       padTo eventNameWidth (getText evName) <> " " <>
+       desc
+
+padTo :: Int -> Text -> Text
+padTo n s = s <> T.replicate (n - T.length s) " "
+
+mkKeybindEventSectionHelp :: (Ord e)
+                          => KeyConfig e
+                          -> ((TextHunk, Text, [TextHunk]) -> a)
+                          -> ([a] -> a)
+                          -> (Text -> a)
+                          -> (Text, [KeyEventHandler e m])
+                          -> a
+mkKeybindEventSectionHelp kc mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs) =
+  vertCat $ (mkHeading sectionName) :
+            (mkKeybindHelpFunc <$> (mkKeybindEventHelp kc <$> kbs))
+
+keybindEventHelpMarkdown :: (TextHunk, Text, [TextHunk]) -> Text
+keybindEventHelpMarkdown (evName, desc, evs) =
+    let quote s = "`" <> s <> "`"
+        format (Comment s) = s
+        format (Verbatim s) = quote s
+        name = case evName of
+            Comment s -> s
+            Verbatim s -> quote s
+    in "| " <> (T.intercalate ", " $ format <$> evs) <>
+       " | " <> name <>
+       " | " <> desc <>
+       " |"
+
+mkKeybindEventHelp :: (Ord e)
+                   => KeyConfig e
+                   -> KeyEventHandler e m
+                   -> (TextHunk, Text, [TextHunk])
+mkKeybindEventHelp kc h =
+  let trig = kehEventTrigger h
+      unbound = [Comment "(unbound)"]
+      (label, evText) = case trig of
+          Static binding -> (Comment "(non-customizable key)", [Verbatim $ ppBinding binding])
+          ByEvent ev ->
+              let name = fromJust $ keyEventName (keyConfigEvents kc) ev
+              in case lookupKeyConfigBindings kc ev of
+                  Nothing ->
+                      if not (null (allDefaultBindings kc ev))
+                      then (Verbatim name, Verbatim <$> ppBinding <$> allDefaultBindings kc ev)
+                      else (Verbatim name, unbound)
+                  Just Unbound ->
+                      (Verbatim name, unbound)
+                  Just (BindingList bs) ->
+                      let result = if not (null bs)
+                                   then Verbatim <$> ppBinding <$> bs
+                                   else unbound
+                      in (Verbatim name, result)
+  in (label, ehDescription $ kehHandler h, evText)
+
+keybindingSectionWidget :: (Ord e)
+                        => KeyConfig e
+                        -> (Text -> Widget n)
+                        -> (Text, [KeyEventHandler e m])
+                        -> Widget n
+keybindingSectionWidget kc = mkKeybindEventSectionHelp kc keybindEventHelpWidget vBox
+
+keybindEventHelpWidget :: (TextHunk, Text, [TextHunk]) -> Widget n
+keybindEventHelpWidget (evName, desc, evs) =
+    let evText = T.intercalate ", " (getText <$> evs)
+        getText (Comment s) = s
+        getText (Verbatim s) = s
+        label = case evName of
+            Comment s -> txt $ "; " <> s
+            Verbatim s -> txt s -- TODO: was: emph $ txt s
+    in padBottom (Pad 1) $
+       vBox [ txtWrap ("; " <> desc)
+            , label <+> txt (" = " <> evText)
+            ]
