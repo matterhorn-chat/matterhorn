@@ -310,20 +310,6 @@ onEvent ev msg action =
         , kehEventTrigger = ByEvent ev
         }
 
-keyHandlerFromConfig :: (Ord e)
-                     => KeyConfig e
-                     -> KeyEventHandler e m
-                     -> [KeyHandler e m]
-keyHandlerFromConfig kc eh =
-    case kehEventTrigger eh of
-        Static binding ->
-            [ KH eh binding ]
-        ByEvent ev ->
-            [ KH eh b | b <- allBindings ]
-            where allBindings | Just (BindingList ks) <- lookupKeyConfigBindings kc ev = ks
-                              | Just Unbound <- lookupKeyConfigBindings kc ev = []
-                              | otherwise = allDefaultBindings kc ev
-
 onKey :: Vty.Key -> [Vty.Modifier] -> Text -> m () -> KeyEventHandler e m
 onKey k mods msg action =
     KEH { kehHandler = mkHandler msg action
@@ -345,3 +331,17 @@ keyHandlerMapPairs ks conf = pairs
         pairs = mkPair <$> handlers
         mkPair h = (khKey h, h)
         handlers = concat $ keyHandlerFromConfig conf <$> ks
+
+keyHandlerFromConfig :: (Ord e)
+                     => KeyConfig e
+                     -> KeyEventHandler e m
+                     -> [KeyHandler e m]
+keyHandlerFromConfig kc eh =
+    case kehEventTrigger eh of
+        Static binding ->
+            [ KH eh binding ]
+        ByEvent ev ->
+            [ KH eh b | b <- allBindings ]
+            where allBindings | Just (BindingList ks) <- lookupKeyConfigBindings kc ev = ks
+                              | Just Unbound <- lookupKeyConfigBindings kc ev = []
+                              | otherwise = allDefaultBindings kc ev
