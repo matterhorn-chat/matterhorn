@@ -174,20 +174,20 @@ scriptHelp = heading "Using Scripts" <=> vBox scriptHelpText
            , [ "> *> /sh rot13 Hello, world!*" ]
            ]
 
-keybindingMarkdownTable :: KeyConfig KeyEvent -> Text
-keybindingMarkdownTable kc = title <> keybindSectionStrings
+keybindingMarkdownTable :: (Ord e) => KeyConfig e -> [(Text, [KeyEventHandler e m])] -> Text
+keybindingMarkdownTable kc sections = title <> keybindSectionStrings
     where title = "# Keybindings\n"
-          keybindSectionStrings = T.concat $ sectionText <$> keybindSections
+          keybindSectionStrings = T.concat $ sectionText <$> sections
           sectionText = mkKeybindEventSectionHelp kc keybindEventHelpMarkdown T.unlines mkHeading
           mkHeading n =
               "\n# " <> n <>
               "\n| Keybinding | Event Name | Description |" <>
               "\n| ---------- | ---------- | ----------- |"
 
-keybindingTextTable :: KeyConfig KeyEvent -> Text
-keybindingTextTable kc = title <> keybindSectionStrings
+keybindingTextTable :: (Ord e) => KeyConfig e -> [(Text, [KeyEventHandler e m])] -> Text
+keybindingTextTable kc sections = title <> keybindSectionStrings
     where title = "Keybindings\n===========\n"
-          keybindSectionStrings = T.concat $ sectionText <$> keybindSections
+          keybindSectionStrings = T.concat $ sectionText <$> sections
           sectionText = mkKeybindEventSectionHelp kc (keybindEventHelpText keybindingWidth eventNameWidth) T.unlines mkHeading
           keybindingWidth = 15
           eventNameWidth = 30
@@ -540,11 +540,12 @@ mkKeybindHelp kc h =
                      )
     in (label, rendering)
 
-mkKeybindEventSectionHelp :: KeyConfig KeyEvent
+mkKeybindEventSectionHelp :: (Ord e)
+                          => KeyConfig e
                           -> ((TextHunk, Text, [TextHunk]) -> a)
                           -> ([a] -> a)
                           -> (Text -> a)
-                          -> (Text, [MHKeyEventHandler])
+                          -> (Text, [KeyEventHandler e m])
                           -> a
 mkKeybindEventSectionHelp kc mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs) =
   vertCat $ (mkHeading sectionName) :
@@ -587,7 +588,10 @@ keybindEventHelpText width eventNameWidth (evName, desc, evs) =
        padTo eventNameWidth (getText evName) <> " " <>
        desc
 
-mkKeybindEventHelp :: KeyConfig KeyEvent -> MHKeyEventHandler -> (TextHunk, Text, [TextHunk])
+mkKeybindEventHelp :: (Ord e)
+                   => KeyConfig e
+                   -> KeyEventHandler e m
+                   -> (TextHunk, Text, [TextHunk])
 mkKeybindEventHelp kc h =
   let trig = kehEventTrigger h
       unbound = [Comment "(unbound)"]

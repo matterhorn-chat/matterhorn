@@ -44,8 +44,8 @@ main = do
         False -> return False
         True -> do
             case format of
-                Markdown -> T.putStrLn $ keybindingMarkdownTable keyConfig
-                Plain -> T.putStrLn $ keybindingTextTable keyConfig
+                Markdown -> T.putStrLn $ keybindingMarkdownTable keyConfig keybindSections
+                Plain -> T.putStrLn $ keybindingTextTable keyConfig keybindSections
             return True
 
     when (printedKeybindings || printedCommands) exitSuccess
