@@ -18,7 +18,6 @@ module Matterhorn.Types.KeyEvents
   , ppBinding
   , ppMaybeBinding
   , nonCharKeys
-  , eventToBinding
 
   -- * Key event collections
   , KeyEvents
@@ -30,7 +29,7 @@ module Matterhorn.Types.KeyEvents
   -- * Key event handler maps
   , KeyHandlerMap(..)
   , mkKeybindings
-  , lookupKeybinding
+  , lookupEvent
   , Handler(..)
   , KeyHandler(..)
   , KeyEventHandler(..)
@@ -64,13 +63,12 @@ keyEvents pairs = KeyEvents $ B.fromList pairs
 keyEventsList :: KeyEvents e -> [(Text, e)]
 keyEventsList (KeyEvents m) = B.toList m
 
-eventToBinding :: Vty.Event -> Binding
-eventToBinding (Vty.EvKey k mods) = Binding mods k
-eventToBinding k = error $ "BUG: invalid keybinding " <> show k
+keyToBinding :: Vty.Key -> [Vty.Modifier] -> Binding
+keyToBinding = Binding
 
 data Binding =
-    Binding { kbMods :: [Vty.Modifier]
-            , kbKey  :: Vty.Key
+    Binding { kbKey  :: Vty.Key
+            , kbMods :: [Vty.Modifier]
             } deriving (Eq, Show, Ord)
 
 data BindingState =
@@ -184,7 +182,7 @@ parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
           | otherwise = Left ("Unknown keybinding: " ++ show t)
 
 ppBinding :: Binding -> Text
-ppBinding (Binding mods k) =
+ppBinding (Binding k mods) =
     T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
 
 ppMaybeBinding :: Maybe Binding -> Text
@@ -263,7 +261,7 @@ data Handler m =
 
 -- | A trigger for a key event.
 data KeyEventTrigger e =
-    Static Vty.Event
+    Static Binding
     -- ^ The key event is always triggered by a specific key.
     | ByEvent e
     -- ^ The key event is always triggered by an abstract key event (and
@@ -282,15 +280,16 @@ data KeyEventHandler e m =
 data KeyHandler e m =
     KH { khHandler :: KeyEventHandler e m
        -- ^ The handler to invoke.
-       , khKey :: Vty.Event
+       , khKey :: Binding
        -- ^ The specific key that should trigger this handler.
        }
 
-newtype KeyHandlerMap e m = KeyHandlerMap (M.Map Vty.Event (KeyHandler e m))
+newtype KeyHandlerMap e m = KeyHandlerMap (M.Map Binding (KeyHandler e m))
 
 -- | Find a keybinding that matches a Vty Event
-lookupKeybinding :: Vty.Event -> KeyHandlerMap e m -> Maybe (KeyHandler e m)
-lookupKeybinding e (KeyHandlerMap m) = M.lookup e m
+lookupEvent :: Vty.Event -> KeyHandlerMap e m -> Maybe (KeyHandler e m)
+lookupEvent (Vty.EvKey k mods) (KeyHandlerMap m) = M.lookup (Binding k mods) m
+lookupEvent _ _ = Nothing
 
 -- | Handle a keyboard event by looking it up in a map of bindings and
 -- invoking the matching binding's handler. Return True if the key event
@@ -307,7 +306,7 @@ handleKeyboardEvent :: (Monad m)
                     -> m Bool
 handleKeyboardEvent kc mkKeyMap e = do
   let handlerMap = mkKeyMap kc
-  case lookupKeybinding e handlerMap of
+  case lookupEvent e handlerMap of
     Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
     Nothing -> return False
 
@@ -329,18 +328,18 @@ keyHandlerFromConfig :: (Ord e)
                      -> [KeyHandler e m]
 keyHandlerFromConfig kc eh =
     case kehEventTrigger eh of
-        Static key ->
-            [ KH eh key ]
+        Static binding ->
+            [ KH eh binding ]
         ByEvent ev ->
-            [ KH eh (bindingToEvent b) | b <- allBindings ]
+            [ KH eh b | b <- allBindings ]
             where allBindings | Just (BindingList ks) <- lookupKeyConfigBindings kc ev = ks
                               | Just Unbound <- lookupKeyConfigBindings kc ev = []
                               | otherwise = allDefaultBindings kc ev
 
-onKey :: Vty.Event -> Text -> m () -> KeyEventHandler e m
-onKey event msg action =
+onKey :: Vty.Key -> [Vty.Modifier] -> Text -> m () -> KeyEventHandler e m
+onKey k mods msg action =
     KEH { kehHandler = mkHandler msg action
-        , kehEventTrigger = Static event
+        , kehEventTrigger = Static $ keyToBinding k mods
         }
 
 mkKeybindings :: (Ord e)
@@ -352,13 +351,9 @@ mkKeybindings ks conf = KeyHandlerMap $ M.fromList $ keyHandlerMapPairs ks conf
 keyHandlerMapPairs :: (Ord e)
                    => [KeyEventHandler e m]
                    -> KeyConfig e
-                   -> [(Vty.Event, KeyHandler e m)]
+                   -> [(Binding, KeyHandler e m)]
 keyHandlerMapPairs ks conf = pairs
     where
         pairs = mkPair <$> handlers
         mkPair h = (khKey h, h)
         handlers = concat $ keyHandlerFromConfig conf <$> ks
-
-bindingToEvent :: Binding -> Vty.Event
-bindingToEvent binding =
-  Vty.EvKey (kbKey binding) (kbMods binding)

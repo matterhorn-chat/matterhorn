@@ -97,7 +97,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
 
     -- This check should get more nuanced, but as a first approximation,
     -- we shouldn't bind to any bare character key in the main mode.
-    isBareBinding (Binding [] (Vty.KChar {})) = True
+    isBareBinding (Binding (Vty.KChar {}) []) = True
     isBareBinding _ = False
 
     -- We generate the which-events-are-valid-in-which-modes map from

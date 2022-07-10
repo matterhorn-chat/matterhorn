@@ -117,8 +117,8 @@ keyEventBindings st mkBindingsMap e =
     let keyconf = st^.csResources.crConfiguration.configUserKeysL
         KeyHandlerMap keymap = mkBindingsMap keyconf
     in T.intercalate ","
-         [ ppBinding (eventToBinding k)
-         | KH { khKey     = k
+         [ ppBinding b
+         | KH { khKey     = b
               , khHandler = h
               } <- M.elems keymap
          , kehEventTrigger h == ByEvent e

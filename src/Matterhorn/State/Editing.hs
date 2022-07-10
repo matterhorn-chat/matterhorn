@@ -277,7 +277,7 @@ handleEditingInput which e = do
 
     conf <- use (csResources.crConfiguration)
     let keyMap = editingKeybindings (which.esEditor) (configUserKeys conf)
-    case lookupKeybinding e keyMap of
+    case lookupEvent e keyMap of
       Just kb | editingPermitted st which -> (ehAction $ kehHandler $ khHandler kb)
       _ -> do
         case e of

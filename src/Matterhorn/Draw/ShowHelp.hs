@@ -265,13 +265,13 @@ keybindingHelp kc = vBox $
             , "all separated by dashes. The available modifier keys are "
             , "**S** for Shift, **C** for Ctrl, **A** for Alt, and **M** for "
             , "Meta. So, for example, **"
-            , ppBinding (Binding [] (Vty.KFun 2))
+            , ppBinding (Binding (Vty.KFun 2) [])
             , "** is the F2 key pressed with no "
             , "modifier keys; **"
-            , ppBinding (Binding [Vty.MCtrl] (Vty.KChar 'x'))
+            , ppBinding (Binding (Vty.KChar 'x') [Vty.MCtrl])
             , "** is Ctrl and X pressed together, "
             , "and **"
-            , ppBinding (Binding [Vty.MShift, Vty.MCtrl] (Vty.KChar 'x'))
+            , ppBinding (Binding (Vty.KChar 'x') [Vty.MShift, Vty.MCtrl])
             , "** is Shift, Ctrl, and X all pressed together. "
             , "Although Matterhorn will pretty-print all key combinations "
             , "with specific capitalization, the parser is **not** case-sensitive "
@@ -506,7 +506,7 @@ mkKeybindHelp :: KeyConfig KeyEvent -> MHKeyEventHandler -> (Text, Widget Name)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
-            Static k -> (ppBinding $ eventToBinding k, Nothing)
+            Static binding -> (ppBinding binding, Nothing)
             ByEvent ev ->
                 let bindings = case lookupKeyConfigBindings kc ev of
                         Nothing ->
@@ -583,7 +583,7 @@ mkKeybindEventHelp kc h =
   let trig = kehEventTrigger h
       unbound = [Comment "(unbound)"]
       (label, evText) = case trig of
-          Static key -> (Comment "(non-customizable key)", [Verbatim $ ppBinding $ eventToBinding key])
+          Static binding -> (Comment "(non-customizable key)", [Verbatim $ ppBinding binding])
           ByEvent ev ->
               let name = fromJust $ keyEventName (keyConfigEvents kc) ev
               in case lookupKeyConfigBindings kc ev of
