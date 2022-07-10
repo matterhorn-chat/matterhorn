@@ -287,16 +287,13 @@ lookupEvent _ _ = Nothing
 -- was handled with a matching binding; False if not (the fallback
 -- case).
 handleKeyboardEvent :: (Monad m)
-                    => KeyConfig e
-                    -- ^ The key configuration to use
-                    -> (KeyConfig e -> KeyHandlerMap e m)
-                    -- ^ The function to build a key handler map from a
-                    -- key configuration.
+                    => KeyHandlerMap e m
+                    -- ^ The handler map to query for a handler for this
+                    -- event.
                     -> Vty.Event
                     -- ^ The event to handle.
                     -> m Bool
-handleKeyboardEvent kc mkKeyMap e = do
-  let handlerMap = mkKeyMap kc
+handleKeyboardEvent handlerMap e = do
   case lookupEvent e handlerMap of
     Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
     Nothing -> return False

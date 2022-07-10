@@ -1878,9 +1878,9 @@ mhHandleKeyboardEvent :: (KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH)
                       -> Vty.Event
                       -- ^ The event to handle.
                       -> MH Bool
-mhHandleKeyboardEvent mkKeyMap e = do
+mhHandleKeyboardEvent mkHandlerMap e = do
     config <- use (csResources.crConfiguration)
-    handleKeyboardEvent (configUserKeys config) mkKeyMap e
+    handleKeyboardEvent (mkHandlerMap $ configUserKeys config) e
 
 -- ** 'ChatState' Helper Functions
 
