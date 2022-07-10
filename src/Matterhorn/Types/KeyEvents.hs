@@ -73,9 +73,6 @@ keyEvents pairs = KeyEvents $ B.fromList pairs
 keyEventsList :: KeyEvents e -> [(Text, e)]
 keyEventsList (KeyEvents m) = B.toList m
 
-keyToBinding :: Vty.Key -> [Vty.Modifier] -> Binding
-keyToBinding = Binding
-
 data Binding =
     Binding { kbKey  :: Vty.Key
             , kbMods :: [Vty.Modifier]
@@ -334,10 +331,10 @@ onEvent ev msg action =
         , kehEventTrigger = ByEvent ev
         }
 
-onKey :: Vty.Key -> [Vty.Modifier] -> Text -> m () -> KeyEventHandler e m
-onKey k mods msg action =
+onKey :: (ToBinding a) => a -> Text -> m () -> KeyEventHandler e m
+onKey b msg action =
     KEH { kehHandler = mkHandler msg action
-        , kehEventTrigger = Static $ keyToBinding k mods
+        , kehEventTrigger = Static $ toBinding b
         }
 
 -- | Build a 'KeyHandlerMap'.

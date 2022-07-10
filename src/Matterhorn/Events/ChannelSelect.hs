@@ -36,7 +36,7 @@ channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
 
 channelSelectKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelSelectKeyHandlers tId =
-    [ onKey Vty.KEnter []
+    [ onKey (key Vty.KEnter)
           "Switch to selected channel" $ do
              matches <- use (csTeam(tId).tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of

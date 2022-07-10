@@ -25,7 +25,7 @@ urlSelectKeybindings which = mkKeybindings (urlSelectKeyHandlers which)
 
 urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [MHKeyEventHandler]
 urlSelectKeyHandlers which =
-    [ onKey Vty.KEnter []
+    [ onKey (key Vty.KEnter)
           "Open the selected URL, if any" $
           openSelectedURL which
 
@@ -40,7 +40,7 @@ urlSelectKeyHandlers which =
     , onEvent SelectDownEvent "Move cursor down" $
         mhHandleEventLensed (which.miUrlList.ulList) handleListEvent (Vty.EvKey Vty.KDown [])
 
-    , onKey (Vty.KChar 'q') []
+    , onKey (char 'q')
          "Cancel URL selection" $
          stopUrlSelect which
     ]
