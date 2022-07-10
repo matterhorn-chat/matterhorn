@@ -318,9 +318,9 @@ handleKeyboardEvent :: (Monad m)
                     -- ^ The event to handle.
                     -> m Bool
 handleKeyboardEvent handlerMap e = do
-  case lookupVtyEvent e handlerMap of
-    Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
-    Nothing -> return False
+    case lookupVtyEvent e handlerMap of
+        Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
+        Nothing -> return False
 
 mkHandler :: Text -> m () -> Handler m
 mkHandler msg action =
