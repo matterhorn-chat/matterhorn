@@ -504,14 +504,18 @@ kbColumnWidth = 14
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
 
-mkKeybindingHelp :: KeyConfig KeyEvent -> (Text, [MHKeyEventHandler]) -> Widget Name
+mkKeybindingHelp :: (Ord e)
+                 => KeyConfig e -> (Text, [KeyEventHandler e m]) -> Widget Name
 mkKeybindingHelp kc (sectionName, kbs) =
     (heading sectionName) <=>
     (padTop (Pad 1) $ hCenter $ vBox $ snd <$> sortWith fst results)
     where
         results = mkKeybindHelp kc <$> kbs
 
-mkKeybindHelp :: KeyConfig KeyEvent -> MHKeyEventHandler -> (Text, Widget Name)
+mkKeybindHelp :: (Ord e)
+              => KeyConfig e
+              -> KeyEventHandler e m
+              -> (Text, Widget Name)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
