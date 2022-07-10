@@ -43,6 +43,14 @@ module Matterhorn.Types.KeyEvents
 
   -- * Handling events
   , handleKeyboardEvent
+
+  -- * Helper constructors and modifiers
+  , kb
+  , char
+  , fn
+  , meta
+  , ctrl
+  , shift
   )
 where
 
@@ -135,10 +143,10 @@ lookupKeyConfigBindings :: (Ord e) => KeyConfig e -> e -> Maybe BindingState
 lookupKeyConfigBindings kc e = M.lookup e $ keyConfigBindingMap kc
 
 parseBinding :: Text -> Either String Binding
-parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
+parseBinding s = go (T.splitOn "-" $ T.toLower s) []
   where go [k] mods = do
-          key <- pKey k
-          return Binding { kbMods = mods, kbKey = key }
+          k' <- pKey k
+          return Binding { kbMods = mods, kbKey = k' }
         go (k:ks) mods = do
           m <- case k of
             "s"       -> return Vty.MShift
@@ -373,3 +381,27 @@ keyHandlersFromConfig kc eh =
             where allBindings | Just (BindingList ks) <- lookupKeyConfigBindings kc ev = ks
                               | Just Unbound <- lookupKeyConfigBindings kc ev = []
                               | otherwise = allDefaultBindings kc ev
+
+-- | Add Meta to a binding.
+meta :: Binding -> Binding
+meta binding = binding { kbMods = Vty.MMeta : kbMods binding }
+
+-- | Add Ctrl to a binding.
+ctrl :: Binding -> Binding
+ctrl binding = binding { kbMods = Vty.MCtrl : kbMods binding }
+
+-- | Add Shift to a binding.
+shift :: Binding -> Binding
+shift binding = binding { kbMods = Vty.MShift : kbMods binding }
+
+-- | Binding for the specified Vty key.
+kb :: Vty.Key -> Binding
+kb k = Binding { kbMods = [], kbKey = k }
+
+-- | Binding for the specified character key.
+char :: Char -> Binding
+char c = Binding { kbMods = [], kbKey = Vty.KChar c }
+
+-- | Function key binding.
+fn :: Int -> Binding
+fn n = Binding { kbMods = [], kbKey = Vty.KFun n }
