@@ -4,13 +4,13 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Constants
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 onEventShowHelp :: TeamId -> Vty.Event -> MH Bool

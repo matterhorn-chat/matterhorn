@@ -8,6 +8,8 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
+import           Brick.Keybindings.Parse
 import           Brick.Focus ( withFocusRing )
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
@@ -42,7 +44,6 @@ import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.RichText
 

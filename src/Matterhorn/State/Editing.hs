@@ -22,6 +22,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick ( BrickEvent(VtyEvent) )
+import           Brick.Keybindings
 import           Brick.Main ( invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
@@ -58,7 +59,6 @@ import           Matterhorn.State.Autocomplete
 import {-# SOURCE #-} Matterhorn.State.Messages
 import {-# SOURCE #-} Matterhorn.State.ThreadWindow
 import           Matterhorn.Types hiding ( newState )
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Common ( sanitizeUserText' )
 
 

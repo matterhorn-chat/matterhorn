@@ -10,10 +10,14 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
+import           Brick.Keybindings.Parse
+import           Brick.Keybindings.Pretty
 import           Brick.Themes ( themeDescriptions )
 import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.Edit ( Editor )
 import           Brick.Widgets.List ( listSelectedFocusedAttr )
+
 import qualified Data.Map as M
 import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
@@ -45,7 +49,6 @@ import           Matterhorn.Options ( mhVersion )
 import           Matterhorn.State.Editing ( editingKeyHandlers )
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 drawShowHelp :: HelpTopic -> ChatState -> [Widget Name]

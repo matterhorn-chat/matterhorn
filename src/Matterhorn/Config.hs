@@ -15,6 +15,8 @@ import           Matterhorn.Prelude
 
 import qualified Paths_matterhorn as Paths
 
+import           Brick.Keybindings
+import           Brick.Keybindings.Parse
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
 import           Data.Char ( isDigit, isAlpha )
@@ -34,7 +36,6 @@ import           Matterhorn.Config.Schema
 import           Matterhorn.FilePaths
 import           Matterhorn.IOUtil
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 defaultPort :: Int

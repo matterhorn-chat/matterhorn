@@ -361,6 +361,7 @@ import           GHC.Stack ( HasCallStack )
 
 import qualified Brick
 import           Brick ( EventM, Next, Widget(..), Size(..), Result )
+import           Brick.Keybindings
 import           Brick.Focus ( FocusRing )
 import           Brick.Themes ( Theme )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
@@ -414,7 +415,6 @@ import           Matterhorn.Types.Common
 import           Matterhorn.Types.Core
 import           Matterhorn.Types.Channels
 import           Matterhorn.Types.EditState
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.MessageInterface
 import           Matterhorn.Types.NonemptyStack

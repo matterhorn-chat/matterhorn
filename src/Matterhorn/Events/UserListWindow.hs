@@ -3,6 +3,7 @@ module Matterhorn.Events.UserListWindow where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
@@ -10,7 +11,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.State.UserListWindow
 import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 onEventUserListWindow :: TeamId -> Vty.Event -> MH ()

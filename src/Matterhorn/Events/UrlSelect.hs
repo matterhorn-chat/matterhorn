@@ -4,6 +4,7 @@ module Matterhorn.Events.UrlSelect where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import           Brick.Widgets.List
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens' )
@@ -11,7 +12,6 @@ import           Lens.Micro.Platform ( Lens' )
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.State.SaveAttachmentWindow
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 onEventUrlSelect :: Lens' ChatState (MessageInterface Name i) -> Vty.Event -> MH Bool

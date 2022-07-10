@@ -16,6 +16,9 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
+import           Brick.Keybindings.Parse
+
 import           Data.List ( intersperse )
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -25,7 +28,6 @@ import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 defaultTimeFormat :: Text

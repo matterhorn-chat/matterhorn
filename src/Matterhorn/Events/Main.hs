@@ -6,6 +6,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Main ( viewportScroll, vScrollBy )
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
@@ -20,7 +21,6 @@ import           Matterhorn.State.Help
 import           Matterhorn.State.Teams
 import           Matterhorn.State.PostListWindow ( enterFlaggedPostListMode )
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 onEventMain :: TeamId -> Vty.Event -> MH ()
 onEventMain tId =

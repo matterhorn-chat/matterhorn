@@ -10,6 +10,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import           Brick.Forms (handleFormEvent, formState)
 import           Data.Maybe (fromJust)
 import qualified Graphics.Vty as V
@@ -19,7 +20,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Lens.Micro.Platform (_Just, (.=), singular)
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.State.NotifyPrefs
 import           Matterhorn.State.Async
 

@@ -9,6 +9,8 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
+import           Brick.Keybindings.Parse
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import qualified Brick.Widgets.FileBrowser as FB
@@ -17,7 +19,6 @@ import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform ( Lens' )
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Themes
 
 

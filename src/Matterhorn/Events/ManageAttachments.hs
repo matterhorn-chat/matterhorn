@@ -14,6 +14,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import qualified Brick.Widgets.FileBrowser as FB
 import qualified Brick.Widgets.List as L
 import qualified Data.Text as T
@@ -22,7 +23,6 @@ import qualified Graphics.Vty as V
 import           Lens.Micro.Platform ( (?=), (%=), to, Lens', (.=) )
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.Common
 

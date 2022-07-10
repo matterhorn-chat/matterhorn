@@ -11,6 +11,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import           Brick.Widgets.Border
 
 import qualified Data.Set as S
@@ -25,7 +26,6 @@ import           Network.Mattermost.Types ( TeamId, Post (postId) )
 import           Matterhorn.Constants
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.RichText ( Inline(EUser) )
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), printableNameForUserRef )

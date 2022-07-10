@@ -10,6 +10,8 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
+import           Brick.Keybindings.Parse
 import qualified Brick.Widgets.List as L
 import           Brick.Widgets.Border ( hBorder )
 import           Brick.Widgets.Center ( hCenter )
@@ -19,7 +21,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 drawThemeListWindow :: ChatState -> TeamId -> Widget Name

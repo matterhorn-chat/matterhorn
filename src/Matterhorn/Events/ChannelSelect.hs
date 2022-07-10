@@ -4,6 +4,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick ( BrickEvent(VtyEvent) )
+import           Brick.Keybindings
 import           Brick.Widgets.Edit ( handleEditorEvent )
 import qualified Graphics.Vty as Vty
 
@@ -13,7 +14,6 @@ import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Editing ( editingKeybindings )
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import qualified Matterhorn.Zipper as Z
 
 

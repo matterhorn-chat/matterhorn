@@ -24,7 +24,7 @@ import           Network.Mattermost.Types ( Session, TeamId )
 import qualified Graphics.Vty as Vty
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
+import           Brick.Keybindings
 import           Matterhorn.State.Common
 import           Matterhorn.State.Editing ( editingKeybindings )
 

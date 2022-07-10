@@ -8,6 +8,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
@@ -15,7 +16,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.State.ChannelListWindow
 import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 onEventChannelListWindow :: TeamId -> Vty.Event -> MH ()

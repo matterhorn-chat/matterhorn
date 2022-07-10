@@ -4,9 +4,10 @@ module Matterhorn.Events.Global
   )
 where
 
+import           Brick.Keybindings
+
 import           Matterhorn.Command
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Teams

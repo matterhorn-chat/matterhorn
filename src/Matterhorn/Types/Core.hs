@@ -25,13 +25,13 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import qualified Brick
+import           Brick.Keybindings
 import           Data.Hashable ( Hashable )
 import qualified Data.Text as T
 import           Data.UUID ( UUID )
 import           GHC.Generics ( Generic )
 import           Network.Mattermost.Types
 
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.RichText ( URL, TeamURLName )
 
 -- | This 'Name' type is the type used in 'brick' to identify various

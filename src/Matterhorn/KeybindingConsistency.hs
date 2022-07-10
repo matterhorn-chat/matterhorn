@@ -6,13 +6,15 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
+import           Brick.Keybindings.Parse
+
 import qualified Data.Map.Strict as M
 import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 -- | Given a configuration, we want to check it for internal consistency
 -- (i.e. that a given keybinding isn't associated with multiple events

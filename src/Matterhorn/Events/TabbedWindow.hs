@@ -9,13 +9,13 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens', (.=) )
 
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 handleTabbedWindowEvent :: (Show a, Eq a)

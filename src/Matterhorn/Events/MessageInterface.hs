@@ -10,6 +10,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick ( BrickEvent(VtyEvent) )
+import           Brick.Keybindings
 import           Brick.Widgets.Edit ( handleEditorEvent )
 
 import qualified Graphics.Vty as Vty
@@ -17,7 +18,6 @@ import           Lens.Micro.Platform ( Lens' )
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.MessageSelect

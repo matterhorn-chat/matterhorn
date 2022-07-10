@@ -10,6 +10,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens', to )
@@ -19,7 +20,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.ReactionEmojiListWindow
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 messagesPerPageOperation :: Int
