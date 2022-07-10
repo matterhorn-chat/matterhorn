@@ -45,9 +45,10 @@ module Matterhorn.Types.KeyEvents
   , handleKeyboardEvent
 
   -- * Helper constructors and modifiers
-  , kb
-  , char
+  , ToBinding(..)
+  , key
   , fn
+  , char
   , meta
   , ctrl
   , shift
@@ -382,26 +383,45 @@ keyHandlersFromConfig kc eh =
                               | Just Unbound <- lookupKeyConfigBindings kc ev = []
                               | otherwise = allDefaultBindings kc ev
 
+class ToBinding a where
+    toBinding :: a -> Binding
+
+instance ToBinding Vty.Key where
+    toBinding k = Binding { kbMods = [], kbKey = k }
+
+instance ToBinding Char where
+    toBinding = toBinding . Vty.KChar
+
+instance ToBinding Binding where
+    toBinding = id
+
 -- | Add Meta to a binding.
-meta :: Binding -> Binding
-meta binding = binding { kbMods = Vty.MMeta : kbMods binding }
+meta :: (ToBinding a) => a -> Binding
+meta val =
+    let binding = toBinding val
+    in binding { kbMods = Vty.MMeta : kbMods binding }
 
 -- | Add Ctrl to a binding.
-ctrl :: Binding -> Binding
-ctrl binding = binding { kbMods = Vty.MCtrl : kbMods binding }
+ctrl :: (ToBinding a) => a -> Binding
+ctrl val =
+    let binding = toBinding val
+    in binding { kbMods = Vty.MCtrl : kbMods binding }
 
 -- | Add Shift to a binding.
-shift :: Binding -> Binding
-shift binding = binding { kbMods = Vty.MShift : kbMods binding }
+shift :: (ToBinding a) => a -> Binding
+shift val =
+    let binding = toBinding val
+    in binding { kbMods = Vty.MShift : kbMods binding }
 
--- | Binding for the specified Vty key.
-kb :: Vty.Key -> Binding
-kb k = Binding { kbMods = [], kbKey = k }
+-- | Make a binding from any Vty key.
+key :: Vty.Key -> Binding
+key = toBinding
 
--- | Binding for the specified character key.
+-- | Make a binding from any character (subject to what the keyboard can
+-- actually produce).
 char :: Char -> Binding
-char c = Binding { kbMods = [], kbKey = Vty.KChar c }
+char = toBinding
 
 -- | Function key binding.
 fn :: Int -> Binding
-fn n = Binding { kbMods = [], kbKey = Vty.KFun n }
+fn = toBinding . Vty.KFun

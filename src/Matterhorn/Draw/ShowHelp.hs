@@ -286,7 +286,7 @@ keybindingHelp kc = vBox $
           , [ "Letter keys, number keys, and function keys are specified with "
             , "their obvious name, such as **x** for the X key, **8** for the 8 "
             , "key, and **f5** for the F5 key. Other valid keys include: "
-            , T.intercalate ", " [ "**" <> key <> "**" | key <- nonCharKeys ]
+            , T.intercalate ", " [ "**" <> k <> "**" | k <- nonCharKeys ]
             , "."
             ]
           ]
