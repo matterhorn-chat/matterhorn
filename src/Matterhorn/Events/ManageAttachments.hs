@@ -43,17 +43,17 @@ attachmentListKeybindings which = mkKeybindings (attachmentListKeyHandlers which
 attachmentListKeyHandlers :: Lens' ChatState (MessageInterface Name i)
                           -> [MHKeyEventHandler]
 attachmentListKeyHandlers which =
-    [ mkKb CancelEvent "Close attachment list" $
+    [ onEvent CancelEvent "Close attachment list" $
           which.miMode .= Compose
-    , mkKb SelectUpEvent "Move cursor up" $
+    , onEvent SelectUpEvent "Move cursor up" $
           mhHandleEventLensed (which.miEditor.esAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
-    , mkKb SelectDownEvent "Move cursor down" $
+    , onEvent SelectDownEvent "Move cursor down" $
           mhHandleEventLensed (which.miEditor.esAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
-    , mkKb AttachmentListAddEvent "Add a new attachment to the attachment list" $
+    , onEvent AttachmentListAddEvent "Add a new attachment to the attachment list" $
           showAttachmentFileBrowser which
-    , mkKb AttachmentOpenEvent "Open the selected attachment using the URL open command" $
+    , onEvent AttachmentOpenEvent "Open the selected attachment using the URL open command" $
           openSelectedAttachment which
-    , mkKb AttachmentListDeleteEvent "Delete the selected attachment from the attachment list" $
+    , onEvent AttachmentListDeleteEvent "Delete the selected attachment from the attachment list" $
           deleteSelectedAttachment which
     ]
 
@@ -66,42 +66,42 @@ attachmentBrowseKeybindings which =
 attachmentBrowseKeyHandlers :: Lens' ChatState (MessageInterface Name i)
                             -> [MHKeyEventHandler]
 attachmentBrowseKeyHandlers which =
-    [ mkKb CancelEvent "Cancel attachment file browse" $
+    [ onEvent CancelEvent "Cancel attachment file browse" $
       cancelAttachmentBrowse which
-    , mkKb AttachmentOpenEvent "Open the selected file using the URL open command" $
+    , onEvent AttachmentOpenEvent "Open the selected file using the URL open command" $
       openSelectedBrowserEntry which
-    , mkKb FileBrowserBeginSearchEvent "Begin search for name in list" $
+    , onEvent FileBrowserBeginSearchEvent "Begin search for name in list" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserBeginSearch
-    , mkKb FileBrowserSelectEnterEvent "Select file or enter directory" $ do
+    , onEvent FileBrowserSelectEnterEvent "Select file or enter directory" $ do
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectEnter
       withFileBrowser which (tryAddAttachment which . FB.fileBrowserSelection)
-    , mkKb FileBrowserSelectCurrentEvent "Select file" $
+    , onEvent FileBrowserSelectCurrentEvent "Select file" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectCurrent
-    , mkKb FileBrowserListPageUpEvent "Move cursor one page up" $
+    , onEvent FileBrowserListPageUpEvent "Move cursor one page up" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListPageUp
-    , mkKb FileBrowserListPageDownEvent "Move cursor one page down" $
+    , onEvent FileBrowserListPageDownEvent "Move cursor one page down" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListPageDown
-    , mkKb FileBrowserListHalfPageUpEvent "Move cursor one-half page up" $
+    , onEvent FileBrowserListHalfPageUpEvent "Move cursor one-half page up" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListHalfPageUp
-    , mkKb FileBrowserListHalfPageDownEvent "Move cursor one-half page down" $
+    , onEvent FileBrowserListHalfPageDownEvent "Move cursor one-half page down" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListHalfPageDown
-    , mkKb FileBrowserListTopEvent "Move cursor to top of list" $
+    , onEvent FileBrowserListTopEvent "Move cursor to top of list" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListTop
-    , mkKb FileBrowserListBottomEvent "Move cursor to bottom of list" $
+    , onEvent FileBrowserListBottomEvent "Move cursor to bottom of list" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListBottom
-    , mkKb FileBrowserListNextEvent "Move cursor down" $
+    , onEvent FileBrowserListNextEvent "Move cursor down" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListNext
-    , mkKb FileBrowserListPrevEvent "Move cursor up" $
+    , onEvent FileBrowserListPrevEvent "Move cursor up" $
       mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListPrev
     ]

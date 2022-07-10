@@ -37,8 +37,8 @@ module Matterhorn.Types.KeyEvents
   , KeyEventTrigger(..)
 
   -- * Building handlers
-  , mkKb
-  , staticKb
+  , onEvent
+  , onKey
   , keyHandlerMapPairs
 
   -- * Handling events
@@ -317,8 +317,8 @@ mkHandler msg action =
        , ehAction = action
        }
 
-mkKb :: e -> Text -> m () -> KeyEventHandler e m
-mkKb ev msg action =
+onEvent :: e -> Text -> m () -> KeyEventHandler e m
+onEvent ev msg action =
     KEH { kehHandler = mkHandler msg action
         , kehEventTrigger = ByEvent ev
         }
@@ -337,8 +337,8 @@ keyHandlerFromConfig kc eh =
                               | Just Unbound <- lookupKeyConfigBindings kc ev = []
                               | otherwise = allDefaultBindings kc ev
 
-staticKb :: Text -> Vty.Event -> m () -> KeyEventHandler e m
-staticKb msg event action =
+onKey :: Text -> Vty.Event -> m () -> KeyEventHandler e m
+onKey msg event action =
     KEH { kehHandler = mkHandler msg action
         , kehEventTrigger = Static event
         }

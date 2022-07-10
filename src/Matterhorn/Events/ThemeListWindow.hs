@@ -24,16 +24,16 @@ themeListWindowKeybindings tId = mkKeybindings (themeListWindowKeyHandlers tId)
 
 themeListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 themeListWindowKeyHandlers tId =
-    [ mkKb CancelEvent "Close the theme list"
+    [ onEvent CancelEvent "Close the theme list"
       (exitListWindow tId (csTeam(tId).tsThemeListWindow))
-    , mkKb SearchSelectUpEvent "Select the previous theme" $
+    , onEvent SearchSelectUpEvent "Select the previous theme" $
       themeListSelectUp tId
-    , mkKb SearchSelectDownEvent "Select the next theme" $
+    , onEvent SearchSelectDownEvent "Select the next theme" $
       themeListSelectDown tId
-    , mkKb PageDownEvent "Page down in the theme list" $
+    , onEvent PageDownEvent "Page down in the theme list" $
       themeListPageDown tId
-    , mkKb PageUpEvent "Page up in the theme list" $
+    , onEvent PageUpEvent "Page up in the theme list" $
       themeListPageUp tId
-    , mkKb ActivateListItemEvent "Switch to the selected color theme"
+    , onEvent ActivateListItemEvent "Switch to the selected color theme"
       (listWindowActivateCurrent tId (csTeam(tId).tsThemeListWindow))
     ]

@@ -23,10 +23,10 @@ userListWindowKeybindings tId = mkKeybindings (userListWindowKeyHandlers tId)
 
 userListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 userListWindowKeyHandlers tId =
-    [ mkKb CancelEvent "Close the user search list" (exitListWindow tId (csTeam(tId).tsUserListWindow))
-    , mkKb SearchSelectUpEvent "Select the previous user" $ userListSelectUp tId
-    , mkKb SearchSelectDownEvent "Select the next user" $ userListSelectDown tId
-    , mkKb PageDownEvent "Page down in the user list" $ userListPageDown tId
-    , mkKb PageUpEvent "Page up in the user list" $ userListPageUp tId
-    , mkKb ActivateListItemEvent "Interact with the selected user" (listWindowActivateCurrent tId (csTeam(tId).tsUserListWindow))
+    [ onEvent CancelEvent "Close the user search list" (exitListWindow tId (csTeam(tId).tsUserListWindow))
+    , onEvent SearchSelectUpEvent "Select the previous user" $ userListSelectUp tId
+    , onEvent SearchSelectDownEvent "Select the next user" $ userListSelectDown tId
+    , onEvent PageDownEvent "Page down in the user list" $ userListPageDown tId
+    , onEvent PageUpEvent "Page up in the user list" $ userListPageUp tId
+    , onEvent ActivateListItemEvent "Interact with the selected user" (listWindowActivateCurrent tId (csTeam(tId).tsUserListWindow))
     ]

@@ -25,22 +25,22 @@ urlSelectKeybindings which = mkKeybindings (urlSelectKeyHandlers which)
 
 urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [MHKeyEventHandler]
 urlSelectKeyHandlers which =
-    [ staticKb "Open the selected URL, if any"
+    [ onKey "Open the selected URL, if any"
          (Vty.EvKey Vty.KEnter []) $
              openSelectedURL which
 
-    , mkKb SaveAttachmentEvent "Save the selected attachment" $
+    , onEvent SaveAttachmentEvent "Save the selected attachment" $
         openSaveAttachmentWindow which
 
-    , mkKb CancelEvent "Cancel URL selection" $ stopUrlSelect which
+    , onEvent CancelEvent "Cancel URL selection" $ stopUrlSelect which
 
-    , mkKb SelectUpEvent "Move cursor up" $
+    , onEvent SelectUpEvent "Move cursor up" $
         mhHandleEventLensed (which.miUrlList.ulList) handleListEvent (Vty.EvKey Vty.KUp [])
 
-    , mkKb SelectDownEvent "Move cursor down" $
+    , onEvent SelectDownEvent "Move cursor down" $
         mhHandleEventLensed (which.miUrlList.ulList) handleListEvent (Vty.EvKey Vty.KDown [])
 
-    , staticKb "Cancel URL selection"
+    , onKey "Cancel URL selection"
          (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect which
 
     ]

@@ -28,10 +28,10 @@ channelListWindowKeybindings tId = mkKeybindings (channelListWindowKeyHandlers t
 
 channelListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelListWindowKeyHandlers tId =
-    [ mkKb CancelEvent "Close the channel search list" (exitListWindow tId (csTeam(tId).tsChannelListWindow))
-    , mkKb SearchSelectUpEvent "Select the previous channel" $ channelListSelectUp tId
-    , mkKb SearchSelectDownEvent "Select the next channel" $ channelListSelectDown tId
-    , mkKb PageDownEvent "Page down in the channel list" $ channelListPageDown tId
-    , mkKb PageUpEvent "Page up in the channel list" $ channelListPageUp tId
-    , mkKb ActivateListItemEvent "Join the selected channel" (listWindowActivateCurrent tId (csTeam(tId).tsChannelListWindow))
+    [ onEvent CancelEvent "Close the channel search list" (exitListWindow tId (csTeam(tId).tsChannelListWindow))
+    , onEvent SearchSelectUpEvent "Select the previous channel" $ channelListSelectUp tId
+    , onEvent SearchSelectDownEvent "Select the next channel" $ channelListSelectDown tId
+    , onEvent PageDownEvent "Page down in the channel list" $ channelListPageDown tId
+    , onEvent PageUpEvent "Page up in the channel list" $ channelListPageUp tId
+    , onEvent ActivateListItemEvent "Join the selected channel" (listWindowActivateCurrent tId (csTeam(tId).tsChannelListWindow))
     ]

@@ -36,7 +36,7 @@ channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
 
 channelSelectKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelSelectKeyHandlers tId =
-    [ staticKb "Switch to selected channel"
+    [ onKey "Switch to selected channel"
          (Vty.EvKey Vty.KEnter []) $ do
              matches <- use (csTeam(tId).tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of
@@ -45,9 +45,9 @@ channelSelectKeyHandlers tId =
                      popMode tId
                      setFocus tId $ channelListEntryChannelId $ matchEntry match
 
-    , mkKb CancelEvent "Cancel channel selection" $ popMode tId
-    , mkKb NextChannelEvent "Select next match" $ channelSelectNext tId
-    , mkKb PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
-    , mkKb NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId
-    , mkKb PrevChannelEventAlternate "Select previous match (alternate binding)" $ channelSelectPrevious tId
+    , onEvent CancelEvent "Cancel channel selection" $ popMode tId
+    , onEvent NextChannelEvent "Select next match" $ channelSelectNext tId
+    , onEvent PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
+    , onEvent NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId
+    , onEvent PrevChannelEventAlternate "Select previous match (alternate binding)" $ channelSelectPrevious tId
     ]

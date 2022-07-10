@@ -29,16 +29,16 @@ reactionEmojiListWindowKeybindings tId = mkKeybindings (reactionEmojiListWindowK
 
 reactionEmojiListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 reactionEmojiListWindowKeyHandlers tId =
-    [ mkKb CancelEvent "Close the emoji search window"
+    [ onEvent CancelEvent "Close the emoji search window"
       (exitListWindow tId (csTeam(tId).tsReactionEmojiListWindow))
-    , mkKb SearchSelectUpEvent "Select the previous emoji" $
+    , onEvent SearchSelectUpEvent "Select the previous emoji" $
       reactionEmojiListSelectUp tId
-    , mkKb SearchSelectDownEvent "Select the next emoji" $
+    , onEvent SearchSelectDownEvent "Select the next emoji" $
       reactionEmojiListSelectDown tId
-    , mkKb PageDownEvent "Page down in the emoji list" $
+    , onEvent PageDownEvent "Page down in the emoji list" $
       reactionEmojiListPageDown tId
-    , mkKb PageUpEvent "Page up in the emoji list" $
+    , onEvent PageUpEvent "Page up in the emoji list" $
       reactionEmojiListPageUp tId
-    , mkKb ActivateListItemEvent "Post the selected emoji reaction"
+    , onEvent ActivateListItemEvent "Post the selected emoji reaction"
       (listWindowActivateCurrent tId (csTeam(tId).tsReactionEmojiListWindow))
     ]

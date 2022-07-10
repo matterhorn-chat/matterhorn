@@ -22,9 +22,9 @@ postListWindowKeybindings tId = mkKeybindings (postListWindowKeyHandlers tId)
 
 postListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 postListWindowKeyHandlers tId =
-  [ mkKb CancelEvent "Exit post browsing" $ exitPostListMode tId
-  , mkKb SelectUpEvent "Select the previous message" $ postListSelectUp tId
-  , mkKb SelectDownEvent "Select the next message" $ postListSelectDown tId
-  , mkKb FlagMessageEvent "Toggle the selected message flag" $ postListUnflagSelected tId
-  , mkKb ActivateListItemEvent "Jump to and select current message" $ postListJumpToCurrent tId
+  [ onEvent CancelEvent "Exit post browsing" $ exitPostListMode tId
+  , onEvent SelectUpEvent "Select the previous message" $ postListSelectUp tId
+  , onEvent SelectDownEvent "Select the next message" $ postListSelectDown tId
+  , onEvent FlagMessageEvent "Toggle the selected message flag" $ postListUnflagSelected tId
+  , onEvent ActivateListItemEvent "Jump to and select current message" $ postListJumpToCurrent tId
   ]

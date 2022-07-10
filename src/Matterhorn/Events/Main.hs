@@ -42,61 +42,61 @@ mainKeybindings tId = mkKeybindings (mainKeyHandlers tId)
 
 mainKeyHandlers :: TeamId -> [MHKeyEventHandler]
 mainKeyHandlers tId =
-    [ mkKb ShowHelpEvent
+    [ onEvent ShowHelpEvent
         "Show this help screen" $ do
         showHelpScreen tId mainHelpTopic
 
-    , mkKb
+    , onEvent
         EnterFastSelectModeEvent
         "Enter fast channel selection mode" $
          beginChannelSelect tId
 
-    , mkKb
+    , onEvent
         ChannelListScrollUpEvent
         "Scroll up in the channel list" $ do
             let vp = viewportScroll $ ChannelListViewport tId
             mh $ vScrollBy vp (-1)
 
-    , mkKb
+    , onEvent
         ChannelListScrollDownEvent
         "Scroll down in the channel list" $ do
             let vp = viewportScroll $ ChannelListViewport tId
             mh $ vScrollBy vp 1
 
-    , mkKb
+    , onEvent
         CycleChannelListSorting
         "Cycle through channel list sorting modes" $
         cycleChannelListSortingMode tId
 
-    , mkKb ReplyRecentEvent
+    , onEvent ReplyRecentEvent
         "Reply to the most recent message" $
         withCurrentChannel tId $ \cId _ ->
             replyToLatestMessage (channelEditor(cId))
 
-    , mkKb ChangeMessageEditorFocus
+    , onEvent ChangeMessageEditorFocus
         "Cycle between message editors when a thread is open" $
         cycleTeamMessageInterfaceFocus tId
 
-    , mkKb NextChannelEvent "Change to the next channel in the channel list" $
+    , onEvent NextChannelEvent "Change to the next channel in the channel list" $
          nextChannel tId
 
-    , mkKb PrevChannelEvent "Change to the previous channel in the channel list" $
+    , onEvent PrevChannelEvent "Change to the previous channel in the channel list" $
          prevChannel tId
 
-    , mkKb NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'" $
+    , onEvent NextUnreadChannelEvent "Change to the next channel with unread messages or return to the channel marked '~'" $
          nextUnreadChannel tId
 
-    , mkKb NextUnreadUserOrChannelEvent
+    , onEvent NextUnreadUserOrChannelEvent
          "Change to the next channel with unread messages preferring direct messages" $
          nextUnreadUserOrChannel tId
 
-    , mkKb LastChannelEvent "Change to the most recently-focused channel" $
+    , onEvent LastChannelEvent "Change to the most recently-focused channel" $
          recentChannel tId
 
-    , mkKb ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
+    , onEvent ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
            withCurrentChannel tId $ \cId _ -> do
                clearChannelUnreadStatus cId
 
-    , mkKb EnterFlaggedPostsEvent "View currently flagged posts" $
+    , onEvent EnterFlaggedPostsEvent "View currently flagged posts" $
          enterFlaggedPostListMode tId
     ]

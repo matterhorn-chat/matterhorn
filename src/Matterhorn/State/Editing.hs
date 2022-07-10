@@ -133,52 +133,52 @@ editingKeybindings editor = mkKeybindings $ editingKeyHandlers editor
 
 editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [MHKeyEventHandler]
 editingKeyHandlers editor =
-  [ mkKb EditorTransposeCharsEvent
+  [ onEvent EditorTransposeCharsEvent
     "Transpose the final two characters"
     (editor %= applyEdit Z.transposeChars)
-  , mkKb EditorBolEvent
+  , onEvent EditorBolEvent
     "Go to the start of the current line"
     (editor %= applyEdit Z.gotoBOL)
-  , mkKb EditorEolEvent
+  , onEvent EditorEolEvent
     "Go to the end of the current line"
     (editor %= applyEdit Z.gotoEOL)
-  , mkKb EditorDeleteCharacter
+  , onEvent EditorDeleteCharacter
     "Delete the character at the cursor"
     (editor %= applyEdit Z.deleteChar)
-  , mkKb EditorKillToBolEvent
+  , onEvent EditorKillToBolEvent
     "Delete from the cursor to the start of the current line"
     (editor %= applyEdit Z.killToBOL)
-  , mkKb EditorNextCharEvent
+  , onEvent EditorNextCharEvent
     "Move one character to the right"
     (editor %= applyEdit Z.moveRight)
-  , mkKb EditorPrevCharEvent
+  , onEvent EditorPrevCharEvent
     "Move one character to the left"
     (editor %= applyEdit Z.moveLeft)
-  , mkKb EditorNextWordEvent
+  , onEvent EditorNextWordEvent
     "Move one word to the right"
     (editor %= applyEdit Z.moveWordRight)
-  , mkKb EditorPrevWordEvent
+  , onEvent EditorPrevWordEvent
     "Move one word to the left"
     (editor %= applyEdit Z.moveWordLeft)
-  , mkKb EditorDeletePrevWordEvent
+  , onEvent EditorDeletePrevWordEvent
     "Delete the word to the left of the cursor" $ do
     editor %= applyEdit Z.deletePrevWord
-  , mkKb EditorDeleteNextWordEvent
+  , onEvent EditorDeleteNextWordEvent
     "Delete the word to the right of the cursor" $ do
     editor %= applyEdit Z.deleteWord
-  , mkKb EditorHomeEvent
+  , onEvent EditorHomeEvent
     "Move the cursor to the beginning of the input" $ do
     editor %= applyEdit gotoHome
-  , mkKb EditorEndEvent
+  , onEvent EditorEndEvent
     "Move the cursor to the end of the input" $ do
     editor %= applyEdit gotoEnd
-  , mkKb EditorKillToEolEvent
+  , onEvent EditorKillToEolEvent
     "Kill the line to the right of the current position and copy it" $ do
       z <- use (editor.editContentsL)
       let restOfLine = Z.currentLine (Z.killToBOL z)
       csGlobalEditState.gedYankBuffer .= restOfLine
       editor %= applyEdit Z.killToEOL
-  , mkKb EditorYankEvent
+  , onEvent EditorYankEvent
     "Paste the current buffer contents at the cursor" $ do
         buf <- use (csGlobalEditState.gedYankBuffer)
         editor %= applyEdit (Z.insertMany buf)

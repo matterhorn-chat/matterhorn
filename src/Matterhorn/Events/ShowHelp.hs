@@ -30,18 +30,18 @@ helpKeybindings tId = mkKeybindings (helpKeyHandlers tId)
 
 helpKeyHandlers :: TeamId -> [MHKeyEventHandler]
 helpKeyHandlers tId =
-    [ mkKb ScrollUpEvent "Scroll up" $
+    [ onEvent ScrollUpEvent "Scroll up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1)
-    , mkKb ScrollDownEvent "Scroll down" $
+    , onEvent ScrollDownEvent "Scroll down" $
         mh $ vScrollBy (viewportScroll HelpViewport) 1
-    , mkKb PageUpEvent "Page up" $
+    , onEvent PageUpEvent "Page up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
-    , mkKb PageDownEvent "Page down" $
+    , onEvent PageDownEvent "Page down" $
         mh $ vScrollBy (viewportScroll HelpViewport) (1 * pageAmount)
-    , mkKb CancelEvent "Close the help window" $
+    , onEvent CancelEvent "Close the help window" $
         popMode tId
-    , mkKb ScrollBottomEvent "Scroll to the end of the help" $
+    , onEvent ScrollBottomEvent "Scroll to the end of the help" $
         mh $ vScrollToEnd (viewportScroll HelpViewport)
-    , mkKb ScrollTopEvent "Scroll to the beginning of the help" $
+    , onEvent ScrollTopEvent "Scroll to the beginning of the help" $
         mh $ vScrollToBeginning (viewportScroll HelpViewport)
     ]
