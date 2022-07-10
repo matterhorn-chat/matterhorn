@@ -10,7 +10,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Keybindings
-import           Brick.Keybindings.Parse
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import qualified Brick.Widgets.FileBrowser as FB

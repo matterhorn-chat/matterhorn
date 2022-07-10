@@ -7,7 +7,6 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Keybindings
-import           Brick.Keybindings.Parse
 
 import qualified Data.Map.Strict as M
 import           Data.Maybe ( fromJust )

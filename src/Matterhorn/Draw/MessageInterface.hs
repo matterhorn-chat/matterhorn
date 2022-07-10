@@ -9,7 +9,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Keybindings
-import           Brick.Keybindings.Parse
 import           Brick.Focus ( withFocusRing )
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style

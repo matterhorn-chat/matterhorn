@@ -11,8 +11,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Keybindings
-import           Brick.Keybindings.Parse
-import           Brick.Keybindings.Pretty
 import           Brick.Themes ( themeDescriptions )
 import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.Edit ( Editor )

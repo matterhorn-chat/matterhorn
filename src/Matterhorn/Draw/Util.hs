@@ -17,7 +17,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Keybindings
-import           Brick.Keybindings.Parse
 
 import           Data.List ( intersperse )
 import qualified Data.Set as Set

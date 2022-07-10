@@ -11,7 +11,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Keybindings
-import           Brick.Keybindings.Parse
 import qualified Brick.Widgets.List as L
 import           Brick.Widgets.Border ( hBorder )
 import           Brick.Widgets.Center ( hCenter )
