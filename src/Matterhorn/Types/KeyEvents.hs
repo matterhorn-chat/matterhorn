@@ -33,7 +33,7 @@ module Matterhorn.Types.KeyEvents
   , Handler(..)
   , KeyHandler(..)
   , KeyEventHandler(..)
-  , KeyEventTrigger(..)
+  , EventTrigger(..)
 
   -- * Building handlers
   , onEvent
@@ -259,20 +259,19 @@ data Handler m =
        -- ^ The action to take when this handler is invoked.
        }
 
--- | A trigger for a key event.
-data KeyEventTrigger e =
+-- | A trigger for an event handler.
+data EventTrigger e =
     Static Binding
     -- ^ The key event is always triggered by a specific key.
     | ByEvent e
-    -- ^ The key event is always triggered by an abstract key event (and
-    -- thus configured to be bound to specific key(s) in the KeyConfig).
+    -- ^ The trigger is an abstract key event.
     deriving (Show, Eq, Ord)
 
 -- | A handler for an abstract key event.
 data KeyEventHandler e m =
     KEH { kehHandler :: Handler m
         -- ^ The handler to invoke.
-        , kehEventTrigger :: KeyEventTrigger e
+        , kehEventTrigger :: EventTrigger e
         -- ^ The trigger for the handler.
         }
 
