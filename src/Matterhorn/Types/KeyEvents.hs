@@ -290,7 +290,12 @@ data KeyEventHandler e m =
 -- internals are exposed to make inspection easy.
 data KeyHandler e m =
     KH { khHandler :: KeyEventHandler e m
-       -- ^ The handler to invoke.
+       -- ^ The handler to invoke. Note that this maintains the original
+       -- key abstract key event handler; this allows us to obtain
+       -- the original 'EventTrigger' for the 'KeyEventHandler' upon
+       -- which this 'KeyHandler' is built. This can be important for
+       -- keybinding consistency checks or collision checks as well as
+       -- help text generation.
        , khKey :: Binding
        -- ^ The specific key that should trigger this handler.
        }
