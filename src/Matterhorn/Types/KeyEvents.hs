@@ -28,7 +28,7 @@ module Matterhorn.Types.KeyEvents
   , keyEventName
 
   -- * Key event handler maps
-  , KeyHandlerMap(..)
+  , KeyHandlerMap
   , mkKeybindings
   , lookupVtyEvent
   , Handler(..)
@@ -39,7 +39,7 @@ module Matterhorn.Types.KeyEvents
   -- * Building handlers
   , onEvent
   , onKey
-  , keyHandlerMapPairs
+  , keyHandlerMapToList
 
   -- * Handling events
   , handleKeyboardEvent
@@ -249,6 +249,9 @@ keyEventName (KeyEvents m) e = B.lookupR e m
 
 -- | An 'Handler' represents a handler implementation to be invoked in
 -- response to some event.
+--
+-- In general, you should never need to make one of these manually.
+-- Instead, use 'onEvent' and 'onKey'.
 data Handler m =
     EH { ehDescription :: Text
        -- ^ The description of this handler's behavior.
@@ -265,6 +268,9 @@ data EventTrigger e =
     deriving (Show, Eq, Ord)
 
 -- | A handler for an abstract key event.
+--
+-- In general, you should never need to create these manually. Instead,
+-- use 'onEvent' and 'onKey'.
 data KeyEventHandler e m =
     KEH { kehHandler :: Handler m
         -- ^ The handler to invoke.
@@ -273,6 +279,9 @@ data KeyEventHandler e m =
         }
 
 -- | A handler for a specific key.
+--
+-- In general, you should never need to create one of these. The
+-- internals are exposed to make inspection easy.
 data KeyHandler e m =
     KH { khHandler :: KeyEventHandler e m
        -- ^ The handler to invoke.
@@ -280,6 +289,7 @@ data KeyHandler e m =
        -- ^ The specific key that should trigger this handler.
        }
 
+-- | A set of handlers for specific keys with handlers that run in the monad @m@.
 newtype KeyHandlerMap e m = KeyHandlerMap (M.Map Binding (KeyHandler e m))
 
 -- | Find a key handler that matches a Vty Event, if any.
@@ -334,13 +344,17 @@ mkKeybindings :: (Ord e)
               => [KeyEventHandler e m]
               -> KeyConfig e
               -> KeyHandlerMap e m
-mkKeybindings ks conf = KeyHandlerMap $ M.fromList $ keyHandlerMapPairs ks conf
+mkKeybindings ks conf = KeyHandlerMap $ M.fromList $ buildKeyHandlerMapPairs ks conf
 
-keyHandlerMapPairs :: (Ord e)
-                   => [KeyEventHandler e m]
-                   -> KeyConfig e
-                   -> [(Binding, KeyHandler e m)]
-keyHandlerMapPairs ks conf = pairs
+keyHandlerMapToList :: KeyHandlerMap e m
+                    -> [(Binding, KeyHandler e m)]
+keyHandlerMapToList (KeyHandlerMap m) = M.toList m
+
+buildKeyHandlerMapPairs :: (Ord e)
+                        => [KeyEventHandler e m]
+                        -> KeyConfig e
+                        -> [(Binding, KeyHandler e m)]
+buildKeyHandlerMapPairs ks conf = pairs
     where
         pairs = mkPair <$> handlers
         mkPair h = (khKey h, h)

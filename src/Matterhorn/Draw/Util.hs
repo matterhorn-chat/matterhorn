@@ -17,7 +17,6 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Data.List ( intersperse )
-import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Network.Mattermost.Types
@@ -115,11 +114,11 @@ keyEventBindings :: ChatState
                  -> T.Text
 keyEventBindings st mkBindingsMap e =
     let keyconf = st^.csResources.crConfiguration.configUserKeysL
-        KeyHandlerMap keymap = mkBindingsMap keyconf
+        keymap = mkBindingsMap keyconf
     in T.intercalate ","
          [ ppBinding b
          | KH { khKey     = b
               , khHandler = h
-              } <- M.elems keymap
+              } <- snd <$> keyHandlerMapToList keymap
          , kehEventTrigger h == ByEvent e
          ]
