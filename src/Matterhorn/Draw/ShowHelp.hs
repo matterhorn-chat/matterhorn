@@ -181,7 +181,7 @@ keybindingHelp kc = vBox $
   [ headingNoPad "Keybinding Syntax"
   , vBox validKeys
   ]
-  where keybindSectionWidgets = keybindingSectionWidget kc headingNoPad <$> keybindSections
+  where keybindSectionWidgets = keybindingHelpWidget kc headingNoPad <$> keybindSections
         keybindingHelpText = map paraL
           [ [ "Many of the keybindings used in Matterhorn can be "
             , "modified from within Matterhorn's **config.ini** file. "

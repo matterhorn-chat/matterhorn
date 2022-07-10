@@ -53,10 +53,10 @@ module Matterhorn.Types.KeyEvents
   , ctrl
   , shift
 
-  -- * Documentation generation
+  -- * Documentation rendering
   , keybindingTextTable
   , keybindingMarkdownTable
-  , keybindingSectionWidget
+  , keybindingHelpWidget
   )
 where
 
@@ -541,12 +541,12 @@ mkKeybindEventHelp kc h =
                       in (Verbatim name, result)
   in (label, ehDescription $ kehHandler h, evText)
 
-keybindingSectionWidget :: (Ord e)
-                        => KeyConfig e
-                        -> (Text -> Widget n)
-                        -> (Text, [KeyEventHandler e m])
-                        -> Widget n
-keybindingSectionWidget kc = mkKeybindEventSectionHelp kc keybindEventHelpWidget vBox
+keybindingHelpWidget :: (Ord e)
+                     => KeyConfig e
+                     -> (Text -> Widget n)
+                     -> (Text, [KeyEventHandler e m])
+                     -> Widget n
+keybindingHelpWidget kc = mkKeybindEventSectionHelp kc keybindEventHelpWidget vBox
 
 keybindEventHelpWidget :: (TextHunk, Text, [TextHunk]) -> Widget n
 keybindEventHelpWidget (evName, desc, evs) =
