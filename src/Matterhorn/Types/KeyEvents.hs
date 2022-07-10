@@ -30,7 +30,7 @@ module Matterhorn.Types.KeyEvents
   -- * Key event handler maps
   , KeyHandlerMap(..)
   , mkKeybindings
-  , lookupEvent
+  , lookupVtyEvent
   , Handler(..)
   , KeyHandler(..)
   , KeyEventHandler(..)
@@ -279,10 +279,10 @@ data KeyHandler e m =
 
 newtype KeyHandlerMap e m = KeyHandlerMap (M.Map Binding (KeyHandler e m))
 
--- | Find a keybinding that matches a Vty Event
-lookupEvent :: Vty.Event -> KeyHandlerMap e m -> Maybe (KeyHandler e m)
-lookupEvent (Vty.EvKey k mods) (KeyHandlerMap m) = M.lookup (Binding k mods) m
-lookupEvent _ _ = Nothing
+-- | Find a key handler that matches a Vty Event, if any.
+lookupVtyEvent :: Vty.Event -> KeyHandlerMap e m -> Maybe (KeyHandler e m)
+lookupVtyEvent (Vty.EvKey k mods) (KeyHandlerMap m) = M.lookup (Binding k mods) m
+lookupVtyEvent _ _ = Nothing
 
 -- | Handle a keyboard event by looking it up in a map of bindings and
 -- invoking the matching binding's handler. Return True if the key event
@@ -296,7 +296,7 @@ handleKeyboardEvent :: (Monad m)
                     -- ^ The event to handle.
                     -> m Bool
 handleKeyboardEvent handlerMap e = do
-  case lookupEvent e handlerMap of
+  case lookupVtyEvent e handlerMap of
     Just kh -> (ehAction $ kehHandler $ khHandler kh) >> return True
     Nothing -> return False
 
