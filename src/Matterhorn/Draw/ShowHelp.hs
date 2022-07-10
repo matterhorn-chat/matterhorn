@@ -291,6 +291,15 @@ keybindingHelp kc = vBox $
             ]
           ]
 
+nonCharKeys :: [Text]
+nonCharKeys = map ppKey
+  [ Vty.KBackTab, Vty.KEsc, Vty.KBS, Vty.KEnter, Vty.KUp, Vty.KDown
+  , Vty.KLeft, Vty.KRight, Vty.KHome, Vty.KEnd, Vty.KPageDown
+  , Vty.KPageUp, Vty.KDel, Vty.KUpLeft, Vty.KUpRight, Vty.KDownLeft
+  , Vty.KDownRight, Vty.KCenter, Vty.KPrtScr, Vty.KPause, Vty.KIns
+  , Vty.KBegin, Vty.KMenu
+  ]
+
 event :: (Ord e) => KeyConfig e -> e -> Widget a
 event kc = withDefAttr helpKeyEventAttr . txt . fromJust . keyEventName (keyConfigEvents kc)
 

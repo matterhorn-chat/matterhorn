@@ -1,23 +1,24 @@
 module Matterhorn.Types.KeyEvents
   (
-  -- * Key binding configurations
+  -- * Key binding configurations (KeyConfigs)
     KeyConfig(keyConfigEvents)
   , Binding(..)
   , BindingState(..)
   , newKeyConfig
   , lookupKeyConfigBindings
 
-  -- * Querying key binding configurations
+  -- * Querying KeyConfigs
   , getFirstDefaultBinding
   , firstActiveBinding
   , allDefaultBindings
 
-  -- * Parsing and pretty-printing of bindings
+  -- * Parsing and pretty-printing of bindings, keys, and modifiers
   , parseBinding
   , parseBindingList
   , ppBinding
   , ppMaybeBinding
-  , nonCharKeys
+  , ppKey
+  , ppModifier
 
   -- * Key event collections
   , KeyEvents
@@ -183,7 +184,7 @@ parseBinding kb = go (T.splitOn "-" $ T.toLower kb) []
 
 ppBinding :: Binding -> Text
 ppBinding (Binding k mods) =
-    T.intercalate "-" $ (ppMod <$> mods) <> [ppKey k]
+    T.intercalate "-" $ (ppModifier <$> mods) <> [ppKey k]
 
 ppMaybeBinding :: Maybe Binding -> Text
 ppMaybeBinding Nothing =
@@ -218,25 +219,16 @@ ppKey Vty.KIns        = "Insert"
 ppKey Vty.KBegin      = "Begin"
 ppKey Vty.KMenu       = "Menu"
 
-nonCharKeys :: [Text]
-nonCharKeys = map ppKey
-  [ Vty.KBackTab, Vty.KEsc, Vty.KBS, Vty.KEnter, Vty.KUp, Vty.KDown
-  , Vty.KLeft, Vty.KRight, Vty.KHome, Vty.KEnd, Vty.KPageDown
-  , Vty.KPageUp, Vty.KDel, Vty.KUpLeft, Vty.KUpRight, Vty.KDownLeft
-  , Vty.KDownRight, Vty.KCenter, Vty.KPrtScr, Vty.KPause, Vty.KIns
-  , Vty.KBegin, Vty.KMenu
-  ]
-
 ppChar :: Char -> Text
 ppChar '\t' = "Tab"
 ppChar ' '  = "Space"
 ppChar c    = T.singleton c
 
-ppMod :: Vty.Modifier -> Text
-ppMod Vty.MMeta  = "M"
-ppMod Vty.MAlt   = "A"
-ppMod Vty.MCtrl  = "C"
-ppMod Vty.MShift = "S"
+ppModifier :: Vty.Modifier -> Text
+ppModifier Vty.MMeta  = "M"
+ppModifier Vty.MAlt   = "A"
+ppModifier Vty.MCtrl  = "C"
+ppModifier Vty.MShift = "S"
 
 parseBindingList :: Text -> Either String BindingState
 parseBindingList t =
