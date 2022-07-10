@@ -300,7 +300,8 @@ data KeyHandler e m =
        -- ^ The specific key that should trigger this handler.
        }
 
--- | A set of handlers for specific keys with handlers that run in the monad @m@.
+-- | A set of handlers for specific keys with handlers that run in the
+-- monad @m@.
 newtype KeyHandlerMap e m = KeyHandlerMap (M.Map Binding (KeyHandler e m))
 
 -- | Find a key handler that matches a Vty Event, if any.
