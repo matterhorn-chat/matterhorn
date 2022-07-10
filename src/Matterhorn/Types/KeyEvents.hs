@@ -79,8 +79,8 @@ data BindingState =
 
 -- | A configuration of custom key bindings. A 'KeyConfig' stores
 -- everything needed to resolve a key event into one or more key
--- bindings. Once you have a 'KeyConfig', you can use it to dispatch to
--- 'KeyEventHandler's with 'mkKeybindings'.
+-- bindings. Make a 'KeyConfig' with 'newKeyConfig', then use it to
+-- dispatch to 'KeyEventHandler's with 'mkKeybindings'.
 data KeyConfig e =
     KeyConfig { keyConfigBindingMap :: M.Map e BindingState
               -- ^ The map of custom bindings for events with custom
