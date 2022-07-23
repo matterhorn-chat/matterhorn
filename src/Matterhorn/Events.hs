@@ -45,8 +45,8 @@ import           Matterhorn.Events.Mouse
 import           Matterhorn.Events.EditNotifyPrefs
 import           Matterhorn.Events.Websocket
 
-onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st ev = runMHEvent st $ do
+onEvent :: BrickEvent Name MHEvent -> EventM Name ChatState ()
+onEvent ev = runMHEvent $ do
     onBrickEvent ev
     doPendingUserFetches
     doPendingUserStatusFetches
