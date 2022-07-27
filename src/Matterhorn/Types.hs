@@ -390,6 +390,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
                                      , (%=), (%~), (.~), _Just, Traversal', to
                                      , SimpleGetter, filtered, traversed, singular
+                                     , zoom
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
 import           Skylighting.Types ( SyntaxMap )
@@ -1507,10 +1508,10 @@ generateUUID_IO :: IO UUID
 generateUUID_IO = randomIO
 
 mhHandleEventLensed :: Lens' ChatState b -> (e -> EventM Name b ()) -> e -> MH ()
-mhHandleEventLensed ln f event = MH $ R.lift $ St.lift $ Brick.withLens ln (f event)
+mhHandleEventLensed ln f event = MH $ R.lift $ St.lift $ zoom ln (f event)
 
 mhHandleEventLensed' :: Lens' ChatState b -> (EventM Name b ()) -> MH ()
-mhHandleEventLensed' ln f = MH $ R.lift $ St.lift $ Brick.withLens ln f
+mhHandleEventLensed' ln f = MH $ R.lift $ St.lift $ zoom ln f
 
 mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
 mhSuspendAndResume act = MH $ R.lift $ St.lift $ do

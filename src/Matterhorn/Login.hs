@@ -432,7 +432,7 @@ onEvent (VtyEvent (EvKey KEnter [])) = do
                         chan <- use reqChan
                         liftIO $ writeBChan chan $ DoLogin False ci
 onEvent e = do
-    withLens loginForm (handleFormEvent e)
+    zoom loginForm (handleFormEvent e)
 
 mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkForm =
