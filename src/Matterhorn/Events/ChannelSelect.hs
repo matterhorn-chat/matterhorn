@@ -3,6 +3,7 @@ module Matterhorn.Events.ChannelSelect where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( BrickEvent(VtyEvent) )
 import           Brick.Widgets.Edit ( handleEditorEvent )
 import qualified Graphics.Vty as Vty
 
@@ -23,7 +24,7 @@ onEventChannelSelect tId =
                     , \e -> do
                         void $ handleEventWith [ handleKeyboardEvent (editingKeybindings (csTeam(tId).tsChannelSelectState.channelSelectInput))
                                                , \ev -> do
-                                                   mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent ev
+                                                   mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent (VtyEvent ev)
                                                    return True
                                                ] e
                         updateChannelSelectMatches tId

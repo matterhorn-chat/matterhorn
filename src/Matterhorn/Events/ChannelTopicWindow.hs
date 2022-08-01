@@ -6,6 +6,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( BrickEvent(VtyEvent) )
 import           Brick.Focus
 import           Brick.Widgets.Edit ( handleEditorEvent, getEditContents )
 import qualified Data.Text as T
@@ -33,7 +34,7 @@ onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
             popMode tId
         Just (ChannelTopicEditor {}) ->
             mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
-                                handleEditorEvent e
+                                handleEditorEvent (VtyEvent e)
         Just (ChannelTopicCancelButton {}) ->
             popMode tId
         _ ->
@@ -45,6 +46,6 @@ onEventChannelTopicWindow tId e = do
     case focusGetCurrent f of
         Just (ChannelTopicEditor {}) ->
             mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
-                                handleEditorEvent e
+                                handleEditorEvent (VtyEvent e)
         _ ->
             return ()

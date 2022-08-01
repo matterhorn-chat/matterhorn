@@ -9,6 +9,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( BrickEvent(VtyEvent) )
 import           Brick.Widgets.Edit ( handleEditorEvent )
 
 import qualified Graphics.Vty as Vty
@@ -133,7 +134,7 @@ extraEditorKeyHandlers which =
                 isMultiline <- use (editWhich.esEphemeral.eesMultiline)
                 case isMultiline of
                     True -> mhHandleEventLensed (editWhich.esEditor) handleEditorEvent
-                                              (Vty.EvKey Vty.KUp [])
+                                              (VtyEvent $ Vty.EvKey Vty.KUp [])
                     False -> inputHistoryBackward which
 
        , mkKb
@@ -144,7 +145,7 @@ extraEditorKeyHandlers which =
                 isMultiline <- use (editWhich.esEphemeral.eesMultiline)
                 case isMultiline of
                     True -> mhHandleEventLensed (editWhich.esEditor) handleEditorEvent
-                                              (Vty.EvKey Vty.KDown [])
+                                              (VtyEvent $ Vty.EvKey Vty.KDown [])
                     False -> inputHistoryForward which
        ]
 

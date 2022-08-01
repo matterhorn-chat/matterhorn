@@ -21,6 +21,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( BrickEvent(VtyEvent) )
 import           Brick.Main ( invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
@@ -344,7 +345,7 @@ handleEditingInput which e = do
               which.esEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
               sendUserTypingAction which
           _ | editingPermitted st which -> do
-              mhHandleEventLensed (which.esEditor) handleEditorEvent e
+              mhHandleEventLensed (which.esEditor) handleEditorEvent (VtyEvent e)
               sendUserTypingAction which
             | otherwise -> return ()
 
