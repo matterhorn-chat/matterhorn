@@ -129,7 +129,7 @@ resetListWindowSearch which = do
 -- window's editor if the editor contents change.
 onEventListWindow :: Lens' ChatState (ListWindowState a b)
                    -- ^ Which window to dispatch to?
-                   -> (KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH)
+                   -> (KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH)
                    -- ^ The keybinding builder
                    -> Vty.Event
                    -- ^ The event

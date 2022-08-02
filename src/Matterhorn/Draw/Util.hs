@@ -107,7 +107,7 @@ mkChannelName st c = T.append sigil t
 -- string.
 keyEventBindings :: ChatState
                  -- ^ The current application state
-                 -> (KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH)
+                 -> (KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH)
                  -- ^ The function to obtain the relevant key handler
                  -- map
                  -> KeyEvent
@@ -118,8 +118,8 @@ keyEventBindings st mkBindingsMap e =
         keymap = mkBindingsMap keyconf
     in T.intercalate ","
          [ ppBinding b
-         | KH { khKey     = b
-              , khHandler = h
-              } <- snd <$> keyHandlerMapToList keymap
+         | KeyHandler { khBinding = b
+                      , khHandler = h
+                      } <- snd <$> keyDispatcherToList keymap
          , kehEventTrigger h == ByEvent e
          ]

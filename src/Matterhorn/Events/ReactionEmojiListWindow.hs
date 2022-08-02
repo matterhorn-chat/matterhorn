@@ -24,8 +24,8 @@ onEventReactionEmojiListWindow tId =
            (reactionEmojiListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing an emoji list window
-reactionEmojiListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
-reactionEmojiListWindowKeybindings tId = mkKeybindings (reactionEmojiListWindowKeyHandlers tId)
+reactionEmojiListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+reactionEmojiListWindowKeybindings tId kc = keyDispatcher kc (reactionEmojiListWindowKeyHandlers tId)
 
 reactionEmojiListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 reactionEmojiListWindowKeyHandlers tId =

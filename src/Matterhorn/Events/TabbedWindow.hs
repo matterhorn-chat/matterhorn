@@ -41,8 +41,8 @@ tabbedWindowKeybindings :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow ChatState MH Name a)
                         -> TeamId
                         -> KeyConfig KeyEvent
-                        -> KeyHandlerMap KeyEvent MH
-tabbedWindowKeybindings target tId = mkKeybindings $ tabbedWindowKeyHandlers tId target
+                        -> KeyDispatcher KeyEvent MH
+tabbedWindowKeybindings target tId kc = keyDispatcher kc $ tabbedWindowKeyHandlers tId target
 
 tabbedWindowKeyHandlers :: (Show a, Eq a)
                         => TeamId

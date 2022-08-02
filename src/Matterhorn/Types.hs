@@ -1872,15 +1872,17 @@ withChannelOrDefault cId deflt mote = do
 
 type MHKeyEventHandler = KeyEventHandler KeyEvent MH
 
-mhHandleKeyboardEvent :: (KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH)
+mhHandleKeyboardEvent :: (KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH)
                       -- ^ The function to build a key handler map from
                       -- a key configuration.
                       -> Vty.Event
                       -- ^ The event to handle.
                       -> MH Bool
-mhHandleKeyboardEvent mkHandlerMap e = do
+mhHandleKeyboardEvent mkDispatcher (Vty.EvKey k mods) = do
     config <- use (csResources.crConfiguration)
-    handleKeyboardEvent (mkHandlerMap $ configUserKeys config) e
+    handleKey (mkDispatcher $ configUserKeys config) k mods
+mhHandleKeyboardEvent _ _ =
+    return False
 
 -- ** 'ChatState' Helper Functions
 

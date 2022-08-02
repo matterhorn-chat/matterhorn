@@ -183,8 +183,8 @@ viewMessageBox st tId msg =
         ctx <- getContext
         render $ maybeWarn $ viewport (ViewMessageArea tId) Both $ mkBody (ctx^.availWidthL)
 
-viewMessageKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
-viewMessageKeybindings tId = mkKeybindings (viewMessageKeyHandlers tId)
+viewMessageKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+viewMessageKeybindings tId kc = keyDispatcher kc (viewMessageKeyHandlers tId)
 
 viewMessageKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageKeyHandlers tId =
@@ -220,8 +220,8 @@ viewMessageKeyHandlers tId =
            mh $ vScrollToBeginning (vs tId)
        ]
 
-viewMessageReactionsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
-viewMessageReactionsKeybindings tId = mkKeybindings (viewMessageReactionsKeyHandlers tId)
+viewMessageReactionsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+viewMessageReactionsKeybindings tId kc = keyDispatcher kc (viewMessageReactionsKeyHandlers tId)
 
 viewMessageReactionsKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageReactionsKeyHandlers tId =

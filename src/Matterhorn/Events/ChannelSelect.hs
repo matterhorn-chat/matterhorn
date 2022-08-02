@@ -31,12 +31,12 @@ onEventChannelSelect tId =
                         return True
                     ]
 
-channelSelectKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
-channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
+channelSelectKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+channelSelectKeybindings tId kc = keyDispatcher kc (channelSelectKeyHandlers tId)
 
 channelSelectKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelSelectKeyHandlers tId =
-    [ onKey (key Vty.KEnter)
+    [ onKey (bind Vty.KEnter)
           "Switch to selected channel" $ do
              matches <- use (csTeam(tId).tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of

@@ -36,8 +36,8 @@ handleEditNotifyPrefsEvent tId e = do
     csTeam(tId).tsNotifyPrefs .= Just updatedForm
     return True
 
-editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
-editNotifyPrefsKeybindings tId = mkKeybindings (editNotifyPrefsKeyHandlers tId)
+editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+editNotifyPrefsKeybindings tId kc = keyDispatcher kc (editNotifyPrefsKeyHandlers tId)
 
 editNotifyPrefsKeyHandlers :: TeamId -> [MHKeyEventHandler]
 editNotifyPrefsKeyHandlers tId =

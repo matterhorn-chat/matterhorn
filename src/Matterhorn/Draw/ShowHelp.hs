@@ -514,7 +514,7 @@ mkKeybindHelp kc h =
                     (hLimit kbDescColumnWidth $
                      padRight Max $
                      padBottom (Pad 1) $
-                     vBox [ renderText $ ehDescription $ kehHandler h
+                     vBox [ renderText $ handlerDescription $ kehHandler h
                           , maybe emptyWidget renderEvent mEv
                           ]
                      )

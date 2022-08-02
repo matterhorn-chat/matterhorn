@@ -58,9 +58,9 @@ handleMessageInterfaceEvent tId which ev = do
 
 messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig KeyEvent
-                            -> KeyHandlerMap KeyEvent MH
-messageInterfaceKeybindings which =
-    mkKeybindings (messageInterfaceKeyHandlers which)
+                            -> KeyDispatcher KeyEvent MH
+messageInterfaceKeybindings which kc =
+    keyDispatcher kc (messageInterfaceKeyHandlers which)
 
 messageInterfaceKeyHandlers :: Lens' ChatState (MessageInterface n i)
                             -> [MHKeyEventHandler]
@@ -82,9 +82,9 @@ messageInterfaceKeyHandlers which =
 
 extraEditorKeybindings :: Lens' ChatState (MessageInterface Name i)
                        -> KeyConfig KeyEvent
-                       -> KeyHandlerMap KeyEvent MH
-extraEditorKeybindings which =
-    mkKeybindings (extraEditorKeyHandlers which)
+                       -> KeyDispatcher KeyEvent MH
+extraEditorKeybindings which kc =
+    keyDispatcher kc (extraEditorKeyHandlers which)
 
 extraEditorKeyHandlers :: Lens' ChatState (MessageInterface Name i)
                        -> [MHKeyEventHandler]
@@ -102,18 +102,18 @@ extraEditorKeyHandlers which =
            "Invoke `$EDITOR` to edit the current message" $
            invokeExternalEditor editWhich
 
-       , onKey (char '\t')
+       , onKey (bind '\t')
             "Tab-complete forward" $
             tabComplete editWhich Forwards
 
-       , onKey (key Vty.KBackTab)
+       , onKey (bind Vty.KBackTab)
             "Tab-complete backward" $
             tabComplete editWhich Backwards
 
        , onEvent ShowAttachmentListEvent "Show the attachment list" $
             showAttachmentList which
 
-       , onKey (key Vty.KEnter)
+       , onKey (bind Vty.KEnter)
             "Send the current message" $ do
                 isMultiline <- use (editWhich.esEphemeral.eesMultiline)
                 case isMultiline of

@@ -13,8 +13,8 @@ import           Matterhorn.State.ChannelList
 import           Matterhorn.State.Teams
 
 
-globalKeybindings :: KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
-globalKeybindings = mkKeybindings globalKeyHandlers
+globalKeybindings :: KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+globalKeybindings kc = keyDispatcher kc globalKeyHandlers
 
 globalKeyHandlers :: [MHKeyEventHandler]
 globalKeyHandlers =

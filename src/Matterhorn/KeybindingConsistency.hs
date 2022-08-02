@@ -108,6 +108,6 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
       let matches kh = ByEvent ev == (kehEventTrigger $ khHandler kh)
       in [ mode
          | (mode, handlers) <- modeMaps
-         , let pairs = keyHandlerMapToList $ mkKeybindings handlers kc
+         , let pairs = keyDispatcherToList $ keyDispatcher kc handlers
            in not $ null $ filter matches $ snd <$> pairs
          ]

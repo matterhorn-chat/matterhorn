@@ -18,8 +18,8 @@ onEventUserListWindow tId =
     void . onEventListWindow (csTeam(tId).tsUserListWindow) (userListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list window
-userListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyHandlerMap KeyEvent MH
-userListWindowKeybindings tId = mkKeybindings (userListWindowKeyHandlers tId)
+userListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+userListWindowKeybindings tId kc = keyDispatcher kc (userListWindowKeyHandlers tId)
 
 userListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 userListWindowKeyHandlers tId =
