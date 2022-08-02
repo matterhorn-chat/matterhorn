@@ -74,7 +74,7 @@ getBundledSyntaxPath = do
 
 fromIni :: IniParser Config
 fromIni = do
-  conf <- section "mattermost" $ do
+  section "mattermost" $ do
     configUser           <- fieldMbOf "user" stringField
     configHost           <- fieldMbOf "host" hostField
     configTeam           <- fieldMbOf "team" stringField
@@ -156,13 +156,6 @@ fromIni = do
     let configAbsPath = Nothing
         configUserKeys = newKeyConfig allEvents [] []
     return Config { .. }
-  keys <- sectionMb "keybindings" $ do
-      fmap catMaybes $ forM (keyEventsList allEvents) $ \(evName, ev) -> do
-          val <- fieldMbOf evName parseBindingList
-          case val of
-              Nothing      -> return Nothing
-              Just binding -> return (Just (ev, binding))
-  return conf { configUserKeys = newKeyConfig allEvents defaultBindings (fromMaybe mempty keys) }
 
 defaultBindings :: [(KeyEvent, [Binding])]
 defaultBindings =
@@ -470,6 +463,9 @@ fixupSyntaxDirs c =
 
         return $ c { configSyntaxDirs = newDirs }
 
+keybindingsSectionName :: Text
+keybindingsSectionName = "keybindings"
+
 getConfig :: FilePath -> ExceptT String IO ([String], Config)
 getConfig fp = do
     absPath <- convertIOException $ makeAbsolute fp
@@ -490,7 +486,11 @@ getConfig fp = do
     case parseIniFile t' fromIni of
         Left err -> do
             throwE $ "Unable to parse " ++ absPath ++ ":" ++ fatalString err
-        Right (warns, conf) -> do
+        Right (warns, confNoKeys) -> do
+            let mKeys = either (const Nothing) id $ keybindingsFromIni allEvents keybindingsSectionName t'
+                kc = newKeyConfig allEvents defaultBindings (fromMaybe mempty mKeys)
+                conf = confNoKeys { configUserKeys = kc }
+
             actualPass <- case configPass conf of
                 Just (PasswordCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
