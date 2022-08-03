@@ -8,6 +8,7 @@ import           Matterhorn.Prelude
 
 import           Brick.Keybindings
 
+import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
@@ -98,7 +99,7 @@ ensureKeybindingConsistency kc modeMaps = mapM_ checkGroup allBindings
 
     -- This check should get more nuanced, but as a first approximation,
     -- we shouldn't bind to any bare character key in the main mode.
-    isBareBinding (Binding (Vty.KChar {}) []) = True
+    isBareBinding (Binding (Vty.KChar {}) ms) | S.null ms = True
     isBareBinding _ = False
 
     -- We generate the which-events-are-valid-in-which-modes map from

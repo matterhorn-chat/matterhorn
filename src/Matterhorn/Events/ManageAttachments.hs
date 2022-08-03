@@ -168,8 +168,7 @@ cancelAttachmentBrowse which = do
 
 handleFileBrowserEvent :: Lens' ChatState (MessageInterface Name i) -> V.Event -> MH ()
 handleFileBrowserEvent which e = do
-    let fbHandle ev = sequence . (fmap (FB.handleFileBrowserEvent ev))
-    mhHandleEventLensed (which.miEditor.esFileBrowser) fbHandle e
+    mhHandleEventLensed (which.miEditor.unsafeEsFileBrowser) FB.handleFileBrowserEvent e
     -- TODO: Check file browser exception state
     withFileBrowser which $ \b ->
         tryAddAttachment which (FB.fileBrowserSelection b)

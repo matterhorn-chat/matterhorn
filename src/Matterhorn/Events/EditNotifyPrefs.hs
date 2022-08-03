@@ -17,7 +17,7 @@ import qualified Graphics.Vty as V
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types ( TeamId )
 
-import           Lens.Micro.Platform (_Just, (.=), singular)
+import           Lens.Micro.Platform (_Just, singular)
 
 import           Matterhorn.Types
 import           Matterhorn.State.NotifyPrefs
@@ -31,9 +31,7 @@ onEventEditNotifyPrefs tId =
 
 handleEditNotifyPrefsEvent :: TeamId -> BrickEvent Name MHEvent -> MH Bool
 handleEditNotifyPrefsEvent tId e = do
-    form <- use (csTeam(tId).tsNotifyPrefs.singular _Just)
-    updatedForm <- mh $ handleFormEvent e form
-    csTeam(tId).tsNotifyPrefs .= Just updatedForm
+    mhHandleEventLensed (csTeam(tId).tsNotifyPrefs.singular _Just) handleFormEvent e
     return True
 
 editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH

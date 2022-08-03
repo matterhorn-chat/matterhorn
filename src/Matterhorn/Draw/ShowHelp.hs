@@ -182,7 +182,8 @@ keybindingHelp kc = vBox $
   [ headingNoPad "Keybinding Syntax"
   , vBox validKeys
   ]
-  where keybindSectionWidgets = keybindingHelpWidget kc headingNoPad <$> keybindSections
+  where addHeading n w = vBox [ headingNoPad n, w ]
+        keybindSectionWidgets = (\(name, hs) -> addHeading name $ keybindingHelpWidget kc hs) <$> keybindSections
         keybindingHelpText = map paraL
           [ [ "Many of the keybindings used in Matterhorn can be "
             , "modified from within Matterhorn's **config.ini** file. "
@@ -241,13 +242,13 @@ keybindingHelp kc = vBox $
             , "all separated by dashes. The available modifier keys are "
             , "**S** for Shift, **C** for Ctrl, **A** for Alt, and **M** for "
             , "Meta. So, for example, **"
-            , ppBinding (Binding (Vty.KFun 2) [])
+            , ppBinding (fn 2)
             , "** is the F2 key pressed with no "
             , "modifier keys; **"
-            , ppBinding (Binding (Vty.KChar 'x') [Vty.MCtrl])
+            , ppBinding (ctrl 'x')
             , "** is Ctrl and X pressed together, "
             , "and **"
-            , ppBinding (Binding (Vty.KChar 'x') [Vty.MShift, Vty.MCtrl])
+            , ppBinding (shift $ ctrl 'x')
             , "** is Shift, Ctrl, and X all pressed together. "
             , "Although Matterhorn will pretty-print all key combinations "
             , "with specific capitalization, the parser is **not** case-sensitive "
@@ -495,7 +496,7 @@ mkKeybindHelp :: (Ord e)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
-            ByKey binding -> (ppBinding binding, Nothing)
+            ByKey b -> (ppBinding b, Nothing)
             ByEvent ev ->
                 let bindings = case lookupKeyConfigBindings kc ev of
                         Nothing ->
