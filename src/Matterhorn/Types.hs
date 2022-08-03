@@ -374,7 +374,6 @@ import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
-import qualified Control.Monad.Fail as MHF
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
@@ -1535,9 +1534,6 @@ instance Functor MH where
 instance Applicative MH where
     pure x = MH (pure x)
     MH f <*> MH x = MH (f <*> x)
-
-instance MHF.MonadFail MH where
-    fail = MH . MHF.fail
 
 instance Monad MH where
     return = pure

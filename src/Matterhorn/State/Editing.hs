@@ -221,7 +221,7 @@ handleInputSubmission editWhich content = do
       Just ('/', cmd) -> do
           tId <- do
               mTid <- use (editWhich.esTeamId)
-              Just curTid <- use csCurrentTeamId
+              curTid <- fromJust <$> use csCurrentTeamId
               return $ fromMaybe curTid mTid
           dispatchCommand tId cmd
       _ -> do
