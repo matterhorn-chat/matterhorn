@@ -24,9 +24,9 @@ import           Network.Mattermost.Types ( Session, TeamId )
 import qualified Graphics.Vty as Vty
 
 import           Matterhorn.Types
+import           Brick.Keybindings
 import           Matterhorn.State.Common
 import           Matterhorn.State.Editing ( editingKeybindings )
-import           Matterhorn.Events.Keybindings ( KeyConfig, KeyHandlerMap, handleKeyboardEvent )
 
 
 -- | Activate the specified list window's selected item by invoking the
@@ -129,13 +129,13 @@ resetListWindowSearch which = do
 -- window's editor if the editor contents change.
 onEventListWindow :: Lens' ChatState (ListWindowState a b)
                    -- ^ Which window to dispatch to?
-                   -> (KeyConfig -> KeyHandlerMap)
+                   -> (KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH)
                    -- ^ The keybinding builder
                    -> Vty.Event
                    -- ^ The event
                    -> MH Bool
 onEventListWindow which keybindings =
-    handleEventWith [ handleKeyboardEvent keybindings
+    handleEventWith [ mhHandleKeyboardEvent keybindings
                     , handleEditorEvent which
                     ]
 
@@ -145,7 +145,7 @@ handleEditorEvent which e = do
     before <- listWindowSearchString which
 
     -- First find a matching keybinding in the keybinding list.
-    handled <- handleKeyboardEvent (editingKeybindings (which.listWindowSearchInput)) e
+    handled <- mhHandleKeyboardEvent (editingKeybindings (which.listWindowSearchInput)) e
 
     -- If we didn't find a matching binding, just handle the event as a
     -- normal editor input event.

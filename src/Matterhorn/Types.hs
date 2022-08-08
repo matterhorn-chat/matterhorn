@@ -43,6 +43,9 @@ module Matterhorn.Types
 
   , resultToWidget
 
+  , MHKeyEventHandler
+  , mhHandleKeyboardEvent
+
   , Config(..)
   , configUserL
   , configHostL
@@ -357,7 +360,8 @@ import           Matterhorn.Prelude
 import           GHC.Stack ( HasCallStack )
 
 import qualified Brick
-import           Brick ( EventM, Next, Widget(..), Size(..), Result )
+import           Brick ( EventM, Widget(..), Size(..), Result )
+import           Brick.Keybindings
 import           Brick.Focus ( FocusRing )
 import           Brick.Themes ( Theme )
 import           Brick.Main ( invalidateCache, invalidateCacheEntry )
@@ -370,7 +374,6 @@ import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
-import qualified Control.Monad.Fail as MHF
 import qualified Control.Monad.State as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
@@ -390,6 +393,7 @@ import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
                                      , (%=), (%~), (.~), _Just, Traversal', to
                                      , SimpleGetter, filtered, traversed, singular
+                                     , zoom
                                      )
 import           Network.Connection ( HostNotResolved, HostCannotConnect )
 import           Skylighting.Types ( SyntaxMap )
@@ -411,7 +415,6 @@ import           Matterhorn.Types.Common
 import           Matterhorn.Types.Core
 import           Matterhorn.Types.Channels
 import           Matterhorn.Types.EditState
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.Messages
 import           Matterhorn.Types.MessageInterface
 import           Matterhorn.Types.NonemptyStack
@@ -544,7 +547,7 @@ data Config =
            , configAbsPath :: Maybe FilePath
            -- ^ A book-keeping field for the absolute path to the
            -- configuration. (Not a user setting.)
-           , configUserKeys :: KeyConfig
+           , configUserKeys :: KeyConfig KeyEvent
            -- ^ The user's keybinding configuration.
            , configHyperlinkingMode :: Bool
            -- ^ Whether to enable terminal hyperlinking mode.
@@ -1424,9 +1427,7 @@ data UserFetch =
     deriving (Eq, Show)
 
 data MHState =
-    MHState { mhCurrentState :: ChatState
-            , mhNextAction :: ChatState -> EventM Name (Next ChatState)
-            , mhUsersToFetch :: [UserFetch]
+    MHState { mhUsersToFetch :: [UserFetch]
             , mhPendingStatusList :: Maybe [UserId]
             }
 
@@ -1434,7 +1435,7 @@ data MHState =
 -- manipulate the application state and also request that the
 -- application quit
 newtype MH a =
-    MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT MHState (EventM Name)) a }
+    MH { fromMH :: R.ReaderT (Maybe LogContext) (St.StateT MHState (EventM Name ChatState)) a }
 
 -- | Use a modified logging context for the duration of the specified MH
 -- action.
@@ -1476,17 +1477,13 @@ ioLogWithManager mgr ctx cat msg = do
                         }
     sendLogMessage mgr lm
 
--- | Run an 'MM' computation, choosing whether to continue or halt based
--- on the resulting
-runMHEvent :: ChatState -> MH () -> EventM Name (Next ChatState)
-runMHEvent st (MH mote) = do
-  let mhSt = MHState { mhCurrentState = st
-                     , mhNextAction = Brick.continue
-                     , mhUsersToFetch = []
+-- | Run an 'MH' computation in 'EventM'.
+runMHEvent :: MH () -> EventM Name ChatState ()
+runMHEvent (MH mote) = do
+  let mhSt = MHState { mhUsersToFetch = []
                      , mhPendingStatusList = Nothing
                      }
-  ((), st') <- St.runStateT (R.runReaderT mote Nothing) mhSt
-  (mhNextAction st') (mhCurrentState st')
+  void $ St.runStateT (R.runReaderT mote Nothing) mhSt
 
 scheduleUserFetches :: [UserFetch] -> MH ()
 scheduleUserFetches fs = MH $ do
@@ -1503,7 +1500,7 @@ getScheduledUserStatusFetches :: MH (Maybe [UserId])
 getScheduledUserStatusFetches = MH $ St.gets mhPendingStatusList
 
 -- | lift a computation in 'EventM' into 'MH'
-mh :: EventM Name a -> MH a
+mh :: EventM Name ChatState a -> MH a
 mh = MH . R.lift . St.lift
 
 generateUUID :: MH UUID
@@ -1512,36 +1509,24 @@ generateUUID = liftIO generateUUID_IO
 generateUUID_IO :: IO UUID
 generateUUID_IO = randomIO
 
-mhHandleEventLensed :: Lens' ChatState b -> (e -> b -> EventM Name b) -> e -> MH ()
-mhHandleEventLensed ln f event = MH $ do
-    s <- St.get
-    let st = mhCurrentState s
-    n <- R.lift $ St.lift $ f event (st ^. ln)
-    St.put (s { mhCurrentState = st & ln .~ n })
+mhHandleEventLensed :: Lens' ChatState b -> (e -> EventM Name b ()) -> e -> MH ()
+mhHandleEventLensed ln f event = MH $ R.lift $ St.lift $ zoom ln (f event)
 
-mhHandleEventLensed' :: Lens' ChatState b -> (b -> EventM Name b) -> MH ()
-mhHandleEventLensed' ln f = MH $ do
-    s <- St.get
-    let st = mhCurrentState s
-    n <- R.lift $ St.lift $ f (st ^. ln)
-    St.put (s { mhCurrentState = st & ln .~ n })
+mhHandleEventLensed' :: Lens' ChatState b -> (EventM Name b ()) -> MH ()
+mhHandleEventLensed' ln f = MH $ R.lift $ St.lift $ zoom ln f
 
 mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
-mhSuspendAndResume mote = MH $ do
-    s <- St.get
-    St.put $ s { mhNextAction = \ _ -> Brick.suspendAndResume (mote $ mhCurrentState s) }
+mhSuspendAndResume act = MH $ R.lift $ St.lift $ do
+    st <- St.get
+    Brick.suspendAndResume (act st)
 
 mhContinueWithoutRedraw :: MH ()
-mhContinueWithoutRedraw = MH $ do
-    s <- St.get
-    St.put $ s { mhNextAction = \ _ -> Brick.continueWithoutRedraw (mhCurrentState s) }
+mhContinueWithoutRedraw = MH $ R.lift $ St.lift $ Brick.continueWithoutRedraw
 
 -- | This will request that after this computation finishes the
 -- application should exit
 requestQuit :: MH ()
-requestQuit = MH $ do
-    s <- St.get
-    St.put $ s { mhNextAction = Brick.halt }
+requestQuit = MH $ R.lift $ St.lift $ Brick.halt
 
 instance Functor MH where
     fmap f (MH x) = MH (fmap f x)
@@ -1550,20 +1535,13 @@ instance Applicative MH where
     pure x = MH (pure x)
     MH f <*> MH x = MH (f <*> x)
 
-instance MHF.MonadFail MH where
-    fail = MH . MHF.fail
-
 instance Monad MH where
     return = pure
     MH x >>= f = MH (x >>= \ x' -> fromMH (f x'))
 
--- We want to pretend that the state is only the ChatState, rather
--- than the ChatState and the Brick continuation
 instance St.MonadState ChatState MH where
-    get = mhCurrentState `fmap` MH St.get
-    put st = MH $ do
-        s <- St.get
-        St.put $ s { mhCurrentState = st }
+    get = MH $ R.lift $ St.lift St.get
+    put = MH . R.lift . St.lift . St.put
 
 instance St.MonadIO MH where
     liftIO = MH . St.liftIO
@@ -1866,6 +1844,20 @@ withChannelOrDefault cId deflt mote = do
     case chan of
         Nothing -> return deflt
         Just c  -> mote c
+
+type MHKeyEventHandler = KeyEventHandler KeyEvent MH
+
+mhHandleKeyboardEvent :: (KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH)
+                      -- ^ The function to build a key handler map from
+                      -- a key configuration.
+                      -> Vty.Event
+                      -- ^ The event to handle.
+                      -> MH Bool
+mhHandleKeyboardEvent mkDispatcher (Vty.EvKey k mods) = do
+    config <- use (csResources.crConfiguration)
+    handleKey (mkDispatcher $ configUserKeys config) k mods
+mhHandleKeyboardEvent _ _ =
+    return False
 
 -- ** 'ChatState' Helper Functions
 

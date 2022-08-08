@@ -9,6 +9,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import qualified Brick.Widgets.FileBrowser as FB
@@ -17,17 +18,15 @@ import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform ( Lens' )
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings ( firstActiveBinding )
 import           Matterhorn.Themes
 
 
 drawAttachmentList :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
 drawAttachmentList st which =
-    let addBinding = ppBinding $ firstActiveBinding kc AttachmentListAddEvent
-        delBinding = ppBinding $ firstActiveBinding kc AttachmentListDeleteEvent
-        escBinding = ppBinding $ firstActiveBinding kc CancelEvent
-        openBinding = ppBinding $ firstActiveBinding kc AttachmentOpenEvent
+    let addBinding = ppMaybeBinding $ firstActiveBinding kc AttachmentListAddEvent
+        delBinding = ppMaybeBinding $ firstActiveBinding kc AttachmentListDeleteEvent
+        escBinding = ppMaybeBinding $ firstActiveBinding kc CancelEvent
+        openBinding = ppMaybeBinding $ firstActiveBinding kc AttachmentOpenEvent
         kc = st^.csResources.crConfiguration.configUserKeysL
     in borderWithLabel (withDefAttr clientEmphAttr $ txt "Attachments") $
        vBox [ renderList renderAttachmentItem True (st^.which.miEditor.esAttachmentList)

@@ -32,7 +32,7 @@ app :: App ChatState MHEvent Name
 app =
     App { appDraw         = draw
         , appHandleEvent  = Events.onEvent
-        , appStartEvent   = return
+        , appStartEvent   = return ()
         , appAttrMap      = (^.csResources.crTheme)
         , appChooseCursor = \s cs -> do
             tId <- s^.csCurrentTeamId

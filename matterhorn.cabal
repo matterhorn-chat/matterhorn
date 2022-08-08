@@ -85,7 +85,6 @@ library
                        Matterhorn.Events.SaveAttachmentWindow
                        Matterhorn.Events.DeleteChannelConfirm
                        Matterhorn.Events.EditNotifyPrefs
-                       Matterhorn.Events.Keybindings
                        Matterhorn.Events.LeaveChannelConfirm
                        Matterhorn.Events.Global
                        Matterhorn.Events.Main
@@ -106,6 +105,7 @@ library
                        Matterhorn.HelpTopics
                        Matterhorn.IOUtil
                        Matterhorn.InputHistory
+                       Matterhorn.KeybindingConsistency
                        Matterhorn.LastRunState
                        Matterhorn.Login
                        Matterhorn.Options
@@ -150,7 +150,6 @@ library
                        Matterhorn.Types.Core
                        Matterhorn.Types.DirectionalSeq
                        Matterhorn.Types.EditState
-                       Matterhorn.Types.KeyEvents
                        Matterhorn.Types.Messages
                        Matterhorn.Types.MessageInterface
                        Matterhorn.Types.NonemptyStack
@@ -185,8 +184,8 @@ library
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
                      , microlens-platform   >= 0.3     && < 0.5
-                     , brick                >= 0.72    && < 0.73
-                     , brick-skylighting    >= 0.2     && < 0.4
+                     , brick                >= 1.0     && < 1.1
+                     , brick-skylighting    >= 1.0     && < 1.1
                      , vty                  >= 5.36    && < 5.37
                      , word-wrap            >= 0.4.0   && < 0.5
                      , transformers         >= 0.4     && < 0.6
@@ -217,6 +216,7 @@ library
                      , uuid                 >= 1.3     && < 1.4
                      , random               >= 1.1     && < 1.2
                      , network-uri          >= 2.6     && < 2.7
+                     , bimap                >= 0.5     && < 0.6
   default-language:    Haskell2010
 
 executable matterhorn
@@ -230,6 +230,7 @@ executable matterhorn
   build-depends:       base                 >=4.8      && <5
                      , matterhorn
                      , text
+                     , brick
   default-language:    Haskell2010
 
 test-suite test_messages
