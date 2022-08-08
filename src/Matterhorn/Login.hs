@@ -557,7 +557,7 @@ editOptionalTextField stLens n =
     in editField stLens n (Just 1) ini val renderTxt id
 
 errorAttr :: AttrName
-errorAttr = "errorMessage"
+errorAttr = attrName "errorMessage"
 
 colorTheme :: AttrMap
 colorTheme = attrMap defAttr
