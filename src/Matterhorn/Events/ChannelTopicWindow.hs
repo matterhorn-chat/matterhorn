@@ -33,7 +33,7 @@ onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
             setChannelTopic tId topic
             popMode tId
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
+            mhZoom (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent (VtyEvent e)
         Just (ChannelTopicCancelButton {}) ->
             popMode tId
@@ -45,7 +45,7 @@ onEventChannelTopicWindow tId e = do
     f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
+            mhZoom (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent (VtyEvent e)
         _ ->
             return ()

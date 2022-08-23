@@ -347,7 +347,7 @@ handleEditingInput which e = do
                       which.esEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
                       sendUserTypingAction which
                   _ | editingPermitted st which -> do
-                      mhHandleEventLensed (which.esEditor) handleEditorEvent (VtyEvent e)
+                      mhZoom (which.esEditor) handleEditorEvent (VtyEvent e)
                       sendUserTypingAction which
                     | otherwise -> return ()
         _ -> return ()

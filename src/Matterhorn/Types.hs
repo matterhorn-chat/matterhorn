@@ -281,8 +281,8 @@ module Matterhorn.Types
   , generateUUID
   , generateUUID_IO
   , mhSuspendAndResume
-  , mhHandleEventLensed
-  , mhHandleEventLensed'
+  , mhZoom
+  , mhZoom'
   , mhContinueWithoutRedraw
   , St.gets
   , mhError
@@ -1509,11 +1509,11 @@ generateUUID = liftIO generateUUID_IO
 generateUUID_IO :: IO UUID
 generateUUID_IO = randomIO
 
-mhHandleEventLensed :: Lens' ChatState b -> (e -> EventM Name b ()) -> e -> MH ()
-mhHandleEventLensed ln f event = MH $ R.lift $ St.lift $ zoom ln (f event)
+mhZoom :: Lens' ChatState b -> (e -> EventM Name b ()) -> e -> MH ()
+mhZoom ln f event = MH $ R.lift $ St.lift $ zoom ln (f event)
 
-mhHandleEventLensed' :: Lens' ChatState b -> (EventM Name b ()) -> MH ()
-mhHandleEventLensed' ln f = MH $ R.lift $ St.lift $ zoom ln f
+mhZoom' :: Lens' ChatState b -> (EventM Name b ()) -> MH ()
+mhZoom' ln f = MH $ R.lift $ St.lift $ zoom ln f
 
 mhSuspendAndResume :: (ChatState -> IO ChatState) -> MH ()
 mhSuspendAndResume act = MH $ R.lift $ St.lift $ do

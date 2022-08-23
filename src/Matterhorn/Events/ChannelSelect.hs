@@ -24,7 +24,7 @@ onEventChannelSelect tId =
                     , \e -> do
                         void $ handleEventWith [ mhHandleKeyboardEvent (editingKeybindings (csTeam(tId).tsChannelSelectState.channelSelectInput))
                                                , \ev -> do
-                                                   mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent (VtyEvent ev)
+                                                   mhZoom (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent (VtyEvent ev)
                                                    return True
                                                ] e
                         updateChannelSelectMatches tId

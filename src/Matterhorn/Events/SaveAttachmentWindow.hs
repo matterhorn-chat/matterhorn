@@ -71,7 +71,7 @@ onEventSaveAttachmentWindow which e = do
     f <- use (which.miSaveAttachmentDialog.attachmentPathDialogFocus)
     case focusGetCurrent f of
         Just (AttachmentPathEditor {}) -> do
-            mhHandleEventLensed (which.miSaveAttachmentDialog.attachmentPathEditor)
+            mhZoom (which.miSaveAttachmentDialog.attachmentPathEditor)
                                 handleEditorEvent (VtyEvent e)
             return True
         _ ->

@@ -132,7 +132,7 @@ extraEditorKeyHandlers which =
                 -- navigate the history.
                 isMultiline <- use (editWhich.esEphemeral.eesMultiline)
                 case isMultiline of
-                    True -> mhHandleEventLensed (editWhich.esEditor) handleEditorEvent
+                    True -> mhZoom (editWhich.esEditor) handleEditorEvent
                                               (VtyEvent $ Vty.EvKey Vty.KUp [])
                     False -> inputHistoryBackward which
 
@@ -143,7 +143,7 @@ extraEditorKeyHandlers which =
                 -- we navigate the history.
                 isMultiline <- use (editWhich.esEphemeral.eesMultiline)
                 case isMultiline of
-                    True -> mhHandleEventLensed (editWhich.esEditor) handleEditorEvent
+                    True -> mhZoom (editWhich.esEditor) handleEditorEvent
                                               (VtyEvent $ Vty.EvKey Vty.KDown [])
                     False -> inputHistoryForward which
        ]

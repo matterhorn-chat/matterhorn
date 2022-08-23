@@ -32,7 +32,7 @@ onEventAttachmentList :: Lens' ChatState (MessageInterface Name i)
                       -> MH Bool
 onEventAttachmentList which =
     handleEventWith [ mhHandleKeyboardEvent (attachmentListKeybindings which)
-                    , \e -> mhHandleEventLensed (which.miEditor.esAttachmentList) L.handleListEvent e >> return True
+                    , \e -> mhZoom (which.miEditor.esAttachmentList) L.handleListEvent e >> return True
                     ]
 
 attachmentListKeybindings :: Lens' ChatState (MessageInterface Name i)
@@ -46,9 +46,9 @@ attachmentListKeyHandlers which =
     [ onEvent CancelEvent "Close attachment list" $
           which.miMode .= Compose
     , onEvent SelectUpEvent "Move cursor up" $
-          mhHandleEventLensed (which.miEditor.esAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
+          mhZoom (which.miEditor.esAttachmentList) L.handleListEvent (V.EvKey V.KUp [])
     , onEvent SelectDownEvent "Move cursor down" $
-          mhHandleEventLensed (which.miEditor.esAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
+          mhZoom (which.miEditor.esAttachmentList) L.handleListEvent (V.EvKey V.KDown [])
     , onEvent AttachmentListAddEvent "Add a new attachment to the attachment list" $
           showAttachmentFileBrowser which
     , onEvent AttachmentOpenEvent "Open the selected attachment using the URL open command" $
@@ -71,38 +71,38 @@ attachmentBrowseKeyHandlers which =
     , onEvent AttachmentOpenEvent "Open the selected file using the URL open command" $
       openSelectedBrowserEntry which
     , onEvent FileBrowserBeginSearchEvent "Begin search for name in list" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserBeginSearch
     , onEvent FileBrowserSelectEnterEvent "Select file or enter directory" $ do
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectEnter
       withFileBrowser which (tryAddAttachment which . FB.fileBrowserSelection)
     , onEvent FileBrowserSelectCurrentEvent "Select file" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectCurrent
     , onEvent FileBrowserListPageUpEvent "Move cursor one page up" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListPageUp
     , onEvent FileBrowserListPageDownEvent "Move cursor one page down" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListPageDown
     , onEvent FileBrowserListHalfPageUpEvent "Move cursor one-half page up" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListHalfPageUp
     , onEvent FileBrowserListHalfPageDownEvent "Move cursor one-half page down" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListHalfPageDown
     , onEvent FileBrowserListTopEvent "Move cursor to top of list" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListTop
     , onEvent FileBrowserListBottomEvent "Move cursor to bottom of list" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListBottom
     , onEvent FileBrowserListNextEvent "Move cursor down" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListNext
     , onEvent FileBrowserListPrevEvent "Move cursor up" $
-      mhHandleEventLensed' (which.miEditor.unsafeEsFileBrowser)
+      mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListPrev
     ]
 
@@ -168,7 +168,7 @@ cancelAttachmentBrowse which = do
 
 handleFileBrowserEvent :: Lens' ChatState (MessageInterface Name i) -> V.Event -> MH ()
 handleFileBrowserEvent which e = do
-    mhHandleEventLensed (which.miEditor.unsafeEsFileBrowser) FB.handleFileBrowserEvent e
+    mhZoom (which.miEditor.unsafeEsFileBrowser) FB.handleFileBrowserEvent e
     -- TODO: Check file browser exception state
     withFileBrowser which $ \b ->
         tryAddAttachment which (FB.fileBrowserSelection b)

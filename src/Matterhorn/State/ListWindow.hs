@@ -150,7 +150,7 @@ handleEditorEvent which e = do
     -- If we didn't find a matching binding, just handle the event as a
     -- normal editor input event.
     when (not handled) $
-        mhHandleEventLensed (which.listWindowSearchInput) E.handleEditorEvent (VtyEvent e)
+        mhZoom (which.listWindowSearchInput) E.handleEditorEvent (VtyEvent e)
 
     -- Get the editor content after the event. If the string changed,
     -- start a new search.

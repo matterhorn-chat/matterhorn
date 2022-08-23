@@ -31,7 +31,7 @@ onEventEditNotifyPrefs tId =
 
 handleEditNotifyPrefsEvent :: TeamId -> BrickEvent Name MHEvent -> MH Bool
 handleEditNotifyPrefsEvent tId e = do
-    mhHandleEventLensed (csTeam(tId).tsNotifyPrefs.singular _Just) handleFormEvent e
+    mhZoom (csTeam(tId).tsNotifyPrefs.singular _Just) handleFormEvent e
     return True
 
 editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
