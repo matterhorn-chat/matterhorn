@@ -38,7 +38,7 @@ onEventMain tId =
                     ]
 
 mainKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-mainKeybindings tId kc = keyDispatcher kc (mainKeyHandlers tId)
+mainKeybindings tId kc = unsafeKeyDispatcher kc (mainKeyHandlers tId)
 
 mainKeyHandlers :: TeamId -> [MHKeyEventHandler]
 mainKeyHandlers tId =

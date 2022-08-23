@@ -93,6 +93,9 @@ module Matterhorn.Types
   , configMouseModeL
   , configShowLastOpenThreadL
 
+  , unsafeKeyDispatcher
+  , bindingConflictMessage
+
   , NotificationVersion(..)
   , PasswordSource(..)
   , TokenSource(..)
@@ -1858,6 +1861,41 @@ mhHandleKeyboardEvent mkDispatcher (Vty.EvKey k mods) = do
     handleKey (mkDispatcher $ configUserKeys config) k mods
 mhHandleKeyboardEvent _ _ =
     return False
+
+-- | Create a key dispatcher, but convert errors about conflict bindings
+-- into a runtime exception with 'error'. Where we use this, it's safe
+-- to use because we do a startup check for keybinding conflicts in
+-- most application modes, which means that by the time we get around
+-- to calling this function, the modes have already been checked and
+-- have been found free of conflicts. However, there could be situations
+-- in the future where we can't detect collisions at startup due to
+-- dynamically built handler lists. In those cases, this would cause
+-- the program to crash with a detailed error about the conflicting key
+-- binding.
+unsafeKeyDispatcher :: (Ord k) => KeyConfig k -> [KeyEventHandler k m] -> KeyDispatcher k m
+unsafeKeyDispatcher cfg hs =
+    case keyDispatcher cfg hs of
+        Right d -> d
+        Left conflicts ->
+            error $ T.unpack $ "Error: conflicting key bindings:\n" <>
+                               bindingConflictMessage cfg conflicts
+
+bindingConflictMessage :: (Ord k) => KeyConfig k -> [(Binding, [KeyHandler k m])] -> T.Text
+bindingConflictMessage cfg conflicts = msg
+    where
+        msg = T.intercalate "\n" sections
+        sections = mkSection <$> conflicts
+        mkSection (key, handlers) =
+            let handlerLines = handlerLine <$> handlers
+                handlerLine h =
+                    let desc = handlerDescription $ kehHandler $ khHandler h
+                        trigger = case kehEventTrigger $ khHandler h of
+                            ByEvent e -> "event '" <> fromJust (keyEventName (keyConfigEvents cfg) e) <> "'"
+                            ByKey b -> "fixed key '" <> ppBinding b <> "'"
+                    in "  '" <> desc <> "', triggered by " <> trigger
+            in T.intercalate "\n" $ [ "Conflicting key binding: " <> ppBinding key
+                                    , "Handlers:"
+                                    ] <> handlerLines
 
 -- ** 'ChatState' Helper Functions
 

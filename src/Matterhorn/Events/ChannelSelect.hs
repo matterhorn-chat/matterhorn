@@ -32,7 +32,7 @@ onEventChannelSelect tId =
                     ]
 
 channelSelectKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-channelSelectKeybindings tId kc = keyDispatcher kc (channelSelectKeyHandlers tId)
+channelSelectKeybindings tId kc = unsafeKeyDispatcher kc (channelSelectKeyHandlers tId)
 
 channelSelectKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelSelectKeyHandlers tId =

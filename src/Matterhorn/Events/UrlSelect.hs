@@ -21,7 +21,7 @@ onEventUrlSelect which =
                     ]
 
 urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-urlSelectKeybindings which kc = keyDispatcher kc (urlSelectKeyHandlers which)
+urlSelectKeybindings which kc = unsafeKeyDispatcher kc (urlSelectKeyHandlers which)
 
 urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [MHKeyEventHandler]
 urlSelectKeyHandlers which =

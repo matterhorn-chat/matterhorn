@@ -184,7 +184,7 @@ viewMessageBox st tId msg =
         render $ maybeWarn $ viewport (ViewMessageArea tId) Both $ mkBody (ctx^.availWidthL)
 
 viewMessageKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-viewMessageKeybindings tId kc = keyDispatcher kc (viewMessageKeyHandlers tId)
+viewMessageKeybindings tId kc = unsafeKeyDispatcher kc (viewMessageKeyHandlers tId)
 
 viewMessageKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageKeyHandlers tId =
@@ -221,7 +221,7 @@ viewMessageKeyHandlers tId =
        ]
 
 viewMessageReactionsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-viewMessageReactionsKeybindings tId kc = keyDispatcher kc (viewMessageReactionsKeyHandlers tId)
+viewMessageReactionsKeybindings tId kc = unsafeKeyDispatcher kc (viewMessageReactionsKeyHandlers tId)
 
 viewMessageReactionsKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageReactionsKeyHandlers tId =

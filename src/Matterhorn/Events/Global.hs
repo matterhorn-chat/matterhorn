@@ -14,7 +14,7 @@ import           Matterhorn.State.Teams
 
 
 globalKeybindings :: KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-globalKeybindings kc = keyDispatcher kc globalKeyHandlers
+globalKeybindings kc = unsafeKeyDispatcher kc globalKeyHandlers
 
 globalKeyHandlers :: [MHKeyEventHandler]
 globalKeyHandlers =

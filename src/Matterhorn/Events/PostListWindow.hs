@@ -18,7 +18,7 @@ onEventPostListWindow tId =
 
 -- | The keybindings we want to use while viewing a post list window
 postListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-postListWindowKeybindings tId kc = keyDispatcher kc (postListWindowKeyHandlers tId)
+postListWindowKeybindings tId kc = unsafeKeyDispatcher kc (postListWindowKeyHandlers tId)
 
 postListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 postListWindowKeyHandlers tId =

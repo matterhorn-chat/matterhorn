@@ -38,7 +38,7 @@ onEventAttachmentList which =
 attachmentListKeybindings :: Lens' ChatState (MessageInterface Name i)
                           -> KeyConfig KeyEvent
                           -> KeyDispatcher KeyEvent MH
-attachmentListKeybindings which kc = keyDispatcher kc (attachmentListKeyHandlers which)
+attachmentListKeybindings which kc = unsafeKeyDispatcher kc (attachmentListKeyHandlers which)
 
 attachmentListKeyHandlers :: Lens' ChatState (MessageInterface Name i)
                           -> [MHKeyEventHandler]
@@ -61,7 +61,7 @@ attachmentBrowseKeybindings :: Lens' ChatState (MessageInterface Name i)
                             -> KeyConfig KeyEvent
                             -> KeyDispatcher KeyEvent MH
 attachmentBrowseKeybindings which kc =
-    keyDispatcher kc (attachmentBrowseKeyHandlers which)
+    unsafeKeyDispatcher kc (attachmentBrowseKeyHandlers which)
 
 attachmentBrowseKeyHandlers :: Lens' ChatState (MessageInterface Name i)
                             -> [MHKeyEventHandler]

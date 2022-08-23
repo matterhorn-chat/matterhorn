@@ -20,7 +20,7 @@ onEventThemeListWindow tId =
 
 -- | The keybindings we want to use while viewing a user list window
 themeListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-themeListWindowKeybindings tId kc = keyDispatcher kc (themeListWindowKeyHandlers tId)
+themeListWindowKeybindings tId kc = unsafeKeyDispatcher kc (themeListWindowKeyHandlers tId)
 
 themeListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 themeListWindowKeyHandlers tId =

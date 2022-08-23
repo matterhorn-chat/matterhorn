@@ -46,7 +46,7 @@ messageSelectKeybindings :: TeamId
                          -> KeyConfig KeyEvent
                          -> KeyDispatcher KeyEvent MH
 messageSelectKeybindings tId which kc =
-    keyDispatcher kc (messageSelectKeyHandlers tId which)
+    unsafeKeyDispatcher kc (messageSelectKeyHandlers tId which)
 
 messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState (MessageInterface n i)

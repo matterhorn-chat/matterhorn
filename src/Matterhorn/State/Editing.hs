@@ -129,7 +129,7 @@ editingPermitted st which =
     st^.which.esEphemeral.eesMultiline
 
 editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-editingKeybindings editor kc = keyDispatcher kc $ editingKeyHandlers editor
+editingKeybindings editor kc = unsafeKeyDispatcher kc $ editingKeyHandlers editor
 
 editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [MHKeyEventHandler]
 editingKeyHandlers editor =

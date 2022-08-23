@@ -24,7 +24,7 @@ onEventChannelListWindow tId =
 
 -- | The keybindings we want to use while viewing a channel list window
 channelListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-channelListWindowKeybindings tId kc = keyDispatcher kc (channelListWindowKeyHandlers tId)
+channelListWindowKeybindings tId kc = unsafeKeyDispatcher kc (channelListWindowKeyHandlers tId)
 
 channelListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelListWindowKeyHandlers tId =

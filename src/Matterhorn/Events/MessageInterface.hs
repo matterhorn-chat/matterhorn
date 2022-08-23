@@ -60,7 +60,7 @@ messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig KeyEvent
                             -> KeyDispatcher KeyEvent MH
 messageInterfaceKeybindings which kc =
-    keyDispatcher kc (messageInterfaceKeyHandlers which)
+    unsafeKeyDispatcher kc (messageInterfaceKeyHandlers which)
 
 messageInterfaceKeyHandlers :: Lens' ChatState (MessageInterface n i)
                             -> [MHKeyEventHandler]
@@ -84,7 +84,7 @@ extraEditorKeybindings :: Lens' ChatState (MessageInterface Name i)
                        -> KeyConfig KeyEvent
                        -> KeyDispatcher KeyEvent MH
 extraEditorKeybindings which kc =
-    keyDispatcher kc (extraEditorKeyHandlers which)
+    unsafeKeyDispatcher kc (extraEditorKeyHandlers which)
 
 extraEditorKeyHandlers :: Lens' ChatState (MessageInterface Name i)
                        -> [MHKeyEventHandler]

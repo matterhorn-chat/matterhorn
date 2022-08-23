@@ -35,7 +35,7 @@ handleEditNotifyPrefsEvent tId e = do
     return True
 
 editNotifyPrefsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
-editNotifyPrefsKeybindings tId kc = keyDispatcher kc (editNotifyPrefsKeyHandlers tId)
+editNotifyPrefsKeybindings tId kc = unsafeKeyDispatcher kc (editNotifyPrefsKeyHandlers tId)
 
 editNotifyPrefsKeyHandlers :: TeamId -> [MHKeyEventHandler]
 editNotifyPrefsKeyHandlers tId =

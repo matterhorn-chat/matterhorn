@@ -42,7 +42,7 @@ tabbedWindowKeybindings :: (Show a, Eq a)
                         -> TeamId
                         -> KeyConfig KeyEvent
                         -> KeyDispatcher KeyEvent MH
-tabbedWindowKeybindings target tId kc = keyDispatcher kc $ tabbedWindowKeyHandlers tId target
+tabbedWindowKeybindings target tId kc = unsafeKeyDispatcher kc $ tabbedWindowKeyHandlers tId target
 
 tabbedWindowKeyHandlers :: (Show a, Eq a)
                         => TeamId
