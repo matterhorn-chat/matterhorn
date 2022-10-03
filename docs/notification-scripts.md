@@ -30,6 +30,8 @@ The interface for notification scripts is as follows:
 
 * NotifyV2: Matterhorn will invoke the command with zero arguments,
   passing notification details via JSON to the command's standard input.
+  The JSON will be UTF-8 encoded; the notification script is responsible
+  for decoding it.
   * NotifyV2 JSON payload fields:
     * "version": "2"
     * "from": "sender name"
