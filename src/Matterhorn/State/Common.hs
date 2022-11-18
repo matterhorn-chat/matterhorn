@@ -188,7 +188,9 @@ openWithOpener getTarget = do
             mhError $ ConfigOptionMissing "urlOpenCommand"
         Just urlOpenCommand -> do
             targetResult <- getTarget
-
+            let cmdWords = T.words urlOpenCommand
+                (cmds, args) = splitAt 1 (T.unpack <$> cmdWords)
+                cmd = if null cmds then "$BROWSER" else head cmds
             case targetResult of
                 Left e -> do
                     mhError e
@@ -202,8 +204,9 @@ openWithOpener getTarget = do
                         False -> do
                             outputChan <- use (csResources.crSubprocessLog)
                             doAsyncWith Preempt $ do
-                                runLoggedCommand outputChan (T.unpack urlOpenCommand)
-                                                 [target] Nothing Nothing
+                                runLoggedCommand outputChan cmd
+                                                 (args <> [target])
+                                                 Nothing Nothing
                                 return Nothing
                         True -> do
                             -- If there isn't a new message cutoff
@@ -230,7 +233,7 @@ openWithOpener getTarget = do
                             -- handle management of messages delivered while
                             -- suspended.
                             mhSuspendAndResume $ \st -> do
-                                result <- runInteractiveCommand (T.unpack urlOpenCommand) [target]
+                                result <- runInteractiveCommand cmd (args <> [target])
 
                                 let waitForKeypress = do
                                         putStrLn "Press any key to return to Matterhorn."
