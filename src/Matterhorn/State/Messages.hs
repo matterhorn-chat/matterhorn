@@ -619,7 +619,13 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     -- Check for whether the post is part of a thread
                     -- being viewed. If so, add the post to that thread
                     -- window as well.
-                    addPostToOpenThread mTId new msg'
+                    --
+                    -- Note that the team ID we pass here is either the
+                    -- team ID with which the channel is associated
+                    -- (mTId) or, if that is Nothing in the case of a DM
+                    -- channel, the currently-selected team (mcurTId)
+                    -- since all DM channels appear in all teams.
+                    addPostToOpenThread (mTId <|> mcurTId) new msg'
 
                     asyncFetchReactionsForPost cId new
                     asyncFetchAttachments new
