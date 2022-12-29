@@ -99,6 +99,7 @@ module Matterhorn.Types
   , NotificationVersion(..)
   , PasswordSource(..)
   , TokenSource(..)
+  , OTPTokenSource(..)
   , MatchType(..)
   , Mode(..)
   , ChannelSelectPattern(..)
@@ -449,6 +450,13 @@ data TokenSource =
     | TokenCommand Text
     deriving (Eq, Read, Show)
 
+-- | An OTP token source.
+data OTPTokenSource =
+    OTPTokenString Text
+    | OTPTokenCommand Text
+    deriving (Eq, Read, Show)
+
+
 -- | The type of channel list group headings. Integer arguments indicate
 -- total number of channels in the group that have unread activity.
 data ChannelListGroup =
@@ -488,6 +496,8 @@ data Config =
            -- ^ The password source to use when connecting.
            , configToken :: Maybe TokenSource
            -- ^ The token source to use when connecting.
+           , configOTPToken :: Maybe OTPTokenSource
+           -- ^ The OTP token source to use when connecting.
            , configTimeFormat :: Maybe Text
            -- ^ The format string for timestamps.
            , configDateFormat :: Maybe Text

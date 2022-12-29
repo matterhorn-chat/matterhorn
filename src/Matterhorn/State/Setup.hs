@@ -46,7 +46,9 @@ incompleteCredentials config =
                    , _ciPassword = case configPass config of
                                        Just (PasswordString s) -> s
                                        _                       -> ""
-                   , _ciOTPToken = Nothing
+                   , _ciOTPToken = case configOTPToken config of
+                                       Just (OTPTokenString s) -> Just s
+                                       _                       -> Just ""
                    , _ciAccessToken = case configToken config of
                                           Just (TokenString s) -> s
                                           _                    -> ""
