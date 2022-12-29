@@ -141,7 +141,9 @@ fromIni = do
         threadOrientationField
         (configThreadOrientation defaultConfig)
     configToken <- (Just . TokenCommand  <$> field "tokencmd") <!>
-                  pure Nothing
+                   pure Nothing
+    configOTPToken <- (Just . OTPTokenCommand  <$> field "otptokencmd") <!>
+                      pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     configValidateServerCertificate <-
@@ -374,6 +376,7 @@ defaultConfig =
            , configUrlPath                     = Nothing
            , configPass                        = Nothing
            , configToken                       = Nothing
+           , configOTPToken                    = Nothing
            , configTimeFormat                  = Nothing
            , configDateFormat                  = Nothing
            , configTheme                       = Nothing
@@ -512,9 +515,19 @@ getConfig fp = do
                 Just (TokenString _) -> error $ "BUG: getConfig: token in the Config was already a TokenString"
                 Nothing -> return Nothing
 
+            actualOTPToken <- case configOTPToken conf of
+                Just (OTPTokenCommand cmdString) -> do
+                    let (cmd:rest) = T.unpack <$> T.words cmdString
+                    output <- convertIOException (readProcess cmd rest "") `catchE`
+                              (\e -> throwE $ "Could not execute OTP token command: " <> e)
+                    return $ Just $ T.pack (takeWhile (/= '\n') output)
+                Just (OTPTokenString _) -> error $ "BUG: getConfig: otptoken in the Config was already a OTPTokenString"
+                Nothing -> return Nothing
+
             let conf' = conf
                   { configPass = PasswordString <$> actualPass
                   , configToken = TokenString <$> actualToken
+                  , configOTPToken = OTPTokenString <$> actualOTPToken
                   , configAbsPath = Just absPath
                   }
             return (map warningString warns, conf')
