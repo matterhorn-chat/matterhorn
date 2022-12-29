@@ -54,6 +54,7 @@ module Matterhorn.Types
   , configUrlPathL
   , configPassL
   , configTokenL
+  , configOTPTokenL
   , configTimeFormatL
   , configDateFormatL
   , configThemeL
