@@ -517,7 +517,9 @@ getConfig fp = do
 
             actualOTPToken <- case configOTPToken conf of
                 Just (OTPTokenCommand cmdString) -> do
-                    let (cmd:rest) = T.unpack <$> T.words cmdString
+                    let (cmd, rest) = case T.unpack <$> T.words cmdString of
+                            (a:as) -> (a, as)
+                            [] -> error $ "BUG: getConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute OTP token command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
