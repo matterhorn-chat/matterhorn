@@ -166,7 +166,7 @@ the set of operating systems binaries are built for.
 From an operating system perspective, the "current stable release"
 versions of those operating systems are the primary targets.  We
 support many of the more popular operating systems, including: CentOS,
-Fedoria, Ubuntu, and MacOS.
+Fedora, Ubuntu, and MacOS.
 
 Those wishing to use Matterhorn on a different operating system (that
 is not compatible with one of the pre-built binaries) or work with the
