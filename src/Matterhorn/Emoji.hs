@@ -39,7 +39,7 @@ instance A.FromJSON EmojiData where
     parseJSON = A.withArray "EmojiData" $ \v -> do
         aliasVecs <- forM v $ \val ->
             flip (A.withObject "EmojiData Entry") val $ \obj -> do
-                as <- obj A..: "aliases"
+                as <- obj A..: "short_names"
                 forM as $ A.withText "Alias list element" return
 
         return $ EmojiData $ mconcat $ F.toList aliasVecs
