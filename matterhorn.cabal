@@ -184,9 +184,9 @@ library
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
                      , microlens-platform   >= 0.3     && < 0.5
-                     , brick                >= 1.4     && < 1.5
+                     , brick                >= 1.6     && < 1.7
                      , brick-skylighting    >= 1.0     && < 1.1
-                     , vty                  >= 5.36    && < 5.38
+                     , vty                  >= 5.38    && < 5.39
                      , word-wrap            >= 0.4.0   && < 0.5
                      , transformers         >= 0.4     && < 0.6
                      , text-zipper          >= 0.12    && < 0.13
