@@ -515,17 +515,16 @@ cancelAutocompleteOrReplyOrEdit which = do
                             when (isJust ti && foc == FocusThread) $
                                 closeThreadWindow tId
 
-replyToLatestMessage :: Lens' ChatState (EditState Name) -> MH ()
+replyToLatestMessage :: Lens' ChatState (MessageInterface n i) -> MH ()
 replyToLatestMessage which = do
-    cId <- use (which.esChannelId)
-    withChannel cId $ \chan -> do
-        let msgs = chan^.ccMessageInterface.miMessages
-        case findLatestUserMessage isReplyable msgs of
-          Just msg | isReplyable msg ->
-              do rootMsg <- getReplyRootMessage msg
-                 invalidateChannelRenderingCache cId
-                 which.esEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
-          _ -> return ()
+    msgs <- use (which.miMessages)
+    cId <- use (which.miChannelId)
+    case findLatestUserMessage isReplyable msgs of
+      Just msg | isReplyable msg ->
+          do rootMsg <- getReplyRootMessage msg
+             invalidateChannelRenderingCache cId
+             which.miEditor.esEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
+      _ -> return ()
 
 data Direction = Forwards | Backwards
 

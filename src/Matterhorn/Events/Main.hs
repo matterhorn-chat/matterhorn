@@ -16,7 +16,6 @@ import           Matterhorn.Events.MessageInterface
 import           Matterhorn.Events.ThreadWindow
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Channels
-import           Matterhorn.State.Editing
 import           Matterhorn.State.Help
 import           Matterhorn.State.Teams
 import           Matterhorn.State.PostListWindow ( enterFlaggedPostListMode )
@@ -67,11 +66,6 @@ mainKeyHandlers tId =
         CycleChannelListSorting
         "Cycle through channel list sorting modes" $
         cycleChannelListSortingMode tId
-
-    , onEvent ReplyRecentEvent
-        "Reply to the most recent message" $
-        withCurrentChannel tId $ \cId _ ->
-            replyToLatestMessage (channelEditor(cId))
 
     , onEvent ChangeMessageEditorFocus
         "Cycle between message editors when a thread is open" $

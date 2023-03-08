@@ -146,5 +146,9 @@ extraEditorKeyHandlers which =
                     True -> mhZoom (editWhich.esEditor) handleEditorEvent
                                               (VtyEvent $ Vty.EvKey Vty.KDown [])
                     False -> inputHistoryForward which
+
+       , onEvent
+           ReplyRecentEvent "Reply to the most recent message" $
+           replyToLatestMessage which
        ]
 
