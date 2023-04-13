@@ -8,7 +8,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              matterhorn@galois.com
 maintainer:          matterhorn@galois.com
-copyright:           ©2016-2019 docs/AUTHORS.txt
+copyright:           ©2016-2022 docs/AUTHORS.txt
 category:            Chat
 build-type:          Simple
 cabal-version:       1.18
@@ -85,7 +85,6 @@ library
                        Matterhorn.Events.SaveAttachmentWindow
                        Matterhorn.Events.DeleteChannelConfirm
                        Matterhorn.Events.EditNotifyPrefs
-                       Matterhorn.Events.Keybindings
                        Matterhorn.Events.LeaveChannelConfirm
                        Matterhorn.Events.Global
                        Matterhorn.Events.Main
@@ -106,6 +105,7 @@ library
                        Matterhorn.HelpTopics
                        Matterhorn.IOUtil
                        Matterhorn.InputHistory
+                       Matterhorn.KeybindingConsistency
                        Matterhorn.LastRunState
                        Matterhorn.Login
                        Matterhorn.Options
@@ -150,7 +150,6 @@ library
                        Matterhorn.Types.Core
                        Matterhorn.Types.DirectionalSeq
                        Matterhorn.Types.EditState
-                       Matterhorn.Types.KeyEvents
                        Matterhorn.Types.Messages
                        Matterhorn.Types.MessageInterface
                        Matterhorn.Types.NonemptyStack
@@ -179,26 +178,26 @@ library
                      , data-clist           >= 0.1.2   && < 0.2
                      , semigroups           >= 0.18    && < 0.20
                      , connection           >= 0.2     && < 0.4
-                     , text                 >= 1.2     && < 1.3
+                     , text                 >= 1.2     && < 2.1
                      , bytestring           >= 0.10    && < 0.12
                      , stm                  >= 2.4     && < 2.6
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
                      , microlens-platform   >= 0.3     && < 0.5
-                     , brick                >= 0.70    && < 0.71
-                     , brick-skylighting    >= 0.2     && < 0.4
-                     , vty                  >= 5.35    && < 5.36
+                     , brick                >= 1.6     && < 1.7
+                     , brick-skylighting    >= 1.0     && < 1.1
+                     , vty                  >= 5.38    && < 5.39
                      , word-wrap            >= 0.4.0   && < 0.5
                      , transformers         >= 0.4     && < 0.6
-                     , text-zipper          >= 0.11    && < 0.12
                      , text-conversions     >= 0.3
+                     , text-zipper          >= 0.12    && < 0.13
                      , time                 >= 1.6     && < 2.0
                      , xdg-basedir          >= 0.2     && < 0.3
                      , filepath             >= 1.4     && < 1.5
                      , directory            >= 1.3     && < 1.4
                      , vector               < 0.13
                      , strict               >= 0.3     && < 0.5
-                     , hashable             >= 1.2     && < 1.4
+                     , hashable             >= 1.2     && < 1.5
                      , commonmark           >= 0.2.1   && < 0.3
                      , commonmark-extensions >= 0.2.1.2 && < 0.3
                      , parsec               >= 3.1     && < 3.2
@@ -213,11 +212,12 @@ library
                      , skylighting-core     >= 0.12    && < 0.13
                      , timezone-olson       >= 0.2     && < 0.3
                      , timezone-series      >= 0.1.6.1 && < 0.2
-                     , aeson                >= 1.2.3.0 && < 2.1
+                     , aeson                >= 1.2.3.0 && < 2.2
                      , async                >= 2.2     && < 2.3
                      , uuid                 >= 1.3     && < 1.4
                      , random               >= 1.1     && < 1.2
                      , network-uri          >= 2.6     && < 2.7
+                     , bimap                >= 0.5     && < 0.6
   default-language:    Haskell2010
 
 executable matterhorn
@@ -231,6 +231,7 @@ executable matterhorn
   build-depends:       base                 >=4.8      && <5
                      , matterhorn
                      , text
+                     , brick
   default-language:    Haskell2010
 
 test-suite test_messages

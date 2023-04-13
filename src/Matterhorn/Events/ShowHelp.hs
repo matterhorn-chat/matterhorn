@@ -4,18 +4,18 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Constants
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Types
 
 
 onEventShowHelp :: TeamId -> Vty.Event -> MH Bool
 onEventShowHelp tId =
-    handleEventWith [ handleKeyboardEvent (helpKeybindings tId)
+    handleEventWith [ mhHandleKeyboardEvent (helpKeybindings tId)
                     , closeHelp tId
                     ]
 
@@ -25,23 +25,23 @@ closeHelp tId (Vty.EvKey {}) = do
     return True
 closeHelp _ _ = return False
 
-helpKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
-helpKeybindings tId = mkKeybindings (helpKeyHandlers tId)
+helpKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+helpKeybindings tId kc = unsafeKeyDispatcher kc (helpKeyHandlers tId)
 
-helpKeyHandlers :: TeamId -> [KeyEventHandler]
+helpKeyHandlers :: TeamId -> [MHKeyEventHandler]
 helpKeyHandlers tId =
-    [ mkKb ScrollUpEvent "Scroll up" $
+    [ onEvent ScrollUpEvent "Scroll up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1)
-    , mkKb ScrollDownEvent "Scroll down" $
+    , onEvent ScrollDownEvent "Scroll down" $
         mh $ vScrollBy (viewportScroll HelpViewport) 1
-    , mkKb PageUpEvent "Page up" $
+    , onEvent PageUpEvent "Page up" $
         mh $ vScrollBy (viewportScroll HelpViewport) (-1 * pageAmount)
-    , mkKb PageDownEvent "Page down" $
+    , onEvent PageDownEvent "Page down" $
         mh $ vScrollBy (viewportScroll HelpViewport) (1 * pageAmount)
-    , mkKb CancelEvent "Close the help window" $
+    , onEvent CancelEvent "Close the help window" $
         popMode tId
-    , mkKb ScrollBottomEvent "Scroll to the end of the help" $
+    , onEvent ScrollBottomEvent "Scroll to the end of the help" $
         mh $ vScrollToEnd (viewportScroll HelpViewport)
-    , mkKb ScrollTopEvent "Scroll to the beginning of the help" $
+    , onEvent ScrollTopEvent "Scroll to the beginning of the help" $
         mh $ vScrollToBeginning (viewportScroll HelpViewport)
     ]

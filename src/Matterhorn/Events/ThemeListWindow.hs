@@ -3,11 +3,11 @@ module Matterhorn.Events.ThemeListWindow where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.ThemeListWindow
 import           Matterhorn.State.ListWindow
 import           Matterhorn.Types
@@ -19,21 +19,21 @@ onEventThemeListWindow tId =
         (themeListWindowKeybindings tId)
 
 -- | The keybindings we want to use while viewing a user list window
-themeListWindowKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
-themeListWindowKeybindings tId = mkKeybindings (themeListWindowKeyHandlers tId)
+themeListWindowKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+themeListWindowKeybindings tId kc = unsafeKeyDispatcher kc (themeListWindowKeyHandlers tId)
 
-themeListWindowKeyHandlers :: TeamId -> [KeyEventHandler]
+themeListWindowKeyHandlers :: TeamId -> [MHKeyEventHandler]
 themeListWindowKeyHandlers tId =
-    [ mkKb CancelEvent "Close the theme list"
+    [ onEvent CancelEvent "Close the theme list"
       (exitListWindow tId (csTeam(tId).tsThemeListWindow))
-    , mkKb SearchSelectUpEvent "Select the previous theme" $
+    , onEvent SearchSelectUpEvent "Select the previous theme" $
       themeListSelectUp tId
-    , mkKb SearchSelectDownEvent "Select the next theme" $
+    , onEvent SearchSelectDownEvent "Select the next theme" $
       themeListSelectDown tId
-    , mkKb PageDownEvent "Page down in the theme list" $
+    , onEvent PageDownEvent "Page down in the theme list" $
       themeListPageDown tId
-    , mkKb PageUpEvent "Page up in the theme list" $
+    , onEvent PageUpEvent "Page up in the theme list" $
       themeListPageUp tId
-    , mkKb ActivateListItemEvent "Switch to the selected color theme"
+    , onEvent ActivateListItemEvent "Switch to the selected color theme"
       (listWindowActivateCurrent tId (csTeam(tId).tsThemeListWindow))
     ]

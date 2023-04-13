@@ -27,7 +27,7 @@ import qualified Data.Map as M
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Data.Time ( getCurrentTime, addUTCTime )
-import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped )
+import           Lens.Micro.Platform ( (.=), (%=), (%~), mapped, _Just )
 import           Skylighting.Loader ( loadSyntaxesFromDir )
 import           System.Directory ( getTemporaryDirectory )
 import           System.Exit ( ExitCode(ExitSuccess) )
@@ -91,8 +91,14 @@ startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
       STM.atomically $ STM.writeTChan requestChan $ return $ Just $ do
         now <- liftIO getCurrentTime
         let expiry = addUTCTime (- userTypingExpiryInterval) now
-            expireUsers c = c & ccMessageInterface.miEditor.esEphemeral.eesTypingUsers %~ expireTypingUsers expiry
-        csChannels . chanMap . mapped %= expireUsers
+            expireUsers mi = mi & miEditor.esEphemeral.eesTypingUsers %~ expireTypingUsers expiry
+
+        -- Expire typing user states for each channel
+        csChannels . chanMap . mapped . ccMessageInterface %= expireUsers
+
+        -- Expire typing user states for each team's thread interface,
+        -- if any
+        csTeams . mapped . tsThreadInterface . _Just %= expireUsers
 
       threadDelay refreshIntervalMicros
 

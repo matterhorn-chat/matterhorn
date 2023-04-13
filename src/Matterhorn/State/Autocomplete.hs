@@ -291,7 +291,7 @@ doUserAutoCompletion :: Traversal' ChatState (EditState Name)
 doUserAutoCompletion which tId ty ctx searchString = do
     session <- getSession
     myUid <- gets myUserId
-    Just cId <- preuse (which.esChannelId)
+    cId <- fromJust <$> preuse (which.esChannelId)
     withCachedAutocompleteResults which ctx ty searchString $
         doAsyncWith Preempt $ do
             ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) searchString session

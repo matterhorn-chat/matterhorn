@@ -7,6 +7,9 @@ module Matterhorn.Types.Core
   , ChannelSelectMatch(..)
   , LinkTarget(..)
 
+  , KeyEvent(..)
+  , allEvents
+
   , MessageId(..)
   , messageIdPostId
 
@@ -22,6 +25,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import qualified Brick
+import           Brick.Keybindings
 import           Data.Hashable ( Hashable )
 import qualified Data.Text as T
 import           Data.UUID ( UUID )
@@ -259,3 +263,229 @@ channelListGroupNames =
 data MessageSelectState =
     MessageSelectState { selectMessageId :: Maybe MessageId
                        }
+
+-- | This enum represents all the possible key events a user might
+--   want to use.
+data KeyEvent
+  = VtyRefreshEvent
+  | ShowHelpEvent
+  | EnterSelectModeEvent
+  | ReplyRecentEvent
+  | ToggleMessagePreviewEvent
+  | InvokeEditorEvent
+  | EnterFastSelectModeEvent
+  | QuitEvent
+  | NextChannelEvent
+  | PrevChannelEvent
+  | NextChannelEventAlternate
+  | PrevChannelEventAlternate
+  | NextUnreadChannelEvent
+  | NextUnreadUserOrChannelEvent
+  | LastChannelEvent
+  | EnterOpenURLModeEvent
+  | ClearUnreadEvent
+  | ToggleMultiLineEvent
+  | EnterFlaggedPostsEvent
+  | ToggleChannelListVisibleEvent
+  | ToggleExpandedChannelTopicsEvent
+  | ShowAttachmentListEvent
+  | ChangeMessageEditorFocus
+
+  | EditorKillToBolEvent
+  | EditorKillToEolEvent
+  | EditorBolEvent
+  | EditorEolEvent
+  | EditorTransposeCharsEvent
+  | EditorDeleteCharacter
+  | EditorPrevCharEvent
+  | EditorNextCharEvent
+  | EditorPrevWordEvent
+  | EditorNextWordEvent
+  | EditorDeleteNextWordEvent
+  | EditorDeletePrevWordEvent
+  | EditorHomeEvent
+  | EditorEndEvent
+  | EditorYankEvent
+
+  | CycleChannelListSorting
+
+  | SelectNextTabEvent
+  | SelectPreviousTabEvent
+
+  | SaveAttachmentEvent
+
+  -- generic cancel
+  | CancelEvent
+
+  -- channel-scroll-specific
+  | LoadMoreEvent
+  | OpenMessageURLEvent
+
+  -- scrolling events---maybe rebindable?
+  | ScrollUpEvent
+  | ScrollDownEvent
+  | ScrollLeftEvent
+  | ScrollRightEvent
+  | PageUpEvent
+  | PageDownEvent
+  | PageRightEvent
+  | PageLeftEvent
+  | ScrollTopEvent
+  | ScrollBottomEvent
+  | SelectOldestMessageEvent
+  | ChannelListScrollUpEvent
+  | ChannelListScrollDownEvent
+
+  -- select events---not the same as scrolling sometimes!
+  | SelectUpEvent
+  | SelectDownEvent
+
+  -- search select events---these need to not be valid editor inputs
+  -- (such as 'j' and 'k')
+  | SearchSelectUpEvent
+  | SearchSelectDownEvent
+
+  -- E.g. Pressing enter on an item in a list to do something with it
+  | ActivateListItemEvent
+
+  | ViewMessageEvent
+  | FillGapEvent
+  | CopyPostLinkEvent
+  | FlagMessageEvent
+  | OpenThreadEvent
+  | PinMessageEvent
+  | YankMessageEvent
+  | YankWholeMessageEvent
+  | DeleteMessageEvent
+  | EditMessageEvent
+  | ReplyMessageEvent
+  | ReactToMessageEvent
+
+  -- Attachments
+  | AttachmentListAddEvent
+  | AttachmentListDeleteEvent
+  | AttachmentOpenEvent
+
+  -- Attachment file browser
+  | FileBrowserBeginSearchEvent
+  | FileBrowserSelectEnterEvent
+  | FileBrowserSelectCurrentEvent
+  | FileBrowserListPageUpEvent
+  | FileBrowserListPageDownEvent
+  | FileBrowserListHalfPageUpEvent
+  | FileBrowserListHalfPageDownEvent
+  | FileBrowserListTopEvent
+  | FileBrowserListBottomEvent
+  | FileBrowserListNextEvent
+  | FileBrowserListPrevEvent
+
+
+  -- Form submission
+  | FormSubmitEvent
+
+  -- Team switching
+  | NextTeamEvent
+  | PrevTeamEvent
+  | MoveCurrentTeamLeftEvent
+  | MoveCurrentTeamRightEvent
+    deriving (Eq, Show, Ord, Enum)
+
+allEvents :: KeyEvents KeyEvent
+allEvents =
+    keyEvents
+    [ ("quit", QuitEvent)
+    , ("vty-refresh", VtyRefreshEvent)
+    , ("clear-unread", ClearUnreadEvent)
+    , ("cancel", CancelEvent)
+    , ("toggle-message-preview", ToggleMessagePreviewEvent)
+    , ("invoke-editor", InvokeEditorEvent)
+    , ("toggle-multiline", ToggleMultiLineEvent)
+    , ("reply-recent", ReplyRecentEvent)
+    , ("enter-fast-select", EnterFastSelectModeEvent)
+    , ("focus-next-channel", NextChannelEvent)
+    , ("focus-prev-channel", PrevChannelEvent)
+    , ("focus-next-channel-alternate", NextChannelEventAlternate)
+    , ("focus-prev-channel-alternate", PrevChannelEventAlternate)
+    , ("focus-next-unread", NextUnreadChannelEvent)
+    , ("focus-next-unread-user-or-channel", NextUnreadUserOrChannelEvent)
+    , ("focus-last-channel", LastChannelEvent)
+    , ("select-next-tab", SelectNextTabEvent)
+    , ("select-previous-tab", SelectPreviousTabEvent)
+    , ("save-attachment", SaveAttachmentEvent)
+    , ("show-attachment-list", ShowAttachmentListEvent)
+    , ("change-message-editor-focus", ChangeMessageEditorFocus)
+    , ("editor-kill-to-beginning-of-line", EditorKillToBolEvent)
+    , ("editor-kill-to-end-of-line", EditorKillToEolEvent)
+    , ("editor-beginning-of-line", EditorBolEvent)
+    , ("editor-end-of-line", EditorEolEvent)
+    , ("editor-transpose-chars", EditorTransposeCharsEvent)
+    , ("editor-delete-char", EditorDeleteCharacter)
+    , ("editor-prev-char", EditorPrevCharEvent)
+    , ("editor-next-char", EditorNextCharEvent)
+    , ("editor-prev-word", EditorPrevWordEvent)
+    , ("editor-next-word", EditorNextWordEvent)
+    , ("editor-delete-next-word", EditorDeleteNextWordEvent)
+    , ("editor-delete-prev-word", EditorDeletePrevWordEvent)
+    , ("editor-home", EditorHomeEvent)
+    , ("editor-end", EditorEndEvent)
+    , ("editor-yank", EditorYankEvent)
+    , ("cycle-channel-list-sorting", CycleChannelListSorting)
+    , ("next-team", NextTeamEvent)
+    , ("prev-team", PrevTeamEvent)
+    , ("move-current-team-left", MoveCurrentTeamLeftEvent)
+    , ("move-current-team-right", MoveCurrentTeamRightEvent)
+    , ("show-flagged-posts", EnterFlaggedPostsEvent)
+    , ("toggle-channel-list-visibility", ToggleChannelListVisibleEvent)
+    , ("toggle-expanded-channel-topics", ToggleExpandedChannelTopicsEvent)
+    , ("show-help", ShowHelpEvent)
+    , ("select-mode", EnterSelectModeEvent)
+    , ("enter-url-open", EnterOpenURLModeEvent)
+    , ("load-more", LoadMoreEvent)
+    , ("open-message-url", OpenMessageURLEvent)
+    , ("scroll-up", ScrollUpEvent)
+    , ("scroll-down", ScrollDownEvent)
+    , ("scroll-left", ScrollLeftEvent)
+    , ("scroll-right", ScrollRightEvent)
+    , ("channel-list-scroll-up", ChannelListScrollUpEvent)
+    , ("channel-list-scroll-down", ChannelListScrollDownEvent)
+    , ("page-up", PageUpEvent)
+    , ("page-down", PageDownEvent)
+    , ("page-left", PageLeftEvent)
+    , ("page-right", PageRightEvent)
+    , ("scroll-top", ScrollTopEvent)
+    , ("scroll-bottom", ScrollBottomEvent)
+    , ("select-oldest-message", SelectOldestMessageEvent)
+    , ("select-up", SelectUpEvent)
+    , ("select-down", SelectDownEvent)
+    , ("search-select-up", SearchSelectUpEvent)
+    , ("search-select-down", SearchSelectDownEvent)
+    , ("activate-list-item", ActivateListItemEvent)
+    , ("open-thread", OpenThreadEvent)
+    , ("flag-message", FlagMessageEvent)
+    , ("pin-message", PinMessageEvent)
+    , ("view-message", ViewMessageEvent)
+    , ("fetch-for-gap", FillGapEvent)
+    , ("copy-post-link", CopyPostLinkEvent)
+    , ("yank-message", YankMessageEvent)
+    , ("yank-whole-message", YankWholeMessageEvent)
+    , ("delete-message", DeleteMessageEvent)
+    , ("edit-message", EditMessageEvent)
+    , ("reply-message", ReplyMessageEvent)
+    , ("react-to-message", ReactToMessageEvent)
+    , ("add-to-attachment-list", AttachmentListAddEvent)
+    , ("delete-from-attachment-list", AttachmentListDeleteEvent)
+    , ("open-attachment", AttachmentOpenEvent)
+    , ("filebrowser-begin-search", FileBrowserBeginSearchEvent)
+    , ("filebrowser-select-file-or-enter-directory", FileBrowserSelectEnterEvent)
+    , ("filebrowser-select-current", FileBrowserSelectCurrentEvent)
+    , ("filebrowser-list-page-up", FileBrowserListPageUpEvent)
+    , ("filebrowser-list-page-down", FileBrowserListPageDownEvent)
+    , ("filebrowser-list-half-page-up", FileBrowserListHalfPageUpEvent)
+    , ("filebrowser-list-half-page-down", FileBrowserListHalfPageDownEvent)
+    , ("filebrowser-list-top", FileBrowserListTopEvent)
+    , ("filebrowser-list-bottom", FileBrowserListBottomEvent)
+    , ("filebrowser-list-next", FileBrowserListNextEvent)
+    , ("filebrowser-list-previous", FileBrowserListPrevEvent)
+    , ("submit-form", FormSubmitEvent)
+    ]
+

@@ -37,6 +37,9 @@ drawChannelTopicWindow st tId =
            viewport (ChannelTopicEditorPreview tId) Vertical $
            renderText' (Just baseUrl) "" hSet Nothing topicTxtWithCursor
          , hBorder
+         , hCenter $
+           renderText' Nothing "" hSet Nothing
+           "Press `Tab` to change focus to buttons."
          , hBox [ padRight Max $
                   padLeft (Pad 1) $
                   drawButton foc (ChannelTopicSaveButton tId) "Save"

@@ -70,7 +70,7 @@ import           Data.List (tails, inits)
 import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
 import           Graphics.Vty hiding (mkVty)
-import           Lens.Micro.Platform ( (.~), Lens', makeLenses )
+import           Lens.Micro.Platform ( (.~), (.=), Lens', makeLenses )
 import qualified System.IO.Error as Err
 import           Network.URI ( URI(..), URIAuth(..), parseURI )
 
@@ -384,54 +384,55 @@ app = App
   { appDraw         = credsDraw
   , appChooseCursor = showFirstCursor
   , appHandleEvent  = onEvent
-  , appStartEvent   = return
+  , appStartEvent   = return ()
   , appAttrMap      = const colorTheme
   }
 
-onEvent :: State -> BrickEvent Name LoginEvent -> EventM Name (Next State)
-onEvent st (VtyEvent (EvKey KEsc [])) = do
-    halt $ st & lastAttempt .~ Nothing
-onEvent st (AppEvent (StartConnect initial host)) = do
-    continue $ st & currentState .~ Connecting initial host
-                  & lastAttempt .~ Nothing
-onEvent st (AppEvent StartupTimeout) = do
+onEvent :: BrickEvent Name LoginEvent -> EventM Name State ()
+onEvent (VtyEvent (EvKey KEsc [])) = do
+    lastAttempt .= Nothing
+    halt
+onEvent (AppEvent (StartConnect initial host)) = do
+    currentState .= Connecting initial host
+    lastAttempt .= Nothing
+onEvent (AppEvent StartupTimeout) = do
     -- If the startup timer fired and we have already succeeded, halt.
-    case st^.lastAttempt of
-        Just (AttemptSucceeded {}) -> halt st
-        _ -> continue $ st & timeoutFired .~ True
-onEvent st (AppEvent (LoginResult attempt)) = do
-    let st' = st & lastAttempt .~ Just attempt
-                 & currentState .~ Idle
+    a <- use lastAttempt
+    case a of
+        Just (AttemptSucceeded {}) -> halt
+        _ -> timeoutFired .= True
+onEvent (AppEvent (LoginResult attempt)) = do
+    lastAttempt .= Just attempt
+    currentState .= Idle
 
     case attempt of
         AttemptSucceeded {} -> do
             -- If the startup timer already fired, halt. Otherwise wait
             -- until that timer fires.
-            case st^.timeoutFired of
-                True -> halt st'
-                False -> continue st'
-        AttemptFailed {} -> continue st'
+            fired <- use timeoutFired
+            when fired halt
+        AttemptFailed {} -> return ()
         MFATokenRequired connInfo ->
-            continue $ st' & loginForm .~ (mkOTPForm connInfo)
+            loginForm .= (mkOTPForm connInfo)
 
-onEvent st (VtyEvent (EvKey KEnter [])) = do
+onEvent (VtyEvent (EvKey KEnter [])) = do
     -- Ignore the keypress if we are already attempting a connection, or
     -- if have already successfully connected but are waiting on the
     -- startup timer.
-    case st^.currentState of
+    s <- use currentState
+    case s of
         Connecting {} -> return ()
-        Idle ->
-            case st^.lastAttempt of
+        Idle -> do
+            a <- use lastAttempt
+            case a of
                 Just (AttemptSucceeded {}) -> return ()
                 _ -> do
-                    let ci = formState $ st^.loginForm
+                    ci <- formState <$> use loginForm
                     when (populatedConnectionInfo ci) $ do
-                        liftIO $ writeBChan (st^.reqChan) $ DoLogin False ci
-
-    continue st
-onEvent st e = do
-    f' <- handleFormEvent e (st^.loginForm)
-    continue $ st & loginForm .~ f'
+                        chan <- use reqChan
+                        liftIO $ writeBChan chan $ DoLogin False ci
+onEvent e = do
+    zoom loginForm (handleFormEvent e)
 
 mkForm :: ConnectionInfo -> Form ConnectionInfo e Name
 mkForm =
@@ -556,7 +557,7 @@ editOptionalTextField stLens n =
     in editField stLens n (Just 1) ini val renderTxt id
 
 errorAttr :: AttrName
-errorAttr = "errorMessage"
+errorAttr = attrName "errorMessage"
 
 colorTheme :: AttrMap
 colorTheme = attrMap defAttr

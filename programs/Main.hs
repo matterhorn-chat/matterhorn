@@ -9,9 +9,9 @@ import Matterhorn.Prelude
 import Matterhorn.Config
 import Matterhorn.Options
 import Matterhorn.App
-import Matterhorn.Events.Keybindings ( ensureKeybindingConsistency )
-import Matterhorn.Draw.ShowHelp ( keybindingMarkdownTable, keybindingTextTable
-                                , commandMarkdownTable, commandTextTable
+import Matterhorn.KeybindingConsistency
+import Brick.Keybindings.Pretty ( keybindingTextTable, keybindingMarkdownTable )
+import Matterhorn.Draw.ShowHelp ( commandMarkdownTable, commandTextTable
                                 , keybindSections )
 
 
@@ -44,8 +44,8 @@ main = do
         False -> return False
         True -> do
             case format of
-                Markdown -> T.putStrLn $ keybindingMarkdownTable keyConfig
-                Plain -> T.putStrLn $ keybindingTextTable keyConfig
+                Markdown -> T.putStrLn $ keybindingMarkdownTable keyConfig keybindSections
+                Plain -> T.putStrLn $ keybindingTextTable keyConfig keybindSections
             return True
 
     when (printedKeybindings || printedCommands) exitSuccess

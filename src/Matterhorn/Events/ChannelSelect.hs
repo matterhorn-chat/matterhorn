@@ -3,12 +3,13 @@ module Matterhorn.Events.ChannelSelect where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( BrickEvent(VtyEvent) )
+import           Brick.Keybindings
 import           Brick.Widgets.Edit ( handleEditorEvent )
 import qualified Graphics.Vty as Vty
 
 import           Network.Mattermost.Types ( TeamId )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Editing ( editingKeybindings )
@@ -19,24 +20,24 @@ import qualified Matterhorn.Zipper as Z
 onEventChannelSelect :: TeamId -> Vty.Event -> MH ()
 onEventChannelSelect tId =
     void .
-    handleEventWith [ handleKeyboardEvent (channelSelectKeybindings tId)
+    handleEventWith [ mhHandleKeyboardEvent (channelSelectKeybindings tId)
                     , \e -> do
-                        void $ handleEventWith [ handleKeyboardEvent (editingKeybindings (csTeam(tId).tsChannelSelectState.channelSelectInput))
+                        void $ handleEventWith [ mhHandleKeyboardEvent (editingKeybindings (csTeam(tId).tsChannelSelectState.channelSelectInput))
                                                , \ev -> do
-                                                   mhHandleEventLensed (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent ev
+                                                   mhZoom (csTeam(tId).tsChannelSelectState.channelSelectInput) handleEditorEvent (VtyEvent ev)
                                                    return True
                                                ] e
                         updateChannelSelectMatches tId
                         return True
                     ]
 
-channelSelectKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
-channelSelectKeybindings tId = mkKeybindings (channelSelectKeyHandlers tId)
+channelSelectKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+channelSelectKeybindings tId kc = unsafeKeyDispatcher kc (channelSelectKeyHandlers tId)
 
-channelSelectKeyHandlers :: TeamId -> [KeyEventHandler]
+channelSelectKeyHandlers :: TeamId -> [MHKeyEventHandler]
 channelSelectKeyHandlers tId =
-    [ staticKb "Switch to selected channel"
-         (Vty.EvKey Vty.KEnter []) $ do
+    [ onKey (bind Vty.KEnter)
+          "Switch to selected channel" $ do
              matches <- use (csTeam(tId).tsChannelSelectState.channelSelectMatches)
              case Z.focus matches of
                  Nothing -> return ()
@@ -44,9 +45,9 @@ channelSelectKeyHandlers tId =
                      popMode tId
                      setFocus tId $ channelListEntryChannelId $ matchEntry match
 
-    , mkKb CancelEvent "Cancel channel selection" $ popMode tId
-    , mkKb NextChannelEvent "Select next match" $ channelSelectNext tId
-    , mkKb PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
-    , mkKb NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId
-    , mkKb PrevChannelEventAlternate "Select previous match (alternate binding)" $ channelSelectPrevious tId
+    , onEvent CancelEvent "Cancel channel selection" $ popMode tId
+    , onEvent NextChannelEvent "Select next match" $ channelSelectNext tId
+    , onEvent PrevChannelEvent "Select previous match" $ channelSelectPrevious tId
+    , onEvent NextChannelEventAlternate "Select next match (alternate binding)" $ channelSelectNext tId
+    , onEvent PrevChannelEventAlternate "Select previous match (alternate binding)" $ channelSelectPrevious tId
     ]

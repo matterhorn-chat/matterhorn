@@ -16,8 +16,9 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
+
 import           Data.List ( intersperse )
-import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Network.Mattermost.Types
@@ -26,8 +27,6 @@ import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings
 
 
 defaultTimeFormat :: Text
@@ -61,7 +60,7 @@ renderUTCTime fmt tz t =
 
 renderKeybindingHelp :: ChatState -> Text -> [KeyEvent] -> Widget Name
 renderKeybindingHelp st label evs =
-  let ppEv ev = withDefAttr clientEmphAttr $ txt (ppBinding (firstActiveBinding kc ev))
+  let ppEv ev = withDefAttr clientEmphAttr $ txt (ppMaybeBinding (firstActiveBinding kc ev))
       kc = st^.csResources.crConfiguration.configUserKeysL
   in hBox $ (intersperse (txt "/") $ ppEv <$> evs) <> [txt (":" <> label)]
 
@@ -108,7 +107,7 @@ mkChannelName st c = T.append sigil t
 -- string.
 keyEventBindings :: ChatState
                  -- ^ The current application state
-                 -> (KeyConfig -> KeyHandlerMap)
+                 -> (KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH)
                  -- ^ The function to obtain the relevant key handler
                  -- map
                  -> KeyEvent
@@ -116,11 +115,11 @@ keyEventBindings :: ChatState
                  -> T.Text
 keyEventBindings st mkBindingsMap e =
     let keyconf = st^.csResources.crConfiguration.configUserKeysL
-        KeyHandlerMap keymap = mkBindingsMap keyconf
+        keymap = mkBindingsMap keyconf
     in T.intercalate ","
-         [ ppBinding (eventToBinding k)
-         | KH { khKey     = k
-              , khHandler = h
-              } <- M.elems keymap
+         [ ppBinding b
+         | KeyHandler { khBinding = b
+                      , khHandler = h
+                      } <- snd <$> keyDispatcherToList keymap
          , kehEventTrigger h == ByEvent e
          ]

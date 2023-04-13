@@ -1,7 +1,5 @@
 module Matterhorn.Draw.ShowHelp
   ( drawShowHelp
-  , keybindingMarkdownTable
-  , keybindingTextTable
   , commandTextTable
   , commandMarkdownTable
   , keybindSections
@@ -12,11 +10,14 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import           Brick.Themes ( themeDescriptions )
 import           Brick.Widgets.Center ( hCenter )
 import           Brick.Widgets.Edit ( Editor )
 import           Brick.Widgets.List ( listSelectedFocusedAttr )
+
 import qualified Data.Map as M
+import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens' )
@@ -26,7 +27,6 @@ import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Matterhorn.Command
 import           Matterhorn.Events.ChannelSelect
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
@@ -47,8 +47,6 @@ import           Matterhorn.Options ( mhVersion )
 import           Matterhorn.State.Editing ( editingKeyHandlers )
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents ( BindingState(..), Binding(..)
-                                 , ppBinding, nonCharKeys, eventToBinding )
 
 
 drawShowHelp :: HelpTopic -> ChatState -> [Widget Name]
@@ -67,7 +65,7 @@ helpTopicDraw topic st =
         SyntaxHighlightHelp -> syntaxHighlightHelp (configSyntaxDirs $ st^.csResources.crConfiguration)
         KeybindingHelp -> keybindingHelp (configUserKeys (st^.csResources.crConfiguration))
 
-mainHelp :: KeyConfig -> Widget Name
+mainHelp :: KeyConfig KeyEvent -> Widget Name
 mainHelp kc = summary
   where
     summary = vBox entries
@@ -175,28 +173,7 @@ scriptHelp = heading "Using Scripts" <=> vBox scriptHelpText
            , [ "> *> /sh rot13 Hello, world!*" ]
            ]
 
-keybindingMarkdownTable :: KeyConfig -> Text
-keybindingMarkdownTable kc = title <> keybindSectionStrings
-    where title = "# Keybindings\n"
-          keybindSectionStrings = T.concat $ sectionText <$> keybindSections
-          sectionText = mkKeybindEventSectionHelp kc keybindEventHelpMarkdown T.unlines mkHeading
-          mkHeading n =
-              "\n# " <> n <>
-              "\n| Keybinding | Event Name | Description |" <>
-              "\n| ---------- | ---------- | ----------- |"
-
-keybindingTextTable :: KeyConfig -> Text
-keybindingTextTable kc = title <> keybindSectionStrings
-    where title = "Keybindings\n===========\n"
-          keybindSectionStrings = T.concat $ sectionText <$> keybindSections
-          sectionText = mkKeybindEventSectionHelp kc (keybindEventHelpText keybindingWidth eventNameWidth) T.unlines mkHeading
-          keybindingWidth = 15
-          eventNameWidth = 30
-          mkHeading n =
-              "\n" <> n <>
-              "\n" <> (T.replicate (T.length n) "=")
-
-keybindingHelp :: KeyConfig -> Widget Name
+keybindingHelp :: KeyConfig KeyEvent -> Widget Name
 keybindingHelp kc = vBox $
   [ heading "Configurable Keybindings"
   , padBottom (Pad 1) $ vBox keybindingHelpText
@@ -205,9 +182,8 @@ keybindingHelp kc = vBox $
   [ headingNoPad "Keybinding Syntax"
   , vBox validKeys
   ]
-  where keybindSectionWidgets = sectionWidget <$> keybindSections
-        sectionWidget = mkKeybindEventSectionHelp kc keybindEventHelpWidget vBox headingNoPad
-
+  where addHeading n w = vBox [ headingNoPad n, w ]
+        keybindSectionWidgets = (\(name, hs) -> addHeading name $ keybindingHelpWidget kc hs) <$> keybindSections
         keybindingHelpText = map paraL
           [ [ "Many of the keybindings used in Matterhorn can be "
             , "modified from within Matterhorn's **config.ini** file. "
@@ -258,21 +234,21 @@ keybindingHelp kc = vBox $
             , "values, are as follows:"
             ]
            ]
-        nextChanBinding = ppBinding (firstActiveBinding kc NextChannelEvent)
-        prevChanBinding = ppBinding (firstActiveBinding kc PrevChannelEvent)
+        nextChanBinding = ppMaybeBinding (firstActiveBinding kc NextChannelEvent)
+        prevChanBinding = ppMaybeBinding (firstActiveBinding kc PrevChannelEvent)
         validKeys = map paraL
           [ [ "The syntax used for key sequences consists of zero or more "
             , "single-character modifier characters followed by a keystroke, "
             , "all separated by dashes. The available modifier keys are "
             , "**S** for Shift, **C** for Ctrl, **A** for Alt, and **M** for "
             , "Meta. So, for example, **"
-            , ppBinding (Binding [] (Vty.KFun 2))
+            , ppBinding (fn 2)
             , "** is the F2 key pressed with no "
             , "modifier keys; **"
-            , ppBinding (Binding [Vty.MCtrl] (Vty.KChar 'x'))
+            , ppBinding (ctrl 'x')
             , "** is Ctrl and X pressed together, "
             , "and **"
-            , ppBinding (Binding [Vty.MShift, Vty.MCtrl] (Vty.KChar 'x'))
+            , ppBinding (shift $ ctrl 'x')
             , "** is Shift, Ctrl, and X all pressed together. "
             , "Although Matterhorn will pretty-print all key combinations "
             , "with specific capitalization, the parser is **not** case-sensitive "
@@ -287,13 +263,22 @@ keybindingHelp kc = vBox $
           , [ "Letter keys, number keys, and function keys are specified with "
             , "their obvious name, such as **x** for the X key, **8** for the 8 "
             , "key, and **f5** for the F5 key. Other valid keys include: "
-            , T.intercalate ", " [ "**" <> key <> "**" | key <- nonCharKeys ]
+            , T.intercalate ", " [ "**" <> k <> "**" | k <- nonCharKeys ]
             , "."
             ]
           ]
 
-event :: KeyEvent -> Widget a
-event = withDefAttr helpKeyEventAttr . txt . keyEventName
+nonCharKeys :: [Text]
+nonCharKeys = map ppKey
+  [ Vty.KBackTab, Vty.KEsc, Vty.KBS, Vty.KEnter, Vty.KUp, Vty.KDown
+  , Vty.KLeft, Vty.KRight, Vty.KHome, Vty.KEnd, Vty.KPageDown
+  , Vty.KPageUp, Vty.KDel, Vty.KUpLeft, Vty.KUpRight, Vty.KDownLeft
+  , Vty.KDownRight, Vty.KCenter, Vty.KPrtScr, Vty.KPause, Vty.KIns
+  , Vty.KBegin, Vty.KMenu
+  ]
+
+event :: (Ord e) => KeyConfig e -> e -> Widget a
+event kc = withDefAttr helpKeyEventAttr . txt . fromJust . keyEventName (keyConfigEvents kc)
 
 emph :: Widget a -> Widget a
 emph = withDefAttr helpEmphAttr
@@ -449,7 +434,7 @@ themeHelp = vBox
     in vBox $ mkEntry <$> names
   ]
 
-keybindSections :: [(Text, [KeyEventHandler])]
+keybindSections :: [(Text, [MHKeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
@@ -496,108 +481,45 @@ kbColumnWidth = 14
 kbDescColumnWidth :: Int
 kbDescColumnWidth = 60
 
-mkKeybindingHelp :: KeyConfig -> (Text, [KeyEventHandler]) -> Widget Name
+mkKeybindingHelp :: (Ord e)
+                 => KeyConfig e -> (Text, [KeyEventHandler e m]) -> Widget Name
 mkKeybindingHelp kc (sectionName, kbs) =
     (heading sectionName) <=>
     (padTop (Pad 1) $ hCenter $ vBox $ snd <$> sortWith fst results)
     where
         results = mkKeybindHelp kc <$> kbs
 
-mkKeybindHelp :: KeyConfig -> KeyEventHandler -> (Text, Widget Name)
+mkKeybindHelp :: (Ord e)
+              => KeyConfig e
+              -> KeyEventHandler e m
+              -> (Text, Widget Name)
 mkKeybindHelp kc h =
     let unbound = ["(unbound)"]
         (label, mEv) = case kehEventTrigger h of
-            Static k -> (ppBinding $ eventToBinding k, Nothing)
+            ByKey b -> (ppBinding b, Nothing)
             ByEvent ev ->
-                let bindings = case M.lookup ev kc of
+                let bindings = case lookupKeyConfigBindings kc ev of
                         Nothing ->
-                            let bs = defaultBindings ev
+                            let bs = allDefaultBindings kc ev
                             in if not $ null bs
-                               then ppBinding <$> defaultBindings ev
+                               then ppBinding <$> bs
                                else unbound
                         Just Unbound -> unbound
                         Just (BindingList bs) | not (null bs) -> ppBinding <$> bs
                                               | otherwise -> unbound
                 in (T.intercalate ", " bindings, Just ev)
 
-        renderEvent ev = txt "event: " <+> event ev
+        renderEvent ev = txt "event: " <+> event kc ev
         rendering = (emph $ txt $ padTo kbColumnWidth $
                       label) <+> txt " " <+>
                     (hLimit kbDescColumnWidth $
                      padRight Max $
                      padBottom (Pad 1) $
-                     vBox [ renderText $ ehDescription $ kehHandler h
+                     vBox [ renderText $ handlerDescription $ kehHandler h
                           , maybe emptyWidget renderEvent mEv
                           ]
                      )
     in (label, rendering)
-
-mkKeybindEventSectionHelp :: KeyConfig
-                          -> ((TextHunk, Text, [TextHunk]) -> a)
-                          -> ([a] -> a)
-                          -> (Text -> a)
-                          -> (Text, [KeyEventHandler])
-                          -> a
-mkKeybindEventSectionHelp kc mkKeybindHelpFunc vertCat mkHeading (sectionName, kbs) =
-  vertCat $ (mkHeading sectionName) :
-            (mkKeybindHelpFunc <$> (mkKeybindEventHelp kc <$> kbs))
-
-data TextHunk = Verbatim Text
-              | Comment Text
-
-keybindEventHelpWidget :: (TextHunk, Text, [TextHunk]) -> Widget Name
-keybindEventHelpWidget (evName, desc, evs) =
-    let evText = T.intercalate ", " (getText <$> evs)
-        getText (Comment s) = s
-        getText (Verbatim s) = s
-        label = case evName of
-            Comment s -> txt $ "; " <> s
-            Verbatim s -> emph $ txt s
-    in padBottom (Pad 1) $
-       vBox [ txtWrap ("; " <> desc)
-            , label <+> txt (" = " <> evText)
-            ]
-
-keybindEventHelpMarkdown :: (TextHunk, Text, [TextHunk]) -> Text
-keybindEventHelpMarkdown (evName, desc, evs) =
-    let quote s = "`" <> s <> "`"
-        format (Comment s) = s
-        format (Verbatim s) = quote s
-        name = case evName of
-            Comment s -> s
-            Verbatim s -> quote s
-    in "| " <> (T.intercalate ", " $ format <$> evs) <>
-       " | " <> name <>
-       " | " <> desc <>
-       " |"
-
-keybindEventHelpText :: Int -> Int -> (TextHunk, Text, [TextHunk]) -> Text
-keybindEventHelpText width eventNameWidth (evName, desc, evs) =
-    let getText (Comment s) = s
-        getText (Verbatim s) = s
-    in padTo width (T.intercalate ", " $ getText <$> evs) <> " " <>
-       padTo eventNameWidth (getText evName) <> " " <>
-       desc
-
-mkKeybindEventHelp :: KeyConfig -> KeyEventHandler -> (TextHunk, Text, [TextHunk])
-mkKeybindEventHelp kc h =
-  let trig = kehEventTrigger h
-      unbound = [Comment "(unbound)"]
-      (label, evText) = case trig of
-          Static key -> (Comment "(non-customizable key)", [Verbatim $ ppBinding $ eventToBinding key])
-          ByEvent ev -> case M.lookup ev kc of
-              Nothing ->
-                  let name = keyEventName ev
-                  in if not (null (defaultBindings ev))
-                     then (Verbatim name, Verbatim <$> ppBinding <$> defaultBindings ev)
-                     else (Verbatim name, unbound)
-              Just Unbound -> (Verbatim $ keyEventName ev, unbound)
-              Just (BindingList bs) -> (Verbatim $ keyEventName ev,
-                                        if not (null bs)
-                                        then Verbatim <$> ppBinding <$> bs
-                                        else unbound
-                                        )
-  in (label, ehDescription $ kehHandler h, evText)
 
 padTo :: Int -> Text -> Text
 padTo n s = s <> T.replicate (n - T.length s) " "

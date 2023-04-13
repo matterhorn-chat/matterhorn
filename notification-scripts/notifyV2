@@ -3,7 +3,9 @@
 # This is the sample Linux notifier for V2 notifications.
 
 # The notification payload is a JSON object presented to standard input,
-# having the fields version, sender, message and mentioned.
+# having the fields version, sender, message and mentioned. Note that
+# the JSON data is always UTF-8 encoded. The script is responsible for
+# decoding it to Unicode.
 
 # This script depends upon `jq(1)` to extract fields from the JSON
 # notification and upon `notify-send(1)` to invoke the system notifier.

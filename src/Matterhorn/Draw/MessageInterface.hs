@@ -8,6 +8,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import           Brick.Focus ( withFocusRing )
 import           Brick.Widgets.Border
 import           Brick.Widgets.Border.Style
@@ -36,7 +37,6 @@ import           Matterhorn.Draw.ManageAttachments
 import           Matterhorn.Draw.InputPreview
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.MessageSelect
@@ -44,7 +44,6 @@ import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
-import           Matterhorn.Types.KeyEvents
 import           Matterhorn.Types.RichText
 
 
@@ -116,7 +115,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                        txt $ "(" <> (T.pack $ show count) <> " attachment" <>
                              (if count == 1 then "" else "s") <> "; "
                      , withDefAttr clientEmphAttr $
-                       txt $ ppBinding (firstActiveBinding kc ShowAttachmentListEvent)
+                       txt $ ppMaybeBinding (firstActiveBinding kc ShowAttachmentListEvent)
                      , txt " to manage)"
                      ]
 
@@ -396,7 +395,7 @@ inputArea st which focused hs =
             _ -> emptyWidget
 
         kc = st^.csResources.crConfiguration.configUserKeysL
-        multiLineToggleKey = ppBinding $ firstActiveBinding kc ToggleMultiLineEvent
+        multiLineToggleKey = ppMaybeBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
         commandBox = case st^.which.esEphemeral.eesMultiline of
             False ->

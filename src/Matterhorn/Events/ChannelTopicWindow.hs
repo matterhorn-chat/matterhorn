@@ -1,11 +1,13 @@
 module Matterhorn.Events.ChannelTopicWindow
   ( onEventChannelTopicWindow
+  , channelTopicWindowMouseHandler
   )
 where
 
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( BrickEvent(VtyEvent, MouseDown) )
 import           Brick.Focus
 import           Brick.Widgets.Edit ( handleEditorEvent, getEditContents )
 import qualified Data.Text as T
@@ -27,15 +29,12 @@ onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
     f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicSaveButton {}) -> do
-            ed <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
-            let topic = T.unlines $ getEditContents ed
-            setChannelTopic tId topic
-            popMode tId
+            doSaveTopic tId
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
-                                handleEditorEvent e
+            mhZoom (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
+                                handleEditorEvent (VtyEvent e)
         Just (ChannelTopicCancelButton {}) ->
-            popMode tId
+            doCancelTopicEdit tId
         _ ->
             popMode tId
 onEventChannelTopicWindow tId (Vty.EvKey Vty.KEsc []) = do
@@ -44,7 +43,22 @@ onEventChannelTopicWindow tId e = do
     f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicEditor {}) ->
-            mhHandleEventLensed (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
-                                handleEditorEvent e
+            mhZoom (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
+                                handleEditorEvent (VtyEvent e)
         _ ->
             return ()
+
+channelTopicWindowMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
+channelTopicWindowMouseHandler tId (MouseDown (ChannelTopicSaveButton {}) _ _ _) = doSaveTopic tId
+channelTopicWindowMouseHandler tId (MouseDown (ChannelTopicCancelButton {}) _ _ _) = doCancelTopicEdit tId
+channelTopicWindowMouseHandler _ _ = return ()
+
+doSaveTopic :: TeamId -> MH ()
+doSaveTopic tId = do
+    ed <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
+    let topic = T.unlines $ getEditContents ed
+    setChannelTopic tId topic
+    popMode tId
+
+doCancelTopicEdit :: TeamId -> MH ()
+doCancelTopicEdit tId = popMode tId
