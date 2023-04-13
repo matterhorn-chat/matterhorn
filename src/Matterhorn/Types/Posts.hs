@@ -48,12 +48,15 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import qualified Brick as B
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Set as S
 import           Data.Time.Clock ( getCurrentTime )
 import           Lens.Micro.Platform ( makeLenses )
+import           Data.Text.Conversions
+import           Text.Printf
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
@@ -223,7 +226,13 @@ getAttachmentText p =
     Just attachments ->
       Blocks $ fmap (Blockquote . render) attachments
   where render att = parseMarkdown Nothing (att^.ppaTextL) <>
-                     parseMarkdown Nothing (att^.ppaFallbackL)
+                     parseMarkdown Nothing (att^.ppaFallbackL) <>
+                     parseMarkdown Nothing (toText $ unlines $ toList $ fmap renderAttField (att^.ppaFieldsL))
+
+renderAttField :: PostPropAttachmentField -> String
+renderAttField f = "  * " ++
+  (if (ppafTitle f) == T.empty then "" else printf "**%s:** " (ppafTitle f)) ++
+  printf "%s" (ppafValue f)
 
 -- ** 'ClientPost' Lenses
 
