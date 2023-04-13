@@ -426,6 +426,7 @@ defaultConfig =
            , configThreadOrientation           = ThreadBelow
            , configMouseMode                   = False
            , configChannelListSorting          = ChannelListSortDefault
+           , configTeamListSorting             = TeamListSortDefault
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
