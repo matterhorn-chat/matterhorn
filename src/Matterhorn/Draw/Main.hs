@@ -138,7 +138,7 @@ teamList st =
         mkEntry ts =
             let tId = teamId $ _tsTeam ts
                 unread = uCount > 0
-                uCount = unreadCount tId
+                uCount = teamUnreadCount tId st
                 tName  = ClickableTeamListEntry tId
             in (if Just tId == curTid
                    then visible . withDefAttr currentTeamAttr
@@ -147,8 +147,6 @@ teamList st =
                         else id) $
                clickable tName $ txt $
                (T.strip $ sanitizeUserText $ teamDisplayName $ _tsTeam ts)
-        unreadCount tId = sum $ fmap (nonDMChannelListGroupUnread . fst) $
-                          Z.toList $ st^.csTeam(tId).tsFocus
     in if numTeams == 1
        then emptyWidget
        else vBox [ hBox [ padRight (Pad 1) $ txt $ T.pack $ "Teams (" <> show (pos + 1) <> "/" <> show numTeams <> "):"

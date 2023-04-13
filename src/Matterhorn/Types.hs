@@ -24,6 +24,7 @@ module Matterhorn.Types
   , ViewMessageWindowTab(..)
   , clearChannelUnreadStatus
   , ChannelListSorting(..)
+  , TeamListSorting(..)
   , ThreadOrientation(..)
   , ChannelListOrientation(..)
   , channelListEntryUserId
@@ -68,6 +69,7 @@ module Matterhorn.Types
   , configActivityBellL
   , configTruncateVerbatimBlocksL
   , configChannelListSortingL
+  , configTeamListSortingL
   , configShowMessageTimestampsL
   , configShowBackgroundL
   , configShowMessagePreviewL
@@ -114,10 +116,8 @@ module Matterhorn.Types
 
   , attrNameToConfig
 
-  , sortTeams
   , matchesTeam
-  , mkTeamZipper
-  , mkTeamZipperFromIds
+  , teamUnreadCount
   , teamZipperIds
   , mkChannelZipperList
   , ChannelListGroup(..)
@@ -386,7 +386,7 @@ import qualified Data.Foldable as F
 import           Data.Function ( on )
 import qualified Data.Kind as K
 import           Data.Maybe ( fromJust )
-import           Data.Ord ( comparing )
+import           Data.Ord ( comparing, Down(..) )
 import qualified Data.HashMap.Strict as HM
 import           Data.List ( sortBy, elemIndex, partition )
 import qualified Data.Sequence as Seq
@@ -479,6 +479,11 @@ data ChannelListSorting =
     | ChannelListSortUnreadFirst
     deriving (Eq, Show, Ord)
 
+data TeamListSorting =
+    TeamListSortDefault
+    | TeamListSortUnreadFirst
+    deriving (Eq, Show, Ord)
+
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
 -- are for internal book-keeping purposes only.
@@ -553,6 +558,8 @@ data Config =
            -- prior to the beginning of the current session.
            , configChannelListSorting :: ChannelListSorting
            -- ^ How to sort channels in each channel list group
+           , configTeamListSorting :: TeamListSorting
+           -- ^ How to sort teams in the team list
            , configShowTypingIndicator :: Bool
            -- ^ Whether to show the typing indicator when other users
            -- are typing
@@ -1333,8 +1340,9 @@ data ChannelTopicDialogState =
                             -- ^ The window focus state (editor/buttons)
                             }
 
-sortTeams :: [Team] -> [Team]
-sortTeams = sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
+sortTeamsAlpha :: [Team] -> [Team]
+sortTeamsAlpha =
+    sortBy (compare `on` (T.strip . sanitizeUserText . teamName))
 
 matchesTeam :: T.Text -> Team -> Bool
 matchesTeam tName t =
@@ -1343,11 +1351,6 @@ matchesTeam tName t =
         urlName = normalizeUserText $ teamName t
         displayName = normalizeUserText $ teamDisplayName t
     in normalize tName `elem` [displayName, urlName]
-
-mkTeamZipper :: HM.HashMap TeamId TeamState -> Z.Zipper () TeamId
-mkTeamZipper m =
-    let sortedTeams = sortTeams $ _tsTeam <$> HM.elems m
-    in mkTeamZipperFromIds $ teamId <$> sortedTeams
 
 mkTeamZipperFromIds :: [TeamId] -> Z.Zipper () TeamId
 mkTeamZipperFromIds tIds = Z.fromList [((), tIds)]
@@ -1665,37 +1668,49 @@ handleEventWith (handler:rest) e = do
        then return True
        else handleEventWith rest e
 
-applyTeamOrderPref :: Maybe [TeamId] -> ChatState -> ChatState
-applyTeamOrderPref Nothing st = st
-applyTeamOrderPref (Just prefTIds) st =
+applyTeamOrderPref :: Config -> Maybe [TeamId] -> ChatState -> ChatState
+applyTeamOrderPref _ Nothing st = st
+applyTeamOrderPref cfg (Just prefTIds) st =
     let teams = _csTeams st
         ourTids = HM.keys teams
         tIds = filter (`elem` ourTids) prefTIds
         curTId = st^.csCurrentTeamId
         unmentioned = filter (not . wasMentioned) $ HM.elems teams
         wasMentioned ts = (teamId $ _tsTeam ts) `elem` tIds
-        zipperTids = tIds <> (teamId <$> sortTeams (_tsTeam <$> unmentioned))
+        zipperTidsBeforeConfigSort = tIds <> (teamId <$> sortTeamsAlpha (_tsTeam <$> unmentioned))
+        zipperTids =
+            case cfg^.configTeamListSortingL of
+                TeamListSortDefault ->
+                    zipperTidsBeforeConfigSort
+                TeamListSortUnreadFirst ->
+                    let withCount tId = (tId, teamUnreadCount tId st)
+                        withCounts = withCount <$> zipperTidsBeforeConfigSort
+                        unreadFirst = sortBy (comparing (Down . (> 0) . snd)) withCounts
+                    in fst <$> unreadFirst
     in st { _csTeamZipper = (Z.findRight ((== curTId) . Just) $ mkTeamZipperFromIds zipperTids)
           }
 
 refreshTeamZipper :: MH ()
 refreshTeamZipper = do
+    config <- use (csResources.crConfiguration)
     tidOrder <- use (csResources.crUserPreferences.userPrefTeamOrder)
-    St.modify (applyTeamOrderPref tidOrder)
+    St.modify (applyTeamOrderPref config tidOrder)
 
 applyTeamOrder :: [TeamId] -> MH ()
-applyTeamOrder tIds = St.modify (applyTeamOrderPref $ Just tIds)
+applyTeamOrder tIds = do
+    config <- use (csResources.crConfiguration)
+    St.modify (applyTeamOrderPref config $ Just tIds)
 
 newState :: StartupStateInfo -> ChatState
 newState (StartupStateInfo {..}) =
     let config = _crConfiguration startupStateResources
-    in applyTeamOrderPref (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
+    in applyTeamOrderPref config (_userPrefTeamOrder $ _crUserPreferences startupStateResources) $
        ChatState { _csResources                   = startupStateResources
                  , _csLastMouseDownEvent          = Nothing
                  , _csGlobalEditState             = emptyGlobalEditState
                  , _csVerbatimTruncateSetting     = configTruncateVerbatimBlocks config
                  , _csTeamZipper                  = Z.findRight (== startupStateInitialTeam) $
-                                                    mkTeamZipper startupStateTeams
+                                                    mkTeamZipperFromIds $ teamId <$> (_tsTeam <$> snd <$> HM.toList startupStateTeams)
                  , _csTeams                       = startupStateTeams
                  , _csChannelListOrientation      = configChannelListOrientation config
                  , _csMe                          = startupStateConnectedUser
@@ -1761,6 +1776,12 @@ pushMode' tId m st =
 csCurrentChannelId :: TeamId -> SimpleGetter ChatState (Maybe ChannelId)
 csCurrentChannelId tId =
     csTeam(tId).tsFocus.to Z.focus.to (fmap channelListEntryChannelId)
+
+teamUnreadCount :: TeamId -> ChatState -> Int
+teamUnreadCount tId st =
+    sum $ fmap (nonDMChannelListGroupUnread . fst) $
+          Z.toList $
+          st^.csTeam(tId).tsFocus
 
 withCurrentTeam :: (TeamId -> MH ()) -> MH ()
 withCurrentTeam f = do

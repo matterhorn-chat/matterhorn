@@ -124,6 +124,8 @@ fromIni = do
       (maybe 0 id $ configTruncateVerbatimBlocks defaultConfig)
     configChannelListSorting <- fieldDefOf "channelListSorting"
       parseChannelListSorting (configChannelListSorting defaultConfig)
+    configTeamListSorting <- fieldDefOf "teamListSorting"
+      parseTeamListSorting (configTeamListSorting defaultConfig)
     let configTruncateVerbatimBlocks = case configTruncateVerbatimBlocksInt of
             i | i <= 0 -> Nothing
               | otherwise -> Just i
@@ -330,6 +332,16 @@ parseChannelListSorting :: Text -> Either String ChannelListSorting
 parseChannelListSorting t =
     let validValues = [ ("default", ChannelListSortDefault)
                       , ("unread-first", ChannelListSortUnreadFirst)
+                      ]
+    in case lookup (T.unpack $ T.toLower t) validValues of
+        Just s -> Right s
+        Nothing ->
+            Left ("Invalid value " <> show t <> "; must be one of " <> intercalate ", " (fst <$> validValues))
+
+parseTeamListSorting :: Text -> Either String TeamListSorting
+parseTeamListSorting t =
+    let validValues = [ ("default", TeamListSortDefault)
+                      , ("unread-first", TeamListSortUnreadFirst)
                       ]
     in case lookup (T.unpack $ T.toLower t) validValues of
         Just s -> Right s

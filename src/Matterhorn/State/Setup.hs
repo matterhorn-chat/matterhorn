@@ -105,7 +105,7 @@ setupState mkVty mLogLocation config = do
         putStrLn "Error: your account is not a member of any teams"
         exitFailure
 
-    let initialTeamId = fromMaybe (teamId $ head $ sortTeams teams) $ do
+    let initialTeamId = fromMaybe (teamId $ head teams) $ do
             tName <- mbTeam <|> configTeam config
             let matchingTeam = listToMaybe $ filter (matchesTeam tName) teams
             teamId <$> matchingTeam
