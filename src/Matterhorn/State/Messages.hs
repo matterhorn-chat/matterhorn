@@ -27,7 +27,7 @@ import           Brick.Main ( getVtyHandle, invalidateCache )
 import qualified Brick.Widgets.FileBrowser as FB
 import           Control.Exception ( SomeException, try )
 import qualified Data.Aeson as A
-import qualified Data.ByteString.Lazy.Char8 as BL8
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
@@ -757,9 +757,6 @@ data PostToAdd =
     -- only available in websocket events (and then provided to this
     -- constructor).
 
-encodeToJSONstring :: A.ToJSON a => a -> String
-encodeToJSONstring a = BL8.unpack $ A.encode a
-
 -- Notification Version 2 payload definition
 data NotificationV2 = NotificationV2
     { version :: Int
@@ -776,11 +773,11 @@ instance A.ToJSON NotificationV2 where
                  ]
 
 -- We define a notifyGetPayload for each notification version.
-notifyGetPayload :: NotificationVersion -> ChatState -> Post -> Bool -> Maybe String
-notifyGetPayload NotifyV1 _ _ _ = do return ""
+notifyGetPayload :: NotificationVersion -> ChatState -> Post -> Bool -> Maybe BSL.ByteString
+notifyGetPayload NotifyV1 _ _ _ = do return mempty
 notifyGetPayload NotifyV2 st post mentioned = do
     let notification = NotificationV2 2 msg mentioned sender
-    return (encodeToJSONstring notification)
+    return (A.encode notification)
         where
             msg = sanitizeUserText $ postMessage post
             sender = maybePostUsername st post

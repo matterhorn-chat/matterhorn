@@ -41,6 +41,7 @@ import           Control.Concurrent ( MVar, putMVar, forkIO )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException, try )
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
@@ -51,7 +52,7 @@ import           System.Directory ( createDirectoryIfMissing )
 import           System.Environment.XDG.BaseDir ( getUserCacheDir )
 import           System.Exit ( ExitCode(..) )
 import           System.FilePath
-import           System.IO ( hGetContents, hFlush, hPutStrLn )
+import           System.IO ( hGetContents, hFlush )
 import           System.Process ( proc, std_in, std_out, std_err, StdStream(..)
                                 , createProcess, waitForProcess )
 
@@ -275,7 +276,7 @@ runLoggedCommand :: STM.TChan ProgramOutput
                  -- ^ The program name
                  -> [String]
                  -- ^ Arguments
-                 -> Maybe String
+                 -> Maybe BSL.ByteString
                  -- ^ The stdin to send, if any
                  -> Maybe (MVar ProgramOutput)
                  -- ^ Where to put the program output when it is ready
@@ -297,7 +298,7 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
                 Just inh -> do
                     case mInput of
                         Just input -> do
-                            hPutStrLn inh input
+                            BSL.hPut inh input
                             hFlush inh
                         Nothing -> return ()
                 Nothing -> return ()

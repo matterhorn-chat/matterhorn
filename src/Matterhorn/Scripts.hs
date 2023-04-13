@@ -10,7 +10,9 @@ import           Matterhorn.Prelude
 
 import           Control.Concurrent ( takeMVar, newEmptyMVar )
 import qualified Control.Concurrent.STM as STM
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Lens.Micro.Platform ( Lens' )
 import           System.Exit ( ExitCode(..) )
 
@@ -45,7 +47,7 @@ runScript :: Lens' ChatState (EditState Name)
           -> IO (Maybe (MH ()))
 runScript which outputChan fp text = do
   outputVar <- newEmptyMVar
-  runLoggedCommand outputChan fp [] (Just $ T.unpack text) (Just outputVar)
+  runLoggedCommand outputChan fp [] (Just $ BSL.fromStrict $ T.encodeUtf8 text) (Just outputVar)
   po <- takeMVar outputVar
   return $ case programExitCode po of
     ExitSuccess -> do
