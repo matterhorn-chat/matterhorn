@@ -378,8 +378,12 @@ isQuoted t =
     in (quote `T.isPrefixOf` t) &&
        (quote `T.isSuffixOf` t)
 
+addDefaultKeys :: Config -> Config
+addDefaultKeys config =
+    config { configUserKeys = newKeyConfig allEvents defaultBindings mempty }
+
 defaultConfig :: Config
-defaultConfig =
+defaultConfig = addDefaultKeys $
     Config { configAbsPath                     = Nothing
            , configUser                        = Nothing
            , configHost                        = Nothing
