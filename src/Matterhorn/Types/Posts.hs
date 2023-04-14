@@ -248,7 +248,7 @@ renderAttFieldItemContent f = Inlines $ Seq.fromList $
 -- | The field name can sometimes be empty
 renderAttFieldItemName :: PostPropAttachmentField -> [Inline]
 renderAttFieldItemName f =
-  if (ppafTitle f) == T.empty
+  if ppafTitle f == T.empty
   then []
   else [EStrong $ singleI $ EText $ ppafTitle f, ELineBreak]
 
