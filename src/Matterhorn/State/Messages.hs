@@ -764,6 +764,7 @@ data NotificationV2 = NotificationV2
     , mention :: Bool
     , from :: Text
     } deriving (Show)
+
 instance A.ToJSON NotificationV2 where
     toJSON (NotificationV2 vers msg mentioned sender) =
         A.object [ "version"  A..= vers
