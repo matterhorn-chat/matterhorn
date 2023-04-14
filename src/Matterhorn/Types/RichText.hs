@@ -11,6 +11,7 @@
 module Matterhorn.Types.RichText
   ( Blocks(..)
   , unBlocks
+  , singleB
 
   , Block(..)
   , sameBlockType
@@ -18,6 +19,7 @@ module Matterhorn.Types.RichText
   , Inline(..)
   , Inlines(..)
   , unInlines
+  , singleI
 
   , C.ListType(..)
   , C.ListSpacing(..)

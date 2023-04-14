@@ -48,22 +48,21 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import qualified Brick as B
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Set as S
 import           Data.Time.Clock ( getCurrentTime )
 import           Lens.Micro.Platform ( makeLenses )
-import           Data.Text.Conversions
-import           Text.Printf
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
 import           Matterhorn.Types.Common
-import           Matterhorn.Types.RichText ( Blocks(..), Block(Blockquote), parseMarkdown
-                                           , TeamBaseURL
+import           Matterhorn.Types.RichText ( Blocks(..), Block(..)
+                                           , TeamBaseURL, Inlines(..), Inline(..)
+                                           , ListType(..), ListSpacing(..)
+                                           , parseMarkdown, singleB, singleI
                                            )
 
 
@@ -227,12 +226,31 @@ getAttachmentText p =
       Blocks $ fmap (Blockquote . render) attachments
   where render att = parseMarkdown Nothing (att^.ppaTextL) <>
                      parseMarkdown Nothing (att^.ppaFallbackL) <>
-                     parseMarkdown Nothing (toText $ unlines $ toList $ fmap renderAttField (att^.ppaFieldsL))
+                     renderAttFields (att^.ppaFieldsL)
 
-renderAttField :: PostPropAttachmentField -> String
-renderAttField f = "  * " ++
-  (if (ppafTitle f) == T.empty then "" else printf "**%s:** " (ppafTitle f)) ++
-  printf "%s" (ppafValue f)
+-- | Render a bulleted list with any text fields that the post may have
+--   attached to it
+renderAttFields :: Seq PostPropAttachmentField -> Blocks
+renderAttFields fs = singleB $
+                     List (BulletList '*') LooseList $
+                     fmap renderAttFieldItem fs
+
+-- | Each item will be rendered as the field name in boldface and the value
+--   right below it
+renderAttFieldItem :: PostPropAttachmentField -> Blocks
+renderAttFieldItem f = singleB $ Para $ renderAttFieldItemContent f
+
+renderAttFieldItemContent :: PostPropAttachmentField -> Inlines
+renderAttFieldItemContent f = Inlines $ Seq.fromList $
+                              renderAttFieldItemName f <>
+                              [EText $ ppafValue f]
+
+-- | The field name can sometimes be empty
+renderAttFieldItemName :: PostPropAttachmentField -> [Inline]
+renderAttFieldItemName f =
+  if (ppafTitle f) == T.empty
+  then []
+  else [EStrong $ singleI $ EText $ ppafTitle f, ELineBreak]
 
 -- ** 'ClientPost' Lenses
 
