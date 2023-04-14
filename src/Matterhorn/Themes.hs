@@ -92,163 +92,163 @@ import           Matterhorn.Types ( InternalTheme(..), specialUserMentions )
 
 
 helpAttr :: AttrName
-helpAttr = "help"
+helpAttr = attrName "help"
 
 helpEmphAttr :: AttrName
-helpEmphAttr = "helpEmphasis"
+helpEmphAttr = attrName "helpEmphasis"
 
 helpKeyEventAttr :: AttrName
-helpKeyEventAttr = "helpKeyEvent"
+helpKeyEventAttr = attrName "helpKeyEvent"
 
 recentMarkerAttr :: AttrName
-recentMarkerAttr = "recentChannelMarker"
+recentMarkerAttr = attrName "recentChannelMarker"
 
 replyParentAttr :: AttrName
-replyParentAttr = "replyParentPreview"
+replyParentAttr = attrName "replyParentPreview"
 
 pinnedMessageIndicatorAttr :: AttrName
-pinnedMessageIndicatorAttr = "pinnedMessageIndicator"
+pinnedMessageIndicatorAttr = attrName "pinnedMessageIndicator"
 
 loadMoreAttr :: AttrName
-loadMoreAttr = "loadMoreMessages"
+loadMoreAttr = attrName "loadMoreMessages"
 
 urlListSelectedAttr :: AttrName
-urlListSelectedAttr = "urlListCursor"
+urlListSelectedAttr = attrName "urlListCursor"
 
 messageSelectAttr :: AttrName
-messageSelectAttr = "messageSelectCursor"
+messageSelectAttr = attrName "messageSelectCursor"
 
 editedMarkingAttr :: AttrName
-editedMarkingAttr = "editedMarking"
+editedMarkingAttr = attrName "editedMarking"
 
 editedRecentlyMarkingAttr :: AttrName
-editedRecentlyMarkingAttr = "editedRecentlyMarking"
+editedRecentlyMarkingAttr = attrName "editedRecentlyMarking"
 
 permalinkAttr :: AttrName
-permalinkAttr = "permalink"
+permalinkAttr = attrName "permalink"
 
 dialogAttr :: AttrName
-dialogAttr = "dialog"
+dialogAttr = attrName "dialog"
 
 dialogEmphAttr :: AttrName
-dialogEmphAttr = "dialogEmphasis"
+dialogEmphAttr = attrName "dialogEmphasis"
 
 channelSelectMatchAttr :: AttrName
-channelSelectMatchAttr = "channelSelectMatch"
+channelSelectMatchAttr = attrName "channelSelectMatch"
 
 channelSelectPromptAttr :: AttrName
-channelSelectPromptAttr = "channelSelectPrompt"
+channelSelectPromptAttr = attrName "channelSelectPrompt"
 
 completionAlternativeListAttr :: AttrName
-completionAlternativeListAttr = "tabCompletionAlternative"
+completionAlternativeListAttr = attrName "tabCompletionAlternative"
 
 completionAlternativeCurrentAttr :: AttrName
-completionAlternativeCurrentAttr = "tabCompletionCursor"
+completionAlternativeCurrentAttr = attrName "tabCompletionCursor"
 
 timeAttr :: AttrName
-timeAttr = "time"
+timeAttr = attrName "time"
 
 currentUserAttr :: AttrName
-currentUserAttr = "currentUser"
+currentUserAttr = attrName "currentUser"
 
 channelHeaderAttr :: AttrName
-channelHeaderAttr = "channelHeader"
+channelHeaderAttr = attrName "channelHeader"
 
 verbatimTruncateMessageAttr :: AttrName
-verbatimTruncateMessageAttr = "verbatimTruncateMessage"
+verbatimTruncateMessageAttr = attrName "verbatimTruncateMessage"
 
 channelListHeaderAttr :: AttrName
-channelListHeaderAttr = "channelListSectionHeader"
+channelListHeaderAttr = attrName "channelListSectionHeader"
 
 currentChannelNameAttr :: AttrName
-currentChannelNameAttr = "currentChannelName"
+currentChannelNameAttr = attrName "currentChannelName"
 
 channelNameAttr :: AttrName
-channelNameAttr = "channelName"
+channelNameAttr = attrName "channelName"
 
 unreadChannelAttr :: AttrName
-unreadChannelAttr = "unreadChannel"
+unreadChannelAttr = attrName "unreadChannel"
 
 unreadGroupMarkerAttr :: AttrName
-unreadGroupMarkerAttr = "unreadChannelGroupMarker"
+unreadGroupMarkerAttr = attrName "unreadChannelGroupMarker"
 
 mentionsChannelAttr :: AttrName
-mentionsChannelAttr = "channelWithMentions"
+mentionsChannelAttr = attrName "channelWithMentions"
 
 currentTeamAttr :: AttrName
-currentTeamAttr = "currentTeam"
+currentTeamAttr = attrName "currentTeam"
 
 tabSelectedAttr :: AttrName
-tabSelectedAttr = "tabSelected"
+tabSelectedAttr = attrName "tabSelected"
 
 tabUnselectedAttr :: AttrName
-tabUnselectedAttr = "tabUnselected"
+tabUnselectedAttr = attrName "tabUnselected"
 
 dateTransitionAttr :: AttrName
-dateTransitionAttr = "dateTransition"
+dateTransitionAttr = attrName "dateTransition"
 
 newMessageTransitionAttr :: AttrName
-newMessageTransitionAttr = "newMessageTransition"
+newMessageTransitionAttr = attrName "newMessageTransition"
 
 urlAttr :: AttrName
-urlAttr = "url"
+urlAttr = attrName "url"
 
 codeAttr :: AttrName
-codeAttr = "codeBlock"
+codeAttr = attrName "codeBlock"
 
 emailAttr :: AttrName
-emailAttr = "email"
+emailAttr = attrName "email"
 
 emojiAttr :: AttrName
-emojiAttr = "emoji"
+emojiAttr = attrName "emoji"
 
 reactionAttr :: AttrName
-reactionAttr = "reaction"
+reactionAttr = attrName "reaction"
 
 myReactionAttr :: AttrName
-myReactionAttr = reactionAttr <> "mine"
+myReactionAttr = reactionAttr <> attrName "mine"
 
 clientMessageAttr :: AttrName
-clientMessageAttr = "clientMessage"
+clientMessageAttr = attrName "clientMessage"
 
 clientHeaderAttr :: AttrName
-clientHeaderAttr = "markdownHeader"
+clientHeaderAttr = attrName "markdownHeader"
 
 strikeThroughAttr :: AttrName
-strikeThroughAttr = "markdownStrikethrough"
+strikeThroughAttr = attrName "markdownStrikethrough"
 
 clientEmphAttr :: AttrName
-clientEmphAttr = "markdownEmph"
+clientEmphAttr = attrName "markdownEmph"
 
 clientStrongAttr :: AttrName
-clientStrongAttr = "markdownStrong"
+clientStrongAttr = attrName "markdownStrong"
 
 errorMessageAttr :: AttrName
-errorMessageAttr = "errorMessage"
+errorMessageAttr = attrName "errorMessage"
 
 gapMessageAttr :: AttrName
-gapMessageAttr = "gapMessage"
+gapMessageAttr = attrName "gapMessage"
 
 misspellingAttr :: AttrName
-misspellingAttr = "misspelling"
+misspellingAttr = attrName "misspelling"
 
 messageSelectStatusAttr :: AttrName
-messageSelectStatusAttr = "messageSelectStatus"
+messageSelectStatusAttr = attrName "messageSelectStatus"
 
 urlSelectStatusAttr :: AttrName
-urlSelectStatusAttr = "urlSelectStatus"
+urlSelectStatusAttr = attrName "urlSelectStatus"
 
 buttonAttr :: AttrName
-buttonAttr = "button"
+buttonAttr = attrName "button"
 
 buttonFocusedAttr :: AttrName
-buttonFocusedAttr = buttonAttr <> "focused"
+buttonFocusedAttr = buttonAttr <> attrName "focused"
 
 threadAttr :: AttrName
-threadAttr = "thread"
+threadAttr = attrName "thread"
 
 focusedEditorPromptAttr :: AttrName
-focusedEditorPromptAttr = "focusedEditorPrompt"
+focusedEditorPromptAttr = attrName "focusedEditorPrompt"
 
 lookupTheme :: Text -> Maybe InternalTheme
 lookupTheme n = find ((== n) . internalThemeName) internalThemes
@@ -455,7 +455,7 @@ darkColor256Theme = InternalTheme name theme desc
         desc = "Like builtin:dark, but with 256-color username colors"
 
 usernameAttr :: Int -> AttrName
-usernameAttr i = "username" <> (attrName $ show i)
+usernameAttr i = attrName "username" <> (attrName $ show i)
 
 -- | Render a string with a color chosen based on the text of a
 -- username.

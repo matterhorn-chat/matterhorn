@@ -4,11 +4,11 @@ module Matterhorn.Events.UrlSelect where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import           Brick.Widgets.List
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens' )
 
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.State.SaveAttachmentWindow
 import           Matterhorn.Types
@@ -16,31 +16,31 @@ import           Matterhorn.Types
 
 onEventUrlSelect :: Lens' ChatState (MessageInterface Name i) -> Vty.Event -> MH Bool
 onEventUrlSelect which =
-    handleEventWith [ handleKeyboardEvent (urlSelectKeybindings which)
-                    , \e -> mhHandleEventLensed (which.miUrlList.ulList) handleListEvent e >> return True
+    handleEventWith [ mhHandleKeyboardEvent (urlSelectKeybindings which)
+                    , \e -> mhZoom (which.miUrlList.ulList) handleListEvent e >> return True
                     ]
 
-urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig -> KeyHandlerMap
-urlSelectKeybindings which = mkKeybindings (urlSelectKeyHandlers which)
+urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+urlSelectKeybindings which kc = unsafeKeyDispatcher kc (urlSelectKeyHandlers which)
 
-urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [KeyEventHandler]
+urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [MHKeyEventHandler]
 urlSelectKeyHandlers which =
-    [ staticKb "Open the selected URL, if any"
-         (Vty.EvKey Vty.KEnter []) $
-             openSelectedURL which
+    [ onKey (bind Vty.KEnter)
+          "Open the selected URL, if any" $
+          openSelectedURL which
 
-    , mkKb SaveAttachmentEvent "Save the selected attachment" $
+    , onEvent SaveAttachmentEvent "Save the selected attachment" $
         openSaveAttachmentWindow which
 
-    , mkKb CancelEvent "Cancel URL selection" $ stopUrlSelect which
+    , onEvent CancelEvent "Cancel URL selection" $ stopUrlSelect which
 
-    , mkKb SelectUpEvent "Move cursor up" $
-        mhHandleEventLensed (which.miUrlList.ulList) handleListEvent (Vty.EvKey Vty.KUp [])
+    , onEvent SelectUpEvent "Move cursor up" $
+        mhZoom (which.miUrlList.ulList) handleListEvent (Vty.EvKey Vty.KUp [])
 
-    , mkKb SelectDownEvent "Move cursor down" $
-        mhHandleEventLensed (which.miUrlList.ulList) handleListEvent (Vty.EvKey Vty.KDown [])
+    , onEvent SelectDownEvent "Move cursor down" $
+        mhZoom (which.miUrlList.ulList) handleListEvent (Vty.EvKey Vty.KDown [])
 
-    , staticKb "Cancel URL selection"
-         (Vty.EvKey (Vty.KChar 'q') []) $ stopUrlSelect which
-
+    , onKey (bind 'q')
+         "Cancel URL selection" $
+         stopUrlSelect which
     ]

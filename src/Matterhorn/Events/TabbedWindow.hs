@@ -9,14 +9,14 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick.Keybindings
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens', (.=) )
 
 import           Network.Mattermost.Types ( TeamId )
 
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
-import           Matterhorn.Events.Keybindings
+
 
 handleTabbedWindowEvent :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow ChatState MH Name a)
@@ -25,7 +25,7 @@ handleTabbedWindowEvent :: (Show a, Eq a)
                         -> MH Bool
 handleTabbedWindowEvent target tId e = do
     w <- use target
-    handleEventWith [ handleKeyboardEvent (tabbedWindowKeybindings target tId)
+    handleEventWith [ mhHandleKeyboardEvent (tabbedWindowKeybindings target tId)
                     , \_ -> forwardEvent w e >> return True
                     ] e
 
@@ -40,23 +40,23 @@ forwardEvent w e = do
 tabbedWindowKeybindings :: (Show a, Eq a)
                         => Lens' ChatState (TabbedWindow ChatState MH Name a)
                         -> TeamId
-                        -> KeyConfig
-                        -> KeyHandlerMap
-tabbedWindowKeybindings target tId = mkKeybindings $ tabbedWindowKeyHandlers tId target
+                        -> KeyConfig KeyEvent
+                        -> KeyDispatcher KeyEvent MH
+tabbedWindowKeybindings target tId kc = unsafeKeyDispatcher kc $ tabbedWindowKeyHandlers tId target
 
 tabbedWindowKeyHandlers :: (Show a, Eq a)
                         => TeamId
                         -> Lens' ChatState (TabbedWindow ChatState MH Name a)
-                        -> [KeyEventHandler]
+                        -> [MHKeyEventHandler]
 tabbedWindowKeyHandlers tId target =
-    [ mkKb CancelEvent "Close window" $
+    [ onEvent CancelEvent "Close window" $
         popMode tId
 
-    , mkKb SelectNextTabEvent "Select next tab" $ do
+    , onEvent SelectNextTabEvent "Select next tab" $ do
         w' <- tabbedWindowNextTab =<< use target
         target .= w'
 
-    , mkKb SelectPreviousTabEvent "Select previous tab" $ do
+    , onEvent SelectPreviousTabEvent "Select previous tab" $ do
         w' <- tabbedWindowPreviousTab =<< use target
         target .= w'
     ]

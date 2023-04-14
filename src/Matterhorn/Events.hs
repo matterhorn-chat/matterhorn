@@ -30,7 +30,6 @@ import           Matterhorn.Events.ChannelSelect
 import           Matterhorn.Events.ChannelTopicWindow
 import           Matterhorn.Events.DeleteChannelConfirm
 import           Matterhorn.Events.Global
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Events.LeaveChannelConfirm
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
@@ -45,8 +44,8 @@ import           Matterhorn.Events.Mouse
 import           Matterhorn.Events.EditNotifyPrefs
 import           Matterhorn.Events.Websocket
 
-onEvent :: ChatState -> BrickEvent Name MHEvent -> EventM Name (Next ChatState)
-onEvent st ev = runMHEvent st $ do
+onEvent :: BrickEvent Name MHEvent -> EventM Name ChatState ()
+onEvent ev = runMHEvent $ do
     onBrickEvent ev
     doPendingUserFetches
     doPendingUserStatusFetches
@@ -190,7 +189,7 @@ onVtyEvent :: Vty.Event -> MH ()
 onVtyEvent =
     void .
     handleEventWith [ handleResizeEvent
-                    , handleKeyboardEvent globalKeybindings
+                    , mhHandleKeyboardEvent globalKeybindings
                     , handleTeamModeEvent
                     ]
 

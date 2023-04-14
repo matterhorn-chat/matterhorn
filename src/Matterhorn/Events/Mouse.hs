@@ -16,6 +16,7 @@ import           Matterhorn.State.ListWindow ( listWindowActivate )
 import           Matterhorn.Types
 
 import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent )
+import           Matterhorn.Events.ChannelTopicWindow ( channelTopicWindowMouseHandler )
 import           Matterhorn.State.MessageSelect ( exitMessageSelect )
 import           Matterhorn.State.Reactions ( toggleReaction )
 import           Matterhorn.State.Links ( openLinkTarget )
@@ -29,6 +30,7 @@ mouseHandlerByMode tId mode =
         ChannelSelect            -> channelSelectMouseHandler tId
         EditNotifyPrefs          -> void . handleEditNotifyPrefsEvent tId
         ReactionEmojiListWindow -> reactionEmojiListMouseHandler tId
+        ChannelTopicWindow       -> channelTopicWindowMouseHandler tId
         _                        -> globalMouseHandler tId
 
 -- Handle global mouse click events (when mode is not important).

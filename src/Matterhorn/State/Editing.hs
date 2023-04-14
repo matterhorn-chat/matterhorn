@@ -21,6 +21,8 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import           Brick ( BrickEvent(VtyEvent) )
+import           Brick.Keybindings
 import           Brick.Main ( invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
@@ -52,7 +54,6 @@ import           Network.Mattermost.Types ( Post(..) )
 import           Matterhorn.Config
 import {-# SOURCE #-} Matterhorn.Command ( dispatchCommand )
 import           Matterhorn.InputHistory
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.State.Common
 import           Matterhorn.State.Autocomplete
 import {-# SOURCE #-} Matterhorn.State.Messages
@@ -127,57 +128,57 @@ editingPermitted st which =
     (length (getEditContents $ st^.which.esEditor) == 1) ||
     st^.which.esEphemeral.eesMultiline
 
-editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig -> KeyHandlerMap
-editingKeybindings editor = mkKeybindings $ editingKeyHandlers editor
+editingKeybindings :: Lens' ChatState (Editor T.Text Name) -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+editingKeybindings editor kc = unsafeKeyDispatcher kc $ editingKeyHandlers editor
 
-editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [KeyEventHandler]
+editingKeyHandlers :: Lens' ChatState (Editor T.Text Name) -> [MHKeyEventHandler]
 editingKeyHandlers editor =
-  [ mkKb EditorTransposeCharsEvent
+  [ onEvent EditorTransposeCharsEvent
     "Transpose the final two characters"
     (editor %= applyEdit Z.transposeChars)
-  , mkKb EditorBolEvent
+  , onEvent EditorBolEvent
     "Go to the start of the current line"
     (editor %= applyEdit Z.gotoBOL)
-  , mkKb EditorEolEvent
+  , onEvent EditorEolEvent
     "Go to the end of the current line"
     (editor %= applyEdit Z.gotoEOL)
-  , mkKb EditorDeleteCharacter
+  , onEvent EditorDeleteCharacter
     "Delete the character at the cursor"
     (editor %= applyEdit Z.deleteChar)
-  , mkKb EditorKillToBolEvent
+  , onEvent EditorKillToBolEvent
     "Delete from the cursor to the start of the current line"
     (editor %= applyEdit Z.killToBOL)
-  , mkKb EditorNextCharEvent
+  , onEvent EditorNextCharEvent
     "Move one character to the right"
     (editor %= applyEdit Z.moveRight)
-  , mkKb EditorPrevCharEvent
+  , onEvent EditorPrevCharEvent
     "Move one character to the left"
     (editor %= applyEdit Z.moveLeft)
-  , mkKb EditorNextWordEvent
+  , onEvent EditorNextWordEvent
     "Move one word to the right"
     (editor %= applyEdit Z.moveWordRight)
-  , mkKb EditorPrevWordEvent
+  , onEvent EditorPrevWordEvent
     "Move one word to the left"
     (editor %= applyEdit Z.moveWordLeft)
-  , mkKb EditorDeletePrevWordEvent
+  , onEvent EditorDeletePrevWordEvent
     "Delete the word to the left of the cursor" $ do
     editor %= applyEdit Z.deletePrevWord
-  , mkKb EditorDeleteNextWordEvent
+  , onEvent EditorDeleteNextWordEvent
     "Delete the word to the right of the cursor" $ do
     editor %= applyEdit Z.deleteWord
-  , mkKb EditorHomeEvent
+  , onEvent EditorHomeEvent
     "Move the cursor to the beginning of the input" $ do
     editor %= applyEdit gotoHome
-  , mkKb EditorEndEvent
+  , onEvent EditorEndEvent
     "Move the cursor to the end of the input" $ do
     editor %= applyEdit gotoEnd
-  , mkKb EditorKillToEolEvent
+  , onEvent EditorKillToEolEvent
     "Kill the line to the right of the current position and copy it" $ do
       z <- use (editor.editContentsL)
       let restOfLine = Z.currentLine (Z.killToBOL z)
       csGlobalEditState.gedYankBuffer .= restOfLine
       editor %= applyEdit Z.killToEOL
-  , mkKb EditorYankEvent
+  , onEvent EditorYankEvent
     "Paste the current buffer contents at the cursor" $ do
         buf <- use (csGlobalEditState.gedYankBuffer)
         editor %= applyEdit (Z.insertMany buf)
@@ -220,7 +221,7 @@ handleInputSubmission editWhich content = do
       Just ('/', cmd) -> do
           tId <- do
               mTid <- use (editWhich.esTeamId)
-              Just curTid <- use csCurrentTeamId
+              curTid <- fromJust <$> use csCurrentTeamId
               return $ fromMaybe curTid mTid
           dispatchCommand tId cmd
       _ -> do
@@ -276,77 +277,80 @@ handleEditingInput which e = do
 
     conf <- use (csResources.crConfiguration)
     let keyMap = editingKeybindings (which.esEditor) (configUserKeys conf)
-    case lookupKeybinding e keyMap of
-      Just kb | editingPermitted st which -> (ehAction $ kehHandler $ khHandler kb)
-      _ -> do
-        case e of
-          -- Not editing; backspace here means cancel multi-line message
-          -- composition
-          EvKey KBS [] | (not $ editingPermitted st which) -> do
-            which.esEditor %= applyEdit Z.clearZipper
-            mh invalidateCache
+    case e of
+        EvKey k mods -> do
+            case lookupVtyEvent k mods keyMap of
+              Just kb | editingPermitted st which -> (handlerAction $ kehHandler $ khHandler kb)
+              _ -> do
+                case (k, mods) of
+                  -- Not editing; backspace here means cancel multi-line message
+                  -- composition
+                  (KBS, []) | (not $ editingPermitted st which) -> do
+                    which.esEditor %= applyEdit Z.clearZipper
+                    mh invalidateCache
 
-          -- Backspace in editing mode with smart pair insertion means
-          -- smart pair removal when possible
-          EvKey KBS [] | editingPermitted st which && smartBacktick ->
-              let backspace = which.esEditor %= applyEdit Z.deletePrevChar
-              in case cursorAtOneOf smartChars (st^.which.esEditor) of
-                  Nothing -> backspace
-                  Just ch ->
-                      -- Smart char removal:
-                      if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.which.esEditor) &&
-                           (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.which.esEditor) ->
-                             which.esEditor %= applyEdit (Z.deleteChar >>> Z.deletePrevChar)
-                         | otherwise -> backspace
+                  -- Backspace in editing mode with smart pair insertion means
+                  -- smart pair removal when possible
+                  (KBS, []) | editingPermitted st which && smartBacktick ->
+                      let backspace = which.esEditor %= applyEdit Z.deletePrevChar
+                      in case cursorAtOneOf smartChars (st^.which.esEditor) of
+                          Nothing -> backspace
+                          Just ch ->
+                              -- Smart char removal:
+                              if | (cursorAtChar ch $ applyEdit Z.moveLeft $ st^.which.esEditor) &&
+                                   (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.which.esEditor) ->
+                                     which.esEditor %= applyEdit (Z.deleteChar >>> Z.deletePrevChar)
+                                 | otherwise -> backspace
 
-          EvKey (KChar ch) []
-            | editingPermitted st which && smartBacktick && ch `elem` smartChars ->
-              -- Smart char insertion:
-              let doInsertChar = do
-                    which.esEditor %= applyEdit (Z.insertChar ch)
-                    sendUserTypingAction which
-                  curLine = Z.currentLine $ st^.which.esEditor.editContentsL
-              -- First case: if the cursor is at the end of the current
-              -- line and it contains "``" and the user entered a third
-              -- "`", enable multi-line mode since they're likely typing
-              -- a code block.
-              in if | (cursorIsAtEnd $ st^.which.esEditor) &&
-                         curLine == "``" &&
-                         ch == '`' -> do
-                        which.esEditor %= applyEdit (Z.insertMany (T.singleton ch))
-                        which.esEphemeral.eesMultiline .= True
-                    -- Second case: user entered some smart character
-                    -- (don't care which) on an empty line or at the end
-                    -- of the line after whitespace, so enter a pair of
-                    -- the smart chars and put the cursor between them.
-                    | (editorEmpty $ st^.which.esEditor) ||
-                         ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.which.esEditor)) &&
-                          (cursorIsAtEnd $ st^.which.esEditor)) ->
-                        which.esEditor %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
-                    -- Third case: the cursor is already on a smart
-                    -- character and that character is the last one
-                    -- on the line, so instead of inserting a new
-                    -- character, just move past it.
-                    | (cursorAtChar ch $ st^.which.esEditor) &&
-                      (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.which.esEditor) ->
-                        which.esEditor %= applyEdit Z.moveRight
-                    -- Fall-through case: just insert one of the chars
-                    -- without doing anything smart.
-                    | otherwise -> doInsertChar
-            | editingPermitted st which -> do
+                  (KChar ch, [])
+                    | editingPermitted st which && smartBacktick && ch `elem` smartChars ->
+                      -- Smart char insertion:
+                      let doInsertChar = do
+                            which.esEditor %= applyEdit (Z.insertChar ch)
+                            sendUserTypingAction which
+                          curLine = Z.currentLine $ st^.which.esEditor.editContentsL
+                      -- First case: if the cursor is at the end of the current
+                      -- line and it contains "``" and the user entered a third
+                      -- "`", enable multi-line mode since they're likely typing
+                      -- a code block.
+                      in if | (cursorIsAtEnd $ st^.which.esEditor) &&
+                                 curLine == "``" &&
+                                 ch == '`' -> do
+                                which.esEditor %= applyEdit (Z.insertMany (T.singleton ch))
+                                which.esEphemeral.eesMultiline .= True
+                            -- Second case: user entered some smart character
+                            -- (don't care which) on an empty line or at the end
+                            -- of the line after whitespace, so enter a pair of
+                            -- the smart chars and put the cursor between them.
+                            | (editorEmpty $ st^.which.esEditor) ||
+                                 ((cursorAtChar ' ' (applyEdit Z.moveLeft $ st^.which.esEditor)) &&
+                                  (cursorIsAtEnd $ st^.which.esEditor)) ->
+                                which.esEditor %= applyEdit (Z.insertMany (T.pack $ ch:ch:[]) >>> Z.moveLeft)
+                            -- Third case: the cursor is already on a smart
+                            -- character and that character is the last one
+                            -- on the line, so instead of inserting a new
+                            -- character, just move past it.
+                            | (cursorAtChar ch $ st^.which.esEditor) &&
+                              (cursorIsAtEnd $ applyEdit Z.moveRight $ st^.which.esEditor) ->
+                                which.esEditor %= applyEdit Z.moveRight
+                            -- Fall-through case: just insert one of the chars
+                            -- without doing anything smart.
+                            | otherwise -> doInsertChar
+                    | editingPermitted st which -> do
 
-              -- If the most recent editing event was a tab completion,
-              -- there is a trailing space that we want to remove if the
-              -- next input character is punctuation.
-              when (smartEditing && justCompleted && isSmartClosingPunctuation e) $
-                  which.esEditor %= applyEdit Z.deletePrevChar
+                      -- If the most recent editing event was a tab completion,
+                      -- there is a trailing space that we want to remove if the
+                      -- next input character is punctuation.
+                      when (smartEditing && justCompleted && isSmartClosingPunctuation e) $
+                          which.esEditor %= applyEdit Z.deletePrevChar
 
-              which.esEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
-              sendUserTypingAction which
-          _ | editingPermitted st which -> do
-              mhHandleEventLensed (which.esEditor) handleEditorEvent e
-              sendUserTypingAction which
-            | otherwise -> return ()
+                      which.esEditor %= applyEdit (Z.insertMany (sanitizeUserText' $ T.singleton ch))
+                      sendUserTypingAction which
+                  _ | editingPermitted st which -> do
+                      mhZoom (which.esEditor) handleEditorEvent (VtyEvent e)
+                      sendUserTypingAction which
+                    | otherwise -> return ()
+        _ -> return ()
 
     let ctx = AutocompleteContext { autocompleteManual = False
                                   , autocompleteFirstMatch = False
@@ -511,17 +515,16 @@ cancelAutocompleteOrReplyOrEdit which = do
                             when (isJust ti && foc == FocusThread) $
                                 closeThreadWindow tId
 
-replyToLatestMessage :: Lens' ChatState (EditState Name) -> MH ()
+replyToLatestMessage :: Lens' ChatState (MessageInterface n i) -> MH ()
 replyToLatestMessage which = do
-    cId <- use (which.esChannelId)
-    withChannel cId $ \chan -> do
-        let msgs = chan^.ccMessageInterface.miMessages
-        case findLatestUserMessage isReplyable msgs of
-          Just msg | isReplyable msg ->
-              do rootMsg <- getReplyRootMessage msg
-                 invalidateChannelRenderingCache cId
-                 which.esEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
-          _ -> return ()
+    msgs <- use (which.miMessages)
+    cId <- use (which.miChannelId)
+    case findLatestUserMessage isReplyable msgs of
+      Just msg | isReplyable msg ->
+          do rootMsg <- getReplyRootMessage msg
+             invalidateChannelRenderingCache cId
+             which.miEditor.esEditMode .= Replying rootMsg (fromJust $ rootMsg^.mOriginalPost)
+      _ -> return ()
 
 data Direction = Forwards | Backwards
 

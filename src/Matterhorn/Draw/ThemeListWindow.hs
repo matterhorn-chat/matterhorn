@@ -10,6 +10,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import qualified Brick.Widgets.List as L
 import           Brick.Widgets.Border ( hBorder )
 import           Brick.Widgets.Center ( hCenter )
@@ -19,8 +20,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Draw.ListWindow ( drawListWindow, WindowPosition(..) )
 import           Matterhorn.Themes
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents ( ppBinding )
-import           Matterhorn.Events.Keybindings
 
 
 drawThemeListWindow :: ChatState -> TeamId -> Widget Name
@@ -39,8 +38,8 @@ drawThemeListWindow st tId =
                                  , close
                                  , txt ":close"
                                  ])
-        enter = emph $ txt $ ppBinding (firstActiveBinding kc ActivateListItemEvent)
-        close = emph $ txt $ ppBinding (firstActiveBinding kc CancelEvent)
+        enter = emph $ txt $ ppMaybeBinding (firstActiveBinding kc ActivateListItemEvent)
+        close = emph $ txt $ ppMaybeBinding (firstActiveBinding kc CancelEvent)
         kc = st^.csResources.crConfiguration.configUserKeysL
         emph = withDefAttr clientEmphAttr
     in joinBorders window

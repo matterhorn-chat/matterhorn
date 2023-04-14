@@ -11,6 +11,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick
+import           Brick.Keybindings
 import           Brick.Widgets.Border
 
 import qualified Data.Set as S
@@ -23,7 +24,6 @@ import           Lens.Micro.Platform ( to )
 import           Network.Mattermost.Types ( TeamId, Post (postId) )
 
 import           Matterhorn.Constants
-import           Matterhorn.Events.Keybindings
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( Inline(EUser) )
@@ -101,9 +101,9 @@ getLatestMessage cs tId m =
 
 handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent tId VMTabMessage =
-    void . handleKeyboardEvent (viewMessageKeybindings tId)
+    void . mhHandleKeyboardEvent (viewMessageKeybindings tId)
 handleEvent tId VMTabReactions =
-    void . handleKeyboardEvent (viewMessageReactionsKeybindings tId)
+    void . mhHandleKeyboardEvent (viewMessageReactionsKeybindings tId)
 
 reactionsText :: ChatState -> TeamId -> Message -> Widget Name
 reactionsText st tId m = viewport vpName Vertical body
@@ -183,64 +183,64 @@ viewMessageBox st tId msg =
         ctx <- getContext
         render $ maybeWarn $ viewport (ViewMessageArea tId) Both $ mkBody (ctx^.availWidthL)
 
-viewMessageKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
-viewMessageKeybindings tId = mkKeybindings (viewMessageKeyHandlers tId)
+viewMessageKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+viewMessageKeybindings tId kc = unsafeKeyDispatcher kc (viewMessageKeyHandlers tId)
 
-viewMessageKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageKeyHandlers tId =
     let vs = viewportScroll . ViewMessageArea
-    in [ mkKb PageUpEvent "Page up" $ do
+    in [ onEvent PageUpEvent "Page up" $ do
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
-       , mkKb PageDownEvent "Page down" $ do
+       , onEvent PageDownEvent "Page down" $ do
            mh $ vScrollBy (vs tId) pageAmount
 
-       , mkKb PageLeftEvent "Page left" $ do
+       , onEvent PageLeftEvent "Page left" $ do
            mh $ hScrollBy (vs tId) (-2 * pageAmount)
 
-       , mkKb PageRightEvent "Page right" $ do
+       , onEvent PageRightEvent "Page right" $ do
            mh $ hScrollBy (vs tId) (2 * pageAmount)
 
-       , mkKb ScrollUpEvent "Scroll up" $ do
+       , onEvent ScrollUpEvent "Scroll up" $ do
            mh $ vScrollBy (vs tId) (-1)
 
-       , mkKb ScrollDownEvent "Scroll down" $ do
+       , onEvent ScrollDownEvent "Scroll down" $ do
            mh $ vScrollBy (vs tId) 1
 
-       , mkKb ScrollLeftEvent "Scroll left" $ do
+       , onEvent ScrollLeftEvent "Scroll left" $ do
            mh $ hScrollBy (vs tId) (-1)
 
-       , mkKb ScrollRightEvent "Scroll right" $ do
+       , onEvent ScrollRightEvent "Scroll right" $ do
            mh $ hScrollBy (vs tId) 1
 
-       , mkKb ScrollBottomEvent "Scroll to the end of the message" $ do
+       , onEvent ScrollBottomEvent "Scroll to the end of the message" $ do
            mh $ vScrollToEnd (vs tId)
 
-       , mkKb ScrollTopEvent "Scroll to the beginning of the message" $ do
+       , onEvent ScrollTopEvent "Scroll to the beginning of the message" $ do
            mh $ vScrollToBeginning (vs tId)
        ]
 
-viewMessageReactionsKeybindings :: TeamId -> KeyConfig -> KeyHandlerMap
-viewMessageReactionsKeybindings tId = mkKeybindings (viewMessageReactionsKeyHandlers tId)
+viewMessageReactionsKeybindings :: TeamId -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+viewMessageReactionsKeybindings tId kc = unsafeKeyDispatcher kc (viewMessageReactionsKeyHandlers tId)
 
-viewMessageReactionsKeyHandlers :: TeamId -> [KeyEventHandler]
+viewMessageReactionsKeyHandlers :: TeamId -> [MHKeyEventHandler]
 viewMessageReactionsKeyHandlers tId =
     let vs = viewportScroll . ViewMessageReactionsArea
-    in [ mkKb PageUpEvent "Page up" $ do
+    in [ onEvent PageUpEvent "Page up" $ do
            mh $ vScrollBy (vs tId) (-1 * pageAmount)
 
-       , mkKb PageDownEvent "Page down" $ do
+       , onEvent PageDownEvent "Page down" $ do
            mh $ vScrollBy (vs tId) pageAmount
 
-       , mkKb ScrollUpEvent "Scroll up" $ do
+       , onEvent ScrollUpEvent "Scroll up" $ do
            mh $ vScrollBy (vs tId) (-1)
 
-       , mkKb ScrollDownEvent "Scroll down" $ do
+       , onEvent ScrollDownEvent "Scroll down" $ do
            mh $ vScrollBy (vs tId) 1
 
-       , mkKb ScrollBottomEvent "Scroll to the end of the reactions list" $ do
+       , onEvent ScrollBottomEvent "Scroll to the end of the reactions list" $ do
            mh $ vScrollToEnd (vs tId)
 
-       , mkKb ScrollTopEvent "Scroll to the beginning of the reactions list" $ do
+       , onEvent ScrollTopEvent "Scroll to the beginning of the reactions list" $ do
            mh $ vScrollToBeginning (vs tId)
        ]

@@ -15,14 +15,15 @@ import           Matterhorn.Prelude
 
 import qualified Paths_matterhorn as Paths
 
+import           Brick.Keybindings
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
 import           Data.Char ( isDigit, isAlpha )
 import           Data.List ( isPrefixOf )
 import           Data.List.Split ( splitOn )
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Graphics.Vty as Vty
 import           System.Directory ( makeAbsolute, getHomeDirectory )
 import           System.Environment ( getExecutablePath )
 import           System.FilePath ( (</>), takeDirectory, splitPath, joinPath )
@@ -34,7 +35,6 @@ import           Matterhorn.Config.Schema
 import           Matterhorn.FilePaths
 import           Matterhorn.IOUtil
 import           Matterhorn.Types
-import           Matterhorn.Types.KeyEvents
 
 
 defaultPort :: Int
@@ -73,7 +73,7 @@ getBundledSyntaxPath = do
 
 fromIni :: IniParser Config
 fromIni = do
-  conf <- section "mattermost" $ do
+  section "mattermost" $ do
     configUser           <- fieldMbOf "user" stringField
     configHost           <- fieldMbOf "host" hostField
     configTeam           <- fieldMbOf "team" stringField
@@ -141,7 +141,9 @@ fromIni = do
         threadOrientationField
         (configThreadOrientation defaultConfig)
     configToken <- (Just . TokenCommand  <$> field "tokencmd") <!>
-                  pure Nothing
+                   pure Nothing
+    configOTPToken <- (Just . OTPTokenCommand  <$> field "otptokencmd") <!>
+                      pure Nothing
     configUnsafeUseHTTP <-
       fieldFlagDef "unsafeUseUnauthenticatedConnection" False
     configValidateServerCertificate <-
@@ -153,15 +155,106 @@ fromIni = do
       (configMouseMode defaultConfig)
 
     let configAbsPath = Nothing
-        configUserKeys = mempty
+        configUserKeys = newKeyConfig allEvents [] []
     return Config { .. }
-  keys <- sectionMb "keybindings" $ do
-      fmap (M.fromList . catMaybes) $ forM allEvents $ \ ev -> do
-          kb <- fieldMbOf (keyEventName ev) parseBindingList
-          case kb of
-              Nothing      -> return Nothing
-              Just binding -> return (Just (ev, binding))
-  return conf { configUserKeys = fromMaybe mempty keys }
+
+defaultBindings :: [(KeyEvent, [Binding])]
+defaultBindings =
+    [ (VtyRefreshEvent                  , [ ctrl 'l' ])
+    , (ShowHelpEvent                    , [ fn 1 ])
+    , (EnterSelectModeEvent             , [ ctrl 's' ])
+    , (ReplyRecentEvent                 , [ ctrl 'r' ])
+    , (ToggleMessagePreviewEvent        , [ meta 'p' ])
+    , (InvokeEditorEvent                , [ meta 'k' ])
+    , (EnterFastSelectModeEvent         , [ ctrl 'g' ])
+    , (QuitEvent                        , [ ctrl 'q' ])
+    , (NextChannelEvent                 , [ ctrl 'n' ])
+    , (PrevChannelEvent                 , [ ctrl 'p' ])
+    , (NextChannelEventAlternate        , [ bind Vty.KDown ])
+    , (PrevChannelEventAlternate        , [ bind Vty.KUp ])
+    , (NextUnreadChannelEvent           , [ meta 'a' ])
+    , (ShowAttachmentListEvent          , [ ctrl 'x' ])
+    , (ChangeMessageEditorFocus         , [ meta 'o' ])
+    , (NextUnreadUserOrChannelEvent     , [ ])
+    , (LastChannelEvent                 , [ meta 's' ])
+    , (EnterOpenURLModeEvent            , [ ctrl 'o' ])
+    , (ClearUnreadEvent                 , [ meta 'l' ])
+    , (ToggleMultiLineEvent             , [ meta 'e' ])
+    , (EnterFlaggedPostsEvent           , [ meta '8' ])
+    , (ToggleChannelListVisibleEvent    , [ fn 2 ])
+    , (ToggleExpandedChannelTopicsEvent , [ fn 3 ])
+    , (CycleChannelListSorting          , [ fn 4 ])
+    , (SelectNextTabEvent               , [ bind '\t' ])
+    , (SelectPreviousTabEvent           , [ bind Vty.KBackTab ])
+    , (SaveAttachmentEvent              , [ bind 's' ])
+    , (LoadMoreEvent                    , [ ctrl 'b' ])
+    , (ScrollUpEvent                    , [ bind Vty.KUp ])
+    , (ScrollDownEvent                  , [ bind Vty.KDown ])
+    , (ScrollLeftEvent                  , [ bind Vty.KLeft ])
+    , (ScrollRightEvent                 , [ bind Vty.KRight ])
+    , (ChannelListScrollUpEvent         , [ ctrl Vty.KUp ])
+    , (ChannelListScrollDownEvent       , [ ctrl Vty.KDown ])
+    , (PageUpEvent                      , [ bind Vty.KPageUp ])
+    , (PageDownEvent                    , [ bind Vty.KPageDown ])
+    , (PageLeftEvent                    , [ shift Vty.KLeft ])
+    , (PageRightEvent                   , [ shift Vty.KRight ])
+    , (ScrollTopEvent                   , [ bind Vty.KHome, meta '<' ])
+    , (ScrollBottomEvent                , [ bind Vty.KEnd, meta '>' ])
+    , (SelectOldestMessageEvent         , [ shift Vty.KHome ])
+    , (SelectUpEvent                    , [ bind 'k', bind Vty.KUp ])
+    , (SelectDownEvent                  , [ bind 'j', bind Vty.KDown ])
+    , (ActivateListItemEvent            , [ bind Vty.KEnter ])
+    , (SearchSelectUpEvent              , [ ctrl 'p', bind Vty.KUp ])
+    , (SearchSelectDownEvent            , [ ctrl 'n', bind Vty.KDown ])
+    , (ViewMessageEvent                 , [ bind 'v' ])
+    , (FillGapEvent                     , [ bind Vty.KEnter ])
+    , (CopyPostLinkEvent                , [ bind 'l' ])
+    , (FlagMessageEvent                 , [ bind 'f' ])
+    , (OpenThreadEvent                  , [ bind 't' ])
+    , (PinMessageEvent                  , [ bind 'p' ])
+    , (YankMessageEvent                 , [ bind 'y' ])
+    , (YankWholeMessageEvent            , [ bind 'Y' ])
+    , (DeleteMessageEvent               , [ bind 'd' ])
+    , (EditMessageEvent                 , [ bind 'e' ])
+    , (ReplyMessageEvent                , [ bind 'r' ])
+    , (ReactToMessageEvent              , [ bind 'a' ])
+    , (OpenMessageURLEvent              , [ bind 'o' ])
+    , (AttachmentListAddEvent           , [ bind 'a' ])
+    , (AttachmentListDeleteEvent        , [ bind 'd' ])
+    , (AttachmentOpenEvent              , [ bind 'o' ])
+    , (CancelEvent                      , [ bind Vty.KEsc, ctrl 'c' ])
+    , (EditorBolEvent                   , [ ctrl 'a' ])
+    , (EditorEolEvent                   , [ ctrl 'e' ])
+    , (EditorTransposeCharsEvent        , [ ctrl 't' ])
+    , (EditorDeleteCharacter            , [ ctrl 'd' ])
+    , (EditorKillToBolEvent             , [ ctrl 'u' ])
+    , (EditorKillToEolEvent             , [ ctrl 'k' ])
+    , (EditorPrevCharEvent              , [ ctrl 'b' ])
+    , (EditorNextCharEvent              , [ ctrl 'f' ])
+    , (EditorPrevWordEvent              , [ meta 'b' ])
+    , (EditorNextWordEvent              , [ meta 'f' ])
+    , (EditorDeleteNextWordEvent        , [ meta 'd' ])
+    , (EditorDeletePrevWordEvent        , [ ctrl 'w', meta Vty.KBS ])
+    , (EditorHomeEvent                  , [ bind Vty.KHome ])
+    , (EditorEndEvent                   , [ bind Vty.KEnd ])
+    , (EditorYankEvent                  , [ ctrl 'y' ])
+    , (FileBrowserBeginSearchEvent      , [ bind '/' ])
+    , (FileBrowserSelectEnterEvent      , [ bind Vty.KEnter ])
+    , (FileBrowserSelectCurrentEvent    , [ bind ' ' ])
+    , (FileBrowserListPageUpEvent       , [ ctrl 'b', bind Vty.KPageUp ])
+    , (FileBrowserListPageDownEvent     , [ ctrl 'f', bind Vty.KPageDown ])
+    , (FileBrowserListHalfPageUpEvent   , [ ctrl 'u' ])
+    , (FileBrowserListHalfPageDownEvent , [ ctrl 'd' ])
+    , (FileBrowserListTopEvent          , [ bind 'g', bind Vty.KHome, meta '<' ])
+    , (FileBrowserListBottomEvent       , [ bind 'G', bind Vty.KEnd, meta '>' ])
+    , (FileBrowserListNextEvent         , [ bind 'j', ctrl 'n', bind Vty.KDown ])
+    , (FileBrowserListPrevEvent         , [ bind 'k', ctrl 'p', bind Vty.KUp ])
+    , (FormSubmitEvent                  , [ bind Vty.KEnter ])
+    , (NextTeamEvent                    , [ ctrl Vty.KRight ])
+    , (PrevTeamEvent                    , [ ctrl Vty.KLeft ])
+    , (MoveCurrentTeamLeftEvent         , [ ])
+    , (MoveCurrentTeamRightEvent        , [ ])
+    ]
 
 channelListOrientationField :: Text -> Either String ChannelListOrientation
 channelListOrientationField t =
@@ -283,6 +376,7 @@ defaultConfig =
            , configUrlPath                     = Nothing
            , configPass                        = Nothing
            , configToken                       = Nothing
+           , configOTPToken                    = Nothing
            , configTimeFormat                  = Nothing
            , configDateFormat                  = Nothing
            , configTheme                       = Nothing
@@ -307,7 +401,7 @@ defaultConfig =
            , configChannelListWidth            = 22
            , configLogMaxBufferSize            = 200
            , configShowOlderEdits              = True
-           , configUserKeys                    = mempty
+           , configUserKeys                    = newKeyConfig allEvents [] []
            , configShowTypingIndicator         = False
            , configSendTypingNotifications     = False
            , configHyperlinkingMode            = True
@@ -371,6 +465,9 @@ fixupSyntaxDirs c =
 
         return $ c { configSyntaxDirs = newDirs }
 
+keybindingsSectionName :: Text
+keybindingsSectionName = "keybindings"
+
 getConfig :: FilePath -> ExceptT String IO ([String], Config)
 getConfig fp = do
     absPath <- convertIOException $ makeAbsolute fp
@@ -391,7 +488,11 @@ getConfig fp = do
     case parseIniFile t' fromIni of
         Left err -> do
             throwE $ "Unable to parse " ++ absPath ++ ":" ++ fatalString err
-        Right (warns, conf) -> do
+        Right (warns, confNoKeys) -> do
+            let mKeys = either (const Nothing) id $ keybindingsFromIni allEvents keybindingsSectionName t'
+                kc = newKeyConfig allEvents defaultBindings (fromMaybe mempty mKeys)
+                conf = confNoKeys { configUserKeys = kc }
+
             actualPass <- case configPass conf of
                 Just (PasswordCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
@@ -414,9 +515,21 @@ getConfig fp = do
                 Just (TokenString _) -> error $ "BUG: getConfig: token in the Config was already a TokenString"
                 Nothing -> return Nothing
 
+            actualOTPToken <- case configOTPToken conf of
+                Just (OTPTokenCommand cmdString) -> do
+                    let (cmd, rest) = case T.unpack <$> T.words cmdString of
+                            (a:as) -> (a, as)
+                            [] -> error $ "BUG: getConfig: got empty command string"
+                    output <- convertIOException (readProcess cmd rest "") `catchE`
+                              (\e -> throwE $ "Could not execute OTP token command: " <> e)
+                    return $ Just $ T.pack (takeWhile (/= '\n') output)
+                Just (OTPTokenString _) -> error $ "BUG: getConfig: otptoken in the Config was already a OTPTokenString"
+                Nothing -> return Nothing
+
             let conf' = conf
                   { configPass = PasswordString <$> actualPass
                   , configToken = TokenString <$> actualToken
+                  , configOTPToken = OTPTokenString <$> actualOTPToken
                   , configAbsPath = Just absPath
                   }
             return (map warningString warns, conf')

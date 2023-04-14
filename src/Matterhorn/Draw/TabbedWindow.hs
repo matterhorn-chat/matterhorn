@@ -17,7 +17,6 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Draw.Util ( renderKeybindingHelp )
 import           Matterhorn.Types
 import           Matterhorn.Themes
-import           Matterhorn.Types.KeyEvents
 
 -- | Render a tabbed window.
 drawTabbedWindow :: (Eq a, Show a)
