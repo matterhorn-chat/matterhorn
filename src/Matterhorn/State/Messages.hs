@@ -773,6 +773,24 @@ instance A.ToJSON NotificationV2 where
                  , "from"     A..= sender
                  ]
 
+-- Notification Version 3 payload definition
+data NotificationV3 = NotificationV3
+    { notifyV3Version :: Int
+    , notifyV3Message :: Text
+    , notifyV3Mention :: Bool
+    , notifyV3From :: Text
+    , notifyV3MessageType :: Text
+    } deriving (Show)
+
+instance A.ToJSON NotificationV3 where
+    toJSON (NotificationV3 vers msg mentioned sender msgTy) =
+        A.object [ "version"     A..= vers
+                 , "message"     A..= msg
+                 , "mention"     A..= mentioned
+                 , "from"        A..= sender
+                 , "messageType" A..= msgTy
+                 ]
+
 -- We define a notifyGetPayload for each notification version.
 notifyGetPayload :: NotificationVersion -> ChatState -> Post -> Bool -> Maybe BSL.ByteString
 notifyGetPayload NotifyV1 _ _ _ = do return mempty
@@ -782,6 +800,23 @@ notifyGetPayload NotifyV2 st post mentioned = do
         where
             msg = sanitizeUserText $ postMessage post
             sender = maybePostUsername st post
+notifyGetPayload NotifyV3 st post mentioned = do
+    let notification = NotificationV3 3 msg mentioned sender msgTy
+    return (A.encode notification)
+        where
+            msg = sanitizeUserText $ postMessage post
+            sender = maybePostUsername st post
+            msgTy = case postType post of
+                PostTypeJoinChannel       -> "joinChannel"
+                PostTypeLeaveChannel      -> "leaveChannel"
+                PostTypeAddToChannel      -> "addToChannel"
+                PostTypeRemoveFromChannel -> "removeFromChannel"
+                PostTypeHeaderChange      -> "headerChange"
+                PostTypeDisplayNameChange -> "displayNameChange"
+                PostTypePurposeChange     -> "purposeChange"
+                PostTypeChannelDeleted    -> "channelDeleted"
+                PostTypeEphemeral         -> "ephemeral"
+                PostTypeUnknown _         -> "unknown"
 
 handleNotifyCommand :: Post -> Bool -> NotificationVersion -> MH ()
 handleNotifyCommand post mentioned NotifyV1 = do
@@ -809,13 +844,22 @@ handleNotifyCommand post mentioned NotifyV2 = do
             doAsyncWith Preempt $ do
                 runLoggedCommand outputChan (T.unpack cmd) [] payload Nothing
                 return Nothing
+handleNotifyCommand post mentioned NotifyV3 = do
+    outputChan <- use (csResources.crSubprocessLog)
+    st <- use id
+    let payload = notifyGetPayload NotifyV3 st post mentioned
+    notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
+    case notifyCommand of
+        Nothing -> return ()
+        Just cmd ->
+            doAsyncWith Preempt $ do
+                runLoggedCommand outputChan (T.unpack cmd) [] payload Nothing
+                return Nothing
 
 runNotifyCommand :: Post -> Bool -> MH ()
 runNotifyCommand post mentioned = do
     notifyVersion <- use (csResources.crConfiguration.configActivityNotifyVersionL)
-    case notifyVersion of
-        NotifyV1 -> handleNotifyCommand post mentioned NotifyV1
-        NotifyV2 -> handleNotifyCommand post mentioned NotifyV2
+    handleNotifyCommand post mentioned notifyVersion
 
 maybePostUsername :: ChatState -> Post -> T.Text
 maybePostUsername st p =

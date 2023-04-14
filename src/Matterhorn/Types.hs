@@ -436,6 +436,7 @@ import qualified Matterhorn.Zipper as Z
 data NotificationVersion =
     NotifyV1
     | NotifyV2
+    | NotifyV3
     deriving (Eq, Read, Show)
 
 -- | A user password is either given to us directly, or a command
