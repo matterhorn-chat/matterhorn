@@ -1670,26 +1670,27 @@ handleEventWith (handler:rest) e = do
        else handleEventWith rest e
 
 applyTeamOrderPref :: Config -> Maybe [TeamId] -> ChatState -> ChatState
-applyTeamOrderPref _ Nothing st = st
-applyTeamOrderPref cfg (Just prefTIds) st =
+applyTeamOrderPref cfg mPrefTIds st =
     let teams = _csTeams st
         ourTids = HM.keys teams
-        tIds = filter (`elem` ourTids) prefTIds
+        tIds = case mPrefTIds of
+            Nothing -> ourTids
+            Just prefTIds -> filter (`elem` ourTids) prefTIds
         curTId = st^.csCurrentTeamId
         unmentioned = filter (not . wasMentioned) $ HM.elems teams
         wasMentioned ts = (teamId $ _tsTeam ts) `elem` tIds
         zipperTidsBeforeConfigSort = tIds <> (teamId <$> sortTeamsAlpha (_tsTeam <$> unmentioned))
-        zipperTids =
-            case cfg^.configTeamListSortingL of
-                TeamListSortDefault ->
-                    zipperTidsBeforeConfigSort
-                TeamListSortUnreadFirst ->
-                    let withCount tId = (tId, teamUnreadCount tId st)
-                        withCounts = withCount <$> zipperTidsBeforeConfigSort
-                        unreadFirst = sortBy (comparing (Down . (> 0) . snd)) withCounts
-                    in fst <$> unreadFirst
+        zipperTids = applyTeamSorting st (cfg^.configTeamListSortingL) zipperTidsBeforeConfigSort
     in st { _csTeamZipper = (Z.findRight ((== curTId) . Just) $ mkTeamZipperFromIds zipperTids)
           }
+
+applyTeamSorting :: ChatState -> TeamListSorting -> [TeamId] -> [TeamId]
+applyTeamSorting _ TeamListSortDefault tIds = tIds
+applyTeamSorting st TeamListSortUnreadFirst tIds =
+    let withCount tId = (tId, teamUnreadCount tId st)
+        withCounts = withCount <$> tIds
+        unreadFirst = sortBy (comparing (Down . (> 0) . snd)) withCounts
+    in fst <$> unreadFirst
 
 refreshTeamZipper :: MH ()
 refreshTeamZipper = do
