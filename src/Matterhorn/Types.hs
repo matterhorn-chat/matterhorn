@@ -1674,7 +1674,7 @@ applyTeamOrderPref cfg mPrefTIds st =
     let teams = _csTeams st
         ourTids = HM.keys teams
         tIds = case mPrefTIds of
-            Nothing -> ourTids
+            Nothing -> []
             Just prefTIds -> filter (`elem` ourTids) prefTIds
         curTId = st^.csCurrentTeamId
         unmentioned = filter (not . wasMentioned) $ HM.elems teams
