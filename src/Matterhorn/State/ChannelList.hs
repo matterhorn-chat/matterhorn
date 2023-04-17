@@ -52,6 +52,11 @@ updateSidebar mTid = do
 
     updateWindowTitle
 
+    -- Also refresh the team zipper since a sidebar update due to a new
+    -- message arrival could cause the team ordering to change if the
+    -- team ordering is set to show unread teams first.
+    refreshTeamZipper
+
 updateWindowTitle :: MH ()
 updateWindowTitle = do
     -- Update the window title based on the unread status of the
