@@ -31,7 +31,6 @@
 | `C-Up` | `channel-list-scroll-up` | Scroll up in the channel list |
 | `C-Down` | `channel-list-scroll-down` | Scroll down in the channel list |
 | `F4` | `cycle-channel-list-sorting` | Cycle through channel list sorting modes |
-| `C-r` | `reply-recent` | Reply to the most recent message |
 | `M-o` | `change-message-editor-focus` | Cycle between message editors when a thread is open |
 | `C-n` | `focus-next-channel` | Change to the next channel in the channel list |
 | `C-p` | `focus-prev-channel` | Change to the previous channel in the channel list |
@@ -57,6 +56,7 @@
 | `Enter` | (non-customizable key) | Send the current message |
 | `Up` | `scroll-up` | Scroll up in the channel input history |
 | `Down` | `scroll-down` | Scroll down in the channel input history |
+| `C-r` | `reply-recent` | Reply to the most recent message |
 
 # Text Editing
 | Keybinding | Event Name | Description |
