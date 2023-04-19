@@ -1,4 +1,37 @@
 
+50200.18.0
+==========
+
+New features and enhancements:
+* The configuration file got a new setting, `teamListSorting`, to
+  control how unread teams are sorted. The setting has the same values
+  as `channelListSorting`. When set to `unread-first`, the setting
+  causes unread teams to be floated to the beginning of the team list
+  after other ordering considerations have been applied (such as
+  user-configured team list ordering preferences). (#787)
+* Matterhorn now parses and renders basic attachment text fields.
+  (thanks Rafael de la Torre)
+* A new version 3 notification script API was added. Version 3
+  notification scripts receive JSON input that contains a message type
+  field. (#780)
+* An `otptokencmd` configuration file setting was added to allow
+  specification of a command to obtain an OTP token for second-factor
+  authentication. (Thanks msm@tailcall.net)
+* The channel topic window buttons are now mouse-clickable when mouse
+  mode is enabled.
+
+Bug fixes:
+* The default configuration used when the command-line flag `-i` is
+  provided now carries the default key bindings rather than being built
+  without them, resulting in an unusable key configuration. (#800)
+* Fixed double-encoding of output to external programs that resulted in
+  some Unicode characters being encoded incorrectly when being sent to
+  notification scripts. (#781)
+* `C-r` now affects the focused message interface as intended. (#790)
+* The `emoji.json` file bundled with Matterhorn has been fixed. (#792)
+* Fixed a bug in how messages can be added to threads. (#783)
+* Stale user typing notifications are now expired properly. (#777)
+
 50200.17.0
 ==========
 
