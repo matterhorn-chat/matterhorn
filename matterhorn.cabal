@@ -1,5 +1,5 @@
 name:                matterhorn
-version:             50200.17.0
+version:             50200.18.0
 synopsis:            Terminal client for the Mattermost chat system
 description:         This is a terminal client for the Mattermost chat
                      system. Please see the README for a list of
