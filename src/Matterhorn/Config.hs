@@ -49,9 +49,10 @@ userSyntaxPlaceholderName = "USER_SYNTAX"
 defaultSkylightingPaths :: IO [FilePath]
 defaultSkylightingPaths = do
     xdg <- xdgSyntaxDir
+    dataDirs <- xdgDataDirs
     adjacent <- getBundledSyntaxPath
     cabalDataFiles <- Paths.getDataFileName syntaxDirName
-    return [xdg, adjacent, cabalDataFiles]
+    return $ [xdg, adjacent, cabalDataFiles] <> dataDirs
 
 getBundledSyntaxPath :: IO FilePath
 getBundledSyntaxPath = do

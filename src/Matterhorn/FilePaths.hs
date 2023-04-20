@@ -11,6 +11,7 @@ module Matterhorn.FilePaths
   , xdgName
   , locateConfig
   , xdgSyntaxDir
+  , xdgDataDirs
   , syntaxDirName
   , userEmojiJsonPath
   , bundledEmojiJsonPath
@@ -38,6 +39,7 @@ import System.Environment ( getExecutablePath )
 import System.Environment.XDG.BaseDir ( getUserConfigFile
                                       , getAllConfigFiles
                                       , getUserConfigDir
+                                      , getAllDataDirs
                                       )
 import System.FilePath ( (</>), takeBaseName, takeDirectory, splitPath, joinPath )
 
@@ -65,6 +67,12 @@ lastRunStateFilePath teamId =
 -- The path does not necessarily exist.
 xdgSyntaxDir :: IO FilePath
 xdgSyntaxDir = (</> syntaxDirName) <$> getUserConfigDir xdgName
+
+-- | Get the list of syntax paths based on XDG data directory paths.
+xdgDataDirs :: IO [FilePath]
+xdgDataDirs = do
+    dirs <- getAllDataDirs xdgName
+    return $ (</> syntaxDirName) <$> dirs
 
 -- | Get the XDG path to the user-specific emoji JSON file. The path
 -- does not necessarily exist.
