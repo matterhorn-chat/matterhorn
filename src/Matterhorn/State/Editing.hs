@@ -530,13 +530,39 @@ data Direction = Forwards | Backwards
 
 tabComplete :: Traversal' ChatState (EditState Name) -> Direction -> MH ()
 tabComplete which dir = do
+    searchStr <- use (which.esAutocomplete._Just.acPreviousSearchString)
+
     let transform list =
             let len = list^.L.listElementsL.to length
+                prefixMatch alt =
+                    T.toLower searchStr `T.isPrefixOf` (T.toLower $ autocompleteAlternativeText alt)
             in case dir of
                 Forwards ->
-                    if (L.listSelected list == Just (len - 1)) ||
-                       (L.listSelected list == Nothing && len > 0)
-                    then L.listMoveTo 0 list
+                    if L.listSelected list == Just (len - 1)
+                       then L.listMoveTo 0 list
+                       else if L.listSelected list == Nothing && len > 0
+                            -- If the list has nothing selected, then
+                            -- make the initial selection the best match
+                            -- by prefix rather than always selecting
+                            -- the first entry. If there is no match
+                            -- based on prefix, then select the first
+                            -- entry.
+                            --
+                            -- Note that we only bother with this
+                            -- behavior in the Forward case because in
+                            -- the Backwards case we don't want the
+                            -- first selection to be based on prefix
+                            -- match since that doesn't make sense.
+                            then let new = L.listFindBy prefixMatch list
+                                 in if L.listSelected new == Nothing
+                                    -- If, after attempting to select
+                                    -- by prefix, nothing matched, then
+                                    -- there is still no autocomplete
+                                    -- alternative selected, so move to
+                                    -- the selection to the first entry
+                                    -- in the list.
+                                    then L.listMoveBy 1 new
+                                    else new
                     else L.listMoveBy 1 list
                 Backwards ->
                     if (L.listSelected list == Just 0) ||

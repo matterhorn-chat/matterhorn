@@ -43,6 +43,7 @@ module Matterhorn.Types.EditState
 
   , AutocompleteAlternative(..)
   , autocompleteAlternativeReplacement
+  , autocompleteAlternativeText
   )
 where
 
@@ -88,6 +89,22 @@ data AutocompleteAlternative =
     -- ^ Source, name of a slash command, argspec, and description
     | EmojiCompletion Text
     -- ^ The text of an emoji completion
+
+autocompleteAlternativeText :: AutocompleteAlternative -> Text
+autocompleteAlternativeText (UserCompletion u _) =
+    userUsername u
+autocompleteAlternativeText (SpecialMention MentionChannel) =
+    "channel"
+autocompleteAlternativeText (SpecialMention MentionAll) =
+    "all"
+autocompleteAlternativeText (ChannelCompletion _ c) =
+    unsafeUserText $ channelName c
+autocompleteAlternativeText (SyntaxCompletion n) =
+    n
+autocompleteAlternativeText (CommandCompletion _ t _ _) =
+    t
+autocompleteAlternativeText (EmojiCompletion t) =
+    t
 
 -- | The source of an autocompletion alternative.
 data CompletionSource = Server | Client
