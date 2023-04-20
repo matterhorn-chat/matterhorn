@@ -130,89 +130,95 @@ messageSelectBottomBar st tId which =
             let optionList = if null usableOptions
                              then txt "(no actions available for this message)"
                              else hBox $ intersperse (txt " ") usableOptions
-                usableOptions = catMaybes $ mkOption <$> options
-                mkOption (f, k, desc) = if f postMsg
-                                        then Just $ withDefAttr messageSelectStatusAttr (txt k) <+>
-                                                    txt (":" <> desc)
-                                        else Nothing
-                numURLs = Seq.length $ msgURLs postMsg
-                s = if numURLs == 1 then "" else "s"
-                hasURLs = numURLs > 0
-                openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
-                hasVerb = isJust (findVerbatimChunk (postMsg^.mText))
-                ev = keyEventBindings st (messageSelectKeybindings tId which)
-                options = [ ( not . isGap
-                            , ev YankWholeMessageEvent
-                            , "yank-all"
-                            )
-                          , ( \m -> isFlaggable m && not (m^.mFlagged)
-                            , ev FlagMessageEvent
-                            , "flag"
-                            )
-                          , ( \m -> isFlaggable m && m^.mFlagged
-                            , ev FlagMessageEvent
-                            , "unflag"
-                            )
-                          , ( isReplyable
-                            , ev OpenThreadEvent
-                            , "thread"
-                            )
-                          , ( isPostMessage
-                            , ev CopyPostLinkEvent
-                            , "copy-link"
-                            )
-                          , ( \m -> isPinnable m && not (m^.mPinned)
-                            , ev PinMessageEvent
-                            , "pin"
-                            )
-                          , ( \m -> isPinnable m && m^.mPinned
-                            , ev PinMessageEvent
-                            , "unpin"
-                            )
-                          , ( isReplyable
-                            , ev ReplyMessageEvent
-                            , "reply"
-                            )
-                          , ( not . isGap
-                            , ev ViewMessageEvent
-                            , "view"
-                            )
-                          , ( not . isGap
-                            , ev OpenMessageInExternalEditorEvent
-                            , "open"
-                            )
-                          , ( isGap
-                            , ev FillGapEvent
-                            , "load messages"
-                            )
-                          , ( \m -> isMine st m && isEditable m
-                            , ev EditMessageEvent
-                            , "edit"
-                            )
-                          , ( \m -> isMine st m && isDeletable m
-                            , ev DeleteMessageEvent
-                            , "delete"
-                            )
-                          , ( const hasURLs
-                            , ev OpenMessageURLEvent
-                            , openUrlsMsg
-                            )
-                          , ( const hasVerb
-                            , ev YankMessageEvent
-                            , "yank-code"
-                            )
-                          , ( isReactable
-                            , ev ReactToMessageEvent
-                            , "react"
-                            )
-                          ]
-
+                usableOptions = mkOption <$> messageSelectionKeyOptions st tId which postMsg
+                mkOption (k, desc) = withDefAttr messageSelectStatusAttr (txt k) <+>
+                                     txt (":" <> desc)
             in hBox [ hLimit 1 hBorder
                     , txt "["
                     , optionList
                     , txt "]"
                     , hBorder
                     ]
+
+messageSelectionKeyOptions :: ChatState
+                           -> TeamId
+                           -> Lens' ChatState (MessageInterface Name i)
+                           -> Message
+                           -> [(T.Text, T.Text)]
+messageSelectionKeyOptions st tId which msg =
+    let ev = keyEventBindings st (messageSelectKeybindings tId which)
+        hasVerb = isJust (findVerbatimChunk (msg^.mText))
+        hasURLs = numURLs > 0
+        numURLs = Seq.length $ msgURLs msg
+        s = if numURLs == 1 then "" else "s"
+        openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
+        getUsable (usable, key, label) = if usable then Just (key, label) else Nothing
+        options = [ ( not $ isGap msg
+                  , ev YankWholeMessageEvent
+                  , "yank-all"
+                  )
+                , ( isFlaggable msg && not (msg^.mFlagged)
+                  , ev FlagMessageEvent
+                  , "flag"
+                  )
+                , ( isFlaggable msg && msg^.mFlagged
+                  , ev FlagMessageEvent
+                  , "unflag"
+                  )
+                , ( isReplyable msg
+                  , ev OpenThreadEvent
+                  , "thread"
+                  )
+                , ( isPostMessage msg
+                  , ev CopyPostLinkEvent
+                  , "copy-link"
+                  )
+                , ( isPinnable msg && not (msg^.mPinned)
+                  , ev PinMessageEvent
+                  , "pin"
+                  )
+                , ( isPinnable msg && msg^.mPinned
+                  , ev PinMessageEvent
+                  , "unpin"
+                  )
+                , ( isReplyable msg
+                  , ev ReplyMessageEvent
+                  , "reply"
+                  )
+                , ( not $ isGap msg
+                  , ev ViewMessageEvent
+                  , "view"
+                  )
+                , ( not $ isGap msg
+                  , ev OpenMessageInExternalEditorEvent
+                  , "open"
+                  )
+                , ( isGap msg
+                  , ev FillGapEvent
+                  , "load messages"
+                  )
+                , ( isMine st msg && isEditable msg
+                  , ev EditMessageEvent
+                  , "edit"
+                  )
+                , ( isMine st msg && isDeletable msg
+                  , ev DeleteMessageEvent
+                  , "delete"
+                  )
+                , ( hasURLs
+                  , ev OpenMessageURLEvent
+                  , openUrlsMsg
+                  )
+                , ( hasVerb
+                  , ev YankMessageEvent
+                  , "yank-code"
+                  )
+                , ( isReactable msg
+                  , ev ReactToMessageEvent
+                  , "react"
+                  )
+                ]
+    in catMaybes $ getUsable <$> options
 
 renderMessageListing :: ChatState
                      -> Bool
