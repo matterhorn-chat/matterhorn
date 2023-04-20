@@ -16,6 +16,7 @@ import           Matterhorn.Events.MessageInterface
 import           Matterhorn.Events.ThreadWindow
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Channels
+import           Matterhorn.State.ChannelList ( updateSidebar )
 import           Matterhorn.State.Help
 import           Matterhorn.State.Teams
 import           Matterhorn.State.PostListWindow ( enterFlaggedPostListMode )
@@ -90,6 +91,7 @@ mainKeyHandlers tId =
     , onEvent ClearUnreadEvent "Clear the current channel's unread / edited indicators" $ do
            withCurrentChannel tId $ \cId _ -> do
                clearChannelUnreadStatus cId
+               updateSidebar $ Just tId
 
     , onEvent EnterFlaggedPostsEvent "View currently flagged posts" $
          enterFlaggedPostListMode tId
