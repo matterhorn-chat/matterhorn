@@ -118,4 +118,7 @@ messageSelectKeyHandlers tId which =
 
     , onEvent CopyPostLinkEvent "Copy a post's link to the clipboard" $
          copyPostLink tId which
+
+    , onEvent OpenMessageInExternalEditorEvent "Open the message's source in $EDITOR" $
+         openSelectedMessageInEditor which
     ]

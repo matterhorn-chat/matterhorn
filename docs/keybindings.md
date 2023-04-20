@@ -110,6 +110,7 @@
 | `Enter` | `fetch-for-gap` | Fetch messages for the selected gap |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 | `l` | `copy-post-link` | Copy a post's link to the clipboard |
+| `O` | `open-message-in-editor` | Open the message's source in $EDITOR |
 
 # User Listings
 | Keybinding | Event Name | Description |

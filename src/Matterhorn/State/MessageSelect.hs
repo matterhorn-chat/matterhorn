@@ -6,6 +6,7 @@ module Matterhorn.State.MessageSelect
   , flagSelectedMessage
   , pinSelectedMessage
   , viewSelectedMessage
+  , openSelectedMessageInEditor
   , fillSelectedGap
   , copyPostLink
   , yankSelectedMessageVerbatim
@@ -34,9 +35,14 @@ import           Matterhorn.Prelude
 import           Brick ( invalidateCache )
 import           Brick.Widgets.Edit ( applyEdit )
 import           Control.Monad ( replicateM_ )
+import qualified Data.Text as T
 import           Data.Text.Zipper ( clearZipper, insertMany )
 import           Data.Maybe ( fromJust )
 import           Lens.Micro.Platform
+import qualified System.Environment as Sys
+import           System.IO (hClose, hPutStr)
+import qualified System.IO.Temp as Sys
+import qualified System.Process as Sys
 
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
@@ -125,6 +131,12 @@ viewSelectedMessage tId which =
     withSelectedMessage which $ \msg ->
         when (not (isGap msg)) $ viewMessage tId msg
 
+openSelectedMessageInEditor :: Lens' ChatState (MessageInterface n i)
+                            -> MH ()
+openSelectedMessageInEditor which =
+    withSelectedMessage which $ \msg ->
+        when (not (isGap msg)) $ openMessageInEditor msg which
+
 -- This will only work for channel message selection, not thread message
 -- selection, since there will never be gap entries in the thread view.
 -- But this is generalized enough that it looks like it should work for
@@ -154,6 +166,28 @@ viewMessage tId m = do
     csTeam(tId).tsViewedMessage .= Just (m, w)
     runTabShowHandlerFor (twValue w) w
     pushMode tId ViewMessage
+
+openMessageInEditor :: Message -> Lens' ChatState (MessageInterface n i) -> MH ()
+openMessageInEditor m which = do
+    -- If EDITOR is in the environment, write the current message to a
+    -- temp file, invoke EDITOR on it, read the result, remove the temp
+    -- file, and update the program state.
+    --
+    -- If EDITOR is not present, fall back to 'vi'.
+    mEnv <- liftIO $ Sys.lookupEnv "EDITOR"
+    let editorProgram = maybe "vi" id mEnv
+
+    case m^.mOriginalPost of
+        Nothing -> return ()
+        Just p -> do
+            mhSuspendAndResume $ \s -> do
+                Sys.withSystemTempFile "matterhorn_editor.md" $ \tmpFileName tmpFileHandle -> do
+                    hPutStr tmpFileHandle $ T.unpack $ unsafeUserText $ postMessage p
+                    hClose tmpFileHandle
+                    void $ Sys.system (editorProgram <> " " <> tmpFileName)
+                    return s
+
+    exitMessageSelect which
 
 yankSelectedMessageVerbatim :: Lens' ChatState (MessageInterface n i)
                             -> MH ()

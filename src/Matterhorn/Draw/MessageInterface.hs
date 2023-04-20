@@ -178,6 +178,10 @@ messageSelectBottomBar st tId which =
                             , ev ViewMessageEvent
                             , "view"
                             )
+                          , ( not . isGap
+                            , ev OpenMessageInExternalEditorEvent
+                            , "open"
+                            )
                           , ( isGap
                             , ev FillGapEvent
                             , "load messages"

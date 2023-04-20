@@ -360,6 +360,7 @@ data KeyEvent
   | EditMessageEvent
   | ReplyMessageEvent
   | ReactToMessageEvent
+  | OpenMessageInExternalEditorEvent
 
   -- Attachments
   | AttachmentListAddEvent
@@ -462,6 +463,7 @@ allEvents =
     , ("activate-list-item", ActivateListItemEvent)
     , ("open-thread", OpenThreadEvent)
     , ("flag-message", FlagMessageEvent)
+    , ("open-message-in-editor", OpenMessageInExternalEditorEvent)
     , ("pin-message", PinMessageEvent)
     , ("view-message", ViewMessageEvent)
     , ("fetch-for-gap", FillGapEvent)

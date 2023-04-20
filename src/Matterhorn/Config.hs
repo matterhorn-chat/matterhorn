@@ -215,6 +215,7 @@ defaultBindings =
     , (FlagMessageEvent                 , [ bind 'f' ])
     , (OpenThreadEvent                  , [ bind 't' ])
     , (PinMessageEvent                  , [ bind 'p' ])
+    , (OpenMessageInExternalEditorEvent , [ bind 'O' ])
     , (YankMessageEvent                 , [ bind 'y' ])
     , (YankWholeMessageEvent            , [ bind 'Y' ])
     , (DeleteMessageEvent               , [ bind 'd' ])
