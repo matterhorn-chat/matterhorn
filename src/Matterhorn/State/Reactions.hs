@@ -80,9 +80,10 @@ removeReaction r cId = do
 
     invalidateRenderCache
   where upd m | m^.mMessageId == Just (MessagePostId $ r^.reactionPostIdL) =
-                  m & mReactions %~ (Map.alter delReaction (r^.reactionEmojiNameL))
+                  m & mReactions %~ (removeEmptySets . Map.alter delReaction (r^.reactionEmojiNameL))
               | otherwise = m
         delReaction mUs = S.delete (r^.reactionUserIdL) <$> mUs
+        removeEmptySets = Map.filter (not . S.null)
         invalidateRenderCache =
             invalidateMessageRenderingCacheByPostId $ r^.reactionPostIdL
 
