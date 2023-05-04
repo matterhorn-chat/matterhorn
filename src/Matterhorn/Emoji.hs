@@ -12,7 +12,8 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import qualified Control.Exception as E
-import           Control.Monad.Except
+import           Control.Monad.Except ( MonadError(..), ExceptT(..), runExceptT )
+import           Control.Monad.Trans ( MonadTrans(..) )
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Foldable as F
