@@ -184,12 +184,12 @@ library
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
                      , microlens-platform   >= 0.3     && < 0.5
-                     , brick                >= 1.6     && < 1.8
+                     , brick                >= 1.7     && < 1.8
                      , brick-skylighting    >= 1.0     && < 1.1
                      , vty                  >= 5.38    && < 5.39
                      , word-wrap            >= 0.4.0   && < 0.5
-                     , transformers         >= 0.4     && < 0.7
-                     , text-zipper          >= 0.12    && < 0.14
+                     , transformers         >= 0.4     && < 0.6
+                     , text-zipper          >= 0.13    && < 0.14
                      , time                 >= 1.6     && < 2.0
                      , xdg-basedir          >= 0.2     && < 0.3
                      , filepath             >= 1.4     && < 1.5

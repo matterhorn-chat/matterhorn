@@ -240,7 +240,7 @@ unsafeRenderMessageSelection ((curMsg, curThreadState), (before, after)) doMsgRe
   Widget Greedy Greedy $ do
     ctx <- getContext
     curMsgResult <- withReaderT relaxHeight $ render $
-                    forceAttr messageSelectAttr $
+                    forceAttrAllowStyle messageSelectAttr $
                     padRight Max $ doMsgRender curMsg curThreadState tag
 
     let targetHeight = ctx^.availHeightL
