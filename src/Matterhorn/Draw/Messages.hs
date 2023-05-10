@@ -465,7 +465,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
                             , mdRenderReplyParent = False
                             , mdIndentBlocks      = False
                             }
-                      in withParent (addEllipsis $ forceAttr replyParentAttr parentMsg)
+                      in withParent (addEllipsis $ forceAttrAllowStyle replyParentAttr parentMsg)
 
     where
         renderBlocks :: HighlightSet -> Maybe Int -> [Widget Name] -> Seq Block
