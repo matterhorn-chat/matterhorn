@@ -299,7 +299,7 @@ renderFlattenedValue curUser (SingleInline fi) = addClickable $ addHyperlink $ a
             Just u -> B.withDefAttr urlAttr . B.hyperlink (unURL u)
 
         addClickable w = case mName of
-            Nothing -> id w
+            Nothing -> w
             Just nm -> B.clickable nm w
 
         widget = case val of
