@@ -319,12 +319,12 @@ renderFlattenedValue curUser (SingleInline fi) = addClickable $ addHyperlink $ a
 
 textWithCursor :: Text -> Widget a
 textWithCursor t
-    | T.any (== cursorSentinel) t = B.visible $ B.txt $ removeCursor t
+    | cursorSentinel `T.elem` t = B.visible $ B.txt $ removeCursor t
     | otherwise = B.txt t
 
 wrappedTextWithCursor :: Text -> Widget a
 wrappedTextWithCursor t
-    | T.any (== cursorSentinel) t = B.visible $ B.txtWrap $ removeCursor t
+    | cursorSentinel `T.elem` t = B.visible $ B.txtWrap $ removeCursor t
     | otherwise = B.txtWrap t
 
 removeCursor :: Text -> Text
