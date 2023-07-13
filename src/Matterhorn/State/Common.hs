@@ -87,10 +87,12 @@ installMessagesFromPosts mTId postCollection = do
       Nothing -> return Nothing
       Just tId -> Just <$> getServerBaseUrl tId
 
+  hostname <- use (csResources.crConn.cdHostnameL)
+
   -- Build the ordered list of posts. Note that postsOrder lists the
   -- posts most recent first, but we want most recent last.
   let postsInOrder = findPost <$> (Seq.reverse $ postsOrder postCollection)
-      mkClientPost p = toClientPost mBaseUrl p (postId <$> parent p)
+      mkClientPost p = toClientPost hostname mBaseUrl p (postId <$> parent p)
       clientPosts = mkClientPost <$> postsInOrder
 
       addNext cp (msgs, us) =
@@ -125,9 +127,11 @@ updatePostMap mTId postCollection = do
       Nothing -> return Nothing
       Just tId -> Just <$> getServerBaseUrl tId
 
+  hostname <- use (csResources.crConn.cdHostnameL)
+
   let postMap = HM.fromList
           [ ( pId
-            , fst $ clientPostToMessage (toClientPost mBaseUrl x Nothing)
+            , fst $ clientPostToMessage (toClientPost hostname mBaseUrl x Nothing)
             )
           | (pId, x) <- HM.toList (postCollection^.postsPostsL)
           ]

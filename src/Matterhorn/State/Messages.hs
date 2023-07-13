@@ -48,7 +48,6 @@ import           Matterhorn.State.Channels
 import           Matterhorn.State.Common
 import           Matterhorn.State.ThreadWindow
 import           Matterhorn.State.MessageSelect
-import           Matterhorn.State.Reactions
 import           Matterhorn.State.Users
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
@@ -177,7 +176,9 @@ editMessage new = do
             Nothing -> return Nothing
             Just tId -> Just <$> getServerBaseUrl tId
 
-        let (msg, mentionedUsers) = clientPostToMessage (toClientPost mBaseUrl new (new^.postRootIdL))
+        hostname <- use (csResources.crConn.cdHostnameL)
+
+        let (msg, mentionedUsers) = clientPostToMessage (toClientPost hostname mBaseUrl new (new^.postRootIdL))
             isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
 
         csChannel (new^.postChannelIdL) . ccMessageInterface.miMessages . traversed . filtered isEditedMessage .= msg
@@ -193,8 +194,6 @@ editMessage new = do
             csChannel (new^.postChannelIdL) %= adjustEditedThreshold new
 
         csPostMap.ix(postId new) .= msg
-        asyncFetchReactionsForPost (postChannelId new) new
-        asyncFetchAttachments new
 
 deleteMessage :: Post -> MH ()
 deleteMessage new = do
@@ -530,6 +529,8 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
           OldPost p      -> (p, False)
           RecentPost p m -> (p, m)
 
+    hostname <- use (csResources.crConn.cdHostnameL)
+
     st <- use id
     case st ^? csChannel(postChannelId new) of
         Nothing -> do
@@ -566,7 +567,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                 Nothing -> return Nothing
                 Just tId -> Just <$> getServerBaseUrl tId
 
-            let cp = toClientPost mBaseUrl new (new^.postRootIdL)
+            let cp = toClientPost hostname mBaseUrl new (new^.postRootIdL)
                 fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                          (isNothing $ cp^.cpUserOverride)
                 userPrefs = st^.csResources.crUserPreferences
@@ -627,8 +628,6 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     -- since all DM channels appear in all teams.
                     addPostToOpenThread (mTId <|> mcurTId) new msg'
 
-                    asyncFetchReactionsForPost cId new
-                    asyncFetchAttachments new
                     postedChanMessage
 
                 doHandleAddedMessage = do
@@ -1053,39 +1052,6 @@ fetchVisibleIfNeeded tId = do
                        (\c p -> Just $ do
                            csChannel(c).ccInfo.cdFetchPending .= False
                            addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd)
-
-asyncFetchAttachments :: Post -> MH ()
-asyncFetchAttachments p = do
-    let cId = p^.postChannelIdL
-        pId = p^.postIdL
-    session <- getSession
-    host <- use (csResources.crConn.cdHostnameL)
-    F.forM_ (p^.postFileIdsL) $ \fId -> doAsyncWith Normal $ do
-        info <- MM.mmGetMetadataForFile fId session
-        let scheme = "https://"
-            attUrl = scheme <> host <> urlForFile fId
-            attachment = mkAttachment (fileInfoName info) attUrl fId
-            addIfMissing a as =
-                if isNothing $ Seq.elemIndexL a as
-                then a Seq.<| as
-                else as
-            addAttachment m
-                | m^.mMessageId == Just (MessagePostId pId) =
-                    m & mAttachments %~ (addIfMissing attachment)
-                | otherwise =
-                    m
-        return $ Just $ do
-            csChannelMessages(cId).traversed %= addAttachment
-
-            curTId <- use csCurrentTeamId
-            withChannel cId $ \chan -> do
-                let mTId = chan^.ccInfo.cdTeamId <|> curTId
-                case mTId of
-                    Nothing -> return ()
-                    Just tId -> modifyEachThreadMessage tId cId addAttachment
-
-            invalidateChannelRenderingCache cId
-            invalidateMessageRenderingCacheByPostId pId
 
 -- | Given a post ID, switch to that post's channel and select the post
 -- in message selection mode.

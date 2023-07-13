@@ -48,6 +48,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
+import qualified Data.Foldable as F
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
@@ -193,10 +194,17 @@ unEmote Emote t = if "*" `T.isPrefixOf` t && "*" `T.isSuffixOf` t
                   else t
 unEmote _ t = t
 
+attachmentFromFileInfo :: T.Text -> FileInfo -> Attachment
+attachmentFromFileInfo hostname info =
+    let scheme = "https://"
+        attUrl = scheme <> hostname <> urlForFile fId
+        fId = fileInfoId info
+    in mkAttachment (fileInfoName info) attUrl fId
+
 -- | Convert a Mattermost 'Post' to a 'ClientPost', passing in a
 --   'ParentId' if it has a known one.
-toClientPost :: Maybe TeamBaseURL -> Post -> Maybe PostId -> ClientPost
-toClientPost baseUrl p parentId =
+toClientPost :: T.Text -> Maybe TeamBaseURL -> Post -> Maybe PostId -> ClientPost
+toClientPost hostname baseUrl p parentId =
   let src = unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p
   in ClientPost { _cpText          = parseMarkdown baseUrl src <> getAttachmentText p
                 , _cpMarkdownSource = src
@@ -207,14 +215,19 @@ toClientPost baseUrl p parentId =
                 , _cpPending       = False
                 , _cpDeleted       = False
                 , _cpPinned        = fromMaybe False $ postPinned p
-                , _cpAttachments   = Seq.empty
+                , _cpAttachments   = attachmentFromFileInfo hostname <$> postMetadataFiles (postMetadata p)
                 , _cpInReplyToPost = parentId
                 , _cpPostId        = p^.postIdL
                 , _cpChannelId     = p^.postChannelIdL
-                , _cpReactions     = Map.empty
+                , _cpReactions     = mkReactionMap $ postMetadataReactions (postMetadata p)
                 , _cpOriginalPost  = p
                 , _cpFromWebhook   = fromMaybe False $ p^.postPropsL.postPropsFromWebhookL
                 }
+
+mkReactionMap :: Seq Reaction -> Map.Map T.Text (S.Set UserId)
+mkReactionMap rs =
+    let inserter r m = Map.insertWith S.union (reactionEmojiName r) (S.singleton $ reactionUserId r) m
+    in F.foldr inserter mempty rs
 
 -- | Right now, instead of treating 'attachment' properties specially, we're
 --   just going to roll them directly into the message text
