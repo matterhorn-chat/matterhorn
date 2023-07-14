@@ -1,4 +1,29 @@
 
+50200.19.0
+==========
+
+Improvements:
+* Matterhorn's network performance is now greatly improved due to a more
+  efficient use of the server API. Matterhorn now makes significantly
+  fewer API requests at startup and whenever the channel is changed.
+  ([#804](https://github.com/matterhorn-chat/matterhorn/issues/804))
+* Autocompletion now has a less surprising default behavior by
+  preferring a match that has the input as its prefix.
+* The message selection mode (reachable with `C-s` by default) now has
+  a new keybinding (event `open-message-in-editor`, default binding `O`)
+  that opens the selected message in `$EDITOR` (or `vi` if `$EDITOR` is
+  not set).
+* Unless specified in the configuration, Matterhorn now
+  also searches XDG data directories for syntax files.
+  ([#584](https://github.com/matterhorn-chat/matterhorn/issues/584))
+
+Bug fixes:
+* `ClearUnreadEvent` (`M-l`) now also refreshes the sidebar
+  ([#801](https://github.com/matterhorn-chat/matterhorn/issues/801))
+* Reactions with no users no longer linger in
+  the reactions tab of the message view window.
+  ([#802](https://github.com/matterhorn-chat/matterhorn/issues/802))
+
 50200.18.0
 ==========
 
