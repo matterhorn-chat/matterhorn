@@ -85,3 +85,4 @@ setTheme tId name =
         Just it -> do
             mh invalidateCache
             csResources.crTheme .= (themeToAttrMap $ internalTheme it)
+            csResources.crThemeOriginal .= internalTheme it

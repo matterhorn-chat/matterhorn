@@ -58,3 +58,4 @@
 | `/topic <topic>` | Set the current channel's topic (header) |
 | `/user` | Show users to initiate a private DM chat channel |
 | `/username-attribute <@user>` | Display the attribute used to color the specified username |
+| `/write-theme <path>` | Write the current theme to a theme settings file |
