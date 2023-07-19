@@ -12,6 +12,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Main ( invalidateCache )
+import           Brick.Themes ( saveTheme )
 import qualified Control.Exception as Exn
 import qualified Data.Char as Char
 import qualified Data.Text as T
@@ -132,6 +133,12 @@ commandList =
   , Cmd "members" "Show the current channel's members"
     NoArg $ \ () -> do
         withCurrentTeam enterChannelMembersUserList
+
+  , Cmd "write-theme" "Write the current theme to a theme settings file"
+    (TokenArg "path" NoArg) $ \(path, ()) -> do
+        theme <- use (csResources.crThemeOriginal)
+        liftIO $ saveTheme (T.unpack path) theme
+        postInfoMessage $ "Current theme written to " <> path
 
   , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () -> do
         withCurrentTeam startLeaveCurrentChannel

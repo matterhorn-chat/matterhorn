@@ -235,6 +235,7 @@ module Matterhorn.Types
   , crUserPreferences
   , crEventQueue
   , crTheme
+  , crThemeOriginal
   , crStatusUpdateChan
   , crSubprocessLog
   , crWebsocketActionChan
@@ -1070,6 +1071,7 @@ data ChatResources =
                   , _crSubprocessLog       :: STM.TChan ProgramOutput
                   , _crWebsocketActionChan :: STM.TChan WebsocketAction
                   , _crTheme               :: AttrMap
+                  , _crThemeOriginal       :: Theme
                   , _crStatusUpdateChan    :: STM.TChan [UserId]
                   , _crConfiguration       :: Config
                   , _crFlaggedPosts        :: Set PostId

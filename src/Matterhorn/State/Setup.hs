@@ -161,6 +161,7 @@ setupState mkVty mLogLocation config = do
                            , _crSubprocessLog       = slc
                            , _crWebsocketActionChan = wac
                            , _crTheme               = themeToAttrMap custTheme
+                           , _crThemeOriginal       = custTheme
                            , _crStatusUpdateChan    = userStatusChan
                            , _crConfiguration       = config
                            , _crFlaggedPosts        = mempty
