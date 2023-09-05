@@ -54,10 +54,17 @@ data ChannelListEntryData =
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
-sbRenderer :: ScrollbarRenderer n
+sbRenderer :: VScrollbarRenderer n
 sbRenderer =
-    verticalScrollbarRenderer { renderScrollbarHandleBefore = str "▲"
-                              , renderScrollbarHandleAfter = str "▼"
+    verticalScrollbarRenderer { renderVScrollbarHandleBefore = str "▲"
+                              , renderVScrollbarHandleAfter = str "▼"
+                              , scrollbarWidthAllocation = 2
+                              , renderVScrollbar =
+                                  hLimit 1 $
+                                  renderVScrollbar verticalScrollbarRenderer
+                              , renderVScrollbarTrough =
+                                  hLimit 1 $
+                                  renderVScrollbarTrough verticalScrollbarRenderer
                               }
 
 renderChannelListHeader :: ChatState -> MM.TeamId -> Widget Name
@@ -84,9 +91,9 @@ renderChannelList :: ChatState -> MM.TeamId -> Widget Name
 renderChannelList st tId =
     header <=> vpBody
     where
-        (sbOrientation, sbPad) = case st^.csResources.crConfiguration.configChannelListOrientationL of
-            ChannelListLeft -> (OnLeft, padLeft (Pad 1))
-            ChannelListRight -> (OnRight, padRight (Pad 1))
+        sbOrientation = case st^.csResources.crConfiguration.configChannelListOrientationL of
+            ChannelListLeft -> OnLeft
+            ChannelListRight -> OnRight
         myUsername_ = myUsername st
         channelName e = ClickableChannelListEntry $ channelListEntryChannelId e
         renderEntry s e = clickable (channelName e) $
@@ -96,7 +103,7 @@ renderChannelList st tId =
                  withVScrollBars sbOrientation $
                  withVScrollBarHandles $
                  withClickableVScrollBars VScrollBar $
-                 viewport (ChannelListViewport tId) Vertical $ sbPad body
+                 viewport (ChannelListViewport tId) Vertical body
         body = case teamMode $ st^.csTeam(tId) of
             ChannelSelect ->
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
