@@ -99,6 +99,7 @@ module Matterhorn.Types
   , unsafeKeyDispatcher
   , bindingConflictMessage
 
+  , ChannelListWidth(..)
   , NotificationVersion(..)
   , PasswordSource(..)
   , TokenSource(..)
@@ -247,6 +248,7 @@ module Matterhorn.Types
   , crSyntaxMap
   , crLogManager
   , crSpellChecker
+  , crWindowSize
   , crEmoji
   , getSession
   , getResourceSession
@@ -486,6 +488,14 @@ data TeamListSorting =
     | TeamListSortUnreadFirst
     deriving (Eq, Show, Ord)
 
+data ChannelListWidth =
+    ChannelListWidthFixed Int
+    -- ^ A fixed width in columns.
+    | ChannelListWidthAuto
+    -- ^ Automatically determine a reasonable width based on the window
+    -- dimensions.
+    deriving (Eq, Show, Ord)
+
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
 -- are for internal book-keeping purposes only.
@@ -550,7 +560,7 @@ data Config =
            -- ^ Whether to permit an insecure HTTP connection.
            , configValidateServerCertificate :: Bool
            -- ^ Whether to validate TLS certificates.
-           , configChannelListWidth :: Int
+           , configChannelListWidth :: ChannelListWidth
            -- ^ The width, in columns, of the channel list sidebar.
            , configLogMaxBufferSize :: Int
            -- ^ The maximum size, in log entries, of the internal log
@@ -1080,6 +1090,7 @@ data ChatResources =
                   , _crLogManager          :: LogManager
                   , _crEmoji               :: EmojiCollection
                   , _crSpellChecker        :: Maybe Aspell
+                  , _crWindowSize          :: (Int, Int)
                   }
 
 -- | The 'GlobalEditState' value contains state not specific to any

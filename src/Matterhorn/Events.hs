@@ -1,5 +1,6 @@
 module Matterhorn.Events
   ( onEvent
+  , setWindowSize
   )
 where
 
@@ -194,20 +195,25 @@ onVtyEvent =
                     ]
 
 handleResizeEvent :: Vty.Event -> MH Bool
-handleResizeEvent (Vty.EvResize _ _) = do
+handleResizeEvent (Vty.EvResize w h) = do
+    setWindowSize w h
+    return True
+handleResizeEvent _ =
+    return False
+
+setWindowSize :: Int -> Int -> MH ()
+setWindowSize w h = do
     -- On resize, invalidate the entire rendering cache since many
     -- things depend on the window size.
     --
     -- Note: we fall through after this because it is sometimes
     -- important for modes to have their own additional logic to run
     -- when a resize occurs, so we don't want to stop processing here.
+    csResources.crWindowSize .= (w, h)
+
     mh invalidateCache
     withCurrentTeam $ \tId ->
         mh $ makeVisible $ SelectedChannelListEntry tId
-
-    return True
-handleResizeEvent _ =
-    return False
 
 handleTeamModeEvent :: Vty.Event -> MH Bool
 handleTeamModeEvent e = do

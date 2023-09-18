@@ -32,11 +32,14 @@ app :: App ChatState MHEvent Name
 app =
     App { appDraw         = draw
         , appHandleEvent  = Events.onEvent
-        , appStartEvent   = return ()
         , appAttrMap      = (^.csResources.crTheme)
         , appChooseCursor = \s cs -> do
             tId <- s^.csCurrentTeamId
             cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
+        , appStartEvent = do
+            vty <- getVtyHandle
+            (w, h) <- liftIO $ Vty.displayBounds $ Vty.outputIface vty
+            runMHEvent $ Events.setWindowSize w h
         }
 
 cursorByMode :: [CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (CursorLocation Name)

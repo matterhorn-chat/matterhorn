@@ -8,6 +8,8 @@ module Matterhorn.Constants
   , userSigil
   , userSigilChar
   , editMarking
+  , channelListMinAutoWidth
+  , channelListMaxAutoWidth
   )
 where
 
@@ -16,6 +18,14 @@ import Matterhorn.Prelude
 
 import qualified Data.Text as T
 
+
+-- | The minimum channel list width when the width is set to 'auto'.
+channelListMinAutoWidth :: Int
+channelListMinAutoWidth = 24
+
+-- | The maximum channel list width when the width is set to 'auto'.
+channelListMaxAutoWidth :: Int
+channelListMaxAutoWidth = 44
 
 -- | The number of rows to consider a "page" when scrolling
 pageAmount :: Int

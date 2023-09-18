@@ -16,7 +16,12 @@
 --     channels matching the entered text (and highlighting the
 --     matching portion).
 
-module Matterhorn.Draw.ChannelList (renderChannelList, renderChannelListHeader) where
+module Matterhorn.Draw.ChannelList
+  ( renderChannelList
+  , renderChannelListHeader
+  , channelListWidth
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
@@ -34,6 +39,7 @@ import qualified Network.Mattermost.Types as MM
 
 import           Matterhorn.Draw.Util
 import           Matterhorn.State.Channels
+import           Matterhorn.Constants ( channelListMinAutoWidth, channelListMaxAutoWidth )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
@@ -276,3 +282,16 @@ recentChannelSigil = "<"
 
 returnChannelSigil :: String
 returnChannelSigil = "~"
+
+channelListWidthAutoPercent :: Double
+channelListWidthAutoPercent = 0.2
+
+channelListWidth :: ChatState -> Int
+channelListWidth st =
+    case configChannelListWidth $ st^.csResources.crConfiguration of
+        ChannelListWidthFixed w -> w
+        ChannelListWidthAuto ->
+            let calcWidth = round $ channelListWidthAutoPercent * (fromIntegral width :: Double)
+                width = fst $ st^.csResources.crWindowSize
+            in min channelListMaxAutoWidth $
+               max channelListMinAutoWidth calcWidth
