@@ -169,8 +169,7 @@ handleWebsocketEvent we = do
             | Just cId <- wepChannelId $ weData we -> mhLog LogGeneral "WMChannelViewed received" >> refreshChannelById cId
             | otherwise -> return ()
 
-        WMMultipleChannelsViewed -> do
-            mhLog LogGeneral "WMMultipleChannelsViewed received"
+        WMMultipleChannelsViewed ->
             case wepChannelTimes $ weData we of
                 Nothing -> return ()
                 Just m ->
