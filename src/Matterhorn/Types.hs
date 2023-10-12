@@ -643,10 +643,9 @@ data UserPreferences =
 hasUnread' :: ClientChannel -> Bool
 hasUnread' chan = fromMaybe False $ do
     let info = _ccInfo chan
-    lastViewTime <- _cdViewed info
     return $ _cdMentionCount info > 0 ||
              (not (isMuted chan) &&
-              (((_cdUpdated info) > lastViewTime) ||
+              (((_cdTotalMessageCount info) > (_cdViewedMessageCount info)) ||
                (isJust $ _cdEditedMessageThreshold info)))
 
 mkChannelZipperList :: ChannelListSorting

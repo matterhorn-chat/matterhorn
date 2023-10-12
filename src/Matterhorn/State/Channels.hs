@@ -334,7 +334,7 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
 
             -- Create a new ClientChannel structure
             cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
-                       makeClientChannel eventQueue spellChecker (me^.userIdL) (channelTeamId nc) nc
+                       makeClientChannel eventQueue spellChecker (me^.userIdL) (channelTeamId nc) nc member
 
             st <- use id
 
