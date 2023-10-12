@@ -45,6 +45,7 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.Constants
 import           Matterhorn.State.Channels
+import           Matterhorn.State.ChannelList ( updateSidebar )
 import           Matterhorn.State.Common
 import           Matterhorn.State.ThreadWindow
 import           Matterhorn.State.MessageSelect
@@ -656,6 +657,8 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     -- channel, the currently-selected team (mcurTId)
                     -- since all DM channels appear in all teams.
                     addPostToOpenThread (mTId <|> mcurTId) new msg'
+
+                    updateSidebar mTId
 
                     postedChanMessage
 
