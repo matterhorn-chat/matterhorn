@@ -579,6 +579,34 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                   not (userPrefs^.userPrefShowJoinLeave) && isJoinOrLeave
                 cId = postChannelId new
 
+                -- TODO: match server-side logic to determine whether
+                -- this message counts as a post, for post-counting
+                -- purposes, to decide whether this should trigger an
+                -- increment of the total/viewed post counts
+                maybeIncrementTotalMessageCount _ =
+                    let shouldIncrement = case newPostData of
+                                              RecentPost {} ->
+                                                  True
+                                              _ ->
+                                                  False
+                    in if shouldIncrement
+                       then incrementTotalMessageCount
+                       else id
+
+                maybeIncrementViewedMessageCount currCId =
+                    let shouldIncrement = case newPostData of
+                                              RecentPost {} ->
+                                                  currCId == Just cId
+                                              _ ->
+                                                  False
+                    in if shouldIncrement
+                       then incrementViewedMessageCount
+                       else id
+
+                maybeIncrementMessageCounts currCId =
+                    maybeIncrementTotalMessageCount currCId .
+                    maybeIncrementViewedMessageCount currCId
+
                 doAddMessage = do
                     -- Do we have the user data for the post author?
                     case cp^.cpUser of
@@ -606,6 +634,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     csChannels %= modifyChannelById cId
                       ((ccMessageInterface.miMessages %~ addMessage msg') .
                        (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
+                       maybeIncrementMessageCounts currCId .
                        (\c -> if currCId == Just cId
                               then c
                               else case newPostData of

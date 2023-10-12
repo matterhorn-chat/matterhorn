@@ -34,6 +34,8 @@ module Matterhorn.Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
+  , incrementTotalMessageCount
+  , incrementViewedMessageCount
   -- * Notification settings
   , notifyPreference
   , isMuted
@@ -336,6 +338,14 @@ adjustEditedThreshold m c =
 
 maxPostTimestamp :: Post -> ServerTime
 maxPostTimestamp m = max (m^.postDeleteAtL . non (m^.postUpdateAtL)) (m^.postCreateAtL)
+
+incrementTotalMessageCount :: ClientChannel -> ClientChannel
+incrementTotalMessageCount =
+    ccInfo.cdTotalMessageCount %~ succ
+
+incrementViewedMessageCount :: ClientChannel -> ClientChannel
+incrementViewedMessageCount =
+    ccInfo.cdViewedMessageCount %~ succ
 
 updateNewMessageIndicator :: Post -> ClientChannel -> ClientChannel
 updateNewMessageIndicator m =
