@@ -584,7 +584,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                 -- this message counts as a post, for post-counting
                 -- purposes, to decide whether this should trigger an
                 -- increment of the total/viewed post counts
-                maybeIncrementTotalMessageCount _ =
+                maybeIncrementTotalMessageCount =
                     let shouldIncrement = case newPostData of
                                               RecentPost {} ->
                                                   True
@@ -605,7 +605,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                        else id
 
                 maybeIncrementMessageCounts currCId =
-                    maybeIncrementTotalMessageCount currCId .
+                    maybeIncrementTotalMessageCount .
                     maybeIncrementViewedMessageCount currCId
 
                 doAddMessage = do
