@@ -34,7 +34,7 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Graphics.Vty ( outputIface )
-import           Graphics.Vty.Output.Interface ( ringTerminalBell )
+import           Graphics.Vty.Output ( ringTerminalBell )
 import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~)
                                      , to, at, traversed, filtered, ix, _1, _Just )
 

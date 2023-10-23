@@ -10,9 +10,9 @@ import           Matterhorn.Prelude
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Graphics.Vty as Vty
+import qualified Graphics.Vty.CrossPlatform as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
-import           System.Posix.IO ( stdInput )
 
 import           Network.Mattermost
 
@@ -87,12 +87,7 @@ runMatterhorn opts config = do
     setupCpuUsage config
 
     let mkVty = do
-          mEraseChar <- Vty.getTtyEraseChar stdInput
-          let addEraseChar cfg = case mEraseChar of
-                  Nothing -> cfg
-                  Just ch -> cfg { Vty.inputMap = (Nothing, [ch], Vty.EvKey Vty.KBS []) : Vty.inputMap cfg }
-
-          vty <- Vty.mkVty $ addEraseChar Vty.defaultConfig
+          vty <- Vty.mkVty Vty.defaultConfig
           let output = Vty.outputIface vty
           Vty.setMode output Vty.BracketedPaste True
           Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config

@@ -69,7 +69,7 @@ import           Data.Char (isHexDigit)
 import           Data.List (tails, inits)
 import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
-import           Graphics.Vty hiding (mkVty)
+import           Graphics.Vty
 import           Lens.Micro.Platform ( (.~), (.=), Lens', makeLenses )
 import qualified System.IO.Error as Err
 import           Network.URI ( URI(..), URIAuth(..), parseURI )
