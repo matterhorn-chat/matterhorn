@@ -20,8 +20,8 @@ import           Lens.Micro.Platform ( (.~), (%~), at, ix, makeLenses )
 import           System.Directory ( createDirectoryIfMissing )
 import           System.FilePath ( dropFileName )
 import qualified System.IO.Strict as S
-import qualified System.Posix.Files as P
-import qualified System.Posix.Types as P
+import qualified System.PosixCompat.Files as P
+import qualified System.PosixCompat.Types as P
 
 import           Network.Mattermost.Types ( ChannelId )
 
