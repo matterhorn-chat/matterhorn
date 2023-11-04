@@ -187,7 +187,7 @@ library
                      , brick                >= 2.0     && < 2.1
                      , brick-skylighting    >= 1.0     && < 1.1
                      , vty                  >= 6.0     && < 6.1
-                     , vty-crossplatform    >= 0.1.0.0 && < 0.2.0.0
+                     , vty-crossplatform    >= 0.2.0.0 && < 0.3.0.0
                      , word-wrap            >= 0.4.0   && < 0.5
                      , transformers         >= 0.4     && < 0.7
                      , text-zipper          >= 0.13    && < 0.14
