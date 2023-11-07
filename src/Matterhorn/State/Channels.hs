@@ -506,8 +506,6 @@ setFocusWith tId updatePrev f onChange onNoChange = do
 
 postChangeChannelCommon :: TeamId -> MH ()
 postChangeChannelCommon tId = do
-    -- resetEditorState cId
-    -- loadLastEdit tId
     fetchVisibleIfNeeded tId
 
 loadLastChannelInput :: Lens' ChatState (MessageInterface n i) -> MH ()
