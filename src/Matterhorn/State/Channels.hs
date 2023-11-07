@@ -522,6 +522,7 @@ preChangeChannelCommon :: TeamId -> MH ()
 preChangeChannelCommon tId = do
     withCurrentChannel tId $ \cId _ -> do
         csTeam(tId).tsRecentChannel .= Just cId
+        csChannel(cId) %= clearEditedThreshold
 
 saveEditorInput :: Lens' ChatState (MessageInterface n i) -> MH ()
 saveEditorInput which = do
