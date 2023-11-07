@@ -640,8 +640,8 @@ data UserPreferences =
                     , _userPrefTeamOrder :: Maybe [TeamId]
                     }
 
-hasUnread' :: ClientChannel -> Type -> Bool
-hasUnread' chan ty =
+hasUnread :: ClientChannel -> Type -> Bool
+hasUnread chan ty =
     let info = _ccInfo chan
         hasMentions = countMentions && _cdMentionCount info > 0
         hasNewMessages = _cdTotalMessageCount info > _cdViewedMessageCount info
@@ -716,7 +716,7 @@ getChannelEntriesByType tId prefs cs ty =
         mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
                                              , channelListEntryType = CLChannel
                                              , channelListEntryMuted = isMuted ch
-                                             , channelListEntryUnread = hasUnread' ch ty
+                                             , channelListEntryUnread = hasUnread ch ty
                                              , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
                                              , channelListEntryFavorite = isFavorite prefs cId
                                              }
@@ -774,7 +774,7 @@ getGroupDMChannelEntries now config prefs cs =
     in fmap (\(cId, ch) -> ChannelListEntry { channelListEntryChannelId = cId
                                             , channelListEntryType = CLGroupDM
                                             , channelListEntryMuted = isMuted ch
-                                            , channelListEntryUnread = hasUnread' ch Group
+                                            , channelListEntryUnread = hasUnread ch Group
                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName
                                             , channelListEntryFavorite = isFavorite prefs cId
                                             }) $
@@ -800,7 +800,7 @@ getSingleDMChannelEntries now config cconfig prefs us cs =
                     then return (ChannelListEntry { channelListEntryChannelId = cId
                                                   , channelListEntryType = CLUserDM uId
                                                   , channelListEntryMuted = isMuted c
-                                                  , channelListEntryUnread = hasUnread' c Direct
+                                                  , channelListEntryUnread = hasUnread c Direct
                                                   , channelListEntrySortValue = displayNameForUser u cconfig prefs
                                                   , channelListEntryFavorite = isFavorite prefs cId
                                                   })
@@ -830,7 +830,7 @@ dmChannelShouldAppear now config prefs c =
         cId = c^.ccInfo.cdChannelId
     in if isFavorite prefs cId
        then True
-       else (if hasUnread' c Direct || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+       else (if hasUnread c Direct || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
              else case dmChannelShowPreference prefs uId of
                     Just False -> False
@@ -856,7 +856,7 @@ groupChannelShouldAppear now config prefs c =
         cId = c^.ccInfo.cdChannelId
     in if isFavorite prefs cId
        then True
-       else (if hasUnread' c Group || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+       else (if hasUnread c Group || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
              else case groupChannelShowPreference prefs cId of
                     Just False -> False
