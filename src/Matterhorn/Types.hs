@@ -641,16 +641,17 @@ data UserPreferences =
                     }
 
 hasUnread' :: ClientChannel -> Type -> Bool
-hasUnread' chan ty = fromMaybe False $ do
+hasUnread' chan ty =
     let info = _ccInfo chan
+        hasMentions = countMentions && _cdMentionCount info > 0
+        hasNewMessages = _cdTotalMessageCount info > _cdViewedMessageCount info
+        hasEditThreshold = isJust $ _cdEditedMessageThreshold info
         countMentions = case ty of
             Direct -> False
             Group -> False
             _ -> True
-    return $ (countMentions && _cdMentionCount info > 0) ||
-             (not (isMuted chan) &&
-              (((_cdTotalMessageCount info) > (_cdViewedMessageCount info)) ||
-               (isJust $ _cdEditedMessageThreshold info)))
+    in hasMentions ||
+       (not (isMuted chan) && (hasNewMessages || hasEditThreshold))
 
 mkChannelZipperList :: ChannelListSorting
                     -> UTCTime
