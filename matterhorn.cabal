@@ -177,7 +177,7 @@ library
                      , split                >= 0.2     && < 0.3
                      , data-clist           >= 0.1.2   && < 0.2
                      , semigroups           >= 0.18    && < 0.20
-                     , connection           >= 0.2     && < 0.4
+                     , crypton-connection   >= 0.3.1   && < 0.4
                      , text                 >= 1.2.5.0 && < 2.1
                      , bytestring           >= 0.10    && < 0.12
                      , stm                  >= 2.4     && < 2.6
