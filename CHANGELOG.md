@@ -1,4 +1,31 @@
 
+90000.0.0
+=========
+
+NOTE: this version of Matterhorn requires server version 9.0 or greater.
+
+Package changes:
+* Updated to use Vty 6 for crossplatform terminal support, meaning
+  Matterhorn can now be built and run on Windows terminals. Please let
+  us know if you try this and encounter any issues!
+
+Enhancements:
+* Added support for a new "auto" mode to determine channel list width.
+  There is now a new `auto` value for the `channelListWidth`
+  configuration file setting. Its default is unchanged and it can still
+  take an integer value specifying the channel list width in columns.
+  If set to `auto`, its value is determined by Matterhorn, bounded by
+  minimum and maximum values, as a function of window width. This is
+  intended to give nicer results as font size decreases, up to a point.
+* Add a `/write-theme` command to write the current theme to an INI
+  file.
+
+Bug fixes:
+* Updated channel viewing book-keeping to work with changes in
+  Mattermost 9.0.
+* Fixed an issue where terminal input provided right before the UI is
+  initialized could cause the application to crash.
+
 50200.19.0
 ==========
 
