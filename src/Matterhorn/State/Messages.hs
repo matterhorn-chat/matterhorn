@@ -34,7 +34,7 @@ import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Graphics.Vty ( outputIface )
-import           Graphics.Vty.Output.Interface ( ringTerminalBell )
+import           Graphics.Vty.Output ( ringTerminalBell )
 import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~)
                                      , to, at, traversed, filtered, ix, _1, _Just )
 
@@ -45,6 +45,7 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.Constants
 import           Matterhorn.State.Channels
+import           Matterhorn.State.ChannelList ( updateSidebar )
 import           Matterhorn.State.Common
 import           Matterhorn.State.ThreadWindow
 import           Matterhorn.State.MessageSelect
@@ -579,6 +580,34 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                   not (userPrefs^.userPrefShowJoinLeave) && isJoinOrLeave
                 cId = postChannelId new
 
+                -- TODO: match server-side logic to determine whether
+                -- this message counts as a post, for post-counting
+                -- purposes, to decide whether this should trigger an
+                -- increment of the total/viewed post counts
+                maybeIncrementTotalMessageCount =
+                    let shouldIncrement = case newPostData of
+                                              RecentPost {} ->
+                                                  True
+                                              _ ->
+                                                  False
+                    in if shouldIncrement
+                       then incrementTotalMessageCount
+                       else id
+
+                maybeIncrementViewedMessageCount currCId =
+                    let shouldIncrement = case newPostData of
+                                              RecentPost {} ->
+                                                  currCId == Just cId
+                                              _ ->
+                                                  False
+                    in if shouldIncrement
+                       then incrementViewedMessageCount
+                       else id
+
+                maybeIncrementMessageCounts currCId =
+                    maybeIncrementTotalMessageCount .
+                    maybeIncrementViewedMessageCount currCId
+
                 doAddMessage = do
                     -- Do we have the user data for the post author?
                     case cp^.cpUser of
@@ -606,6 +635,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     csChannels %= modifyChannelById cId
                       ((ccMessageInterface.miMessages %~ addMessage msg') .
                        (if not ignoredJoinLeaveMessage then adjustUpdated new else id) .
+                       maybeIncrementMessageCounts currCId .
                        (\c -> if currCId == Just cId
                               then c
                               else case newPostData of
@@ -627,6 +657,8 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     -- channel, the currently-selected team (mcurTId)
                     -- since all DM channels appear in all teams.
                     addPostToOpenThread (mTId <|> mcurTId) new msg'
+
+                    updateSidebar mTId
 
                     postedChanMessage
 

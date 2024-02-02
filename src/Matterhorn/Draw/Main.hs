@@ -20,7 +20,7 @@ import           Network.Mattermost.Types ( Type(Direct, Private, Group)
                                           )
 
 
-import           Matterhorn.Draw.ChannelList ( renderChannelList )
+import           Matterhorn.Draw.ChannelList ( renderChannelList, channelListWidth )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.MessageInterface
 import           Matterhorn.Draw.Autocomplete
@@ -76,10 +76,9 @@ mainInterface st mode mtId =
     mainDisplay = maybeSubdue messageInterface
 
     channelList = channelListMaybeVlimit mode $
-                  hLimit channelListWidth $ case mtId of
+                  hLimit (channelListWidth st) $ case mtId of
                       Nothing -> fill ' '
                       Just tId -> renderChannelList st tId
-    channelListWidth = configChannelListWidth $ st^.csResources.crConfiguration
     channelListMaybeVlimit ChannelSelect w =
         Widget (hSize w) (vSize w) $ do
             ctx <- getContext

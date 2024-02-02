@@ -334,7 +334,7 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
 
             -- Create a new ClientChannel structure
             cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
-                       makeClientChannel eventQueue spellChecker (me^.userIdL) (channelTeamId nc) nc
+                       makeClientChannel eventQueue spellChecker (me^.userIdL) (channelTeamId nc) nc member
 
             st <- use id
 
@@ -506,8 +506,6 @@ setFocusWith tId updatePrev f onChange onNoChange = do
 
 postChangeChannelCommon :: TeamId -> MH ()
 postChangeChannelCommon tId = do
-    -- resetEditorState cId
-    -- loadLastEdit tId
     fetchVisibleIfNeeded tId
 
 loadLastChannelInput :: Lens' ChatState (MessageInterface n i) -> MH ()
@@ -524,6 +522,7 @@ preChangeChannelCommon :: TeamId -> MH ()
 preChangeChannelCommon tId = do
     withCurrentChannel tId $ \cId _ -> do
         csTeam(tId).tsRecentChannel .= Just cId
+        csChannel(cId) %= clearEditedThreshold
 
 saveEditorInput :: Lens' ChatState (MessageInterface n i) -> MH ()
 saveEditorInput which = do

@@ -16,7 +16,12 @@
 --     channels matching the entered text (and highlighting the
 --     matching portion).
 
-module Matterhorn.Draw.ChannelList (renderChannelList, renderChannelListHeader) where
+module Matterhorn.Draw.ChannelList
+  ( renderChannelList
+  , renderChannelListHeader
+  , channelListWidth
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
@@ -34,6 +39,7 @@ import qualified Network.Mattermost.Types as MM
 
 import           Matterhorn.Draw.Util
 import           Matterhorn.State.Channels
+import           Matterhorn.Constants ( channelListMinAutoWidth, channelListMaxAutoWidth )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
@@ -54,10 +60,17 @@ data ChannelListEntryData =
                          , entryUserStatus  :: Maybe UserStatus
                          }
 
-sbRenderer :: ScrollbarRenderer n
+sbRenderer :: VScrollbarRenderer n
 sbRenderer =
-    verticalScrollbarRenderer { renderScrollbarHandleBefore = str "▲"
-                              , renderScrollbarHandleAfter = str "▼"
+    verticalScrollbarRenderer { renderVScrollbarHandleBefore = str "▲"
+                              , renderVScrollbarHandleAfter = str "▼"
+                              , scrollbarWidthAllocation = 2
+                              , renderVScrollbar =
+                                  hLimit 1 $
+                                  renderVScrollbar verticalScrollbarRenderer
+                              , renderVScrollbarTrough =
+                                  hLimit 1 $
+                                  renderVScrollbarTrough verticalScrollbarRenderer
                               }
 
 renderChannelListHeader :: ChatState -> MM.TeamId -> Widget Name
@@ -84,9 +97,9 @@ renderChannelList :: ChatState -> MM.TeamId -> Widget Name
 renderChannelList st tId =
     header <=> vpBody
     where
-        (sbOrientation, sbPad) = case st^.csResources.crConfiguration.configChannelListOrientationL of
-            ChannelListLeft -> (OnLeft, padLeft (Pad 1))
-            ChannelListRight -> (OnRight, padRight (Pad 1))
+        sbOrientation = case st^.csResources.crConfiguration.configChannelListOrientationL of
+            ChannelListLeft -> OnLeft
+            ChannelListRight -> OnRight
         myUsername_ = myUsername st
         channelName e = ClickableChannelListEntry $ channelListEntryChannelId e
         renderEntry s e = clickable (channelName e) $
@@ -96,7 +109,7 @@ renderChannelList st tId =
                  withVScrollBars sbOrientation $
                  withVScrollBarHandles $
                  withClickableVScrollBars VScrollBar $
-                 viewport (ChannelListViewport tId) Vertical $ sbPad body
+                 viewport (ChannelListViewport tId) Vertical body
         body = case teamMode $ st^.csTeam(tId) of
             ChannelSelect ->
                 let zipper = st^.csTeam(tId).tsChannelSelectState.channelSelectMatches
@@ -269,3 +282,16 @@ recentChannelSigil = "<"
 
 returnChannelSigil :: String
 returnChannelSigil = "~"
+
+channelListWidthAutoPercent :: Double
+channelListWidthAutoPercent = 0.2
+
+channelListWidth :: ChatState -> Int
+channelListWidth st =
+    case configChannelListWidth $ st^.csResources.crConfiguration of
+        ChannelListWidthFixed w -> w
+        ChannelListWidthAuto ->
+            let calcWidth = round $ channelListWidthAutoPercent * (fromIntegral width :: Double)
+                width = fst $ st^.csResources.crWindowSize
+            in min channelListMaxAutoWidth $
+               max channelListMinAutoWidth calcWidth

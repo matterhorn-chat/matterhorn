@@ -23,8 +23,8 @@ import qualified Data.HashMap.Strict as HM
 import           Lens.Micro.Platform ( makeLenses )
 import           System.Directory ( createDirectoryIfMissing )
 import           System.FilePath ( dropFileName )
-import qualified System.Posix.Files as P
-import qualified System.Posix.Types as P
+import qualified System.PosixCompat.Files as P
+import qualified System.PosixCompat.Types as P
 
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types

@@ -170,6 +170,7 @@ setupState mkVty mLogLocation config = do
                            , _crLogManager          = logMgr
                            , _crEmoji               = emoji
                            , _crSpellChecker        = spResult
+                           , _crWindowSize          = (0, 0)
                            }
 
     st <- initializeState cr initialTeamId teams me

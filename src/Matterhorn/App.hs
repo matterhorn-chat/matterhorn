@@ -10,9 +10,9 @@ import           Matterhorn.Prelude
 import           Brick
 import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Graphics.Vty as Vty
+import qualified Graphics.Vty.CrossPlatform as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
-import           System.Posix.IO ( stdInput )
 
 import           Network.Mattermost
 
@@ -32,11 +32,14 @@ app :: App ChatState MHEvent Name
 app =
     App { appDraw         = draw
         , appHandleEvent  = Events.onEvent
-        , appStartEvent   = return ()
         , appAttrMap      = (^.csResources.crTheme)
         , appChooseCursor = \s cs -> do
             tId <- s^.csCurrentTeamId
             cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
+        , appStartEvent = do
+            vty <- getVtyHandle
+            (w, h) <- liftIO $ Vty.displayBounds $ Vty.outputIface vty
+            runMHEvent $ Events.setWindowSize w h
         }
 
 cursorByMode :: [CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (CursorLocation Name)
@@ -84,12 +87,7 @@ runMatterhorn opts config = do
     setupCpuUsage config
 
     let mkVty = do
-          mEraseChar <- Vty.getTtyEraseChar stdInput
-          let addEraseChar cfg = case mEraseChar of
-                  Nothing -> cfg
-                  Just ch -> cfg { Vty.inputMap = (Nothing, [ch], Vty.EvKey Vty.KBS []) : Vty.inputMap cfg }
-
-          vty <- Vty.mkVty $ addEraseChar Vty.defaultConfig
+          vty <- Vty.mkVty Vty.defaultConfig
           let output = Vty.outputIface vty
           Vty.setMode output Vty.BracketedPaste True
           Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config

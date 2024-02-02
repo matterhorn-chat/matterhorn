@@ -19,6 +19,7 @@ module Matterhorn.Types.Channels
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdDMUserId, cdChannelId
   , cdSidebarShowOverride, cdNotifyProps, cdTeamId, cdFetchPending
+  , cdTotalMessageCount, cdViewedMessageCount
   -- * Managing ClientChannel collections
   , noChannels, addChannel, removeChannel, findChannelById, modifyChannelById
   , channelByIdL, maybeChannelByIdL
@@ -33,6 +34,8 @@ module Matterhorn.Types.Channels
   , adjustUpdated
   , adjustEditedThreshold
   , updateNewMessageIndicator
+  , incrementTotalMessageCount
+  , incrementViewedMessageCount
   -- * Notification settings
   , notifyPreference
   , isMuted
@@ -72,6 +75,7 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , WithDefault(..)
                                           , ServerTime
                                           , TeamId
+                                          , channelTotalMsgCount
                                           )
 
 import           Matterhorn.Types.Messages ( Messages, noMessages, addMessage
@@ -121,6 +125,8 @@ channelInfoFromChannelWithData chan chanMember ci =
           , _cdPurpose          = (sanitizeUserText $ chan^.channelPurposeL)
           , _cdType             = (chan^.channelTypeL)
           , _cdMentionCount     = chanMember^.to channelMemberMentionCount
+          , _cdTotalMessageCount = channelTotalMsgCount chan
+          , _cdViewedMessageCount = chanMember^.to channelMemberMsgCount
           , _cdNotifyProps      = chanMember^.to channelMemberNotifyProps
           }
 
@@ -174,6 +180,10 @@ data ChannelInfo = ChannelInfo
     -- whether to show the channel.
   , _cdFetchPending :: Bool
     -- ^ Whether a fetch in this channel is pending
+  , _cdTotalMessageCount :: Int
+    -- ^ Total message count
+  , _cdViewedMessageCount :: Int
+    -- ^ Viewed message count, for tracking unread status
   }
 
 -- ** Channel-related Lenses
@@ -328,6 +338,14 @@ adjustEditedThreshold m c =
 
 maxPostTimestamp :: Post -> ServerTime
 maxPostTimestamp m = max (m^.postDeleteAtL . non (m^.postUpdateAtL)) (m^.postCreateAtL)
+
+incrementTotalMessageCount :: ClientChannel -> ClientChannel
+incrementTotalMessageCount =
+    ccInfo.cdTotalMessageCount %~ succ
+
+incrementViewedMessageCount :: ClientChannel -> ClientChannel
+incrementViewedMessageCount =
+    ccInfo.cdViewedMessageCount %~ succ
 
 updateNewMessageIndicator :: Post -> ClientChannel -> ClientChannel
 updateNewMessageIndicator m =

@@ -80,7 +80,7 @@ fromIni = do
     configTeam           <- fieldMbOf "team" stringField
     configPort           <- fieldDefOf "port" number (configPort defaultConfig)
     configUrlPath        <- fieldMbOf "urlPath" stringField
-    configChannelListWidth <- fieldDefOf "channelListWidth" number
+    configChannelListWidth <- fieldDefOf "channelListWidth" channelListWidthField
                               (configChannelListWidth defaultConfig)
     configCpuUsagePolicy <- fieldDefOf "cpuUsagePolicy" cpuUsagePolicy
                             (configCpuUsagePolicy defaultConfig)
@@ -260,6 +260,14 @@ defaultBindings =
     , (MoveCurrentTeamRightEvent        , [ ])
     ]
 
+channelListWidthField :: Text -> Either String ChannelListWidth
+channelListWidthField t =
+    case T.toLower t of
+        "auto" -> return ChannelListWidthAuto
+        _ -> case readMaybe (T.unpack t) of
+            Nothing -> Left "Invalid value for channelListWidth"
+            Just w  -> Right $ ChannelListWidthFixed w
+
 channelListOrientationField :: Text -> Either String ChannelListOrientation
 channelListOrientationField t =
     case T.toLower t of
@@ -416,7 +424,7 @@ defaultConfig = addDefaultKeys $
            , configAspellDictionary            = Nothing
            , configUnsafeUseHTTP               = False
            , configValidateServerCertificate   = True
-           , configChannelListWidth            = 22
+           , configChannelListWidth            = ChannelListWidthFixed 22
            , configLogMaxBufferSize            = 200
            , configShowOlderEdits              = True
            , configUserKeys                    = newKeyConfig allEvents [] []

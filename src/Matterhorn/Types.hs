@@ -99,6 +99,7 @@ module Matterhorn.Types
   , unsafeKeyDispatcher
   , bindingConflictMessage
 
+  , ChannelListWidth(..)
   , NotificationVersion(..)
   , PasswordSource(..)
   , TokenSource(..)
@@ -247,6 +248,7 @@ module Matterhorn.Types
   , crSyntaxMap
   , crLogManager
   , crSpellChecker
+  , crWindowSize
   , crEmoji
   , getSession
   , getResourceSession
@@ -486,6 +488,14 @@ data TeamListSorting =
     | TeamListSortUnreadFirst
     deriving (Eq, Show, Ord)
 
+data ChannelListWidth =
+    ChannelListWidthFixed Int
+    -- ^ A fixed width in columns.
+    | ChannelListWidthAuto
+    -- ^ Automatically determine a reasonable width based on the window
+    -- dimensions.
+    deriving (Eq, Show, Ord)
+
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
 -- are for internal book-keeping purposes only.
@@ -550,7 +560,7 @@ data Config =
            -- ^ Whether to permit an insecure HTTP connection.
            , configValidateServerCertificate :: Bool
            -- ^ Whether to validate TLS certificates.
-           , configChannelListWidth :: Int
+           , configChannelListWidth :: ChannelListWidth
            -- ^ The width, in columns, of the channel list sidebar.
            , configLogMaxBufferSize :: Int
            -- ^ The maximum size, in log entries, of the internal log
@@ -630,14 +640,18 @@ data UserPreferences =
                     , _userPrefTeamOrder :: Maybe [TeamId]
                     }
 
-hasUnread' :: ClientChannel -> Bool
-hasUnread' chan = fromMaybe False $ do
+hasUnread :: ClientChannel -> Type -> Bool
+hasUnread chan ty =
     let info = _ccInfo chan
-    lastViewTime <- _cdViewed info
-    return $ _cdMentionCount info > 0 ||
-             (not (isMuted chan) &&
-              (((_cdUpdated info) > lastViewTime) ||
-               (isJust $ _cdEditedMessageThreshold info)))
+        hasMentions = countMentions && _cdMentionCount info > 0
+        hasNewMessages = _cdTotalMessageCount info > _cdViewedMessageCount info
+        hasEditThreshold = isJust $ _cdEditedMessageThreshold info
+        countMentions = case ty of
+            Direct -> False
+            Group -> False
+            _ -> True
+    in hasMentions ||
+       (not (isMuted chan) && (hasNewMessages || hasEditThreshold))
 
 mkChannelZipperList :: ChannelListSorting
                     -> UTCTime
@@ -702,7 +716,7 @@ getChannelEntriesByType tId prefs cs ty =
         mkEntry (cId, ch) = ChannelListEntry { channelListEntryChannelId = cId
                                              , channelListEntryType = CLChannel
                                              , channelListEntryMuted = isMuted ch
-                                             , channelListEntryUnread = hasUnread' ch
+                                             , channelListEntryUnread = hasUnread ch ty
                                              , channelListEntrySortValue = ch^.ccInfo.cdDisplayName.to T.toLower
                                              , channelListEntryFavorite = isFavorite prefs cId
                                              }
@@ -760,7 +774,7 @@ getGroupDMChannelEntries now config prefs cs =
     in fmap (\(cId, ch) -> ChannelListEntry { channelListEntryChannelId = cId
                                             , channelListEntryType = CLGroupDM
                                             , channelListEntryMuted = isMuted ch
-                                            , channelListEntryUnread = hasUnread' ch
+                                            , channelListEntryUnread = hasUnread ch Group
                                             , channelListEntrySortValue = ch^.ccInfo.cdDisplayName
                                             , channelListEntryFavorite = isFavorite prefs cId
                                             }) $
@@ -786,7 +800,7 @@ getSingleDMChannelEntries now config cconfig prefs us cs =
                     then return (ChannelListEntry { channelListEntryChannelId = cId
                                                   , channelListEntryType = CLUserDM uId
                                                   , channelListEntryMuted = isMuted c
-                                                  , channelListEntryUnread = hasUnread' c
+                                                  , channelListEntryUnread = hasUnread c Direct
                                                   , channelListEntrySortValue = displayNameForUser u cconfig prefs
                                                   , channelListEntryFavorite = isFavorite prefs cId
                                                   })
@@ -816,7 +830,7 @@ dmChannelShouldAppear now config prefs c =
         cId = c^.ccInfo.cdChannelId
     in if isFavorite prefs cId
        then True
-       else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+       else (if hasUnread c Direct || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
              else case dmChannelShowPreference prefs uId of
                     Just False -> False
@@ -842,7 +856,7 @@ groupChannelShouldAppear now config prefs c =
         cId = c^.ccInfo.cdChannelId
     in if isFavorite prefs cId
        then True
-       else (if hasUnread' c || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
+       else (if hasUnread c Group || maybe False (>= localCutoff) (c^.ccInfo.cdSidebarShowOverride)
              then True
              else case groupChannelShowPreference prefs cId of
                     Just False -> False
@@ -1080,6 +1094,7 @@ data ChatResources =
                   , _crLogManager          :: LogManager
                   , _crEmoji               :: EmojiCollection
                   , _crSpellChecker        :: Maybe Aspell
+                  , _crWindowSize          :: (Int, Int)
                   }
 
 -- | The 'GlobalEditState' value contains state not specific to any
