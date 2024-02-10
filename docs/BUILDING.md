@@ -25,8 +25,10 @@ package.
 Build from repo
 ===============
 
-Before building Matterhorn from source, you'll need a GitHub account. A
-GitHub account is necessary to fetch the submodule sources.
+Before building Matterhorn from source, you'll need a GitHub account.
+By default, GitHub account is necessary to fetch the submodule sources.
+(If you need to do a source build but don't have an SSH key present for
+GitHub access, you'll need to change the submodule URLs; see below.)
 
 1. Clone the `matterhorn` source: `git clone git@github.com:matterhorn-chat/matterhorn.git`
 2. `cd matterhorn`
@@ -34,6 +36,15 @@ GitHub account is necessary to fetch the submodule sources.
 4. Do a local build with `./build.sh` or build a release with `./scripts/local-mkrelease.sh`.
 5. Local builds can be run with `./run.sh`; to run a binary release,
 just unpack the archive and run the `matterhorn` binary found therein.
+
+Changing the submodule URLs
+---------------------------
+
+The repository comes configured with submodules that use SSH URLs to
+fetch from GitHub. If you need to use HTTPS URLs (e.g. if you don't have
+an SSH key present for GitHub access or don't have a GitHub account),
+you'll need to edit the `.gitmodules` file and convert the submodule
+URLs to HTTPS. Then run `git submodule sync`.
 
 Build from tarball
 ==================
