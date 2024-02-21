@@ -178,6 +178,7 @@ module Matterhorn.Types
   , withCurrentChannel
   , withCurrentChannel'
   , withCurrentTeam
+  , forEachTeam
 
   , csTeamZipper
   , csTeams
@@ -1808,6 +1809,11 @@ withCurrentTeam f = do
     case mtId of
         Nothing -> return ()
         Just tId -> f tId
+
+forEachTeam :: (TeamId -> MH ()) -> MH ()
+forEachTeam f = do
+    ts <- use csTeams
+    mapM_ f (HM.keys ts)
 
 withCurrentChannel :: TeamId -> (ChannelId -> ClientChannel -> MH ()) -> MH ()
 withCurrentChannel tId f = do
