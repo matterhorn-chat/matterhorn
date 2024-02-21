@@ -87,6 +87,9 @@ onAppEvent WebsocketConnect = do
     refreshChannelsAndUsers
     refreshClientConfig
     withCurrentTeam fetchVisibleIfNeeded
+    forEachTeam $ \tId -> do
+        baseUrl <- getServerBaseUrl tId
+        mhLog LogGeneral $ T.pack $ "Team base URL for team ID " <> show tId <> ": " <> show baseUrl
 onAppEvent (RateLimitExceeded winSz) =
     mhError $ GenericError $ T.pack $
         let s = if winSz == 1 then "" else "s"
