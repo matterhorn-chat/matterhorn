@@ -25,8 +25,8 @@ package.
 Build from repo
 ===============
 
-Before building Matterhorn from source, you'll need a GitHub account.
-By default, GitHub account is necessary to fetch the submodule sources.
+Before building Matterhorn from source, you'll need a GitHub account. By
+default, a GitHub account is necessary to fetch the submodule sources.
 (If you need to do a source build but don't have an SSH key present for
 GitHub access, you'll need to change the submodule URLs; see below.)
 
