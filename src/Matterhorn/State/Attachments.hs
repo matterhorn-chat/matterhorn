@@ -18,11 +18,12 @@ import qualified Control.Exception as E
 import           Data.Bool ( bool )
 import qualified Data.ByteString as BS
 import           Data.Either ( isRight )
-import           Data.Text ( unpack )
+import           Data.Text ( unpack, replace, pack )
 import qualified Data.Vector as Vector
 import           GHC.Exception ( toException )
 import           Lens.Micro.Platform ( (.=), (%=), Lens' )
 import           System.Directory ( doesDirectoryExist, doesFileExist, getDirectoryContents )
+import           System.Environment ( lookupEnv )
 
 import           Matterhorn.Types
 
@@ -55,9 +56,23 @@ showAttachmentFileBrowser which = do
     which.miEditor.esFileBrowser .= browser
     which.miMode .= BrowseFiles
 
+getHomeDir :: IO (Maybe String)
+getHomeDir = lookupEnv "HOME"
+
+replaceHome :: Text -> IO Text
+replaceHome t = do
+    home <- getHomeDir
+
+    let maybeReplace = do
+            h <- home
+            return $ replace "~" (pack h) t
+
+    return $ fromMaybe t maybeReplace
+
 attachFileByPath :: Lens' ChatState (MessageInterface Name i) -> Text -> MH ()
 attachFileByPath which txtPath = do
-    let strPath = unpack txtPath
+    strPath <- unpack <$> (liftIO $ replaceHome txtPath)
+
     fileInfo <- liftIO $ FB.getFileInfo strPath strPath
     case FB.fileInfoFileStatus fileInfo of
         Left e -> do
