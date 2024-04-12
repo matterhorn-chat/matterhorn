@@ -76,9 +76,10 @@ data SpecialMention =
     -- ^ @channel: notify everyone in the channel.
 
 data AutocompleteAlternative =
-    UserCompletion User Bool
-    -- ^ User, plus whether the user is in the channel that triggered
-    -- the autocomplete
+    UserCompletion User Bool Text
+    -- ^ User, plus whether the user is in the channel that triggered the
+    -- autocomplete and any prefix (e.g. the preceeding portion of a user list)
+    -- that should be retained when subtituting this autocompletion.
     | SpecialMention SpecialMention
     -- ^ A special mention.
     | ChannelCompletion Bool Channel
@@ -90,8 +91,13 @@ data AutocompleteAlternative =
     | EmojiCompletion Text
     -- ^ The text of an emoji completion
 
+-- | This returns the potential auto-completion final portion that might be used
+-- to match and therefore complete the current entry.  Note that this is just the
+-- final completion portion; it differs from autocompleteAlternativeReplacement
+-- in that it does not include any sigils or prefixes; this value is often used
+-- to filter text for the results that will match the auto-completion.
 autocompleteAlternativeText :: AutocompleteAlternative -> Text
-autocompleteAlternativeText (UserCompletion u _) =
+autocompleteAlternativeText (UserCompletion u _ _) =
     userUsername u
 autocompleteAlternativeText (SpecialMention MentionChannel) =
     "channel"
@@ -123,13 +129,14 @@ isSpecialMention n = isJust $ lookup (T.toLower $ trimUserSigil n) pairs
                    ]
         mkPair v = (specialMentionName v, v)
 
+-- | Returns the actual text that should replace the current autocompletion word.
 autocompleteAlternativeReplacement :: AutocompleteAlternative -> Text
 autocompleteAlternativeReplacement (EmojiCompletion e) =
     ":" <> e <> ":"
 autocompleteAlternativeReplacement (SpecialMention m) =
     addUserSigil $ specialMentionName m
-autocompleteAlternativeReplacement (UserCompletion u _) =
-    addUserSigil $ userUsername u
+autocompleteAlternativeReplacement (UserCompletion u _ p) =
+    addUserSigil $ p <> userUsername u
 autocompleteAlternativeReplacement (ChannelCompletion _ c) =
     normalChannelSigil <> (sanitizeUserText $ channelName c)
 autocompleteAlternativeReplacement (SyntaxCompletion t) =

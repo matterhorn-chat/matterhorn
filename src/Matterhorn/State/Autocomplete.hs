@@ -292,14 +292,30 @@ doUserAutoCompletion which tId ty ctx searchString = do
     session <- getSession
     myUid <- gets myUserId
     cId <- fromJust <$> preuse (which.esChannelId)
+
+    -- Some commands (e.g. /msg) will take a single user, which is the entirety
+    -- of the current word (searchString).  Some commands take multiple users,
+    -- space separated (e.g. /group-create), which will invoke this
+    -- auto-completion on each work individually and thus work like the single
+    -- user match.  There is a third class of commands that takes a
+    -- comma-separated list of users (e.g. /groupmsg) where searchString is the
+    -- entire list (minus the initial sigil).  Here, we search for the
+    -- comma+sigil and attempt to perform matching/completion only on the last
+    -- such element (although the result will be the full list with the last
+    -- element autocompleted).
+    let (initPart, completePart) =
+          let c = snd $ T.breakOnEnd ("," <> userSigil) searchString
+          in (T.dropEnd (T.length c) searchString, c)
+
     withCachedAutocompleteResults which ctx ty searchString $
         doAsyncWith Preempt $ do
-            ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) searchString session
+            ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) completePart session
 
             let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
                 alts = F.toList $
-                       ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
-                       (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
+                       ((\u -> UserCompletion u True initPart) <$> (active $ MM.userAutocompleteUsers ac)) <>
+                       (maybe mempty
+                              (fmap (\u -> UserCompletion u False initPart) . active) $
                               MM.userAutocompleteOutOfChannel ac)
 
                 specials = [ MentionAll
