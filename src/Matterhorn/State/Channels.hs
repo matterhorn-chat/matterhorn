@@ -1030,33 +1030,30 @@ changeChannelByName tId name = do
     mDMCId <- gets (channelIdByUsername name)
 
     withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
-        if (_uiId <$> foundUser) == Just myId
-        then return ()
-        else do
-            let err = mhError $ AmbiguousName name
-            case (mCId, mDMCId) of
-              (Nothing, Nothing) ->
-                  case foundUser of
-                      -- We know about the user but there isn't already a DM
-                      -- channel, so create one.
-                      Just user -> createOrFocusDMChannel tId user Nothing
-                      -- There were no matches of any kind.
-                      Nothing -> mhError $ NoSuchChannel name
-              (Just cId, Nothing)
-                  -- We matched a channel and there was an explicit sigil, so we
-                  -- don't care about the username match.
-                  | normalChannelSigil `T.isPrefixOf` name -> setFocus tId cId
-                  -- We matched both a channel and a user, even though there is
-                  -- no DM channel.
-                  | Just _ <- foundUser -> err
-                  -- We matched a channel only.
-                  | otherwise -> setFocus tId cId
-              (Nothing, Just cId) ->
-                  -- We matched a DM channel only.
-                  setFocus tId cId
-              (Just _, Just _) ->
-                  -- We matched both a channel and a DM channel.
-                  err
+        let err = mhError $ AmbiguousName name
+        case (mCId, mDMCId) of
+          (Nothing, Nothing) ->
+              case foundUser of
+                  -- We know about the user but there isn't already a DM
+                  -- channel, so create one.
+                  Just user -> createOrFocusDMChannel tId user Nothing
+                  -- There were no matches of any kind.
+                  Nothing -> mhError $ NoSuchChannel name
+          (Just cId, Nothing)
+              -- We matched a channel and there was an explicit sigil, so we
+              -- don't care about the username match.
+              | normalChannelSigil `T.isPrefixOf` name -> setFocus tId cId
+              -- We matched both a channel and a user, even though there is
+              -- no DM channel.
+              | Just _ <- foundUser -> err
+              -- We matched a channel only.
+              | otherwise -> setFocus tId cId
+          (Nothing, Just cId) ->
+              -- We matched a DM channel only.
+              setFocus tId cId
+          (Just _, Just _) ->
+              -- We matched both a channel and a DM channel.
+              err
 
 setChannelTopic :: TeamId -> Text -> MH ()
 setChannelTopic tId msg = do
