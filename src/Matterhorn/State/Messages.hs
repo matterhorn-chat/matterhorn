@@ -936,12 +936,12 @@ asyncFetchMoreMessages =
     withCurrentTeam $ \tId ->
         withCurrentChannel tId $ \cId chan -> do
             let offset = max 0 $ length (chan^.ccMessageInterface.miMessages) - 2
-                page = offset `div` pageAmount
+                page = offset `div` messageFetchPageSize
                 usefulMsgs = getTwoContiguousPosts Nothing (chan^.ccMessageInterface.miMessages.to reverseMessages)
                 sndOldestId = (messagePostId . snd) =<< usefulMsgs
                 query = MM.defaultPostQuery
                           { MM.postQueryPage = maybe (Just page) (const Nothing) sndOldestId
-                          , MM.postQueryPerPage = Just pageAmount
+                          , MM.postQueryPerPage = Just messageFetchPageSize
                           , MM.postQueryBefore = sndOldestId
                           }
                 addTrailingGap = MM.postQueryBefore query == Nothing &&
@@ -949,7 +949,7 @@ asyncFetchMoreMessages =
             doAsyncChannelMM Preempt cId
                 (\s c -> MM.mmGetPostsForChannel c query s)
                 (\c p -> Just $ do
-                    pp <- addObtainedMessages c (-pageAmount) addTrailingGap p
+                    pp <- addObtainedMessages c (-messageFetchPageSize) addTrailingGap p
                     postProcessMessageAdd pp)
 
 -- | Given a starting point and a direction to move from that point,
@@ -975,7 +975,7 @@ asyncFetchMessagesForGap cId gapMessage =
   when (isGap gapMessage) $
   withChannel cId $ \chan ->
     let offset = max 0 $ length (chan^.ccMessageInterface.miMessages) - 2
-        page = offset `div` pageAmount
+        page = offset `div` messageFetchPageSize
         chanMsgs = chan^.ccMessageInterface.miMessages
         fromMsg = Just gapMessage
         fetchNewer = case gapMessage^.mType of
@@ -990,7 +990,7 @@ asyncFetchMessagesForGap cId gapMessage =
                     _ -> error "fetch gap messages: unknown gap message type"
         query = MM.defaultPostQuery
                 { MM.postQueryPage = maybe (Just page) (const Nothing) baseId
-                , MM.postQueryPerPage = Just pageAmount
+                , MM.postQueryPerPage = Just messageFetchPageSize
                 , MM.postQueryBefore = if fetchNewer then Nothing else baseId
                 , MM.postQueryAfter = if fetchNewer then baseId else Nothing
                 }
@@ -999,7 +999,7 @@ asyncFetchMessagesForGap cId gapMessage =
     in doAsyncChannelMM Preempt cId
        (\s c -> MM.mmGetPostsForChannel c query s)
        (\c p -> Just $ do
-           void $ addObtainedMessages c (-pageAmount) addTrailingGap p)
+           void $ addObtainedMessages c (-messageFetchPageSize) addTrailingGap p)
 
 -- | Given a particular message ID, this fetches n messages before and
 -- after immediately before and after the specified message in order
