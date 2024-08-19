@@ -26,8 +26,8 @@ openLinkTarget target = do
         LinkFileId fId -> openWithOpener (fetchAttachment fId session)
         LinkPermalink _ pId -> jumpToPost pId
 
-fetchAttachment :: FileId -> Session -> MH (Either MHError String)
-fetchAttachment fId session =
-    liftIO $ (Right <$> fetchFile fId session)
+fetchAttachment :: FileId -> Session -> IO (Either MHError String)
+fetchAttachment fId session = do
+    (Right <$> fetchFile fId session)
         `catch` (\(e::MattermostError) -> return $ Left $ ServerError e)
         `catch` (\(e::SomeException) -> return $ Left $ GenericError $ T.pack $ show e)

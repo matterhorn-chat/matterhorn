@@ -185,79 +185,80 @@ postErrorMessageIO err st = do
 openFilePath :: FilePath -> MH ()
 openFilePath path = openWithOpener (return $ Right path)
 
-openWithOpener :: MH (Either MHError String) -> MH ()
+openWithOpener :: IO (Either MHError String) -> MH ()
 openWithOpener getTarget = do
     cfg <- use (csResources.crConfiguration)
     case configURLOpenCommand cfg of
         Nothing ->
             mhError $ ConfigOptionMissing "urlOpenCommand"
         Just urlOpenCommand -> do
-            targetResult <- getTarget
-            let cmdWords = T.words urlOpenCommand
-                (cmds, args) = splitAt 1 (T.unpack <$> cmdWords)
-                cmd = if null cmds then "$BROWSER" else head cmds
-            case targetResult of
-                Left e -> do
-                    mhError e
-                Right target -> do
-                    -- Is the URL-opening command interactive? If
-                    -- so, pause Matterhorn and run the opener
-                    -- interactively. Otherwise run the opener
-                    -- asynchronously and continue running Matterhorn
-                    -- interactively.
-                    case configURLOpenCommandInteractive cfg of
-                        False -> do
-                            outputChan <- use (csResources.crSubprocessLog)
-                            doAsyncWith Preempt $ do
-                                runLoggedCommand outputChan cmd
-                                                 (args <> [target])
-                                                 Nothing Nothing
-                                return Nothing
-                        True -> do
-                            -- If there isn't a new message cutoff
-                            -- showing in the current channel, set one.
-                            -- This way, while the user is gone using
-                            -- their interactive URL opener, when they
-                            -- return, any messages that arrive in the
-                            -- current channel will be displayed as new.
-                            withCurrentTeam $ \tId -> do
-                                withCurrentChannel tId $ \cId curChan -> do
-                                    let msgs = curChan^.ccMessageInterface.miMessages
-                                    case findLatestUserMessage isEditable msgs of
-                                        Nothing -> return ()
-                                        Just m ->
-                                            case m^.mOriginalPost of
-                                                Nothing -> return ()
-                                                Just p ->
-                                                    case curChan^.ccInfo.cdNewMessageIndicator of
-                                                        Hide -> csChannel(cId).ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
-                                                        _ -> return ()
+            doAsyncWith Preempt $ do
+                targetResult <- getTarget
+                let cmdWords = T.words urlOpenCommand
+                    (cmds, args) = splitAt 1 (T.unpack <$> cmdWords)
+                    cmd = if null cmds then "$BROWSER" else head cmds
+                case targetResult of
+                    Left e -> return $ Just $ do
+                        mhError e
+                    Right target -> return $ Just $ do
+                        -- Is the URL-opening command interactive? If
+                        -- so, pause Matterhorn and run the opener
+                        -- interactively. Otherwise run the opener
+                        -- asynchronously and continue running Matterhorn
+                        -- interactively.
+                        case configURLOpenCommandInteractive cfg of
+                            False -> do
+                                outputChan <- use (csResources.crSubprocessLog)
+                                doAsyncWith Preempt $ do
+                                    runLoggedCommand outputChan cmd
+                                                     (args <> [target])
+                                                     Nothing Nothing
+                                    return Nothing
+                            True -> do
+                                -- If there isn't a new message cutoff
+                                -- showing in the current channel, set one.
+                                -- This way, while the user is gone using
+                                -- their interactive URL opener, when they
+                                -- return, any messages that arrive in the
+                                -- current channel will be displayed as new.
+                                withCurrentTeam $ \tId -> do
+                                    withCurrentChannel tId $ \cId curChan -> do
+                                        let msgs = curChan^.ccMessageInterface.miMessages
+                                        case findLatestUserMessage isEditable msgs of
+                                            Nothing -> return ()
+                                            Just m ->
+                                                case m^.mOriginalPost of
+                                                    Nothing -> return ()
+                                                    Just p ->
+                                                        case curChan^.ccInfo.cdNewMessageIndicator of
+                                                            Hide -> csChannel(cId).ccInfo.cdNewMessageIndicator .= (NewPostsAfterServerTime (p^.postCreateAtL))
+                                                            _ -> return ()
 
-                            -- No need to add a gap here: the websocket
-                            -- disconnect/reconnect events will automatically
-                            -- handle management of messages delivered while
-                            -- suspended.
-                            mhSuspendAndResume $ \st -> do
-                                result <- runInteractiveCommand cmd (args <> [target])
+                                -- No need to add a gap here: the websocket
+                                -- disconnect/reconnect events will automatically
+                                -- handle management of messages delivered while
+                                -- suspended.
+                                mhSuspendAndResume $ \st -> do
+                                    result <- runInteractiveCommand cmd (args <> [target])
 
-                                let waitForKeypress = do
-                                        putStrLn "Press any key to return to Matterhorn."
-                                        void getChar
+                                    let waitForKeypress = do
+                                            putStrLn "Press any key to return to Matterhorn."
+                                            void getChar
 
-                                case result of
-                                    Right ExitSuccess -> return ()
-                                    Left err -> do
-                                        putStrLn $ "URL opener subprocess " <> (show urlOpenCommand) <>
-                                                   " could not be run: " <> err
-                                        waitForKeypress
-                                    Right (ExitFailure code) -> do
-                                        putStrLn $ "URL opener subprocess " <> (show urlOpenCommand) <>
-                                                   " exited with non-zero status " <> show code
-                                        waitForKeypress
+                                    case result of
+                                        Right ExitSuccess -> return ()
+                                        Left err -> do
+                                            putStrLn $ "URL opener subprocess " <> (show urlOpenCommand) <>
+                                                       " could not be run: " <> err
+                                            waitForKeypress
+                                        Right (ExitFailure code) -> do
+                                            putStrLn $ "URL opener subprocess " <> (show urlOpenCommand) <>
+                                                       " exited with non-zero status " <> show code
+                                            waitForKeypress
 
-                                return $ case st^.csCurrentTeamId of
-                                    Nothing -> st
-                                    Just tId -> pushMode' tId Main st
+                                    return $ case st^.csCurrentTeamId of
+                                        Nothing -> st
+                                        Just tId -> pushMode' tId Main st
 
 runInteractiveCommand :: String
                       -> [String]
