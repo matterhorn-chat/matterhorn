@@ -1025,7 +1025,6 @@ createOrFocusDMChannel tId user successAct = do
 -- but valid user channel.
 changeChannelByName :: TeamId -> Text -> MH ()
 changeChannelByName tId name = do
-    myId <- gets myUserId
     mCId <- gets (channelIdByChannelName tId name)
     mDMCId <- gets (channelIdByUsername name)
 
