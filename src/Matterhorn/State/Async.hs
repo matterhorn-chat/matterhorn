@@ -25,15 +25,16 @@ import           Matterhorn.Types
 
 -- | Try to run a computation, posting an informative error
 --   message if it fails with a 'MattermostServerError'.
-tryMM :: IO a
+tryMM :: String
+      -> IO a
       -- ^ The action to try (usually a MM API call)
-      -> (a -> IO (Maybe (MH ())))
+      -> (a -> IO (Maybe Work))
       -- ^ What to do on success
-      -> IO (Maybe (MH ()))
-tryMM act onSuccess = do
+      -> IO (Maybe Work)
+tryMM label act onSuccess = do
     result <- liftIO $ try act
     case result of
-        Left e -> return $ Just $ mhError $ ServerError e
+        Left e -> return $ Just $ Work label $ mhError $ ServerError e
         Right value -> liftIO $ onSuccess value
 
 -- * Background Computation
@@ -97,7 +98,7 @@ doAsync prio act = doAsyncWith prio (act >> return Nothing)
 
 -- | Run a computation in the background, returning a computation to be
 -- called on the 'ChatState' value.
-doAsyncWith :: AsyncPriority -> IO (Maybe (MH ())) -> MH ()
+doAsyncWith :: AsyncPriority -> IO (Maybe Work) -> MH ()
 doAsyncWith prio act = do
     let putChan = case prio of
           Preempt -> STM.unGetTChan
@@ -109,14 +110,14 @@ doAsyncIO :: AsyncPriority -> ChatState -> IO () -> IO ()
 doAsyncIO prio st act =
   doAsyncWithIO prio st (act >> return Nothing)
 
-scheduleMH :: ChatResources -> MH () -> IO ()
-scheduleMH r act = do
+scheduleMH :: ChatResources -> String -> MH () -> IO ()
+scheduleMH r label act = do
     let queue = r^.crRequestQueue
-    STM.atomically $ STM.writeTChan queue $ return $ Just act
+    STM.atomically $ STM.writeTChan queue $ return $ Just $ Work label act
 
 -- | Run a computation in the background, returning a computation to be
 -- called on the 'ChatState' value.
-doAsyncWithIO :: AsyncPriority -> ChatState -> IO (Maybe (MH ())) -> IO ()
+doAsyncWithIO :: AsyncPriority -> ChatState -> IO (Maybe Work) -> IO ()
 doAsyncWithIO prio st act = do
     let putChan = case prio of
           Preempt -> STM.unGetTChan
@@ -131,7 +132,7 @@ doAsyncMM :: AsyncPriority
           -- ^ the priority for this async operation
           -> (Session -> IO a)
           -- ^ the async MM channel-based IO operation
-          -> (a -> Maybe (MH ()))
+          -> (a -> Maybe Work)
           -- ^ function to process the results in brick event handling
           -- context
           -> MH ()
@@ -150,7 +151,7 @@ type DoAsyncChannelMM a =
     -- ^ The channel
     -> (Session -> ChannelId -> IO a)
     -- ^ the asynchronous Mattermost channel-based IO operation
-    -> (ChannelId -> a -> Maybe (MH ()))
+    -> (ChannelId -> a -> Maybe Work)
     -- ^ function to process the results in brick event handling context
     -> MH ()
 
@@ -163,5 +164,5 @@ doAsyncChannelMM prio cId mmOp eventHandler =
 
 -- | Use this convenience function if no operation needs to be
 -- performed in the MH state after an async operation completes.
-endAsyncNOP :: ChannelId -> a -> Maybe (MH ())
+endAsyncNOP :: ChannelId -> a -> Maybe Work
 endAsyncNOP _ _ = Nothing

@@ -35,8 +35,8 @@ handleNewUsers newUserIds after = do
                      usrList = toList nUsers
                  return $ usrInfo <$> usrList
 
-          addNewUsers :: [UserInfo] -> Maybe (MH ())
-          addNewUsers is = Just $ mapM_ addNewUser is >> after
+          addNewUsers :: [UserInfo] -> Maybe Work
+          addNewUsers is = Just $ Work "handleNewUsers" $ mapM_ addNewUser is >> after
 
 -- | Handle the typing events from the websocket to show the currently
 -- typing users on UI
@@ -109,7 +109,7 @@ withFetchedUserMaybe fetch handle = do
                                              }
                         MM.mmSearchUsers req session
 
-                return $ Just $ do
+                return $ Just $ Work "withFetchedUserMaybe" $ do
                     infos <- forM (F.toList results) $ \u -> do
                         let info = userInfoFromUser u True
                         addNewUser info

@@ -55,7 +55,7 @@ createPostList tId contentsType fetchOp = do
   session <- getSession
   doAsyncWith Preempt $ do
     posts <- fetchOp session
-    return $ Just $ do
+    return $ Just $ Work "createPostList" $ do
       messages <- installMessagesFromPosts (Just tId) posts
       -- n.b. do not use addNewPostedMessage because these messages
       -- are not new, and so no notifications or channel highlighting

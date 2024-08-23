@@ -15,6 +15,7 @@ module Matterhorn.Types
   , MHError(..)
   , CPUUsagePolicy(..)
   , SemEq(..)
+  , Work(..)
   , handleEventWith
   , getServerBaseUrl
   , serverBaseUrl
@@ -1014,6 +1015,7 @@ data LogCategory =
     | LogWebsocket
     | LogError
     | LogUserMark
+    | LogAsyncWork
     deriving (Eq, Show)
 
 -- | A log message.
@@ -1111,7 +1113,7 @@ emptyGlobalEditState =
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
 -- background to avoid blocking on the main loop
-type RequestChan = STM.TChan (IO (Maybe (MH ())))
+type RequestChan = STM.TChan (IO (Maybe Work))
 
 -- | Help topics
 data HelpTopic =
@@ -1582,14 +1584,16 @@ instance St.MonadState ChatState MH where
 instance St.MonadIO MH where
     liftIO = MH . St.liftIO
 
+data Work = Work String (MH ())
+
 -- | This represents events that we handle in the main application loop.
 data MHEvent =
     WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
     | WSActionResponse WebsocketActionResponse
     -- ^ For responses to websocket actions
-    | RespEvent (MH ())
-    -- ^ For the result values of async IO operations
+    | RespEvent Work
+    -- ^ For the result values of async operations
     | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
     | WebsocketParseError String

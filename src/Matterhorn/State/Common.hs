@@ -198,9 +198,9 @@ openWithOpener getTarget = do
                     (cmds, args) = splitAt 1 (T.unpack <$> cmdWords)
                     cmd = if null cmds then "$BROWSER" else head cmds
                 case targetResult of
-                    Left e -> return $ Just $ do
+                    Left e -> return $ Just $ Work "openWithOpener[1]" $ do
                         mhError e
-                    Right target -> return $ Just $ do
+                    Right target -> return $ Just $ Work "openWithOpener[2]" $ do
                         -- Is the URL-opening command interactive? If
                         -- so, pause Matterhorn and run the opener
                         -- interactively. Otherwise run the opener
@@ -424,7 +424,7 @@ fetchUsers rawUsernames uids = do
                     return $ do
                         forM_ results (\u -> addNewUser $ userInfoFromUser u True)
 
-            return $ Just $ act1 >> act2
+            return $ Just $ Work "fetchUsers" $ act1 >> act2
 
 invalidateChannelRenderingCache :: ChannelId -> MH ()
 invalidateChannelRenderingCache cId = do

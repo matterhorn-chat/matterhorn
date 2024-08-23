@@ -30,7 +30,7 @@ asyncFetchReactionsForPost cId p
   | not (p^.postHasReactionsL) = return ()
   | otherwise = doAsyncChannelMM Normal cId
         (\s _ -> fmap toList (mmGetReactionsForPost (p^.postIdL) s))
-        (\_ rs -> Just $ addReactions cId rs)
+        (\_ rs -> Just $ Work "asyncFetchReactionsForPost" $ addReactions cId rs)
 
 -- | Add the specified reactions returned by the server to the relevant
 -- posts in the specified channel. This should only be called in

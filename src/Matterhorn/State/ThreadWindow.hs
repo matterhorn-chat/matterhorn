@@ -29,7 +29,7 @@ openThreadWindow tId cId pId = do
         -- Fetch the entire thread associated with the post.
         doAsyncMM Preempt getThread processThread
         where getThread session = MM.mmGetThread pId session
-              processThread posts = Just $ do
+              processThread posts = Just $ Work "openThreadWindow" $ do
                   let numPosts = HM.size (MM.postsPosts posts)
 
                   when (numPosts > 0) $ do

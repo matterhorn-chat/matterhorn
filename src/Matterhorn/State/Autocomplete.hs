@@ -127,7 +127,7 @@ doEmojiAutoCompletion which ty ctx searchString = do
         doAsyncWith Preempt $ do
             results <- getMatchingEmoji session em searchString
             let alts = EmojiCompletion <$> results
-            return $ Just $ setCompletionAlternatives which ctx searchString alts ty
+            return $ Just $ Work "doEmojiAutoCompletion" $ setCompletionAlternatives which ctx searchString alts ty
 
 doSyntaxAutoCompletion :: Traversal' ChatState (EditState Name)
                        -> AutocompletionType
@@ -253,7 +253,7 @@ doCommandAutoCompletion which tId ty ctx searchString = do
                     alts = fmap mkCompletion $
                            clientAlts <> serverAlts
 
-                return $ Just $ do
+                return $ Just $ Work "doCommandAutoCompletion" $ do
                     -- Store the complete list of alterantives in the cache
                     setCompletionAlternatives which ctx serverResponseKey alts ty
 
@@ -325,7 +325,7 @@ doUserAutoCompletion which tId ty ctx searchString = do
                          , (T.toLower searchString) `T.isPrefixOf` specialMentionName m
                          ]
 
-            return $ Just $ setCompletionAlternatives which ctx searchString (alts <> extras) ty
+            return $ Just $ Work "doUserAutoCompletion" $ setCompletionAlternatives which ctx searchString (alts <> extras) ty
 
 doChannelAutoCompletion :: TeamId
                         -> Traversal' ChatState (EditState Name)
@@ -344,7 +344,7 @@ doChannelAutoCompletion tId which ty ctx searchString = do
                                   (ChannelCompletion False <$> notInChannels)
                 (inChannels, notInChannels) = Seq.partition isMember results
                 isMember c = isJust $ findChannelById (channelId c) cs
-            return $ Just $ setCompletionAlternatives which ctx searchString alts ty
+            return $ Just $ Work "doChannelAutoCompletion" $ setCompletionAlternatives which ctx searchString alts ty
 
 -- Utility functions
 

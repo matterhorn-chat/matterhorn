@@ -114,7 +114,10 @@ onAppEvent (WSEvent we) =
     handleWebsocketEvent we
 onAppEvent (WSActionResponse r) =
     handleWebsocketActionResponse r
-onAppEvent (RespEvent f) = f
+onAppEvent (RespEvent (Work label f)) = do
+    mhLog LogAsyncWork $ T.pack $ "onAppEvent: running work from async: " <> show label
+    f
+    mhLog LogAsyncWork $ T.pack $ "onAppEvent: done with work from async: " <> show label
 onAppEvent (WebsocketParseError e) = do
     let msg = "A websocket message could not be parsed:\n  " <>
               T.pack e <>
@@ -258,6 +261,6 @@ refreshClientConfig = do
     session <- getSession
     doAsyncWith Preempt $ do
         cfg <- MM.mmGetClientConfiguration (Just "old") session
-        return $ Just $ do
+        return $ Just $ Work "refreshClientConfig" $ do
             csClientConfig .= Just cfg
             updateSidebar Nothing

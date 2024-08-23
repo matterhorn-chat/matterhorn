@@ -114,7 +114,7 @@ resetListWindowSearch which = do
         fetcher <- use (which.listWindowFetchResults)
         doAsyncWith Preempt $ do
             results <- fetcher scope session searchString
-            return $ Just $ do
+            return $ Just $ Work "resetListWindowSearch" $ do
                 which.listWindowSearchResults .= newList results
                 which.listWindowSearching .= False
 

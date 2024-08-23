@@ -117,7 +117,7 @@ handleJoinTeam tId = do
         doAsyncWith Normal $ do
             t <- MM.mmGetTeam tId session
             (ts, chans) <- buildTeamState cr me t
-            return $ Just $ do
+            return $ Just $ Work "handleJoinTeam" $ do
                     addTeamState ts chans
                     updateSidebar $ Just tId
                     updateWindowTitle
@@ -129,7 +129,7 @@ handleJoinTeam tId = do
 -- current user was removed from the team.
 handleLeaveTeam :: TeamId -> MH ()
 handleLeaveTeam tId =
-    doAsyncWith Normal $ return $ Just $ do
+    doAsyncWith Normal $ return $ Just $ Work "handleLeaveTeam" $ do
         mhLog LogGeneral $ T.pack $ "Leaving team " <> show tId
         removeTeam tId
         updateWindowTitle
@@ -148,7 +148,7 @@ handleUpdateTeam tId = do
     mhLog LogGeneral $ T.pack $ "Updating team " <> show tId
     doAsyncWith Normal $ do
         t <- MM.mmGetTeam tId session
-        return $ Just $ do
+        return $ Just $ Work "handleUpdateTeam" $ do
             updateTeam t
             -- Invalidate the cache since we happen to know that the
             -- team name is in the cached sidebar.
@@ -237,7 +237,7 @@ buildTeamState cr me team = do
         let maybeOpenThread = do
                 lrs <- mLrs
                 (cId, pId) <- lrs^.lrsOpenThread
-                return $ scheduleMH cr (openThreadWindow tId cId pId)
+                return $ scheduleMH cr "buildTeamState" (openThreadWindow tId cId pId)
         fromMaybe (return ()) maybeOpenThread
 
     let ts = newTeamState config team chanZip

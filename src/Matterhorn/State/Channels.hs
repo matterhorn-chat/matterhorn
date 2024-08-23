@@ -129,7 +129,7 @@ updateViewedChan updatePrev cId = use csConnectionStatus >>= \case
                    else return Nothing
             doAsyncChannelMM Preempt cId
               (\s c -> MM.mmViewChannel UserMe c pId s)
-              (\c () -> Just $ setLastViewedFor pId c)
+              (\c () -> Just $ Work "updateViewedChan" $ setLastViewedFor pId c)
     Disconnected ->
         -- Cannot update server; make no local updates to avoid getting
         -- out of sync with the server. Assumes that this is a temporary
@@ -217,7 +217,7 @@ setLastViewedFor prevId cId = do
           doAsyncChannelMM Preempt cId (\ s _ ->
                                            (,) <$> MM.mmGetChannel cId s
                                                <*> MM.mmGetChannelMember cId UserMe s)
-          (\pcid (cwd, member) -> Just $ csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd member)
+          (\pcid (cwd, member) -> Just $ Work "setLastViewedFor" $ csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd member)
 
     -- Update the old channel's previous viewed time (allows tracking of
     -- new messages)
@@ -256,7 +256,7 @@ refreshChannelsAndUsers = do
           mkPair chan = (chan, fromJust $ HM.lookup (channelId chan) dataMap)
           chansWithData = mkPair <$> chans
 
-      return $ Just $
+      return $ Just $ Work "refreshChannelsAndUsers" $
           -- Fetch user data associated with DM channels
           handleNewUsers (Seq.fromList uIdsToFetch) $ do
               -- Then refresh all loaded channels
@@ -374,7 +374,7 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                                         mhLog LogAPI $ T.pack $ "handleNewChannel_: about to call handleNewUsers for " <> show otherUserId
                                         handleNewUsers (Seq.singleton otherUserId) (return ())
                                         doAsyncWith Normal $
-                                            return $ Just $ handleNewChannel_ False switch sbUpdate nc member
+                                            return $ Just $ Work "handleNewChannel_" $ handleNewChannel_ False switch sbUpdate nc member
                                         return False
                             Just _ -> return True
                 _ -> return True
@@ -622,7 +622,7 @@ refreshChannelById cId = do
     doAsyncWith Preempt $ do
         cwd <- MM.mmGetChannel cId session
         member <- MM.mmGetChannelMember cId UserMe session
-        return $ Just $ do
+        return $ Just $ Work "refreshChannelById" $ do
             refreshChannel SidebarUpdateImmediate cwd member
 
 removeChannelFromState :: ChannelId -> MH ()
@@ -758,7 +758,7 @@ leaveChannelIfPossible cId delete = do
                            , MM.userQueryInChannel = Just cId
                            }
                       in toList <$> MM.mmGetUsers query s)
-                    (\_ members -> Just $ do
+                    (\_ members -> Just $ Work "leaveChannelIfPossible" $ do
                         -- If the channel is private:
                         --  * leave it if we aren't the last member.
                         --  * delete it if we are.
@@ -826,7 +826,7 @@ createGroupChannel tId usernameList = do
         case length results == length usernames of
             True -> do
                 chan <- MM.mmCreateGroupMessageChannel (userId <$> results) session
-                return $ Just $ do
+                return $ Just $ Work "createGroupChannel" $ do
                     case findChannelById (channelId chan) cs of
                       Just _ ->
                           -- If we already know about the channel ID,
@@ -839,13 +839,13 @@ createGroupChannel tId usernameList = do
                           let pref = showGroupChannelPref (channelId chan) (me^.userIdL)
                           doAsyncWith Normal $ do
                             MM.mmSaveUsersPreferences UserMe (Seq.singleton pref) session
-                            return $ Just $ applyPreferenceChange pref
+                            return $ Just $ Work "createGroupChannel[2]" $ applyPreferenceChange pref
             False -> do
                 let foundUsernames = userUsername <$> results
                     missingUsernames = S.toList $
                                        S.difference (S.fromList $ F.toList usernames)
                                                     (S.fromList $ F.toList foundUsernames)
-                return $ Just $ do
+                return $ Just $ Work "createGroupChannel[3]" $ do
                     forM_ missingUsernames (mhError . NoSuchUser)
 
 inputHistoryForward :: Lens' ChatState (MessageInterface n i) -> MH ()
@@ -907,12 +907,13 @@ createOrdinaryChannel myTId public name = do
               , minChannelType        = if public then Ordinary else Private
               , minChannelTeamId      = myTId
               }
-        tryMM (do c <- MM.mmCreateChannel minChannel session
+        tryMM "createOrdinaryChannel"
+              (do c <- MM.mmCreateChannel minChannel session
                   chan <- MM.mmGetChannel (getId c) session
                   member <- MM.mmGetChannelMember (getId c) UserMe session
                   return (chan, member)
               )
-              (return . Just . uncurry (handleNewChannel True SidebarUpdateImmediate))
+              (return . Just . Work "createOrdinaryChannel[2]" . uncurry (handleNewChannel True SidebarUpdateImmediate))
 
 -- | When we are added to a channel not locally known about, we need
 -- to fetch the channel info for that channel.
@@ -921,8 +922,9 @@ handleChannelInvite cId = do
     session <- getSession
     doAsyncWith Normal $ do
         member <- MM.mmGetChannelMember cId UserMe session
-        tryMM (MM.mmGetChannel cId session)
-              (\cwd -> return $ Just $ do
+        tryMM "handleChannelInvite"
+              (MM.mmGetChannel cId session)
+              (\cwd -> return $ Just $ Work "handleChannelInvite" $ do
                   mtId <- case channelTeamId cwd of
                       Nothing -> use csCurrentTeamId
                       Just i -> return $ Just i
@@ -941,7 +943,8 @@ addUserToCurrentChannel tId u = do
         session <- getSession
         let channelMember = MinChannelMember (u^.uiId) cId
         doAsyncWith Normal $ do
-            tryMM (void $ MM.mmAddUser cId channelMember session)
+            tryMM "addUserToCurrentChannel"
+                  (void $ MM.mmAddUser cId channelMember session)
                   (const $ return Nothing)
 
 removeUserFromCurrentChannel :: TeamId -> Text -> MH ()
@@ -950,7 +953,8 @@ removeUserFromCurrentChannel tId uname =
         withFetchedUser (UserFetchByUsername uname) $ \u -> do
             session <- getSession
             doAsyncWith Normal $ do
-                tryMM (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
+                tryMM "removeUserFromCurrentChannel"
+                      (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                       (const $ return Nothing)
 
 startLeaveCurrentChannel :: TeamId -> MH ()
@@ -980,7 +984,7 @@ joinChannelByName tId rawName = do
     session <- getSession
     doAsyncWith Preempt $ do
         result <- try $ MM.mmGetChannelByName tId (trimChannelSigil rawName) session
-        return $ Just $ case result of
+        return $ Just $ Work "joinChannelByName" $ case result of
             Left (_::SomeException) -> mhError $ NoSuchChannel rawName
             Right chan -> joinChannel tId $ getId chan
 
@@ -1000,7 +1004,7 @@ joinChannel' tId chanId act = do
             myId <- gets myUserId
             let member = MinChannelMember myId chanId
             csTeam(tId).tsPendingChannelChange .= (Just $ ChangeByChannelId tId chanId act)
-            doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return act)
+            doAsyncChannelMM Preempt chanId (\ s c -> MM.mmAddUser c member s) (const $ return $ (Work "joinChannel'" <$> act))
 
 createOrFocusDMChannel :: TeamId -> UserInfo -> Maybe (ChannelId -> MH ()) -> MH ()
 createOrFocusDMChannel tId user successAct = do
@@ -1019,7 +1023,9 @@ createOrFocusDMChannel tId user successAct = do
             doAsyncWith Normal $ do
                 -- create a new channel
                 chan <- MM.mmCreateDirectMessageChannel (user^.uiId, myId) session
-                return $ successAct <*> pure (channelId chan)
+                case successAct of
+                    Nothing -> return Nothing
+                    Just f -> return $ Just $ Work "createOrFocusDMChannel" (f $ channelId chan)
 
 -- | This switches to the named channel or creates it if it is a missing
 -- but valid user channel.

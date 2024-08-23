@@ -433,7 +433,7 @@ requestSpellCheck checker target = do
                             MIChannel cId ->
                                 maybeChannelMessageInterface(cId).miEditor.esMisspellings .= allMistakes
 
-                tryMM query (return . Just . postMistakes)
+                tryMM "requestSpellCheck" query (return . Just . Work "requestSpellCheck" . postMistakes)
 
 editorEmpty :: Editor Text a -> Bool
 editorEmpty e = cursorIsAtEnd e &&

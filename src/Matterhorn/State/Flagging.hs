@@ -20,7 +20,7 @@ import           Matterhorn.Types
 
 loadFlaggedMessages :: Seq FlaggedPost -> ChatState -> IO ()
 loadFlaggedMessages prefs st = doAsyncWithIO Normal st $ do
-  return $ Just $ do
+  return $ Just $ Work "loadFlaggedMessages" $ do
       sequence_ [ updateMessageFlag (flaggedPostId fp) True
                 | fp <- toList prefs
                 , flaggedPostStatus fp

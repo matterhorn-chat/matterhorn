@@ -547,7 +547,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                 -- post this message or add the channel to the state.
                 case channelDeleted nc of
                     True -> return Nothing
-                    False -> return $ Just $ do
+                    False -> return $ Just $ Work "addMessageToState[1]" $ do
                         -- If the incoming message is for a group
                         -- channel we don't know about, that's because
                         -- it was previously hidden by the user. We need
@@ -674,7 +674,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                                 Nothing -> do
                                     doAsyncChannelMM Preempt cId
                                         (\s _ -> MM.mmGetThread parentId s)
-                                        (\_ p -> Just $ updatePostMap mTId p)
+                                        (\_ p -> Just $ Work "addMessageToState[2]" $ updatePostMap mTId p)
                                 _ -> return ()
                         _ -> return ()
 
@@ -948,7 +948,7 @@ asyncFetchMoreMessages =
                                  MM.postQueryPage query == Just 0
             doAsyncChannelMM Preempt cId
                 (\s c -> MM.mmGetPostsForChannel c query s)
-                (\c p -> Just $ do
+                (\c p -> Just $ Work "asyncFetchMoreMessages" $ do
                     pp <- addObtainedMessages c (-messageFetchPageSize) addTrailingGap p
                     postProcessMessageAdd pp)
 
@@ -998,7 +998,7 @@ asyncFetchMessagesForGap cId gapMessage =
                          MM.postQueryPage query == Just 0
     in doAsyncChannelMM Preempt cId
        (\s c -> MM.mmGetPostsForChannel c query s)
-       (\c p -> Just $ do
+       (\c p -> Just $ Work "asyncFetchMessagesForGap" $ do
            void $ addObtainedMessages c (-messageFetchPageSize) addTrailingGap p)
 
 -- | Given a particular message ID, this fetches n messages before and
@@ -1027,7 +1027,7 @@ asyncFetchMessagesSurrounding cId pId = do
     doAsyncChannelMM Preempt cId
       -- first get some messages before the target, no overlap
       (\s c -> MM.mmGetPostsForChannel c query s)
-      (\c p -> Just $ do
+      (\c p -> Just $ Work "asyncFetchMessagesSurrounding[1]" $ do
           let last2ndId = secondToLastPostId p
           void $ addObtainedMessages c (-reqAmt) False p
           -- now start 2nd from end of this fetch to fetch some
@@ -1040,7 +1040,7 @@ asyncFetchMessagesSurrounding cId pId = do
                        }
           doAsyncChannelMM Preempt cId
             (\s' c' -> MM.mmGetPostsForChannel c' query' s')
-            (\c' p' -> Just $ do
+            (\c' p' -> Just $ Work "asyncFetchMessagesSurrounding[2]" $ do
                 void $ addObtainedMessages c' (reqAmt + 2) False p'
             )
       )
@@ -1081,7 +1081,7 @@ fetchVisibleIfNeeded tId = do
             when ((not $ chan^.ccInfo.cdFetchPending) && gapInDisplayable) $ do
                    csChannel(cId).ccInfo.cdFetchPending .= True
                    doAsyncChannelMM Preempt cId op
-                       (\c p -> Just $ do
+                       (\c p -> Just $ Work "fetchVisibleIfNeeded" $ do
                            csChannel(c).ccInfo.cdFetchPending .= False
                            addObtainedMessages c (-numToRequest) addTrailingGap p >>= postProcessMessageAdd)
 
@@ -1114,7 +1114,7 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
           session <- getSession
           doAsyncWith Preempt $ do
               result <- try $ MM.mmGetPost pId session
-              return $ Just $ do
+              return $ Just $ Work "jumpToPost" $ do
                   case result of
                       Right p -> do
                           -- Are we a member of the channel?
