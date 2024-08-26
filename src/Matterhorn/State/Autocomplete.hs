@@ -54,6 +54,11 @@ data AutocompleteContext =
                         -- (False).
                         }
 
+data Completer =
+    Completer { completerType :: AutocompletionType
+              , completerFunc :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+              }
+
 -- | Check for whether the currently-edited word in the message editor
 -- should cause an autocompletion UI to appear. If so, initiate a server
 -- query or local cache lookup to present the completion alternatives
@@ -70,7 +75,7 @@ checkForAutocompletion target ctx = do
     result <- getCompleterForInput which ctx
     case result of
         Nothing -> resetAutocomplete which
-        Just (ty, runUpdater, searchString) -> do
+        Just (completer, searchString) -> do
             prevResult <- join <$> preuse (which.esAutocomplete)
 
             -- We should update the completion state if EITHER:
@@ -80,17 +85,18 @@ checkForAutocompletion target ctx = do
             -- or
             --
             -- 2) The search string changed but the type did NOT change
-            let shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
+            let ty = completerType completer
+                shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
                                  prevResult) &&
                                 (maybe True ((== ty) . _acType) prevResult)) ||
                                (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
                 which.esAutocompletePending .= Just searchString
-                runUpdater ty ctx searchString
+                completerFunc completer ty ctx searchString
 
 getCompleterForInput :: Traversal' ChatState (EditState Name)
                      -> AutocompleteContext
-                     -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
+                     -> MH (Maybe (Completer, Text))
 getCompleterForInput which ctx = do
     maybeZipper <- preuse (which.esEditor.editContentsL)
     mmTid <- preuse (which.esTeamId)
@@ -106,15 +112,15 @@ getCompleterForInput which ctx = do
             return $ case wordAtColumn col curLine of
                 Just (startCol, w)
                     | userSigil `T.isPrefixOf` w ->
-                        Just (ACUsers, doUserAutoCompletion which tId, T.tail w)
+                        Just (Completer ACUsers (doUserAutoCompletion which tId), T.tail w)
                     | normalChannelSigil `T.isPrefixOf` w ->
-                        Just (ACChannels, doChannelAutoCompletion tId which, T.tail w)
+                        Just (Completer ACChannels (doChannelAutoCompletion tId which), T.tail w)
                     | ":" `T.isPrefixOf` w && autocompleteManual ctx ->
-                        Just (ACEmoji, doEmojiAutoCompletion which, T.tail w)
+                        Just (Completer ACEmoji (doEmojiAutoCompletion which), T.tail w)
                     | "```" `T.isPrefixOf` w ->
-                        Just (ACCodeBlockLanguage, doSyntaxAutoCompletion which, T.drop 3 w)
+                        Just (Completer ACCodeBlockLanguage (doSyntaxAutoCompletion which), T.drop 3 w)
                     | "/" `T.isPrefixOf` w && startCol == 0 ->
-                        Just (ACCommands, doCommandAutoCompletion which tId, T.tail w)
+                        Just (Completer ACCommands (doCommandAutoCompletion which tId), T.tail w)
                 _ -> Nothing
         _ -> return Nothing
 
