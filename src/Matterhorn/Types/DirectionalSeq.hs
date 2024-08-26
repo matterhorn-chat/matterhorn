@@ -10,7 +10,22 @@
    be constructed by the functions in this module.
 -}
 
-module Matterhorn.Types.DirectionalSeq where
+module Matterhorn.Types.DirectionalSeq
+  ( DirectionalSeq(..)
+
+  , SeqDirection(..)
+  , Chronological
+  , Retrograde
+
+  , withDirSeqHead
+  , dirSeqPartition
+  , dirSeqBreakl
+  , onDirSeqSubset
+  , emptyDirSeq
+  , onDirectedSeq
+  , appendDirSeq
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
