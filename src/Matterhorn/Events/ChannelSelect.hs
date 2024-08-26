@@ -1,4 +1,8 @@
-module Matterhorn.Events.ChannelSelect where
+module Matterhorn.Events.ChannelSelect
+  ( onEventChannelSelect
+  , channelSelectKeyHandlers
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
