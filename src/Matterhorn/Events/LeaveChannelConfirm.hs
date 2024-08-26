@@ -1,4 +1,7 @@
-module Matterhorn.Events.LeaveChannelConfirm where
+module Matterhorn.Events.LeaveChannelConfirm
+  ( onEventLeaveChannelConfirm
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
