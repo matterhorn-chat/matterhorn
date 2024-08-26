@@ -1,5 +1,10 @@
 {-# LANGUAGE RankNTypes #-}
-module Matterhorn.Events.UrlSelect where
+module Matterhorn.Events.UrlSelect
+  ( onEventUrlSelect
+  , urlSelectKeyHandlers
+  , urlSelectKeybindings
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
