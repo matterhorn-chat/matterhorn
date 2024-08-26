@@ -277,16 +277,16 @@ commandList =
   , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
         listScripts
 
-  , Cmd "group-create" "Create a group chat"
-    (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]")) $ \ t -> do
-        withCurrentTeam $ \tId ->
-            createGroupChannel tId t
-
   , Cmd "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
         withCurrentTeam $ \tId ->
             withCurrentChannel tId $ \cId _ -> do
                 findAndRunScript (channelEditor(cId)) script text
+
+  , Cmd "group-create" "Create a group chat"
+    (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]")) $ \ t -> do
+        withCurrentTeam $ \tId ->
+            createGroupChannel tId t
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
