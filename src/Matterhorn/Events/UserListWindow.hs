@@ -1,4 +1,8 @@
-module Matterhorn.Events.UserListWindow where
+module Matterhorn.Events.UserListWindow
+  ( onEventUserListWindow
+  , userListWindowKeyHandlers
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
