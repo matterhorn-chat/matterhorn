@@ -355,7 +355,7 @@ handleEditingInput which e = do
     let ctx = AutocompleteContext { autocompleteManual = False
                                   , autocompleteFirstMatch = False
                                   }
-    checkForAutocompletion (maybeChannelMessageInterface(cId).miEditor) ctx
+    checkForAutocompletion cId ctx
 
     -- Reset the spell check timer for this editor
     mReset <- use (which.esSpellCheckTimerReset)
@@ -581,7 +581,7 @@ tabComplete which dir = do
                                           }
             case mcId of
                 Nothing -> return ()
-                Just cId -> checkForAutocompletion (maybeChannelMessageInterface(cId).miEditor) ctx
+                Just cId -> checkForAutocompletion cId ctx
         Just ac -> do
             case ac^.acCompletionList.to L.listSelectedElement of
                 Nothing -> return ()
