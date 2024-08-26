@@ -29,6 +29,15 @@ import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.Channels
 
 
+whenEditorEnabled :: Lens' ChatState (MessageInterface Name i)
+                  -> MH Bool
+                  -> MH Bool
+whenEditorEnabled which run = do
+    en <- use (which.miEditor.esEnabled)
+    if en
+       then run
+       else return False
+
 handleMessageInterfaceEvent :: TeamId
                             -> Lens' ChatState (MessageInterface Name i)
                             -> Vty.Event
@@ -37,9 +46,9 @@ handleMessageInterfaceEvent tId which ev = do
     mode <- use (which.miMode)
     case mode of
         Compose ->
-            handleEventWith [ mhHandleKeyboardEvent (extraEditorKeybindings which)
+            handleEventWith [ \e -> whenEditorEnabled which (mhHandleKeyboardEvent (extraEditorKeybindings which) e)
                             , mhHandleKeyboardEvent (messageInterfaceKeybindings which)
-                            , \e -> do
+                            , \e -> whenEditorEnabled which $ do
                                 case e of
                                     (Vty.EvPaste bytes) -> handlePaste (which.miEditor) bytes
                                     _ -> handleEditingInput (which.miEditor) e
@@ -151,4 +160,3 @@ extraEditorKeyHandlers which =
            ReplyRecentEvent "Reply to the most recent message" $
            replyToLatestMessage which
        ]
-

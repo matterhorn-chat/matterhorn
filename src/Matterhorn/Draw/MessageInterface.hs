@@ -345,6 +345,8 @@ inputArea :: ChatState
           -> Bool
           -> HighlightSet
           -> Widget Name
+inputArea st which _ _ | st^.which.esEnabled == False =
+    txt " "
 inputArea st which focused hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "

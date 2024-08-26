@@ -27,6 +27,7 @@ module Matterhorn.Types.EditState
   , esTeamId
   , esChannelId
   , esTarget
+  , esEnabled
 
   , EditorTarget(..)
 
@@ -209,6 +210,9 @@ data EditorTarget =
 -- history and metadata we need for editing-related operations.
 data EditState n =
     EditState { _esEditor :: Editor Text n
+              , _esEnabled :: Bool
+              -- ^ Whether this editor is enabled. If not, don't show a
+              -- cursor and don't handle editing input events.
               , _esEditMode :: EditMode
               , _esEphemeral :: EphemeralEditState
               , _esMisspellings :: Set Text
@@ -251,8 +255,8 @@ data EditState n =
               -- ^ Target for this editor
               }
 
-newEditState :: n -> n -> EditorTarget -> Maybe TeamId -> ChannelId -> EditMode -> Bool -> Maybe (IO ()) -> EditState n
-newEditState editorName attachmentListName target tId cId initialEditMode showReplyPrompt reset =
+newEditState :: n -> n -> Bool -> EditorTarget -> Maybe TeamId -> ChannelId -> EditMode -> Bool -> Maybe (IO ()) -> EditState n
+newEditState editorName attachmentListName enabled target tId cId initialEditMode showReplyPrompt reset =
     EditState { _esEditor               = editor editorName Nothing ""
               , _esEphemeral            = defaultEphemeralEditState
               , _esEditMode             = initialEditMode
@@ -268,6 +272,7 @@ newEditState editorName attachmentListName target tId cId initialEditMode showRe
               , _esChannelId            = cId
               , _esTeamId               = tId
               , _esTarget               = target
+              , _esEnabled              = enabled
               }
 
 data EphemeralEditState =
