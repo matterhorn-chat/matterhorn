@@ -1,4 +1,8 @@
-module Matterhorn.Events.PostListWindow where
+module Matterhorn.Events.PostListWindow
+  ( onEventPostListWindow
+  , postListWindowKeyHandlers
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
