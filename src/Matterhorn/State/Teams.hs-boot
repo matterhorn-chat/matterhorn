@@ -1,4 +1,7 @@
-module Matterhorn.State.Teams where
+module Matterhorn.State.Teams
+  ( makeClientChannel
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
