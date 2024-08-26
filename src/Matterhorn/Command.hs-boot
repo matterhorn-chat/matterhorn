@@ -1,4 +1,9 @@
-module Matterhorn.Command where
+module Matterhorn.Command
+  ( commandList
+  , printArgSpec
+  , dispatchCommand
+  )
+where
 
 import Prelude ()
 import Matterhorn.Prelude
