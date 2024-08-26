@@ -1,4 +1,7 @@
-module Matterhorn.Connection where
+module Matterhorn.Connection
+  ( connectWebsockets
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
