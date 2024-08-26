@@ -355,7 +355,8 @@ handleEditingInput which e = do
     let ctx = AutocompleteContext { autocompleteManual = False
                                   , autocompleteFirstMatch = False
                                   }
-    checkForAutocompletion cId ctx
+    target <- use (which.esTarget)
+    checkForAutocompletion target ctx
 
     -- Reset the spell check timer for this editor
     mReset <- use (which.esSpellCheckTimerReset)
@@ -531,7 +532,6 @@ data Direction = Forwards | Backwards
 tabComplete :: Traversal' ChatState (EditState Name) -> Direction -> MH ()
 tabComplete which dir = do
     searchStr <- use (which.esAutocomplete._Just.acPreviousSearchString)
-    mcId <- preuse (which.esChannelId)
 
     let transform list =
             let len = list^.L.listElementsL.to length
@@ -579,9 +579,10 @@ tabComplete which dir = do
             let ctx = AutocompleteContext { autocompleteManual = True
                                           , autocompleteFirstMatch = True
                                           }
-            case mcId of
+            mTarget <- preuse (which.esTarget)
+            case mTarget of
                 Nothing -> return ()
-                Just cId -> checkForAutocompletion cId ctx
+                Just target -> checkForAutocompletion target ctx
         Just ac -> do
             case ac^.acCompletionList.to L.listSelectedElement of
                 Nothing -> return ()

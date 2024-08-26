@@ -26,6 +26,9 @@ module Matterhorn.Types.EditState
   , esSpellCheckTimerReset
   , esTeamId
   , esChannelId
+  , esTarget
+
+  , EditorTarget(..)
 
   , EphemeralEditState(..)
   , defaultEphemeralEditState
@@ -197,6 +200,11 @@ data AutocompleteState n =
                       -- on, so this cache does not live very long.
                       }
 
+data EditorTarget =
+    EditorForThread TeamId
+    | EditorForChannel ChannelId
+    deriving (Eq, Show)
+
 -- | The 'EditState' value contains the editor widget itself as well as
 -- history and metadata we need for editing-related operations.
 data EditState n =
@@ -239,10 +247,12 @@ data EditState n =
               , _esTeamId :: Maybe TeamId
               -- ^ Team ID associated with this edit state (optional
               -- since not all channels are associated with teams)
+              , _esTarget :: EditorTarget
+              -- ^ Target for this editor
               }
 
-newEditState :: n -> n -> Maybe TeamId -> ChannelId -> EditMode -> Bool -> Maybe (IO ()) -> EditState n
-newEditState editorName attachmentListName tId cId initialEditMode showReplyPrompt reset =
+newEditState :: n -> n -> EditorTarget -> Maybe TeamId -> ChannelId -> EditMode -> Bool -> Maybe (IO ()) -> EditState n
+newEditState editorName attachmentListName target tId cId initialEditMode showReplyPrompt reset =
     EditState { _esEditor               = editor editorName Nothing ""
               , _esEphemeral            = defaultEphemeralEditState
               , _esEditMode             = initialEditMode
@@ -257,6 +267,7 @@ newEditState editorName attachmentListName tId cId initialEditMode showReplyProm
               , _esSpellCheckTimerReset = reset
               , _esChannelId            = cId
               , _esTeamId               = tId
+              , _esTarget               = target
               }
 
 data EphemeralEditState =

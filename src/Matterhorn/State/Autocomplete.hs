@@ -25,7 +25,7 @@ import qualified Data.Vector as V
 import           Lens.Micro.Platform ( (%=), (.=), (.~), _Just, Traversal' )
 import qualified Skylighting.Types as Sky
 
-import           Network.Mattermost.Types (userId, channelId, Command(..), TeamId, ChannelId)
+import           Network.Mattermost.Types (userId, channelId, Command(..), TeamId)
 import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Constants ( userSigil, normalChannelSigil )
@@ -58,12 +58,14 @@ data AutocompleteContext =
 -- should cause an autocompletion UI to appear. If so, initiate a server
 -- query or local cache lookup to present the completion alternatives
 -- for the word at the cursor.
-checkForAutocompletion :: ChannelId
+checkForAutocompletion :: EditorTarget
                        -> AutocompleteContext
                        -> MH ()
-checkForAutocompletion cId ctx = do
+checkForAutocompletion target ctx = do
     let which :: Traversal' ChatState (EditState Name)
-        which = maybeChannelMessageInterface(cId).miEditor
+        which = case target of
+            EditorForChannel cId -> maybeChannelMessageInterface(cId).miEditor
+            EditorForThread tId -> maybeThreadInterface(tId)._Just.miEditor
 
     result <- getCompleterForInput which ctx
     case result of

@@ -277,7 +277,8 @@ emptyEditStateForChannel checker eventQueue tId cId = do
         Just as -> Just <$> (newSpellCheckTimer as eventQueue $ MIChannel cId)
     let editorName = MessageInput cId
         attachmentListName = AttachmentList cId
-    return $ newEditState editorName attachmentListName tId cId NewPost True reset
+        target = EditorForChannel cId
+    return $ newEditState editorName attachmentListName target tId cId NewPost True reset
 
 emptyEditStateForThread :: Maybe Aspell -> BCH.BChan MHEvent -> TeamId -> ChannelId -> EditMode -> IO (EditState Name)
 emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
@@ -286,7 +287,8 @@ emptyEditStateForThread checker eventQueue tId cId initialEditMode = do
         Just as -> Just <$> (newSpellCheckTimer as eventQueue $ MITeamThread tId)
     let editorName = ThreadMessageInput cId
         attachmentListName = ThreadEditorAttachmentList cId
-    return $ newEditState editorName attachmentListName (Just tId) cId initialEditMode False reset
+        target = EditorForThread tId
+    return $ newEditState editorName attachmentListName target (Just tId) cId initialEditMode False reset
 
 newThreadInterface :: Maybe Aspell
                    -> BCH.BChan MHEvent
