@@ -1,7 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Matterhorn.Draw.PostListWindow where
+module Matterhorn.Draw.PostListWindow
+  ( drawPostListWindow
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
