@@ -18,7 +18,7 @@ import           System.Exit ( ExitCode(..) )
 
 import           Matterhorn.FilePaths ( Script(..), getAllScripts, locateScriptPath )
 import           Matterhorn.State.Common
-import           Matterhorn.State.Editing ( handleInputSubmission )
+import           Matterhorn.State.Messages ( sendMessage )
 import           Matterhorn.Types
 
 
@@ -53,14 +53,9 @@ runScript which outputChan fp text = do
     ExitSuccess -> do
         case null $ programStderr po of
             True -> Just $ Work "runScript" $ do
-                -- Treat the output like user input so that the output
-                -- can contain a slash command to be run. But don't let
-                -- a script run another script.
-                let output = T.pack $ programStdout po
-
-                if "/sh " `T.isPrefixOf` (T.strip output)
-                   then mhError $ GenericError "Scripts are not permitted to run other scripts."
-                   else handleInputSubmission which output
+                mode <- use (which.esEditMode)
+                cId <- use (which.esChannelId)
+                sendMessage cId mode (T.pack $ programStdout po) []
             False -> Nothing
     ExitFailure _ -> Nothing
 
