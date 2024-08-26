@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
   <!ENTITY roffidc "[^]\s]">
   <!ENTITY roffid  "(?:&roffidc;|\(&roffidc;{2}|\[&roffidc;+\])">
@@ -15,7 +15,7 @@
   <!ENTITY escape2 "\\[gkmMVYz]&roffid;">
   <!ENTITY escape3 "\\O([0-4]|\[5[lrci][^]]\])">
 ]>
-<language name="Roff" section="Markup" version="8" kateversion="5.0" extensions="" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="GPL">
+<language name="Roff" section="Markup" version="9" kateversion="5.0" extensions="" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="GPL">
 
   <highlighting>
 
@@ -83,6 +83,7 @@
       <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
         <IncludeRules context="##Comments"/>
+        <DetectIdentifier />
       </context>
 
       <!-- error -->
@@ -92,7 +93,6 @@
       <context name="Directive" attribute="Identifier" lineEndContext="#pop">
         <Float attribute="Number" context="#stay"/>
         <Int attribute="Number" context="#stay"/>
-        <Detect2Chars attribute="Comment" context="Comment" char="\" char1="&quot;"/>
         <IncludeRules context="DetectOthers"/>
       </context>
 
@@ -154,9 +154,8 @@
 
       <!-- .ds directive -->
       <context name="dsDirective" attribute="Identifier" lineEndContext="#pop">
-        <Int attribute="Number" context="#stay"/>
         <Float attribute="Number" context="#stay"/>
-        <Detect2Chars attribute="Comment" context="Comment" char="\" char1="&quot;"/>
+        <Int attribute="Number" context="#stay"/>
         <DetectChar attribute="String" context="dsString" char="&quot;"/>
         <IncludeRules context="DetectOthers"/>
       </context>

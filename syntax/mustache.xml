@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
 	<!ENTITY name          "[A-Za-z_:][\w.:_-]*">
 	<!ENTITY attributeName "(?:\s|^)[A-Za-z_:\*#\(\[][\)\]\w\.:_-]*">
@@ -43,7 +43,7 @@
      * v1 [2019-02-10]: Initial version
 -->
 
-<language name="Mustache/Handlebars (HTML)" version="8" kateversion="5.53"
+<language name="Mustache/Handlebars (HTML)" version="9" kateversion="5.79"
           section="Markup" priority="1" mimetype=""
           extensions="*.mustache;*.handlebars;*.hbs;*.ractive;*.hogan;*.hulk;*.html.mst;*.html.mu;*.html.rac"
           author="Nibaldo González (nibgonz@gmail.com), based on the HTML highlighter by Wilbert Berendsen (wilbert@kde.nl)"
@@ -54,8 +54,8 @@
 	<contexts>
 
 		<context name="Normal" attribute="Normal Text" lineEndContext="#stay">
-			<RegExpr context="CSS" attribute="Element Tag" String="&lt;style\b" insensitive="true" beginRegion="style" />
-			<RegExpr context="JS" attribute="Element Tag" String="&lt;script\b" insensitive="true" beginRegion="script" />
+			<WordDetect context="CSS" attribute="Element Tag" String="&lt;style" insensitive="true" beginRegion="style" />
+			<WordDetect context="JS" attribute="Element Tag" String="&lt;script" insensitive="true" beginRegion="script" />
 			<IncludeRules context="Base" />
 		</context>
 
@@ -64,7 +64,7 @@
 			<IncludeRules context="MustacheVariables" />
 
 			<StringDetect context="CDATA" attribute="CDATA" String="&lt;![CDATA[" beginRegion="cdata" />
-			<RegExpr context="Doctype" attribute="Doctype" String="&lt;!DOCTYPE\s+" insensitive="true" beginRegion="doctype"  />
+			<WordDetect context="Doctype" attribute="Doctype" String="&lt;!DOCTYPE" insensitive="true" beginRegion="doctype" />
 			<IncludeRules context="FindPI" />
 
 			<IncludeRules context="FindTags" />
@@ -153,11 +153,11 @@
 			<LineContinue context="#stay" attribute="Escape" />
 			<HlCStringChar context="#stay" attribute="Escape" />
 		</context>
-		<context name="MustacheSymbolValue" attribute="Mustache Inside" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+		<context name="MustacheSymbolValue" attribute="Mustache Inside" lineEndContext="#pop" fallthroughContext="#pop">
 			<DetectChar context="#pop!MustacheValue" attribute="Symbol" char="=" />
 			<DetectSpaces />
 		</context>
-		<context name="MustacheValue" attribute="Mustache Inside" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+		<context name="MustacheValue" attribute="Mustache Inside" lineEndContext="#pop" fallthroughContext="#pop">
 			<DetectSpaces />
 			<RegExpr context="#pop" attribute="Number" String="\d+(?=[\s\}\)\]]|$)" />
 		</context>
@@ -243,7 +243,7 @@
 			<DetectChar context="Value" attribute="Symbol" char="=" />
 		</context>
 
-		<context name="Value" attribute="Normal Text" lineEndContext="#stay" fallthrough="true" fallthroughContext="#pop!ValueNQ">
+		<context name="Value" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="#pop!ValueNQ">
 			<DetectChar context="#pop!ValueDQ" attribute="Value" char="&quot;" />
 			<DetectChar context="#pop!ValueSQ" attribute="Value" char="&apos;" />
 			<RegExpr context="#pop" attribute="Number" String="\d+(?=\s|/?&gt;|$)" />
@@ -259,7 +259,7 @@
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="FindEntityRefs" />
 		</context>
-		<context name="ValueNQ" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+		<context name="ValueNQ" attribute="Normal Text" lineEndContext="#pop" fallthroughContext="#pop">
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="FindEntityRefs" />
 			<RegExpr context="#stay" attribute="Value" String="/(?!&gt;)|[^/&gt;&lt;&quot;&apos;\s]" />
@@ -343,7 +343,7 @@
 			<RegExpr context="#stay" attribute="Error" String="\S" />
 		</context>
 		<context name="CSSContent" attribute="Normal Text" lineEndContext="#stay">
-			<RegExpr context="#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/style\b" insensitive="true" endRegion="style" />
+			<WordDetect context="#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/style" insensitive="true" endRegion="style" />
 			<IncludeRules context="MustacheVariables" />
 
 			<DetectChar context="CSS-RuleSet" attribute="Normal Text" char="{" beginRegion="ruleset" />
@@ -352,10 +352,22 @@
 		</context>
 
 		<!-- Overwrite some rules of 'css.xml' to add Mustache variables -->
-		<context name="CSS-RuleSet" attribute="Normal Text" lineEndContext="#stay">
-			<DetectChar context="#pop" attribute="Normal Text" char="}" endRegion="ruleset" />
+		<context name="CSS-RuleSet" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="CSS-Rule">
 			<IncludeRules context="MustacheVariables" />
-			<IncludeRules context="RuleSet##CSS" />
+			<DetectChar context="CSS-RuleSet" attribute="Normal Text" char="{" beginRegion="ruleset" />
+			<DetectChar context="#pop" attribute="Normal Text" char="}" endRegion="ruleset" />
+         <AnyChar context="CSS-Selector" String=".#:,[*>+~|&amp;" lookAhead="1" />
+		</context>
+		<context name="CSS-Selector" attribute="Normal Text" lineEndContext="#stay">
+			<IncludeRules context="MustacheVariables" />
+			<DetectChar context="#pop!CSS-RuleSet" attribute="Normal Text" char="{" beginRegion="ruleset" />
+			<DetectChar attribute="Normal Text" context="#pop#pop" char="}" endRegion="ruleset"/>
+			<IncludeRules context="Selector##CSS" />
+		</context>
+		<context name="CSS-Rule" attribute="Normal Text" lineEndContext="#stay">
+			<IncludeRules context="MustacheVariables" />
+			<AnyChar context="#pop!CSS-Selector" String=".#,[*>+~|&amp;@{}" lookAhead="1"/>
+			<IncludeRules context="Rule##CSS" />
 		</context>
 		<context name="CSS-SelectorAttr" attribute="CSS: Selector Attribute" lineEndContext="#stay">
 			<DetectChar context="#pop" attribute="CSS: Selector Attribute" char="]" />
@@ -374,14 +386,14 @@
 		</context>
 
 		<context name="JSContent" attribute="Normal Text" lineEndContext="#stay">
-			<RegExpr context="#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/script\b" insensitive="true" endRegion="script" />
+			<WordDetect context="#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/script" insensitive="true" endRegion="script" />
 			<RegExpr context="JSCommentClose" attribute="Comment" String="//(?=.*&lt;/script\b)" insensitive="true" />
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="OverwriteJavaScript" />
 			<IncludeRules context="Normal##JavaScript" includeAttrib="true"/>
 		</context>
 		<context name="JSCommentClose" attribute="Comment" lineEndContext="#pop">
-			<RegExpr context="#pop#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/script\b" insensitive="true" endRegion="script" />
+			<WordDetect context="#pop#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/script" insensitive="true" endRegion="script" />
 			<DetectSpaces />
 			<IncludeRules context="##Comments" />
 		</context>

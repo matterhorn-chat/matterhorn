@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <language name="Stata" version="12" kateversion="5.0" section="Scientific" extensions="*.do;*.ado;*.doh;*.DO;*.ADO;*.DOH"
  casesensitive="1" priority="5" author="Larry Radbill (Larry.Radbill gmail com)" license="LGPL" >
 

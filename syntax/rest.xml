@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
         <!ENTITY inlinestart "(?:^|(?&lt;=[-\s&apos;&quot;\(\[{&lt;/:‘“’«¡¿‐‑‒–— ]))">
         <!ENTITY inlineend "(?=[-\s’”»‐‑‒–— &apos;&quot;\)\]}&gt;/:\.,;!\?\\]|$)">
@@ -14,7 +14,7 @@
   Copyright 2010 Matt Williams (matt@milliams.com)
   Copyright 2014 Matthew Woehlke (mw_triad@users.sourceforge.net)
   -->
-<language name="reStructuredText" extensions="*.rst" section="Markup" mimetype="text/x-rst" version="9" kateversion="5.0" casesensitive="1">
+<language name="reStructuredText" extensions="*.rst" section="Markup" mimetype="text/x-rst" version="10" kateversion="5.0" casesensitive="1">
 
   <highlighting>
 
@@ -44,7 +44,7 @@
         <RegExpr attribute="SubstitutionReference" context="#stay" String="&inlinestart;\|[^\s].*\|&inlineend;" minimal="true"/>
         <RegExpr attribute="InlineInternalTarget" context="#stay" String="&inlinestart;_`[^\s].*`&inlineend;" minimal="true"/>
         <RegExpr attribute="FootnoteReference" context="#stay" String="&inlinestart;\[[&SimpleReferenceNameChars;]+\]_&inlineend;" minimal="true"/>
-        <RegExpr attribute="HyperlinkReference" context="#stay" String="&inlinestart;(`[^\s].*`|\w+)_&inlineend;" minimal="true"/>
+        <RegExpr attribute="HyperlinkReference" context="#stay" String="&inlinestart;(`[^\s].*`|\w+)_{1,2}&inlineend;" minimal="true"/>
         <RegExpr attribute="InterpretedText" context="TrailingRole" String="&inlinestart;`[^\s].*`(?=:([\w\-_\.\+]+)(:[\w\-_\.\+]+)*:)" minimal="true"/>
         <RegExpr attribute="Role" String=":([\w\-_\.\+]+)(:[\w\-_\.\+]+)*:(?=`)" context="Role"/>
         <RegExpr attribute="DefaultRole" context="#stay" String="&inlinestart;`[^\s].*`&inlineend;" minimal="true"/>

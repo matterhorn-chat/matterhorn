@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
   <!ENTITY xmlattrs "\s+([^&quot;/>]++|&quot;[^&quot;]*+&quot;)*+">
   <!ENTITY tab      "&#009;">
@@ -17,7 +17,7 @@
   https://www.gnu.org/software/kawa/Syntax.html
   https://www.gnu.org/software/guile/manual/html_node/Scheme-Syntax.html
 -->
-<language version="11" kateversion="5.62" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile;*.chicken;*.meta" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
+<language version="12" kateversion="5.79" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile;*.chicken;*.meta" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
   <highlighting>
     <list name="operators">
       <item>&lt;=</item>
@@ -27,7 +27,6 @@
       <item>&gt;=</item>
       <item>&gt;</item>
       <item>-</item>
-      <item>/</item>
       <item>*,*</item>
       <item>+</item>
       <item>!</item>
@@ -35,8 +34,6 @@
       <item>%</item>
       <item>*</item>
       <item>/</item>
-      <item>=</item>
-      <item>></item>
       <item>?</item>
       <item>^</item>
       <item>_</item>
@@ -824,7 +821,7 @@
         <RegExpr attribute="Normal" context="#stay" String="&symbol;"/>
         <!-- s, f, d, l are extensions of Kawa -->
         <RegExpr attribute="Float" context="#stay" String="[0-9]*+\.[0-9]++([esfdl][+-]?[0-9]++)?|[0-9]++[esfdl][+-]?[0-9]++"/>
-        <RegExpr attribute="Decimal" context="#stay" String="[0-9]++"/>
+        <Int attribute="Decimal" context="#stay"/>
       </context>
 
 
@@ -1026,6 +1023,7 @@
 
       <context name="Num2" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop!Digit2">
         <IncludeRules context="NumPrefix"/>
+        <AnyChar attribute="Base Prefix" context="#stay" String="ie"/>
         <AnyChar attribute="Function" context="#pop!Digit2" String="+-"/>
       </context>
       <context name="Digit2" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop">
@@ -1034,6 +1032,7 @@
 
       <context name="Num8" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop!Digit8">
         <IncludeRules context="NumPrefix"/>
+        <AnyChar attribute="Base Prefix" context="#stay" String="ie"/>
         <AnyChar attribute="Function" context="#pop!Digit8" String="+-"/>
       </context>
       <context name="Digit8" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop">
@@ -1042,16 +1041,21 @@
 
       <context name="Num10" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop!Digit10">
         <IncludeRules context="NumPrefix"/>
+        <DetectChar attribute="Base Prefix" context="#pop!Num16" char="x"/>
+        <DetectChar attribute="Base Prefix" context="#pop!Num8" char="o"/>
+        <DetectChar attribute="Base Prefix" context="#pop!Num2" char="b"/>
+        <AnyChar attribute="Base Prefix" context="#stay" String="ied"/>
         <AnyChar attribute="Function" context="#pop!Digit10" String="+-"/>
       </context>
       <context name="Digit10" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop">
         <!-- s, f, d, l are extensions of Kawa -->
         <RegExpr attribute="Float" context="#pop" String="[0-9]*+\.[0-9]++([esfdl][+-]?[0-9]++)?|[0-9]++[esfdl][+-]?[0-9]++"/>
-        <RegExpr attribute="Decimal" context="#pop" String="[0-9]++"/>
+        <Int attribute="Decimal" context="#pop" additionalDeliminator="eid"/>
       </context>
 
       <context name="Num16" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop!Digit16">
         <IncludeRules context="NumPrefix"/>
+        <DetectChar attribute="Base Prefix" context="#stay" char="i"/>
         <AnyChar attribute="Function" context="#pop!Digit16" String="+-"/>
       </context>
       <context name="Digit16" attribute="Decimal" lineEndContext="#pop" fallthroughContext="#pop">
@@ -1059,8 +1063,12 @@
       </context>
 
       <context name="NumPrefix" attribute="Decimal" lineEndContext="#pop">
-        <Detect2Chars attribute="Decimal" context="#stay" char="#" char1="e"/>
-        <Detect2Chars attribute="Decimal" context="#stay" char="#" char1="i"/>
+        <Detect2Chars attribute="Base Prefix" context="#stay" char="#" char1="e"/>
+        <Detect2Chars attribute="Base Prefix" context="#stay" char="#" char1="i"/>
+        <Detect2Chars attribute="Base Prefix" context="#pop!Num16" char="#" char1="x"/>
+        <Detect2Chars attribute="Base Prefix" context="#pop!Num8" char="#" char1="o"/>
+        <Detect2Chars attribute="Base Prefix" context="#pop!Num2" char="#" char1="b"/>
+        <Detect2Chars attribute="Base Prefix" context="#pop!Num10" char="#" char1="d"/>
       </context>
 
 

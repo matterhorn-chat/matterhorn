@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!--
   ========================================================================
 
@@ -20,7 +20,7 @@
   
   ========================================================================
 -->
-<language name="Lex/Flex" version="7" kateversion="5.0" section="Sources" extensions="*.l;*.lex;*.flex" author="Jan Villat (jan.villat@net2000.ch)" license="LGPL">
+<language name="Lex/Flex" version="7" kateversion="5.79" section="Sources" extensions="*.l;*.lex;*.flex" author="Jan Villat (jan.villat@net2000.ch)" license="LGPL">
 
 <highlighting>
 <contexts>
@@ -34,7 +34,7 @@
     <Detect2Chars attribute="Comment" context="Comment" char="/" char1="*" column="0" beginRegion="BlockComment"/>
     <RegExpr attribute="Definition" context="Definition RegExpr" String="^[A-Za-z_]\w*\s+" column="0"/>
   </context>
-  <context name="Rules" attribute="Normal Text" lineEndContext="#stay" fallthrough="true" fallthroughContext="Rule RegExpr">
+  <context name="Rules" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="Rule RegExpr">
     <IncludeRules context="Detect C" />
     <Detect2Chars attribute="Content-Type Delimiter" context="User Code" char="%" char1="%" beginRegion="code" endRegion="rules" />
   </context>
@@ -89,12 +89,12 @@
     <DetectChar attribute="RegExpr" context="RegExpr Q" char="&quot;" />  
   </context>
   
-  <context name="Start Conditions Scope" attribute="Normal Text" lineEndContext="#stay" fallthrough="true" fallthroughContext="Rule RegExpr">
+  <context name="Start Conditions Scope" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="Rule RegExpr">
     <RegExpr attribute="Content-Type Delimiter" context="#pop" String="\s*\}" endRegion="SCscope" />
     <DetectSpaces attribute="Normal Text" context="Rule RegExpr" />
   </context>
   
-  <context name="Action" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="Action C">
+  <context name="Action" attribute="Normal Text" lineEndContext="#pop" fallthroughContext="Action C">
     <RegExpr attribute="Directive" context="#stay" String="\|\s*$" />
     <Detect2Chars attribute="Content-Type Delimiter" context="Lex Rule C Bloc" char="%" char1="{" beginRegion="lexCbloc" />
   </context>

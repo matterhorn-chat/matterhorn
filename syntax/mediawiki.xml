@@ -1,5 +1,5 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<!DOCTYPE language SYSTEM "language.dtd" [
+<!DOCTYPE language [
   <!ENTITY tab "&#9;">
   <!ENTITY url          "(http:|https:|ftp:|mailto:)[^]| ]*(?=$|[]|\s])">
   <!ENTITY htmlTagName  "(?![0-9])[\w_:][\w.:_-]*">
@@ -7,7 +7,7 @@
   <!ENTITY wikiLinkWithDescription "\[\[[^]|]*\|[^]]*\]\]">
   <!ENTITY wikiLinkWithoutDescription "\[\[[^]|]*\]\]">
 ]>
-<language name="MediaWiki" section="Markup" version="12" kateversion="5.53" extensions="*.mediawiki" mimetype="" license="FDL" >
+<language name="MediaWiki" section="Markup" version="13" kateversion="5.53" extensions="*.mediawiki" mimetype="" license="FDL" >
   <highlighting>
     <contexts>
       <context attribute="Normal" lineEndContext="#stay" name="normal" >
@@ -532,11 +532,11 @@
 
       <context attribute="Normal" lineEndContext="#stay" name="FindUrl" >
         <RegExpr String="\[&url;" attribute="WikiTag" context="DelimitedURL" lookAhead="true" />
-        <RegExpr String="&url;" attribute="URL" context="LooseURL" lookAhead="true" />
+        <RegExpr String="&url;" context="LooseURL" lookAhead="true" />
       </context>
       <context attribute="Normal" lineEndContext="#stay" name="FindUrlWithinTemplate" >
         <RegExpr String="\[&url;" attribute="WikiTag" context="DelimitedURL" lookAhead="true" />
-        <RegExpr String="&url;" attribute="URL" context="LooseURLWithinTemplate" lookAhead="true" />
+        <RegExpr String="&url;" context="LooseURLWithinTemplate" lookAhead="true" />
       </context>
 
       <context name="FindWikiLink" attribute="Normal" lineEndContext="#stay">
@@ -582,7 +582,6 @@
       <itemData name="LinkBoldUnderlined" defStyleNum="dsOthers" bold="true" underline="true" />
       <itemData name="LinkItalicUnderlined" defStyleNum="dsOthers" italic="true" underline="true" />
       <itemData name="LinkBoldItalicUnderlined" defStyleNum="dsOthers" bold="true" italic="true" underline="true" />
-      <itemData name="URL" defStyleNum="dsOthers" />
       <itemData name="Comment" defStyleNum="dsComment" />
       <itemData name="Section" defStyleNum="dsKeyword" />
       <itemData name="DefinitionListHeader" defStyleNum="dsKeyword" />

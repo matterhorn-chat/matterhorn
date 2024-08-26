@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <language name="Literate Haskell" version="9" kateversion="5.53" section="Sources" extensions="*.lhs" mimetype="text/x-literate-haskell" author="Nicolas Wu (zenzike@gmail.com)" license="LGPL">
   <highlighting>
   <contexts>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
 <!-- Regular expression constants: -->
 <!ENTITY LETTER "A-Za-z\xc0-\xd6\xd8-\xf6\xf8-\xff">                <!-- Latin-1 letters. -->

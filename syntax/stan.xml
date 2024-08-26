@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language>
+<language name="Stan"
+          section="Scientific"
+          version="7"
+          kateversion="5.0"
+          indenter="cstyle"
+          extensions="*.stan;*.stanfunctions"
+          license="MIT">
+  <highlighting>
+    <list name="controlflow">
+      <item>break</item>
+      <item>continue</item>
+      <item>else</item>
+      <item>for</item>
+      <item>if</item>
+      <item>in</item>
+      <item>return</item>
+      <item>while</item>
+      <item>profile</item>
+    </list>
+    <list name="keywords">
+      <item>reject</item>
+      <item>print</item>
+      <item>integrate_ode</item>
+      <item>integrate_ode_bdf</item>
+      <item>integrate_ode_rk45</item>
+      <item>algebra_solver</item>
+    </list>
+    <list name="types">
+      <item>lower</item>
+      <item>upper</item>
+      <item>offset</item>
+      <item>multiplier</item>
+      <item>int</item>
+      <item>real</item>
+      <item>vector</item>
+      <item>complex</item>
+      <item>ordered</item>
+      <item>positive_ordered</item>
+      <item>simplex</item>
+      <item>unit_vector</item>
+      <item>row_vector</item>
+      <item>matrix</item>
+      <item>array</item>
+      <item>tuple</item>
+      <item>cholesky_factor_corr</item>
+      <item>cholesky_factor_cov</item>
+      <item>corr_matrix</item>
+      <item>cov_matrix</item>
+      <item>void</item>
+      <item>complex_matrix</item>
+      <item>complex_vector</item>
+      <item>complex_row_vector</item>
+    </list>
+    <contexts>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
+        <DetectSpaces />
+        <DetectChar attribute="Comment" context="Hash comment" char="#"/>
+        <Detect2Chars attribute="Comment" context="C-style comment" char="/" char1="/"/>
+        <Detect2Chars attribute="Comment" context="Block comment" char="/" char1="*" beginRegion="Comment"/>
+        <RegExpr attribute="Keyword" context="#stay" String="\btarget\s*\+=" />
+        <DetectChar attribute="Operator" context="After less-than" char="&lt;" />
+        <DetectChar attribute="Punctuation" context="After comma" char="," />
+        <DetectChar attribute="Operator" context="After Right Paren" char=")" />
+        <RegExpr attribute="Keyword" context="#stay" String="\b(functions|(transformed\s+)?(data|parameters)|model|generated\s+quantities)\b" />
+        <keyword attribute="Control Flow" context="#stay" String="controlflow" />
+        <keyword attribute="Keyword" context="#stay" String="keywords" />
+        <keyword attribute="Data Type" context="#stay" String="types" />
+        <RegExpr attribute="Identifier" context="#stay" String="[A-Za-z][A-Za-z0-9_]*" />
+        <RegExpr attribute="Complex" context="#stay" String="(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?i" />
+        <Float attribute="Real" />
+        <Int attribute="Int" />
+        <DetectChar attribute="Punctuation" context="#stay" char="{" beginRegion="Brace1" />
+        <DetectChar attribute="Punctuation" context="#stay" char="}" endRegion="Brace1" />
+        <DetectChar attribute="String" context="String" char="&quot;" />
+        <RegExpr attribute="Assignment" context="#stay" String="([+-]?=|\.?[*/]=)" />
+        <RegExpr attribute="Operator" context="#stay" String="(:|\?|\|\||&amp;&amp;|==|!=|&lt;=?|&gt;=?|\+|-|\.?\*|\.?/|%|\\|'|^)" />
+        <AnyChar attribute="Punctuation" context="#stay" String="[]()" />
+      </context>
+      <context attribute="String" lineEndContext="#stay" name="String">
+        <DetectChar attribute="String" context="#pop" char="&quot;"/>
+      </context>
+      <context attribute="Comment" lineEndContext="#pop" name="Hash comment">
+        <DetectSpaces />
+        <IncludeRules context="##Comments" />
+      </context>
+      <context attribute="Comment" lineEndContext="#pop" name="C-style comment">
+        <DetectSpaces />
+        <IncludeRules context="##Comments" />
+      </context>
+      <context attribute="Comment" lineEndContext="#stay" name="Block comment">
+        <DetectSpaces />
+        <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+        <WordDetect attribute="Doc Tag" String="@return" context="#stay" />
+        <WordDetect attribute="Doc Tag" String="@param" context="#stay" />
+        <IncludeRules context="##Comments" />
+      </context>
+      <context attribute="Normal Text" name="After comma" lineEndContext="#stay" fallthrough="true" fallthroughContext="#pop" >
+        <DetectSpaces />
+        <RegExpr context="Upper Bound" String="upper\s*=" lookAhead="true" />
+      </context>
+      <context attribute="Normal Text" name="After less-than" lineEndContext="#stay" fallthrough="true" fallthroughContext="#pop" >
+        <DetectSpaces />
+        <RegExpr context="Upper Bound" String="upper\s*=" lookAhead="true" />
+        <RegExpr context="Lower Bound" String="lower\s*=" lookAhead="true" />
+      </context>
+      <context attribute="Normal Text" name="After Right Paren" lineEndContext="#stay" fallthrough="true" fallthroughContext="#pop" >
+        <DetectSpaces />
+        <RegExpr context="Truncation" String="T\s*\[" lookAhead="true" />
+      </context>
+      <context attribute="Normal Text" name="Upper Bound" lineEndContext="#stay" >
+        <StringDetect attribute="Keyword" String="upper" context="#stay" />
+        <DetectChar attribute="Punctuation" char="=" context="#pop" />
+      </context>
+      <context attribute="Normal Text" name="Lower Bound" lineEndContext="#stay" >
+        <StringDetect attribute="Keyword" String="lower" context="#stay" />
+        <DetectChar attribute="Punctuation" char="=" context="#pop" />
+      </context>
+      <context attribute="Normal Text" name="Truncation" lineEndContext="#stay" >
+        <DetectChar attribute="Keyword" char="T" context="#stay" />
+        <DetectChar attribute="Punctuation" char="[" context="#pop" />
+      </context>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text"  defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Control Flow" defStyleNum="dsControlFlow" spellChecking="false"/>
+      <itemData name="Keyword"      defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Data Type"    defStyleNum="dsDataType" spellChecking="false"/>
+      <itemData name="Int"          defStyleNum="dsDecVal" spellChecking="false"/>
+      <itemData name="Real"         defStyleNum="dsFloat" spellChecking="false"/>
+      <itemData name="Complex"      defStyleNum="dsFloat" spellChecking="false"/>
+      <itemData name="String"       defStyleNum="dsString"/>
+      <itemData name="Comment"      defStyleNum="dsComment"/>
+      <itemData name="Assignment"   defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Operator"     defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Punctuation"  defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Identifier"   defStyleNum="dsNormal" spellChecking="false" />
+      <itemData name="Doc Tag"      defStyleNum="dsAnnotation" spellChecking="false" />
+    </itemDatas>
+  </highlighting>
+  <general>
+    <comments>
+      <comment name="singleLine" start="//" />
+      <comment name="multiLine" start="/*" end="*/" region="Comment" />
+    </comments>
+    <keywords casesensitive="1" />
+  </general>
+</language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

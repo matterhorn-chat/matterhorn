@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!-- Oracle10g SQL and PL/SQL syntax - ANSI SQL 2003 superset -->
 <!-- This file is maintained by Anders Lund <anders@alweb.dk> since 2005-11-06
      v3 fix comments by Gene Thomas <gene@genethomas.com>
   -->
 <!-- kate: space-indent on; indent-width 2; replace-tabs on; -->
-<language name="SQL" version="8" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Yury Lebedev (yurylebedev@mail.ru)" license="LGPL">
+<language name="SQL" version="9" kateversion="5.44" section="Database" extensions="*.sql;*.SQL;*.ddl;*.DDL" mimetype="text/x-sql" casesensitive="0" author="Yury Lebedev (yurylebedev@mail.ru)" license="LGPL">
   <highlighting>
     <list name="controlFlow">
       <item>BEGIN</item>
@@ -921,6 +921,7 @@
       <context name="Multiline C-style comment" attribute="Comment" lineEndContext="#stay">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="#pop" char="*" char1="/" endRegion="Comment"/>
+        <Detect2Chars attribute="Comment" context="Multiline C-style comment" char="/" char1="*" beginRegion="Comment"/>
         <IncludeRules context="##Comments"/>
       </context>
       <context name="SQL*Plus remark directive" attribute="Comment" lineEndContext="#pop">

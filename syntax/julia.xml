@@ -27,16 +27,16 @@
   Author: Timothy E. Holy, Washington University in St. Louis
 -->
 
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
-  <!ENTITY int "[0-9]([0-9_]*[0-9])?">
-  <!ENTITY hex "[0-9a-fA-F]([0-9a-fA-F_]*[0-9a-fA-F])?">
+  <!ENTITY int "[0-9]+(_[0-9]+)*">
+  <!ENTITY hex "[0-9a-fA-F]+(_[0-9a-fA-F]+)*">
   <!ENTITY function_disallowed_chars "\s.,(){}\[\];:&#37;'&quot;&amp;$=/?\|^#@">
   <!ENTITY function_disallowed_first_char "0-9!&function_disallowed_chars;">
   <!ENTITY function_begin_boundary "(?:(?&lt;=[&function_disallowed_chars;!]|^)(?=[^&function_disallowed_first_char;]))">
 ]>
 
-<language name="Julia" style="julia" indenter="julia" section="Sources" version="13" kateversion="5.0" extensions="*.jl" casesensitive="1" priority="5" license="MIT">
+<language name="Julia" alternativeNames="JL" style="julia" indenter="julia" section="Sources" version="15" kateversion="5.62" extensions="*.jl" casesensitive="1" priority="5" license="MIT">
 
   <highlighting>
     <list name="cflow_begin">
@@ -493,14 +493,15 @@
         <keyword context="controlflow-block" attribute="Control Flow" String="cflow_begin"
                  beginRegion="block" />
         <keyword context="#stay" attribute="Control Flow" String="cflow"/>
-        <keyword context="#stay" attribute="Keyword" String="block_end"
-                 endRegion="block" />
+        <WordDetect context="#stay" attribute="Keyword" String="end"
+                    endRegion="block" />
 
         <IncludeRules context="coderoot"/>
       </context>
 
       <context name="subsetting" attribute="Normal Text" lineEndContext="#stay">
-        <keyword context="#stay" attribute="Keyword" String="block_end"/>
+        <DetectSpaces attribute="Normal Text"/>
+        <WordDetect context="#stay" attribute="Keyword" String="end"/>
         <IncludeRules context="coderoot"/>
         <DetectChar attribute="Normal Text" context="#pop" char="]"/>
       </context>
@@ -543,718 +544,32 @@
         <StringDetect attribute="Command String" context="Block-Backtick-String" String="```" beginRegion="block-string"/>
         <DetectChar attribute="Command String" context="Backtick-String" char="`"/>
 
-        <!-- Multi-character operators
-        this was generated semi-automatically using operators in https://github.com/JuliaLang/julia/blob/master/src/julia-parser.scm -->
-        <StringDetect context="#stay" attribute="Operator" String="..."/>
+        <!-- Subsetting. This is needed because the `end` keyword has a special meaning in subsetting operations and should not be used for folding -->
+        <DetectChar attribute="Normal Text" context="subsetting" char="["/>
+
         <Detect2Chars context="type-annotation" attribute="Operator" char=":" char1=":"/>
-        <StringDetect context="#stay" attribute="Operator" String=".&gt;&gt;&gt;=" />
-        <StringDetect context="#stay" attribute="Operator" String="&gt;&gt;&gt;=" />
-        <StringDetect context="#stay" attribute="Operator" String=".&lt;--&gt;" />
-        <StringDetect context="#stay" attribute="Operator" String="&lt;--&gt;" />
-        <StringDetect context="#stay" attribute="Operator" String=".//=" />
-        <StringDetect context="#stay" attribute="Operator" String="//=" />
-        <StringDetect context="#stay" attribute="Operator" String=".&lt;&lt;=" />
-        <StringDetect context="#stay" attribute="Operator" String="&lt;&lt;=" />
-        <StringDetect context="#stay" attribute="Operator" String=".&gt;&gt;=" />
-        <StringDetect context="#stay" attribute="Operator" String="&gt;&gt;=" />
-        <StringDetect context="#stay" attribute="Operator" String=".--&gt;" />
-        <StringDetect context="#stay" attribute="Operator" String="--&gt;" />
-        <StringDetect context="#stay" attribute="Operator" String=".&lt;--" />
-        <StringDetect context="#stay" attribute="Operator" String="&lt;--" />
-        <StringDetect context="#stay" attribute="Operator" String=".===" />
-        <StringDetect context="#stay" attribute="Operator" String="===" />
-        <StringDetect context="#stay" attribute="Operator" String=".!==" />
-        <StringDetect context="#stay" attribute="Operator" String="!==" />
-        <StringDetect context="#stay" attribute="Operator" String=".&gt;&gt;&gt;" />
-        <StringDetect context="#stay" attribute="Operator" String="&gt;&gt;&gt;" />
-        <StringDetect context="#stay" attribute="Operator" String=".+=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="+" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".-=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="-" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".−=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="−" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".*=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="*" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String="./=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="/" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".\=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="\" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".^=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="^" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".÷=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="÷" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".%=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="%" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".|=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="|" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".&amp;=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="&amp;" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".⊻=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="⊻" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".:=" />
-        <Detect2Chars context="#stay" attribute="Operator" char=":" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".$=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="$" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".=&gt;" />
-        <Detect2Chars context="#stay" attribute="Operator" char="=" char1="&gt;"/>
-        <StringDetect context="#stay" attribute="Operator" String=".&amp;&amp;" />
-        <Detect2Chars context="#stay" attribute="Operator" char="&amp;" char1="&amp;"/>
-        <StringDetect context="#stay" attribute="Operator" String=".||" />
-        <Detect2Chars context="#stay" attribute="Operator" char="|" char1="|"/>
-        <StringDetect context="#stay" attribute="Operator" String=".&gt;=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="&gt;" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".&lt;=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="&lt;" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".==" />
-        <Detect2Chars context="#stay" attribute="Operator" char="=" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".!=" />
-        <Detect2Chars context="#stay" attribute="Operator" char="!" char1="="/>
-        <StringDetect context="#stay" attribute="Operator" String=".&lt;|" />
-        <Detect2Chars context="#stay" attribute="Operator" char="&lt;" char1="|"/>
-        <StringDetect context="#stay" attribute="Operator" String=".|&gt;" />
-        <Detect2Chars context="#stay" attribute="Operator" char="|" char1="&gt;"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="."/>
-        <StringDetect context="#stay" attribute="Operator" String=".++" />
-        <Detect2Chars context="#stay" attribute="Operator" char="+" char1="+"/>
-        <StringDetect context="#stay" attribute="Operator" String=".//" />
-        <Detect2Chars context="#stay" attribute="Operator" char="/" char1="/"/>
-        <StringDetect context="#stay" attribute="Operator" String=".&lt;&lt;" />
-        <Detect2Chars context="#stay" attribute="Operator" char="&lt;" char1="&lt;"/>
-        <StringDetect context="#stay" attribute="Operator" String=".&gt;&gt;" />
-        <Detect2Chars context="#stay" attribute="Operator" char="&gt;" char1="&gt;"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="="/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="~"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="←"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="→"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤃"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥧"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥨"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥭"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬲"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬳"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⬿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭃"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⭌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="￩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="￫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="&gt;"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="&lt;"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≥"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≡"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∥"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≃"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≙"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≧"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≨"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≭"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≯"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≲"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≳"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊃"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊲"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊳"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋙"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋡"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋥"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋧"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋨"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋭"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋲"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋳"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⦷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧡"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧥"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩧"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩭"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩯"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩲"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩳"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪃"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪙"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪡"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪥"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪧"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪨"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪭"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪯"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪲"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪳"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⪿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫃"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫙"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="…"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⁝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋯"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="$"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="+"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="-"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="−"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="¦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="|"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∨"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="±"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨥"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨦"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨧"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨨"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨫"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨬"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨭"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨹"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨺"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩁"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩂"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩐"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩡"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩢"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="*"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="/"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⌿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="÷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="%"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="&amp;"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="·"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="·"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋅"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="×"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="\"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∩"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∧"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊙"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊡"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∙"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="∤"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⅋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="≀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋆"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⋒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⦸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⦼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⦾"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⦿"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⧷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨇"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨲"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨳"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨴"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨶"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨸"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨻"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨼"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨽"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩀"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩃"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩄"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩎"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩚"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩞"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⩠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⫛"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⊍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="▷"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟖"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟗"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⨟"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="^"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="↓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⇵"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟰"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⟱"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤈"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤊"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤋"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤒"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⤓"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥉"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥌"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥍"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥏"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥑"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥔"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥕"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥘"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥙"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥜"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥝"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥠"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥡"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥣"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥥"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥮"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="⥯"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="￪"/>
-        <Detect2Chars context="#stay" attribute="Operator" char="." char1="￬"/>
 
         <!-- subtype operator -->
         <Detect2Chars context="type-annotation" attribute="Operator" char="&lt;" char1=":"/>
 
-        <!-- Look-ahead for adjoint ' after variable, number literal, closing braces and .' -->
-        <RegExpr context="_adjoint" attribute="Variable" String="[a-zA-Z]\w*(?=')" />
-        <RegExpr context="_adjoint" attribute="Float" String="(&int;(\.&int;)?|\.&int;)([eEfF][+-]?\d+)?(im)?(?=')" />
-        <!-- <RegExpr context="_adjoint" attribute="Operator" String="\.'(?=')" /> -->
+        <!-- Character operators
+        this was generated semi-automatically using operators in https://github.com/JuliaLang/julia/blob/master/src/julia-parser.scm -->
+        <RegExpr context="#stay" attribute="Operator" String="\.\.\.?|[:$]=?|\.?(?:&gt;&gt;&gt;=|&lt;--&gt;|//=|&lt;&lt;=|&gt;&gt;=|--&gt;|&lt;--|===|!==|&gt;&gt;&gt;|[-+*/\\^÷%|&amp;⊻]=|=&gt;|&amp;&amp;|\|\|?|&gt;=|&lt;=|==|!=|&lt;\||\|&gt;|\+\+|//|&lt;&lt;|&gt;&gt;|&lt;:|&gt;:|[\Q=≔⩴≕~←→↔↚↛↞↠↢↣↦↤↮⇎⇍⇏⇐⇒⇔⇴⇶⇷⇸⇹⇺⇻⇼⇽⇾⇿⟵⟶⟷⟹⟺⟻⟼⟽⟾⟿⤀⤁⤂⤃⤄⤅⤆⤇⤌⤍⤎⤏⤐⤑⤔⤕⤖⤗⤘⤝⤞⤟⤠⥄⥅⥆⥇⥈⥊⥋⥎⥐⥒⥓⥖⥗⥚⥛⥞⥟⥢⥤⥦⥧⥨⥩⥪⥫⥬⥭⥰⧴⬱⬰⬲⬳⬴⬵⬶⬷⬸⬹⬺⬻⬼⬽⬾⬿⭀⭁⭂⭃⭄⭇⭈⭉⭊⭋⭌￩￫⇜⇝↜↝↩↪↫↬↼↽⇀⇁⇄⇆⇇⇉⇋⇌⇚⇛⇠⇢↷↶↺↻&gt;&lt;≥≤≡≠≢∈∉∋∌⊆⊈⊂⊄⊊∝∊∍∥∦∷∺∻∽∾≁≃≂≄≅≆≇≈≉≊≋≌≍≎≐≑≒≓≖≗≘≙≚≛≜≝≞≟≣≦≧≨≩≪≫≬≭≮≯≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿⊀⊁⊃⊅⊇⊉⊋⊏⊐⊑⊒⊜⊩⊬⊮⊰⊱⊲⊳⊴⊵⊶⊷⋍⋐⋑⋕⋖⋗⋘⋙⋚⋛⋜⋝⋞⋟⋠⋡⋢⋣⋤⋥⋦⋧⋨⋩⋪⋫⋬⋭⋲⋳⋴⋵⋶⋷⋸⋹⋺⋻⋼⋽⋾⋿⟈⟉⟒⦷⧀⧁⧡⧣⧤⧥⩦⩧⩪⩫⩬⩭⩮⩯⩰⩱⩲⩳⩵⩶⩷⩸⩹⩺⩻⩼⩽⩾⩿⪀⪁⪂⪃⪄⪅⪆⪇⪈⪉⪊⪋⪌⪍⪎⪏⪐⪑⪒⪓⪔⪕⪖⪗⪘⪙⪚⪛⪜⪝⪞⪟⪠⪡⪢⪣⪤⪥⪦⪧⪨⪩⪪⪫⪬⪭⪮⪯⪰⪱⪲⪳⪴⪵⪶⪷⪸⪹⪺⪻⪼⪽⪾⪿⫀⫁⫂⫃⫄⫅⫆⫇⫈⫉⫊⫋⫌⫍⫎⫏⫐⫑⫒⫓⫔⫕⫖⫗⫘⫙⫷⫸⫹⫺⊢⊣⟂⫪⫫…⁝⋮⋱⋰⋯+-−¦|⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣*/⌿÷%&amp;··⋅∘×\∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\E])" />
+
+        <!-- Identifiers, numbers -->
+        <!-- We can't use HlCHex, Int, and Float because we need to allow the "im" at the end of complex numbers -->
+        <DetectIdentifier context="_adjoint" attribute="Variable" />
+        <RegExpr context="_adjoint" attribute="Float" String="0x(&hex;\.?|(&hex;)?\.&hex;)[pP][+-]?[0-9]+(im)?"/>
+        <RegExpr context="_adjoint" attribute="Hex" String="0x&hex;(im)?" />
+        <RegExpr context="_adjoint" attribute="Octal" String="0o[0-7]+(_[0-7]+)*(im)?" />
+        <RegExpr context="_adjoint" attribute="Binary" String="0b[01]+(_[01]+)*(im)?" />
+        <RegExpr context="_adjoint" attribute="Float" String="(&int;(\.&int;)?|\.&int;)([eEfF][+-]?\d+)?(im)?" />
 
         <!-- If ' is not the adjoint operator, it starts a character or an unterminated char -->
         <RegExpr context="#stay" attribute="Char" String="'[^']*(''[^']*)*'(?=[^']|$)" />
         <RegExpr context="#stay" attribute="Incomplete Char" String="'[^']*(''[^']*)*" />
 
         <RegExpr context="#stay" attribute="Macro" String="@[a-zA-Z_]\w*" />
-
-        <!-- Identifiers, numbers and braces -->
-        <!-- We can't use HlCHex, Int, and Float because we need to allow the "im" at the end of complex numbers -->
-        <DetectIdentifier context="#stay" attribute="Variable" />
-        <RegExpr context="#stay" attribute="Float" String="0x(&hex;\.?|(&hex;)?\.&hex;)[pP][+-]?\d+(im)?"/>
-        <RegExpr context="#stay" attribute="Hex" String="0x&hex;(im)?" />
-        <RegExpr context="#stay" attribute="Octal" String="0o[0-7]([0-7_]*[0-7])?(im)?" />
-        <RegExpr context="#stay" attribute="Binary" String="0b[01]([01_]*[01])?(im)?" />
-        <RegExpr context="#stay" attribute="Float" String="(&int;(\.&int;)?|\.&int;)([eEfF][+-]?\d+)?(im)?" />
-
-        <!-- Single-character operators
-        this was generated semi-automatically using operators in https://github.com/JuliaLang/julia/blob/master/src/julia-parser.scm -->
-        <AnyChar context="#stay" attribute="Operator" String="=≔⩴≕~←→↔↚↛↞↠↢↣↦↤↮⇎⇍⇏⇐⇒⇔⇴⇶⇷⇸⇹⇺⇻⇼⇽⇾⇿⟵⟶⟷⟹⟺⟻⟼⟽⟾⟿⤀⤁⤂⤃⤄⤅⤆⤇⤌⤍⤎⤏⤐⤑⤔⤕⤖⤗⤘⤝⤞⤟⤠⥄⥅⥆⥇⥈⥊⥋⥎⥐⥒⥓⥖⥗⥚⥛⥞⥟⥢⥤⥦⥧⥨⥩⥪⥫⥬⥭⥰⧴⬱⬰⬲⬳⬴⬵⬶⬷⬸⬹⬺⬻⬼⬽⬾⬿⭀⭁⭂⭃⭄⭇⭈⭉⭊⭋⭌￩￫⇜⇝↜↝↩↪↫↬↼↽⇀⇁⇄⇆⇇⇉⇋⇌⇚⇛⇠⇢↷↶↺↻&gt;&lt;≥≤≡≠≢∈∉∋∌⊆⊈⊂⊄⊊∝∊∍∥∦∷∺∻∽∾≁≃≂≄≅≆≇≈≉≊≋≌≍≎≐≑≒≓≖≗≘≙≚≛≜≝≞≟≣≦≧≨≩≪≫≬≭≮≯≰≱≲≳≴≵≶≷≸≹≺≻≼≽≾≿⊀⊁⊃⊅⊇⊉⊋⊏⊐⊑⊒⊜⊩⊬⊮⊰⊱⊲⊳⊴⊵⊶⊷⋍⋐⋑⋕⋖⋗⋘⋙⋚⋛⋜⋝⋞⋟⋠⋡⋢⋣⋤⋥⋦⋧⋨⋩⋪⋫⋬⋭⋲⋳⋴⋵⋶⋷⋸⋹⋺⋻⋼⋽⋾⋿⟈⟉⟒⦷⧀⧁⧡⧣⧤⧥⩦⩧⩪⩫⩬⩭⩮⩯⩰⩱⩲⩳⩵⩶⩷⩸⩹⩺⩻⩼⩽⩾⩿⪀⪁⪂⪃⪄⪅⪆⪇⪈⪉⪊⪋⪌⪍⪎⪏⪐⪑⪒⪓⪔⪕⪖⪗⪘⪙⪚⪛⪜⪝⪞⪟⪠⪡⪢⪣⪤⪥⪦⪧⪨⪩⪪⪫⪬⪭⪮⪯⪰⪱⪲⪳⪴⪵⪶⪷⪸⪹⪺⪻⪼⪽⪾⪿⫀⫁⫂⫃⫄⫅⫆⫇⫈⫉⫊⫋⫌⫍⫎⫏⫐⫑⫒⫓⫔⫕⫖⫗⫘⫙⫷⫸⫹⫺⊢⊣⟂⫪⫫…⁝⋮⋱⋰⋯:$+-−¦|⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣*/⌿÷%&amp;··⋅∘×\∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬"/>
-
-        <!-- Subsetting. This is needed because the `end` keyword has a special meaning in subsetting operations and should not be used for folding -->
-        <DetectChar attribute="Normal Text" context="subsetting" char="["/>
       </context>
 
       <!-- Context for user block (#BEGIN...#END) -->
@@ -1262,9 +577,9 @@
         <IncludeRules context="1-comment" />
       </context>
 
-      <!-- Context entered after encountering an ' adjoint operator -->
-      <context name="_adjoint" attribute="Operator" lineEndContext="#pop">
-        <RegExpr context="#pop" attribute="Operator" String="'+" />
+      <!-- Context entered after encountering an identifier or a number -->
+      <context name="_adjoint" attribute="Operator" lineEndContext="#pop" fallthroughContext="#pop">
+        <DetectChar attribute="Operator" char="'" />
       </context>
 
       <!-- Context entered after encountering an " (string) -->
@@ -1361,16 +676,18 @@
 
       <!-- 1-line comment: #pop@EOL  -->
       <context name="1-comment" lineEndContext="#pop" attribute="Comment">
-        <DetectSpaces />
+        <DetectSpaces/>
+        <IncludeRules context="##Comments"/>
+        <DetectIdentifier/>
       </context>
 
       <context name="block-comment" lineEndContext="#stay" attribute="Comment">
-        <DetectSpaces />
         <Detect2Chars char="=" char1="#" context="#pop" attribute="Comment" endRegion="block-comment"/>
+        <IncludeRules context="1-comment" />
       </context>
       <context name="controlflow-block" lineEndContext="#stay" attribute="Normal Text">
         <keyword context="#stay" attribute="Control Flow" String="cflow_eb" endRegion="block" beginRegion="block" />
-        <keyword context="#pop" attribute="Control Flow" String="block_end" endRegion="block" />
+        <WordDetect context="#pop" attribute="Control Flow" String="end" endRegion="block" />
         <IncludeRules context="_normal" />
       </context>
       <context name="parametric-type" lineEndContext="#stay" attribute="Data Type">
@@ -1401,13 +718,19 @@
       </context>
 
       <!-- context for imports -->
-      <context name="import" lineEndContext="#stay" lineEmptyContext="#stay"  attribute="Normal Text">
+      <context name="import" lineEndContext="#stay" lineEmptyContext="#stay" attribute="Normal Text">
+        <DetectSpaces attribute="Normal Text"/>
         <IncludeRules context="comment-rules"/>
-        <RegExpr attribute="Module" context="#stay" String="[^:,\s]+\s*(?=,)"/>
-        <RegExpr attribute="Module" context="import_vars" String="[^:,\s]+\s*(?=:)"/>
-        <RegExpr attribute="Module" context="#pop" String="[^:,\s]+\s*(?![,:])"/>
+        <RegExpr attribute="Module" context="import_list" String="[^:,\s]+"/>
+      </context>
+      <context name="import_list" lineEndContext="#pop#pop" attribute="Normal Text">
+        <DetectSpaces attribute="Normal Text"/>
+        <IncludeRules context="comment-rules"/>
+        <DetectChar attribute="Normal Text" context="#pop" char=","/>
+        <DetectChar attribute="Normal Text" context="#pop!import_vars" char=":"/>
       </context>
       <context name="import_vars" lineEndContext="#stay" lineEmptyContext="#stay" attribute="Normal Text">
+        <DetectSpaces attribute="Normal Text"/>
         <IncludeRules context="comment-rules"/>
         <!-- we don't know if these are types, variables, or functions,
         so no highlighting here -->

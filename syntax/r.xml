@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!-- Kate 2.5 (KDE 3.5) highlighting module for R
 	based on an earlier version by E.L. Willighagen. Code folding code by Ben Goodrich
 	version 2.0: (c) 2006 Thomas Friedrichsmeier, Arne Henningsen, and the RKWard Team
@@ -8,7 +8,7 @@
 	R      : http://www.r-project.org/
 	RKWard : http://rkward.kde.org/
 	-->
-<language version="11" kateversion="5.0" name="R Script" section="Scientific" extensions="*.R;*.r;*.S;*.s;*.q" mimetype="" license="GPLv2">
+<language version="14" kateversion="5.0" name="R Script" section="Scientific" extensions="*.R;*.r;*.S;*.s;*.q" mimetype="" license="GPLv2">
 <highlighting>
 
 	<list name="controls">
@@ -85,6 +85,10 @@
 			<AnyChar attribute="Error" context="#stay" String="*/&lt;&gt;=|&amp;:^@$~"/>
 		</context>
 
+		<context attribute="Numeric Suffix" lineEndContext="#pop" name="NumericSuffix" fallthrough="true" fallthroughContext="#pop">
+			<AnyChar attribute="Numeric Suffix" context="#pop" String="Li"/>
+		</context>
+
 		<context attribute="Normal Text" lineEndContext="#stay" name="FindComments">
 			<Detect2Chars attribute="Headline" context="Headline" char="#" char1="#"/>
 			<DetectChar attribute="Comment" context="Comment" char="#"/>
@@ -108,7 +112,7 @@
 			<keyword attribute="Control Structure" context="#stay" String="controls"/>
 			<keyword attribute="Reserved Words" context="#stay" String="words"/>
 			<Float attribute="Float" context="#stay"/>
-			<Int attribute="Int" context="#stay"/>
+			<Int attribute="Int" context="NumericSuffix"/>
 			<RegExpr attribute="Keyword" context="#stay" String="[a-zA-Z_]+[a-zA-Z_\.0-9]*(?=[\s]*[(])|\.[a-zA-Z_\.]+[a-zA-Z_\.0-9]*(?=[\s]*[(])"/>
 			<DetectChar attribute="Symbol" context="parenthesis" char="("/>
 
@@ -117,16 +121,19 @@
 			<Detect2Chars attribute="Assign" context="operator_rhs" char="&lt;" char1="-"/>
 			<StringDetect attribute="Assign" context="operator_rhs" String="-&gt;&gt;"/>
 			<Detect2Chars attribute="Assign" context="operator_rhs" char="-" char1="&gt;"/>
-			<RegExpr attribute="Assign" context="operator_rhs" String="=(?!=)"/>
+			<RegExpr attribute="Assign" context="operator_rhs" String="=(?!(=|&gt;))"/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char="*" char1="*"/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char="&lt;" char1="="/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char="&gt;" char1="="/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char="=" char1="="/>
+			<Detect2Chars attribute="Operator" context="operator_rhs" char="=" char1="&gt;"/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char="!" char1="="/>
+			<Detect2Chars attribute="Operator" context="operator_rhs" char="|" char1="&gt;"/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char="|" char1="|"/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char="&amp;" char1="&amp;"/>
 			<StringDetect attribute="Operator" context="operator_rhs" String=":::"/>
 			<Detect2Chars attribute="Operator" context="operator_rhs" char=":" char1=":"/>
+			<Detect2Chars attribute="Operator" context="operator_rhs" char=":" char1="="/>
 			<AnyChar attribute="Operator" context="operator_rhs" String="+-*/&lt;&gt;=!|&amp;:^@$~"/>
 			<RangeDetect attribute="Operator" context="operator_rhs" char="%" char1="%"/>
 
@@ -153,6 +160,7 @@
 		<itemData name="String Char"  defStyleNum="dsSpecialChar" spellChecking="false"/>
 		<itemData name="Float" defStyleNum="dsFloat" spellChecking="false"/>
 		<itemData name="Int" defStyleNum="dsDecVal" spellChecking="false"/>
+		<itemData name="Numeric Suffix" defStyleNum="dsDataType" spellChecking="false"/>
 	</itemDatas>
 </highlighting>
 

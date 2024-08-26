@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE language SYSTEM "language.dtd">
+<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE language>
 <language name="PureBasic" version="10" kateversion="5.0" section="Sources" extensions="*.pb;*.pbi" mimetype="text/x-purebasic" author="Alexander Clay (Tuireann@EpicBasic.org);Sven Langenkamp (ace@kylixforum.de)" license="LGPL" priority="1" >
   <highlighting>
     <list name="keywords">

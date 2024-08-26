@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
 <!ENTITY HEX "[0-9A-Fa-f]">
 ]>
@@ -48,7 +48,7 @@
     - NOTE, FIXME, TODO alerts added on comments
     - improved highlighting
 -->
-<language name="Lua" version="14" indenter="lua" kateversion="5.0" section="Scripts" extensions="*.lua" mimetype="text/x-lua">
+<language name="Lua" version="18" indenter="lua" kateversion="5.79" section="Scripts" extensions="*.lua;*.rockspec" mimetype="text/x-lua">
   <highlighting>
     <list name="keywords">
       <item>and</item>
@@ -57,7 +57,9 @@
       <item>local</item>
       <item>not</item>
       <item>or</item>
-      <!-- pseudo-variables -->
+    </list>
+
+    <list name="specialvars">
       <item>nil</item>
       <item>false</item>
       <item>true</item>
@@ -459,13 +461,9 @@
     </list>
 
     <contexts>
-      <context name="Shebang"       attribute="Comment" lineEndContext="Normal" lineEmptyContext="Normal" fallthrough="true" fallthroughContext="Normal">
-        <Detect2Chars attribute="Comment" context="ShebangLine" char="#" char1="!" column="0"/>
-      </context>
-
-      <context name="ShebangLine"   attribute="Comment"     lineEndContext="#pop!Normal" />
-
       <context name="Normal"        attribute="Normal Text" lineEndContext="#stay">
+        <Detect2Chars attribute="Comment" context="ShebangLine" char="#" char1="!" column="0"/>
+
         <DetectSpaces />
         <keyword      attribute="Deprecated" context="#stay"       String="deprecated" />
         <Detect2Chars attribute="Comment" context="MatchComment" char="-" char1="-" lookAhead="true"/>
@@ -480,6 +478,8 @@
         <WordDetect   attribute="Keyword"  context="Function" beginRegion="chunk" String="function" />
         <WordDetect   attribute="Keyword"  context="Local" String="local" />
         <keyword      attribute="Keyword"  context="#stay" String="keywords" />
+        <keyword      attribute="Special Variable" context="#stay" String="specialvars" additionalDeliminator="."/>
+        <WordDetect   attribute="Self Variable" context="#stay" String="self" additionalDeliminator="." />
         <keyword      attribute="Control"  context="StartControl" beginRegion="chunk" String="startcontrol" />
         <keyword      attribute="Control"  context="#stay" String="control" />
 
@@ -500,21 +500,23 @@
         <AnyChar      attribute="Symbols"  context="#stay" String=":[]().,=~+-*/%&amp;|^&gt;&lt;#;" />
       </context>
 
-      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+      <context name="ShebangLine"   attribute="Comment"     lineEndContext="#pop" />
+
+      <context name="MatchComment" attribute="Normal Text" lineEndContext="#pop" fallthroughContext="#pop">
         <IncludeRules context="##DoxygenLua" />
         <RegExpr attribute="Comment" context="#pop!BlockComment" String="--\[(=*)\[" beginRegion="BlockComment" />
         <Detect2Chars attribute="Comment" context="#pop!Comment" char="-" char1="-" />
       </context>
 
       <context name="BlockComment" attribute="Comment" lineEndContext="#stay" dynamic="true">
-        <RegExpr attribute="Comment" context="#stay" String="[^\]]*" />
+        <IncludeRules context="Comment" />
         <StringDetect attribute="Comment" context="#pop" String="]%1]" dynamic="true" endRegion="BlockComment" />
-        <IncludeRules context="##Comments" />
       </context>
 
-      <context name="Comment"       attribute="Comment"     lineEndContext="#pop">
+      <context name="Comment" attribute="Comment" lineEndContext="#pop">
         <DetectSpaces />
         <IncludeRules context="##Comments" />
+        <DetectIdentifier />
       </context>
 
       <context name="StartControl" attribute="Normal Text"  lineEndContext="#stay">
@@ -523,19 +525,20 @@
         <IncludeRules context="Normal" />
       </context>
 
-      <context name="NumberSuffix" attribute="Normal Text"  lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+      <context name="NumberSuffix" attribute="Normal Text"  lineEndContext="#pop" fallthroughContext="#pop">
         <!-- some syntax like a=32print(a) are valid, but ugly -->
         <DetectIdentifier attribute="Error" context="#pop" />
       </context>
 
-      <context name="Local" attribute="Normal Text"  lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+      <context name="Local" attribute="Normal Text"  lineEndContext="#pop" fallthroughContext="#pop">
         <DetectSpaces />
+        <WordDetect   attribute="Keyword" context="#pop!Function" beginRegion="chunk" String="function" />
         <Detect2Chars attribute="Comment" context="MatchComment" char="-" char1="-" lookAhead="true"/>
         <RegExpr          attribute="Constant" context="LocalVariable" String="\b[A-Z_][A-Z0-9_]*\b" />
         <DetectIdentifier attribute="Variable" context="LocalVariable" />
       </context>
 
-      <context name="LocalVariable" attribute="Normal Text"  lineEndContext="#pop#pop" fallthrough="true" fallthroughContext="#pop#pop">
+      <context name="LocalVariable" attribute="Normal Text"  lineEndContext="#pop#pop" fallthroughContext="#pop#pop">
         <DetectSpaces />
         <Detect2Chars attribute="Comment" context="MatchComment" char="-" char1="-" lookAhead="true"/>
         <DetectChar   attribute="Symbols"   context="#pop" char="," />
@@ -589,16 +592,18 @@
       <itemData name="BVar"            defStyleNum="dsVariable" spellChecking="false"/>
       <itemData name="Comment"         defStyleNum="dsComment"/>
       <itemData name="Constant"        defStyleNum="dsConstant" spellChecking="false"/>
-      <itemData name="Control"         defStyleNum="dsControlFlow" color="#A1A100" selColor="#ffffff" bold="0" italic="0" spellChecking="false"/>
+      <itemData name="Control"         defStyleNum="dsControlFlow" spellChecking="false"/>
       <itemData name="Error"           defStyleNum="dsError" spellChecking="false"/>
       <itemData name="Deprecated"      defStyleNum="dsError" spellChecking="false"/>
       <itemData name="Keyword"         defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Special Variable" defStyleNum="dsKeyword" spellChecking="false"/>
       <itemData name="Numbers"         defStyleNum="dsDecVal" spellChecking="false"/>
       <itemData name="Special Char"    defStyleNum="dsSpecialChar" spellChecking="false"/>
       <itemData name="Strings"         defStyleNum="dsString"/>
       <itemData name="RawStrings"      defStyleNum="dsVerbatimString"/>
       <itemData name="Symbols"         defStyleNum="dsOperator" spellChecking="false"/>
-      <itemData name="Variable"        defStyleNum="dsNormal" /> <!-- JGM -->
+      <itemData name="Variable"        defStyleNum="dsVariable" spellChecking="false"/>
+      <itemData name="Self Variable"   defStyleNum="dsVariable" spellChecking="false"/>
       <itemData name="Attribute"       defStyleNum="dsAttribute" spellChecking="false"/>
     </itemDatas>
   </highlighting>

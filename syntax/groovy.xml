@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
 	<!ENTITY int "(?:[0-9]++(_++[0-9]++)*+)">
 	<!ENTITY hex "(?:[0-9a-fA-F]++(_++[0-9a-fA-F]++)*+)">
@@ -10,7 +10,7 @@
 <!--
     Based on the java syntax file 1.19 by Alfredo Luiz Foltran Fialho (alfoltran@ig.com.br)
 -->
-<language name="Groovy" version="11" kateversion="5.62" section="Sources" extensions="*.groovy;*.gradle;*.gvy;Jenkinsfile" license="LGPL" author="Chris Reeves (chris@ev-soft.net)">
+<language name="Groovy" version="12" kateversion="5.79" section="Sources" extensions="*.groovy;*.gradle;*.gvy;Jenkinsfile" license="LGPL" author="Chris Reeves (chris@ev-soft.net)">
 	<highlighting>
 		<list name="java15">
 			<include>java15##Java</include>

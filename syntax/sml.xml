@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <language name="SML" version="6" kateversion="5.0" section="Sources" extensions="*.sml;*.ml" mimetype="" author="Christoph Cullmann (cullmann@kde.org)" license="MIT">
   <highlighting>
     <list name="keywords">

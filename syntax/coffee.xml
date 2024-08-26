@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 
 <language name="CoffeeScript"
-          version="15"
+          alternativeNames="Coffee;Coffee-Script"
+          version="16"
           kateversion="5.53"
           section="Scripts"
           extensions="Cakefile;*.coffee;*.coco;*.cson"

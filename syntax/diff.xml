@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
-  <!ENTITY file  "(====|\*\*\*|\-\-\-|diff|Only in .*:).*$">
+  <!ENTITY file  "(====|\*\*\*|\-\-\-|diff|Only in [^:]*:).*$">
 ]>
 <!--
     2006-08-02: 1.10 Matthew Woehlke <mw_triad@sourceforge.net>
@@ -12,7 +12,7 @@
     2008-02-13: 1.11 Eduardo Robles Elvira <edulix AT gmail DOT com>
      Fixed folding.
 -->
-<language name="Diff" version="7" kateversion="5.62" section="Other" extensions="*.diff;*patch;*.rej" mimetype="text/x-patch">
+<language name="Diff" version="9" kateversion="5.62" section="Other" extensions="*.diff;*patch;*.rej" mimetype="text/x-patch">
 
   <highlighting>
 
@@ -22,7 +22,7 @@
         <Detect2Chars attribute="Header" context="AttrHeader_Chunk" char="@" char1="@" beginRegion="chunk" column="0"/>
         <AnyChar attribute="Header" context="AttrHeader_Chunk" String="0123456789" beginRegion="chunk" column="0"/>
         <RegExpr attribute="Header" context="RChunk" String="^\*+$" beginRegion="chunk" column="0"/>
-        <RegExpr attribute="File" context="#stay" String="^Only in .*:.*$" column="0"/>
+        <RegExpr attribute="File" context="#stay" String="^Only in [^:]*:.*$" column="0"/>
         <StringDetect attribute="File" context="AttrFile_RFile" String="diff" beginRegion="chunk" column="0"/>
         <StringDetect attribute="File" context="AttrFile" String="====" column="0"/>
         <StringDetect attribute="File" context="AttrFile_File" String="***" beginRegion="chunk" column="0"/>
@@ -66,7 +66,7 @@
 
       <!-- block contexts (diff -r) -->
       <context attribute="Normal Text" lineEndContext="#stay" name="RFile" fallthroughContext="AttrNormal">
-        <RegExpr attribute="File" context="#pop" String="^(diff|Only in .*:).*$" endRegion="chunk" lookAhead="true" column="0"/>
+        <RegExpr attribute="File" context="#pop" String="^(diff|Only in [^:]*:)" endRegion="chunk" lookAhead="true" column="0"/>
         <RegExpr attribute="Header" context="#stay" String="^&file;" column="0"/>
         <RegExpr attribute="Header" context="RChunkInFile" String="^\*+$" beginRegion="chunk" column="0"/>
         <IncludeRules context="File"/>
@@ -115,13 +115,13 @@
     </contexts>
 
     <itemDatas>
-      <itemData name="Normal Text" defStyleNum="dsNormal"/>
-      <itemData name="File"  defStyleNum="dsKeyword"/>
-      <itemData name="Header"  defStyleNum="dsDataType"/>
-      <itemData name="Removed line"  defStyleNum="dsString" />
-      <itemData name="Added line"  defStyleNum="dsVariable"/>
-      <itemData name="Changed line (old)"  defStyleNum="dsString"/>
-      <itemData name="Changed line (new)"  defStyleNum="dsVariable"/>
+      <itemData name="Normal Text" defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="File"  defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Header"  defStyleNum="dsDataType" spellChecking="false"/>
+      <itemData name="Removed line"  defStyleNum="dsString" spellChecking="false"/>
+      <itemData name="Added line"  defStyleNum="dsVariable" spellChecking="false"/>
+      <itemData name="Changed line (old)"  defStyleNum="dsString" spellChecking="false"/>
+      <itemData name="Changed line (new)"  defStyleNum="dsVariable" spellChecking="false"/>
     </itemDatas>
 
   </highlighting>

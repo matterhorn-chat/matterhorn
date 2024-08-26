@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
 	<!ENTITY digitPart "[0-9](?:_?[0-9])*">
 	<!ENTITY beforeDigit "(?&lt;![\.\w[:^ascii:]])">
@@ -16,15 +16,15 @@
 		[Special cases: %prog and %default - see http://docs.python.org/library/optparse.html]
 	-->
 	<!ENTITY strsubstitution_py2 "&#37;(?:(?:\([a-zA-Z0-9_]+\))?[#0\- +]?(?:[1-9][0-9]*|\*)?(?:\.(?:[1-9][0-9]*|\*))?[hlL]?[crsdiouxXeEfFgG&#37;]|prog|default)">
-	<!-- http://docs.python.org/2/library/string.html#format-string-syntax:
+	<!-- http://docs.python.org/3/library/string.html#format-string-syntax:
 	     replacement_field ::=  "{" [field_name] ["!" conversion] [":" format_spec] "}"
 	     field_name        ::=  arg_name ("." attribute_name | "[" element_index "]")*
 	     arg_name          ::=  [identifier | integer]
 	     attribute_name    ::=  identifier
 	     element_index     ::=  integer | index_string
 	     index_string      ::=  <any source character except "]"> +
-	     conversion        ::=  "r" | "s"
-	     format_spec       ::=  [[fill]align][sign][#][0][width][,][.precision][type]
+	     conversion        ::=  "r" | "s" | "a"
+	     format_spec       ::=  [[fill]align][sign][z][#][0][width][_,][.precision][type]
 	     fill              ::=  <any character>
 	     align             ::=  "<" | ">" | "=" | "^"
 	     sign              ::=  "+" | "-" | " "
@@ -32,7 +32,8 @@
 	     precision         ::=  integer
 	     type              ::=  "b" | "c" | "d" | "e" | "E" | "f" | "F" | "g" | "G" | "n" | "o" | "s" | "x" | "X" | "%"
 	-->
-	<!ENTITY strsubstitution_py3 "\{(?:(?:[a-zA-Z0-9_]+|[0-9]+)(?:\.[a-zA-Z0-9_]+|\[[^ \]]+\])*)?(?:![rs])?(?::(?:[^}]?[&lt;&gt;=^])?[ +-]?#?0?[0-9]*(?:\.[0-9]+)?[bcdeEfFgGnosxX&#37;]?)?\}">
+	<!ENTITY format_spec "(?:![rsa])?(?::(?:[^}]?[&lt;&gt;=^])?[ +-]?z?#?0?[0-9]*[_,]?(?:\.[0-9]+)?[bcdeEfFgGnosxX&#37;]?)?">
+	<!ENTITY strsubstitution_py3 "\{(?:(?:[a-zA-Z0-9_]+|[0-9]+)(?:\.[a-zA-Z0-9_]+|\[[^ \]]+\])*)?&format_spec;?\}">
 
 	<!ENTITY rawString "(?:ru|u?r|)(?:'(?:[^']++|\\')*+'|&quot;(?:[^&quot;]++|\\&quot;)*+&quot;)">
 	<!ENTITY formatString "(?:r?f|fr?)(?:'(?:[^'{]++|\\'|\{\{|\{[^}]++\})*+'|&quot;(?:[^&quot;]++|\\&quot;|\{\{|\{[^}]*+\})*+&quot;)">
@@ -52,7 +53,7 @@
 <!-- v2.07 add support for %prog and co, see bug 142832 -->
 <!-- v2.08 add missing overloaders, new Python 3 statements, builtins, and keywords -->
 <!-- v2.29 recognize escape sequenzes correctly -->
-<language name="Python" version="22" style="python" indenter="python" kateversion="5.0" section="Scripts" extensions="*.py;*.pyw;SConstruct;SConscript;*.FCMacro" mimetype="application/x-python;text/x-python;text/x-python3" casesensitive="1" author="Michael Bueker" license="">
+<language name="Python" alternativeNames="Py" version="28" style="python" indenter="python" kateversion="5.0" section="Scripts" extensions="*.py;*.pyw;*.pyi;SConstruct;SConscript;*.FCMacro" mimetype="application/x-python;text/x-python;text/x-python3" casesensitive="1" author="Michael Bueker" license="">
 	<highlighting>
 		<list name="import">
 			<item>import</item>
@@ -106,9 +107,12 @@
 			<item>case</item>
 		</list>
 		<list name="builtinfuncs">
+			<!-- https://docs.python.org/3.11/library/functions.html#built-in-funcs -->
 			<item>__import__</item>
 			<item>abs</item>
+			<item>aiter</item>
 			<item>all</item>
+			<item>anext</item>
 			<item>any</item>
 			<item>apply</item>
 			<item>ascii</item>
@@ -201,6 +205,7 @@
 			<item>__debug__</item>
 			<item>__file__</item>
 			<item>__name__</item>
+			<item>__qualname__</item>
 		</list>
 		<list name="bindings">
 			<item>SIGNAL</item>
@@ -208,6 +213,7 @@
 			<item>connect</item>
 		</list>
 		<list name="overloaders">
+			<!-- https://docs.python.org/3.10/reference/datamodel.html#special-method-names -->
 			<item>__new__</item>
 			<item>__init__</item>
 			<item>__del__</item>
@@ -222,6 +228,7 @@
 			<item>__cmp__</item>
 			<item>__rcmp__</item>
 			<item>__hash__</item>
+			<item>__bool__</item>
 			<item>__nonzero__</item>
 			<item>__unicode__</item>
 			<item>__getattr__</item>
@@ -233,9 +240,11 @@
 			<item>__delete__</item>
 			<item>__call__</item>
 			<item>__len__</item>
+			<item>__length_hint__</item>
 			<item>__getitem__</item>
 			<item>__setitem__</item>
 			<item>__delitem__</item>
+			<item>__missing__</item>
 			<item>__iter__</item>
 			<item>__reversed__</item>
 			<item>__contains__</item>
@@ -245,6 +254,7 @@
 			<item>__add__</item>
 			<item>__sub__</item>
 			<item>__mul__</item>
+			<item>__matmul__</item>
 			<item>__floordiv__</item>
 			<item>__mod__</item>
 			<item>__divmod__</item>
@@ -259,6 +269,7 @@
 			<item>__radd__</item>
 			<item>__rsub__</item>
 			<item>__rmul__</item>
+			<item>__rmatmul__</item>
 			<item>__rdiv__</item>
 			<item>__rtruediv__</item>
 			<item>__rfloordiv__</item>
@@ -273,6 +284,7 @@
 			<item>__iadd__</item>
 			<item>__isub__</item>
 			<item>__imul__</item>
+			<item>__imatmul__</item>
 			<item>__idiv__</item>
 			<item>__itruediv__</item>
 			<item>__ifloordiv__</item>
@@ -294,9 +306,16 @@
 			<item>__oct__</item>
 			<item>__hex__</item>
 			<item>__index__</item>
+			<item>__round__</item>
+			<item>__trunc__</item>
+			<item>__floor__</item>
+			<item>__ceil__</item>
 			<item>__coerce__</item>
 			<item>__enter__</item>
 			<item>__exit__</item>
+			<item>__match_args__</item>
+			<item>__buffer__</item>
+			<item>__release_buffer__</item>
 			<item>__bytes__</item>
 			<item>__format__</item>
 			<item>__next__</item>
@@ -306,12 +325,19 @@
 			<item>__anext__</item>
 			<item>__aenter__</item>
 			<item>__aexit__</item>
+			<item>__slots__</item>
+			<item>__init_subclass__</item>
+			<item>__set_name__</item>
+			<item>__prepare__</item>
+			<item>__instancecheck__</item>
+			<item>__subclasscheck__</item>
+			<item>__class_getitem__</item>
 		</list>
 		<list name="exceptions">
 			<!--
 				Exceptions list resources used:
 				- http://docs.python.org/2.7/library/exceptions.html#exception-hierarchy
-				- http://docs.python.org/3.4/library/exceptions.html#exception-hierarchy
+				- http://docs.python.org/3.10/library/exceptions.html#exception-hierarchy
 			-->
 			<item>ArithmeticError</item>
 			<item>AssertionError</item>
@@ -329,6 +355,7 @@
 			<item>DeprecationWarning</item>
 			<item>EnvironmentError</item>
 			<item>EOFError</item>
+			<item>EncodingWarning</item>
 			<item>Exception</item>
 			<item>FileExistsError</item>
 			<item>FileNotFoundError</item>
@@ -346,6 +373,7 @@
 			<item>KeyError</item>
 			<item>LookupError</item>
 			<item>MemoryError</item>
+			<item>ModuleNotFoundError</item>
 			<item>NameError</item>
 			<item>NotADirectoryError</item>
 			<item>NotImplementedError</item>
@@ -354,11 +382,13 @@
 			<item>PendingDeprecationWarning</item>
 			<item>PermissionError</item>
 			<item>ProcessLookupError</item>
+			<item>RecursionError</item>
 			<item>ReferenceError</item>
 			<item>ResourceWarning</item>
 			<item>RuntimeError</item>
 			<item>RuntimeWarning</item>
 			<item>StandardError</item>
+			<item>StopAsyncIteration</item>
 			<item>StopIteration</item>
 			<item>SyntaxError</item>
 			<item>SyntaxWarning</item>
@@ -383,23 +413,23 @@
 			<context name="Normal" attribute="Normal Text" lineEndContext="#stay">
 				<DetectSpaces attribute="Normal Text"/>
 
-				<keyword attribute="Import" String="import" context="#stay"/>
-				<keyword attribute="Definition Keyword" String="defs" context="#stay"/>
-				<keyword attribute="Operator Keyword" String="operators" context="#stay"/>
-				<keyword attribute="Flow Control Keyword" String="flow" context="#stay"/>
-				<keyword attribute="Flow Control Keyword" String="flow_yield" context="yield"/>
-				<keyword attribute="Flow Control Keyword" String="patternmatching" context="Pattern Matching" lookAhead="1" firstNonSpace="1"/>
-				<keyword attribute="Builtin Function" String="builtinfuncs" context="#stay"/>
-				<keyword attribute="Special Variable" String="specialvars" context="#stay"/>
-				<keyword attribute="Extensions" String="bindings" context="#stay"/>
-				<keyword attribute="Exceptions" String="exceptions" context="#stay"/>
-				<keyword attribute="Overloaders" String="overloaders" context="#stay"/>
-
-				<DetectChar attribute="Normal Text" char="{" context="Dictionary" beginRegion="Dictionary"/>
-				<DetectChar attribute="Normal Text" char="[" context="List" beginRegion="List"/>
 				<DetectChar attribute="Normal Text" char="(" context="Tuple" beginRegion="Tuple"/>
+				<DetectChar attribute="Normal Text" char="[" context="List" beginRegion="List"/>
+				<DetectChar attribute="Normal Text" char="{" context="Dictionary" beginRegion="Dictionary"/>
 
 				<DetectChar attribute="Comment" char="#" context="Hash comment"/>
+
+				<keyword attribute="Special Variable" String="specialvars" context="#stay"/>
+				<keyword attribute="Flow Control Keyword" String="flow" context="#stay"/>
+				<keyword attribute="Operator Keyword" String="operators" context="#stay"/>
+				<keyword attribute="Builtin Function" String="builtinfuncs" context="#stay"/>
+				<keyword attribute="Definition Keyword" String="defs" context="#stay"/>
+				<keyword attribute="Flow Control Keyword" String="flow_yield" context="yield"/>
+				<keyword attribute="Flow Control Keyword" String="patternmatching" context="Pattern Matching" lookAhead="1" firstNonSpace="1"/>
+				<keyword attribute="Import" String="import" context="#stay"/>
+				<keyword attribute="Exceptions" String="exceptions" context="#stay"/>
+				<keyword attribute="Overloaders" String="overloaders" context="#stay"/>
+				<keyword attribute="Extensions" String="bindings" context="#stay"/>
 
 				<IncludeRules context="Number" />
 				<IncludeRules context="CommentVariants" />
@@ -408,9 +438,16 @@
 				<DetectIdentifier attribute="Normal Text"/>
 
 				<RegExpr attribute="Decorator" String="@[_a-zA-Z[:^ascii:]][\._a-zA-Z0-9[:^ascii:]]*" firstNonSpace="true"/>
-				<AnyChar attribute="Operator" String="+*/%\|=;&lt;&gt;!^&amp;~-@" context="#stay"/>
+				<Detect2Chars attribute="Operator" char=":" char1="=" context="#stay"/>
+				<AnyChar attribute="Operator" String="+*/%|=;&lt;&gt;!^&amp;~-@" context="#stay"/>
+
+				<LineContinue attribute="Operator" context="MultiLineExpr"/>
 
 				<Int attribute="Error"/>
+			</context>
+			<context name="MultiLineExpr" attribute="Normal Text" lineEndContext="#pop" fallthrough="1" fallthroughContext="#pop">
+				<DetectSpaces attribute="Normal Text"/>
+				<IncludeRules context="StringVariants" />
 			</context>
 
 			<!-- https://docs.python.org/2/reference/lexical_analysis.html#integer-and-long-integer-literals -->
@@ -457,7 +494,7 @@
 				<LineContinue attribute="Normal Text" context="#pop!CheckForStringNext"/>
 			</context>
 
-			<context name="CheckForStringNext" attribute="Normal Text" lineEndContext="#pop#pop" fallthrough="true" fallthroughContext="#pop#pop">
+			<context name="CheckForStringNext" attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
 				<DetectSpaces/>
 				<LineContinue attribute="Normal Text" context="#stay"/>
 				<IncludeRules context="StringVariants"/>
@@ -475,15 +512,15 @@
 				<RegExpr attribute="String" String="u?'"                  insensitive="true" context="#pop!Single A-string"/>
 				<RegExpr attribute="String" String="u?&quot;"             insensitive="true" context="#pop!Single Q-string"/>
 
-				<RegExpr attribute="Raw String" String="u?r'''"                insensitive="true" context="#pop!Raw Triple A-string" beginRegion="Triple A-region"/>
-				<RegExpr attribute="Raw String" String="u?r&quot;&quot;&quot;" insensitive="true" context="#pop!Raw Triple Q-string" beginRegion="Triple Q-region"/>
-				<RegExpr attribute="Raw String" String="u?r'"                  insensitive="true" context="#pop!Raw A-string"/>
-				<RegExpr attribute="Raw String" String="u?r&quot;"             insensitive="true" context="#pop!Raw Q-string"/>
-
 				<StringDetect attribute="F-String" String="f'''"                insensitive="true" context="#pop!Triple A-F-String" beginRegion="Triple A-region"/>
 				<StringDetect attribute="F-String" String="f&quot;&quot;&quot;" insensitive="true" context="#pop!Triple Q-F-String" beginRegion="Triple Q-region"/>
 				<StringDetect attribute="F-String" String="f'"                  insensitive="true" context="#pop!Single A-F-String"/>
 				<StringDetect attribute="F-String" String="f&quot;"             insensitive="true" context="#pop!Single Q-F-String"/>
+
+				<RegExpr attribute="Raw String" String="u?r'''"                insensitive="true" context="#pop!Raw Triple A-string" beginRegion="Triple A-region"/>
+				<RegExpr attribute="Raw String" String="u?r&quot;&quot;&quot;" insensitive="true" context="#pop!Raw Triple Q-string" beginRegion="Triple Q-region"/>
+				<RegExpr attribute="Raw String" String="u?r'"                  insensitive="true" context="#pop!Raw A-string"/>
+				<RegExpr attribute="Raw String" String="u?r&quot;"             insensitive="true" context="#pop!Raw Q-string"/>
 
 				<RegExpr attribute="Raw F-String" String="(?:fr|rf)'''"                insensitive="true" context="#pop!Raw Triple A-F-String" beginRegion="Triple A-region"/>
 				<RegExpr attribute="Raw F-String" String="(?:fr|rf)&quot;&quot;&quot;" insensitive="true" context="#pop!Raw Triple Q-F-String" beginRegion="Triple Q-region"/>
@@ -537,7 +574,8 @@
 
 			<context name="UnfinishedStringError" attribute="Error" lineEndContext="#stay" noIndentationBasedFolding="true">
 				<!-- A single string/comment reached the end of the line without a \ line escape -->
-				<!-- We set ALL succeeding lines to the "Error" attribute so that this error is easier to spot -->
+				<!-- We set the following line (or part of it) to the "Error" attribute so that this error is easier to spot -->
+				<RegExpr attribute="Error" String="^(\s{4,}|[^[\]()&quot;']{4,}([&quot;'].*)?)" context="#pop" column="0"/>
 			</context>
 
 			<!-- Comments -->
@@ -618,8 +656,7 @@
 			</context>
 			<context name="String Interpolation" attribute="String Substitution" lineEndContext="#stay">
 				<DetectChar attribute="Error" char="\" context="#pop"/>
-				<!-- format specifiers: [[fill]align][sign][#][0][minimumwidth][.precision][type] -->
-				<RegExpr attribute="String Substitution" String="(?:![rsa])?(?::(?:[^}]?[&lt;&gt;=^])?[ +-]?#?0?[0-9]*(?:\.[0-9]+)?[bcdeEfFgGnosxX%]?)?\}" context="#pop"/>
+				<RegExpr attribute="String Substitution" String="&format_spec;\}" context="#pop"/>
 				<IncludeRules context="Normal"/> <!-- TODO: create expression context instead -->
 			</context>
 
@@ -891,4 +928,4 @@
 	</general>
 </language>
 
-<!-- kate: space-indent off; indent-width 4; -->
+<!-- kate: space-indent off; indent-width 2; -->

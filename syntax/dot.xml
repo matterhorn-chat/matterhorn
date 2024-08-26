@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!-- Adapted from the VIM highlighter, by Markus Mottl (markus@oefai.at) -->
 <language name="dot" version="5" kateversion="5.0" section="Scientific" extensions="*.dot" mimetype="text/x-dot" author="Postula Loïs (lois.postula@live.be)" priority="0">
 

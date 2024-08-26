@@ -55,7 +55,7 @@
   Co-author: Leonardo Finetti, www.finex.org
 -->
 
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!-- low priority to let Objective-C win for .m files per default -->
 <language name="Matlab" version="8" kateversion="5.0" section="Scientific" extensions="*.m;*.M" priority="-9" mimetype="text/mfile" casesensitive="1">
   <highlighting>

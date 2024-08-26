@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language>
+<language name="Debian Control" version="4" kateversion="5.0" section="Other" extensions="control" mimetype="">
+    <highlighting>
+        <contexts>
+            <context attribute="Normal Text" lineEndContext="#stay" name="INIT">
+                <StringDetect attribute="Keyword" context="DependencyField" String="Depends:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Recommends:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Suggests:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Conflicts:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Provides:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Replaces:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Enhances:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Pre-Depends:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Build-Depends:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Build-Depends-Indep:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Build-Conflicts:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Build-Conflicts-Indep:"/>
+                <StringDetect attribute="Keyword" context="DependencyField" String="Breaks:"/>
+                <RegExpr attribute="Keyword" context="Field" minimal="true" String="^[^ ]*:" column="0"/>
+                <DetectChar attribute="Value" context="Field" char=" " column="0"/>
+            </context>
+
+            <context attribute="Value" lineEndContext="#pop" name="Field">
+                <RegExpr attribute="Email" context="#stay" String="&lt;.*@.*&gt;" minimal="true"/>
+                <Detect2Chars attribute="Keyword" context="Variable" char="$" char1="{"/>
+            </context>
+
+            <context attribute="Variable" lineEndContext="#pop" name="Variable">
+                <DetectChar attribute="Keyword" context="#pop" char="}"/>
+            </context>
+
+            <context attribute="Value" lineEndContext="#pop" name="DependencyField">
+                <RegExpr attribute="Email" context="#stay" String="&lt;.*@.*&gt;" minimal="true"/>
+                <Detect2Chars attribute="Keyword" context="Variable" char="$" char1="{"/>
+                <AnyChar attribute="Keyword" context="#stay" String=",|"/>
+                <AnyChar attribute="Keyword" context="Constrain" String="(["/>
+            </context>
+
+            <context attribute="Version" lineEndContext="#stay" name="Constrain">
+                <Detect2Chars attribute="Keyword" context="Variable" char="$" char1="{"/>
+                <AnyChar attribute="Keyword" context="#stay" String="!&lt;=&gt;"/>
+                <AnyChar attribute="Keyword" context="#pop" String=")]"/>
+            </context>
+        </contexts>
+
+        <itemDatas>
+            <itemData name="Normal Text" defStyleNum="dsNormal"/>
+            <itemData name="Keyword"  defStyleNum="dsKeyword"/>
+            <itemData name="Version"  defStyleNum="dsDecVal"/>
+            <itemData name="Value"  defStyleNum="dsDataType"/>
+            <itemData name="Variable" defStyleNum="dsVariable"/>
+            <itemData name="Email" defStyleNum="dsOthers"/>
+        </itemDatas>
+    </highlighting>
+
+    <general>
+        <keywords casesensitive="1" />
+    </general>
+</language>
+<!-- kate: replace-tabs on; tab-width 4; indent-width 4; -->

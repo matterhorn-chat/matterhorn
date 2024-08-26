@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd" [
+<!DOCTYPE language [
   <!-- Integers with optional kind specifier -->
   <!ENTITY integer "\b[0-9]++(?:[_](?:[0-9]++|[a-zA-Z][\w_]*))?">
   <!-- Integers in binary, octal and hexadecimal notations -->
@@ -9,7 +9,7 @@
   <!ENTITY float2 "\b[0-9]++\.[0-9]*+(?:[de][+-]?[0-9]+)?(?:[_](?:[0-9]++|[a-z][\w_]*))?(?![a-z])">
   <!ENTITY float3 "\b[0-9]++[de][+-]?[0-9]++(?:[_](?:[0-9]++|[a-z][\w_]*))?">
 ]>
-<language name="Fortran (Fixed Format)" version="10" kateversion="5.44" section="Sources" extensions="*.f;*.F;*.for;*.FOR;*.fpp;*.FPP;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it)" license="MIT" priority="9">
+<language name="Fortran (Fixed Format)" version="11" kateversion="5.44" section="Sources" extensions="*.f;*.F;*.for;*.FOR;*.fpp;*.FPP;" mimetype="text/x-fortran-src" casesensitive="0" author="Franchin Matteo (fnch@libero.it)" license="MIT" priority="9">
 <!-- by Franchin Matteo, fnch@libero.it -->
 <!-- NOTE: Keep in sync with the "Fortran (Free Format)" highlighter! (fortran-free.xml) -->
   <highlighting>
@@ -411,7 +411,7 @@
         <Detect2Chars attribute="Operator" context="#stay" char="/" char1="="/>
         <Detect2Chars attribute="Operator" context="#stay" char="&lt;" char1="="/>
         <Detect2Chars attribute="Operator" context="#stay" char="&gt;" char1="="/>
-        <AnyChar attribute="Operator" context="#stay" String="&lt;&gt;"/>
+        <AnyChar attribute="Operator" context="#stay" String="&lt;&gt;%"/>
       </context>
 
 <!-- This context highlights comments -->

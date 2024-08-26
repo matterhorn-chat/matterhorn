@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.vs;*.frag;*.fs;*.geom;*.gs;*.tcs;*.tes" mimetype="text/x-glslsrc" version="10" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL">
+<!DOCTYPE language>
+<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.vs;*.frag;*.fs;*.geom;*.gs;*.tcs;*.tes" mimetype="text/x-glslsrc" version="11" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL" indenter="cstyle">
 	<!--
 		Based on GLSLangSpec.4.60.pdf
 		https://www.khronos.org/registry/OpenGL/specs/gl/

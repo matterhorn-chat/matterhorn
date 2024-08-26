@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="SGML" version="4" kateversion="5.0" section="Markup" extensions="*.sgml" mimetype="text/sgml">
+<!DOCTYPE language>
+<language name="SGML" version="5" kateversion="5.0" section="Markup" extensions="*.sgml" mimetype="text/sgml">
   <highlighting>
     <contexts>
        <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text" >
@@ -33,9 +33,9 @@
     </contexts>
     <itemDatas>
       <itemData name="Normal Text" defStyleNum="dsNormal"/>
-      <itemData name="Tag" defStyleNum="dsKeyword"/>
-      <itemData name="Attribute Name" defStyleNum="dsOthers"/>
-      <itemData name="Attribute Value" defStyleNum="dsDataType"/>
+      <itemData name="Tag" defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Attribute Name" defStyleNum="dsOthers" spellChecking="false"/>
+      <itemData name="Attribute Value" defStyleNum="dsDataType" spellChecking="false"/>
       <itemData name="Comment" defStyleNum="dsComment"/>
     </itemDatas>
   </highlighting>

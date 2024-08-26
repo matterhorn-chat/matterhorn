@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!--
   ========================================================================
 
@@ -12,7 +12,7 @@
   ========================================================================
 -->
 
-<language name="Haxe" section="Sources" extensions="*.hx;*.Hx;*.hX;*.HX;" mimetype="text/x-hxsrc" version="5" kateversion="5.0" casesensitive="true" author="Chad Joan" license="MIT">
+<language name="Haxe" section="Sources" extensions="*.hx;*.Hx;*.hX;*.HX;" mimetype="text/x-hxsrc" version="6" kateversion="5.0" casesensitive="true" author="Chad Joan" license="MIT">
   <highlighting>
     <list name="keywords">
     
@@ -133,7 +133,10 @@
       <!-- Strings -->
       <!-- '...' -->
       <context attribute="RawString" lineEndContext="#stay" name="RawString">
+        <Detect2Chars attribute="RawString" context="#stay" char="\" char1="'"/>
         <DetectChar attribute="RawString" context="#pop" char="'"/>
+        <HlCStringChar attribute="EscapeSequence"/>
+        <RegExpr attribute="EscapeSequence" context="#stay" String="\\(u[\da-fA-F]{4}|U[\da-fA-F]{8}|&amp;[a-zA-Z]\w+;)" />
       </context>
       <!-- "..." -->
       <context attribute="String" lineEndContext="#stay" name="String">

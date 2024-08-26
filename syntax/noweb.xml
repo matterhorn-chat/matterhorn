@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="noweb" version="5" kateversion="5.53" section="Sources" extensions="*.w;*.nw" author="Scott Collins (scc@scottcollins.net)">
+<!DOCTYPE language>
+<language name="noweb" version="5" kateversion="5.79" section="Sources" extensions="*.w;*.nw" author="Scott Collins (scc@scottcollins.net)">
 <!-- 
 #########################################################################
 # First version added to repository was 0.4, added as 1.0 .

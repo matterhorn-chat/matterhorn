@@ -1,5 +1,5 @@
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="C#" version="11" kateversion="5.0" section="Sources" extensions="*.cs" mimetype="text/x-csharp-src;text/x-csharp-hde" indenter="cstyle" style="C++">
+<!DOCTYPE language>
+<language name="C#" alternativeNames="CS;CSharp" version="14" kateversion="5.0" section="Sources" extensions="*.cs;*.ashx" mimetype="text/x-csharp-src;text/x-csharp-hde" indenter="cstyle" style="C++">
   <highlighting>
     <list name="keywords">
       <item>abstract</item>
@@ -160,7 +160,7 @@
   </highlighting>
   <general>
     <comments>
-      <comment name="singleLine" start="//" />
+      <comment name="singleLine" start="//" position="afterwhitespace"/>
       <comment name="multiLine" start="/*" end="*/" region="BlockComment" />
     </comments>
     <keywords casesensitive="1" />

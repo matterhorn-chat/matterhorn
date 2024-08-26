@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!-- FIXME: Find a way to prevent ranges (e.g. [1..] or [0..99]) from matching as floats. -pp -->
 <language name="Pike" version="4" kateversion="5.0" section="Scripts" extensions="*.pike" mimetype="application/x-pike;text/x-pike" casesensitive="1" author="Paul Pogonyshev" license="">
   <highlighting>
