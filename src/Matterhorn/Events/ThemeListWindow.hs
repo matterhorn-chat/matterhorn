@@ -1,4 +1,8 @@
-module Matterhorn.Events.ThemeListWindow where
+module Matterhorn.Events.ThemeListWindow
+  ( onEventThemeListWindow
+  , themeListWindowKeyHandlers
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
