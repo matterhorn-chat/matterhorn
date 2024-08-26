@@ -11,4 +11,11 @@ import           Network.Mattermost.Types ( Channel, ChannelMember, UserId, Team
 import           Matterhorn.Types ( MHEvent )
 import           Matterhorn.Types.Channels ( ClientChannel )
 
-makeClientChannel :: (MonadIO m) => BCH.BChan MHEvent -> Maybe Aspell -> UserId -> Maybe TeamId -> Channel -> ChannelMember -> m ClientChannel
+makeClientChannel :: (MonadIO m)
+                  => BCH.BChan MHEvent
+                  -> Maybe Aspell
+                  -> UserId
+                  -> Maybe TeamId
+                  -> Channel
+                  -> ChannelMember
+                  -> m ClientChannel
