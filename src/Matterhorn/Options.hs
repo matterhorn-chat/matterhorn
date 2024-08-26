@@ -1,6 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Matterhorn.Options where
+module Matterhorn.Options
+  ( Options(..)
+  , PrintFormat(..)
+  , grabOptions
+  , mhVersion
+  )
+where
 
 import Prelude ()
 import Matterhorn.Prelude
