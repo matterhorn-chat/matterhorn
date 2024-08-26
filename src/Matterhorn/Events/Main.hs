@@ -1,6 +1,11 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
-module Matterhorn.Events.Main where
+module Matterhorn.Events.Main
+  ( onEventMain
+  , mainKeyHandlers
+  , mainKeybindings
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
