@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
   <!-- names must start with a letter, ideogram or underscore. \w matches any
   word character *or* a number, hence the lookahead -->

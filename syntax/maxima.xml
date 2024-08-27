@@ -19,7 +19,7 @@
     Usage: place maxima.xml in $KDEDIR/share/apps/katepart/syntax.
 -->
 
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 
 <language name="Maxima" version="7" kateversion="5.2" section="Scientific" extensions="*.mac;*.MAC;*.dem;*.DEM" casesensitive="1" author="Alexey Beshenov &lt;al@beshenov.ru&gt;" license="LGPLv2.1+">
     <highlighting>

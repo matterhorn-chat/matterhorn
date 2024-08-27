@@ -69,7 +69,7 @@ Changes:
 - Added alternative syntax control structures, and named logical operators ("and", "or", and "xor") (by Nicola Gigante).
 
 -->
-<!DOCTYPE language SYSTEM "language.dtd" [
+<!DOCTYPE language [
   <!ENTITY types "integer|bool|boolean|float|double|real|string|array|object">
   <!ENTITY varid "[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*">
   <!ENTITY LNUM  "[0-9]++(_[0-9]++)*+">
@@ -77,9 +77,10 @@ Changes:
   <!ENTITY float "\b&LNUM;(\.(&LNUM;)?(&EXPONENT;)?|&EXPONENT;)|\.&LNUM;(&EXPONENT;)?">
 ]>
 
-<language name="PHP/PHP" indenter="cstyle" version="21" kateversion="5.53" section="Scripts" extensions="" priority="5" mimetype="" hidden="true">
+<language name="PHP/PHP" indenter="cstyle" version="27" kateversion="5.79" section="Scripts" extensions="" priority="5" mimetype="" hidden="true">
   <highlighting>
     <!-- https://php.watch/versions -->
+    <!-- Based on 8.3 (https://php.watch/versions/8.3 and https://stitcher.io/blog/new-in-php-83) -->
 
     <!-- https://secure.php.net/manual/en/reserved.keywords.php -->
     <list name="control structures">
@@ -199,8 +200,19 @@ Changes:
       <item>object</item>
     </list>
 
+    <list name="properties">
+      <!-- PHP 8.1 -->
+      <item>readonly</item>
+      <item>never</item>
+    </list>
+
     <!-- https://secure.php.net/manual/en/reserved.keywords.php -->
     <!-- https://secure.php.net/manual/en/reserved.constants.php -->
+    <!--
+      Use this command line to extract page constants:
+
+      wget -O- ${url} | sed -nE 's#.*<strong><code>([^< ]+) *</code></strong>.*#      <item>\1</item>#p'
+    -->
     <list name="constants">
       <!-- PHP 5.6 (Compile-Time Constants) -->
       <item>__CLASS__</item>
@@ -685,8 +697,13 @@ Changes:
       <item>CRYPT_STD_DES</item>
       <item>CRYPT_SHA256</item>
       <item>CRYPT_SHA512</item>
+      <item>CURLALTSVC_H1</item>
+      <item>CURLALTSVC_H2</item>
+      <item>CURLALTSVC_H3</item>
+      <item>CURLALTSVC_READONLYFILE</item>
       <item>CURLAUTH_ANY</item>
       <item>CURLAUTH_ANYSAFE</item>
+      <item>CURLAUTH_AWS_SIGV4</item>
       <item>CURLAUTH_BASIC</item>
       <item>CURLAUTH_BEARER</item>
       <item>CURLAUTH_DIGEST</item>
@@ -747,6 +764,7 @@ Changes:
       <item>CURLE_OPERATION_TIMEOUTED</item>
       <item>CURLE_OUT_OF_MEMORY</item>
       <item>CURLE_PARTIAL_FILE</item>
+      <item>CURLE_PROXY</item>
       <item>CURLE_READ_ERROR</item>
       <item>CURLE_RECV_ERROR</item>
       <item>CURLE_SEND_ERROR</item>
@@ -770,6 +788,7 @@ Changes:
       <item>CURLFTPAUTH_DEFAULT</item>
       <item>CURLFTPAUTH_SSL</item>
       <item>CURLFTPAUTH_TLS</item>
+      <item>CURLFTPMETHOD_DEFAULT</item>
       <item>CURLFTPSSL_ALL</item>
       <item>CURLFTPSSL_CONTROL</item>
       <item>CURLFTPSSL_NONE</item>
@@ -779,6 +798,8 @@ Changes:
       <item>CURLFTP_CREATE_DIR_RETRY</item>
       <item>CURLHEADER_SEPARATE</item>
       <item>CURLHEADER_UNIFIED</item>
+      <item>CURLHSTS_ENABLE</item>
+      <item>CURLHSTS_READONLYFILE</item>
       <item>CURLINFO_APPCONNECT_TIME_T</item>
       <item>CURLINFO_CONNECT_TIME</item>
       <item>CURLINFO_CONNECT_TIME_T</item>
@@ -787,6 +808,7 @@ Changes:
       <item>CURLINFO_CONTENT_LENGTH_UPLOAD</item>
       <item>CURLINFO_CONTENT_LENGTH_UPLOAD_T</item>
       <item>CURLINFO_CONTENT_TYPE</item>
+      <item>CURLINFO_EFFECTIVE_METHOD</item>
       <item>CURLINFO_EFFECTIVE_URL</item>
       <item>CURLINFO_FILETIME</item>
       <item>CURLINFO_FILETIME_T</item>
@@ -804,13 +826,16 @@ Changes:
       <item>CURLINFO_PRIMARY_PORT</item>
       <item>CURLINFO_PRIVATE</item>
       <item>CURLINFO_PROTOCOL</item>
+      <item>CURLINFO_PROXY_ERROR</item>
       <item>CURLINFO_PROXY_SSL_VERIFYRESULT</item>
       <item>CURLINFO_REDIRECT_COUNT</item>
       <item>CURLINFO_REDIRECT_TIME</item>
       <item>CURLINFO_REDIRECT_TIME_T</item>
       <item>CURLINFO_REDIRECT_URL</item>
+      <item>CURLINFO_REFERER</item>
       <item>CURLINFO_REQUEST_SIZE</item>
       <item>CURLINFO_RESPONSE_CODE</item>
+      <item>CURLINFO_RETRY_AFTER</item>
       <item>CURLINFO_SCHEME</item>
       <item>CURLINFO_SIZE_DOWNLOAD</item>
       <item>CURLINFO_SIZE_DOWNLOAD_T</item>
@@ -828,6 +853,7 @@ Changes:
       <item>CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE</item>
       <item>CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE</item>
       <item>CURLMOPT_MAXCONNECTS</item>
+      <item>CURLMOPT_MAX_CONCURRENT_STREAMS</item>
       <item>CURLMOPT_MAX_HOST_CONNECTIONS</item>
       <item>CURLMOPT_MAX_PIPELINE_LENGTH</item>
       <item>CURLMOPT_MAX_TOTAL_CONNECTIONS</item>
@@ -841,10 +867,14 @@ Changes:
       <item>CURLM_OK</item>
       <item>CURLM_OUT_OF_MEMORY</item>
       <item>CURLOPT_ABSTRACT_UNIX_SOCKET</item>
+      <item>CURLOPT_ALTSVC</item>
+      <item>CURLOPT_ALTSVC_CTRL</item>
       <item>CURLOPT_AUTOREFERER</item>
+      <item>CURLOPT_AWS_SIGV4</item>
       <item>CURLOPT_BINARYTRANSFER</item>
       <item>CURLOPT_BUFFERSIZE</item>
       <item>CURLOPT_CAINFO</item>
+      <item>CURLOPT_CAINFO_BLOB</item>
       <item>CURLOPT_CAPATH</item>
       <item>CURLOPT_CERTINFO</item>
       <item>CURLOPT_CLOSEPOLICY</item>
@@ -861,13 +891,16 @@ Changes:
       <item>CURLOPT_CUSTOMREQUEST</item>
       <item>CURLOPT_DEFAULT_PROTOCOL</item>
       <item>CURLOPT_DISALLOW_USERNAME_IN_URL</item>
-      <item>CURLOPT_DOH_URL</item>
       <item>CURLOPT_DNS_CACHE_TIMEOUT</item>
       <item>CURLOPT_DNS_INTERFACE</item>
       <item>CURLOPT_DNS_LOCAL_IP4</item>
       <item>CURLOPT_DNS_LOCAL_IP6</item>
       <item>CURLOPT_DNS_SHUFFLE_ADDRESSES</item>
       <item>CURLOPT_DNS_USE_GLOBAL_CACHE</item>
+      <item>CURLOPT_DOH_SSL_VERIFYHOST</item>
+      <item>CURLOPT_DOH_SSL_VERIFYPEER</item>
+      <item>CURLOPT_DOH_SSL_VERIFYSTATUS</item>
+      <item>CURLOPT_DOH_URL</item>
       <item>CURLOPT_EGDSOCKET</item>
       <item>CURLOPT_ENCODING</item>
       <item>CURLOPT_EXPECT_100_TIMEOUT_MS</item>
@@ -892,6 +925,8 @@ Changes:
       <item>CURLOPT_HEADER</item>
       <item>CURLOPT_HEADERFUNCTION</item>
       <item>CURLOPT_HEADEROPT</item>
+      <item>CURLOPT_HSTS</item>
+      <item>CURLOPT_HSTS_CTRL</item>
       <item>CURLOPT_HTTP09_ALLOWED</item>
       <item>CURLOPT_HTTP200ALIASES</item>
       <item>CURLOPT_HTTPAUTH</item>
@@ -903,13 +938,18 @@ Changes:
       <item>CURLOPT_INFILESIZE</item>
       <item>CURLOPT_INTERFACE</item>
       <item>CURLOPT_IPRESOLVE</item>
+      <item>CURLOPT_ISSUERCERT_BLOB</item>
       <item>CURLOPT_KEEP_SENDING_ON_ERROR</item>
       <item>CURLOPT_KEYPASSWD</item>
       <item>CURLOPT_KRB4LEVEL</item>
       <item>CURLOPT_LOGIN_OPTIONS</item>
       <item>CURLOPT_LOW_SPEED_LIMIT</item>
       <item>CURLOPT_LOW_SPEED_TIME</item>
+      <item>CURLOPT_MAIL_RCPT_ALLLOWFAILS</item>
+      <item>CURLOPT_MAXAGE_CONN</item>
       <item>CURLOPT_MAXCONNECTS</item>
+      <item>CURLOPT_MAXFILESIZE_LARGE</item>
+      <item>CURLOPT_MAXLIFETIME_CONN</item>
       <item>CURLOPT_MAXREDIRS</item>
       <item>CURLOPT_MAX_RECV_SPEED_LARGE</item>
       <item>CURLOPT_MAX_SEND_SPEED_LARGE</item>
@@ -938,15 +978,20 @@ Changes:
       <item>CURLOPT_PROXYTYPE</item>
       <item>CURLOPT_PROXYUSERPWD</item>
       <item>CURLOPT_PROXY_CAINFO</item>
+      <item>CURLOPT_PROXY_CAINFO_BLOB</item>
       <item>CURLOPT_PROXY_CAPATH</item>
       <item>CURLOPT_PROXY_CRLFILE</item>
+      <item>CURLOPT_PROXY_ISSUERCERT</item>
+      <item>CURLOPT_PROXY_ISSUERCERT_BLOB</item>
       <item>CURLOPT_PROXY_KEYPASSWD</item>
       <item>CURLOPT_PROXY_PINNEDPUBLICKEY</item>
       <item>CURLOPT_PROXY_SERVICE_NAME</item>
       <item>CURLOPT_PROXY_SSLCERT</item>
       <item>CURLOPT_PROXY_SSLCERTTYPE</item>
+      <item>CURLOPT_PROXY_SSLCERT_BLOB</item>
       <item>CURLOPT_PROXY_SSLKEY</item>
       <item>CURLOPT_PROXY_SSLKEYTYPE</item>
+      <item>CURLOPT_PROXY_SSLKEY_BLOB</item>
       <item>CURLOPT_PROXY_SSLVERSION</item>
       <item>CURLOPT_PROXY_SSL_CIPHER_LIST</item>
       <item>CURLOPT_PROXY_SSL_OPTIONS</item>
@@ -968,6 +1013,7 @@ Changes:
       <item>CURLOPT_RESUME_FROM</item>
       <item>CURLOPT_RETURNTRANSFER</item>
       <item>CURLOPT_SAFE_UPLOAD</item>
+      <item>CURLOPT_SASL_AUTHZID</item>
       <item>CURLOPT_SASL_IR</item>
       <item>CURLOPT_SERVICE_NAME</item>
       <item>CURLOPT_SHARE</item>
@@ -975,18 +1021,22 @@ Changes:
       <item>CURLOPT_SSH_AUTH_TYPES</item>
       <item>CURLOPT_SSH_COMPRESSION</item>
       <item>CURLOPT_SSH_HOST_PUBLIC_KEY_MD5</item>
+      <item>CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256</item>
       <item>CURLOPT_SSH_PRIVATE_KEYFILE</item>
       <item>CURLOPT_SSH_PUBLIC_KEYFILE</item>
       <item>CURLOPT_SSLCERT</item>
       <item>CURLOPT_SSLCERTPASSWD</item>
       <item>CURLOPT_SSLCERTTYPE</item>
+      <item>CURLOPT_SSLCERT_BLOB</item>
       <item>CURLOPT_SSLENGINE</item>
       <item>CURLOPT_SSLENGINE_DEFAULT</item>
       <item>CURLOPT_SSLKEY</item>
       <item>CURLOPT_SSLKEYPASSWD</item>
       <item>CURLOPT_SSLKEYTYPE</item>
+      <item>CURLOPT_SSLKEY_BLOB</item>
       <item>CURLOPT_SSLVERSION</item>
       <item>CURLOPT_SSL_CIPHER_LIST</item>
+      <item>CURLOPT_SSL_EC_CURVES</item>
       <item>CURLOPT_SSL_ENABLE_ALPN</item>
       <item>CURLOPT_SSL_ENABLE_NPN</item>
       <item>CURLOPT_SSL_FALSESTART</item>
@@ -1012,7 +1062,9 @@ Changes:
       <item>CURLOPT_TRANSFERTEXT</item>
       <item>CURLOPT_UNIX_SOCKET_PATH</item>
       <item>CURLOPT_UNRESTRICTED_AUTH</item>
+      <item>CURLOPT_UPKEEP_INTERVAL_MS</item>
       <item>CURLOPT_UPLOAD</item>
+      <item>CURLOPT_UPLOAD_BUFFERSIZE</item>
       <item>CURLOPT_URL</item>
       <item>CURLOPT_USERAGENT</item>
       <item>CURLOPT_USERNAME</item>
@@ -1020,26 +1072,8 @@ Changes:
       <item>CURLOPT_VERBOSE</item>
       <item>CURLOPT_WRITEFUNCTION</item>
       <item>CURLOPT_WRITEHEADER</item>
+      <item>CURLOPT_XFERINFOFUNCTION</item>
       <item>CURLOPT_XOAUTH2_BEARER</item>
-      <item>CURLSSH_AUTH_GSSAPI</item>
-      <item>CURL_HTTP_VERSION_2_0</item>
-      <item>CURL_LOCK_DATA_CONNECT</item>
-      <item>CURL_LOCK_DATA_PSL</item>
-      <item>CURL_VERSION_ALTSVC</item>
-      <item>CURL_VERSION_ASYNCHDNS</item>
-      <item>CURL_VERSION_BROTLI</item>
-      <item>CURL_VERSION_CONV</item>
-      <item>CURL_VERSION_CURLDEBUG</item>
-      <item>CURL_VERSION_DEBUG</item>
-      <item>CURL_VERSION_GSSAPI</item>
-      <item>CURL_VERSION_GSSNEGOTIATE</item>
-      <item>CURL_VERSION_IDN</item>
-      <item>CURL_VERSION_MULTI_SSL</item>
-      <item>CURL_VERSION_NTLM</item>
-      <item>CURL_VERSION_NTLM_WB</item>
-      <item>CURL_VERSION_SPNEGO</item>
-      <item>CURL_VERSION_SSPI</item>
-      <item>CURL_VERSION_TLSAUTH_SRP</item>
       <item>CURLPAUSE_ALL</item>
       <item>CURLPAUSE_CONT</item>
       <item>CURLPAUSE_RECV</item>
@@ -1049,6 +1083,7 @@ Changes:
       <item>CURLPIPE_HTTP1</item>
       <item>CURLPIPE_MULTIPLEX</item>
       <item>CURLPIPE_NOTHING</item>
+      <item>CURLPROTO_MQTT</item>
       <item>CURLPROTO_SMB</item>
       <item>CURLPROTO_SMBS</item>
       <item>CURLPROXY_HTTP</item>
@@ -1058,27 +1093,69 @@ Changes:
       <item>CURLPROXY_SOCKS4A</item>
       <item>CURLPROXY_SOCKS5</item>
       <item>CURLPROXY_SOCKS5_HOSTNAME</item>
+      <item>CURLPX_BAD_ADDRESS_TYPE</item>
+      <item>CURLPX_BAD_VERSION</item>
+      <item>CURLPX_CLOSED</item>
+      <item>CURLPX_GSSAPI</item>
+      <item>CURLPX_GSSAPI_PERMSG</item>
+      <item>CURLPX_GSSAPI_PROTECTION</item>
+      <item>CURLPX_IDENTD</item>
+      <item>CURLPX_IDENTD_DIFFER</item>
+      <item>CURLPX_LONG_HOSTNAME</item>
+      <item>CURLPX_LONG_PASSWD</item>
+      <item>CURLPX_LONG_USER</item>
+      <item>CURLPX_NO_AUTH</item>
+      <item>CURLPX_OK</item>
+      <item>CURLPX_RECV_ADDRESS</item>
+      <item>CURLPX_RECV_AUTH</item>
+      <item>CURLPX_RECV_CONNECT</item>
+      <item>CURLPX_RECV_REQACK</item>
+      <item>CURLPX_REPLY_ADDRESS_TYPE_NOT_SUPPORTED</item>
+      <item>CURLPX_REPLY_COMMAND_NOT_SUPPORTED</item>
+      <item>CURLPX_REPLY_CONNECTION_REFUSED</item>
+      <item>CURLPX_REPLY_GENERAL_SERVER_FAILURE</item>
+      <item>CURLPX_REPLY_HOST_UNREACHABLE</item>
+      <item>CURLPX_REPLY_NETWORK_UNREACHABLE</item>
+      <item>CURLPX_REPLY_NOT_ALLOWED</item>
+      <item>CURLPX_REPLY_TTL_EXPIRED</item>
+      <item>CURLPX_REPLY_UNASSIGNED</item>
+      <item>CURLPX_REQUEST_FAILED</item>
+      <item>CURLPX_RESOLVE_HOST</item>
+      <item>CURLPX_SEND_AUTH</item>
+      <item>CURLPX_SEND_CONNECT</item>
+      <item>CURLPX_SEND_REQUEST</item>
+      <item>CURLPX_UNKNOWN_FAIL</item>
+      <item>CURLPX_UNKNOWN_MODE</item>
+      <item>CURLPX_USER_REJECTED</item>
       <item>CURLSHOPT_SHARE</item>
       <item>CURLSHOPT_UNSHARE</item>
       <item>CURLSSH_AUTH_AGENT</item>
       <item>CURLSSH_AUTH_ANY</item>
       <item>CURLSSH_AUTH_DEFAULT</item>
+      <item>CURLSSH_AUTH_GSSAPI</item>
       <item>CURLSSH_AUTH_HOST</item>
       <item>CURLSSH_AUTH_KEYBOARD</item>
       <item>CURLSSH_AUTH_NONE</item>
       <item>CURLSSH_AUTH_PASSWORD</item>
       <item>CURLSSH_AUTH_PUBLICKEY</item>
       <item>CURLSSLOPT_ALLOW_BEAST</item>
+      <item>CURLSSLOPT_AUTO_CLIENT_CERT</item>
+      <item>CURLSSLOPT_NATIVE_CA</item>
+      <item>CURLSSLOPT_NO_PARTIALCHAIN</item>
       <item>CURLSSLOPT_NO_REVOKE</item>
+      <item>CURLSSLOPT_REVOKE_BEST_EFFORT</item>
       <item>CURLVERSION_NOW</item>
       <item>CURL_HTTP_VERSION_1_0</item>
       <item>CURL_HTTP_VERSION_1_1</item>
       <item>CURL_HTTP_VERSION_2</item>
       <item>CURL_HTTP_VERSION_2TLS</item>
+      <item>CURL_HTTP_VERSION_2_0</item>
       <item>CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE</item>
       <item>CURL_HTTP_VERSION_NONE</item>
+      <item>CURL_LOCK_DATA_CONNECT</item>
       <item>CURL_LOCK_DATA_COOKIE</item>
       <item>CURL_LOCK_DATA_DNS</item>
+      <item>CURL_LOCK_DATA_PSL</item>
       <item>CURL_LOCK_DATA_SSL_SESSION</item>
       <item>CURL_MAX_READ_SIZE</item>
       <item>CURL_NETRC_IGNORED</item>
@@ -1107,15 +1184,37 @@ Changes:
       <item>CURL_TIMECOND_IFMODSINCE</item>
       <item>CURL_TIMECOND_IFUNMODSINCE</item>
       <item>CURL_TIMECOND_LASTMOD</item>
+      <item>CURL_TIMECOND_NONE</item>
+      <item>CURL_VERSION_ALTSVC</item>
+      <item>CURL_VERSION_ASYNCHDNS</item>
+      <item>CURL_VERSION_BROTLI</item>
+      <item>CURL_VERSION_CONV</item>
+      <item>CURL_VERSION_CURLDEBUG</item>
+      <item>CURL_VERSION_DEBUG</item>
+      <item>CURL_VERSION_GSASL</item>
+      <item>CURL_VERSION_GSSAPI</item>
+      <item>CURL_VERSION_GSSNEGOTIATE</item>
+      <item>CURL_VERSION_HSTS</item>
       <item>CURL_VERSION_HTTP2</item>
+      <item>CURL_VERSION_HTTP3</item>
       <item>CURL_VERSION_HTTPS_PROXY</item>
+      <item>CURL_VERSION_IDN</item>
       <item>CURL_VERSION_IPV6</item>
       <item>CURL_VERSION_KERBEROS4</item>
       <item>CURL_VERSION_KERBEROS5</item>
+      <item>CURL_VERSION_LARGEFILE</item>
       <item>CURL_VERSION_LIBZ</item>
+      <item>CURL_VERSION_MULTI_SSL</item>
+      <item>CURL_VERSION_NTLM</item>
+      <item>CURL_VERSION_NTLM_WB</item>
       <item>CURL_VERSION_PSL</item>
+      <item>CURL_VERSION_SPNEGO</item>
       <item>CURL_VERSION_SSL</item>
+      <item>CURL_VERSION_SSPI</item>
+      <item>CURL_VERSION_TLSAUTH_SRP</item>
+      <item>CURL_VERSION_UNICODE</item>
       <item>CURL_VERSION_UNIX_SOCKETS</item>
+      <item>CURL_VERSION_ZSTD</item>
       <item>CURL_WRAPPERS_ENABLED</item>
       <item>CURRENCY_SYMBOL</item>
       <item>CYRUS_CALLBACK_NOLITERAL</item>
@@ -1166,6 +1265,8 @@ Changes:
       <item>DBASE_TYPE_DBASE</item>
       <item>DBASE_TYPE_FOXPRO</item>
       <item>DBASE_VERSION</item>
+      <item>DBA_LMDB_USE_SUB_DIR</item>
+      <item>DBA_LMDB_NO_SUB_DIR</item>
       <item>DBPLUS_ERR_CLOSE</item>
       <item>DBPLUS_ERR_CORRUPT_TUPLE</item>
       <item>DBPLUS_ERR_CRC</item>
@@ -1231,8 +1332,10 @@ Changes:
       <item>DECIMAL_POINT</item>
       <item>DELETED_EVENT</item>
       <item>DIRECTORY_SEPARATOR</item>
+      <item>DISP_E_BADINDEX</item>
       <item>DISP_E_DIVBYZERO</item>
       <item>DISP_E_OVERFLOW</item>
+      <item>DISP_E_PARAMNOTFOUND</item>
       <item>DNS_A</item>
       <item>DNS_AAAA</item>
       <item>DNS_ALL</item>
@@ -1501,6 +1604,7 @@ Changes:
       <item>FILTER_FLAG_ENCODE_AMP</item>
       <item>FILTER_FLAG_ENCODE_HIGH</item>
       <item>FILTER_FLAG_ENCODE_LOW</item>
+      <item>FILTER_FLAG_GLOBAL_RANGE</item>
       <item>FILTER_FLAG_HOSTNAME</item>
       <item>FILTER_FLAG_HOST_REQUIRED</item>
       <item>FILTER_FLAG_IPV4</item>
@@ -1927,6 +2031,7 @@ Changes:
       <item>IMG_TRIANGLE</item>
       <item>IMG_WBMP</item>
       <item>IMG_WEBP</item>
+      <item>IMG_WEBP_LOSSLESS</item>
       <item>IMG_WEIGHTED4</item>
       <item>IMG_XPM</item>
       <item>INF</item>
@@ -2150,6 +2255,8 @@ Changes:
       <item>LIBXML_XINCLUDE</item>
       <item>LIBXSLT_DOTTED_VERSION</item>
       <item>LIBXSLT_VERSION</item>
+      <item>LOCALE_NEUTRAL</item>
+      <item>LOCAL_CREDS_PERSISTENT</item>
       <item>LOCK_EX</item>
       <item>LOCK_NB</item>
       <item>LOCK_SH</item>
@@ -2364,6 +2471,7 @@ Changes:
       <item>MSG_OOB</item>
       <item>MSG_PEEK</item>
       <item>MSG_WAITALL</item>
+      <item>MSG_ZEROCOPY</item>
       <item>MSQL_ASSOC</item>
       <item>MSQL_BOTH</item>
       <item>MSQL_NUM</item>
@@ -3335,12 +3443,14 @@ Changes:
       <item>POSIX_RLIMIT_DATA</item>
       <item>POSIX_RLIMIT_FSIZE</item>
       <item>POSIX_RLIMIT_INFINITY</item>
+      <item>POSIX_RLIMIT_KQUEUES</item>
       <item>POSIX_RLIMIT_LOCKS</item>
       <item>POSIX_RLIMIT_MEMLOCK</item>
       <item>POSIX_RLIMIT_MSGQUEUE</item>
       <item>POSIX_RLIMIT_NICE</item>
       <item>POSIX_RLIMIT_NOFILE</item>
       <item>POSIX_RLIMIT_NPROC</item>
+      <item>POSIX_RLIMIT_NPTS</item>
       <item>POSIX_RLIMIT_RSS</item>
       <item>POSIX_RLIMIT_RTPRIO</item>
       <item>POSIX_RLIMIT_RTTIME</item>
@@ -3647,6 +3757,7 @@ Changes:
       <item>SCANDIR_SORT_ASCENDING</item>
       <item>SCANDIR_SORT_DESCENDING</item>
       <item>SCANDIR_SORT_NONE</item>
+      <item>SCM_CREDS2</item>
       <item>SEARCHD_ERROR</item>
       <item>SEARCHD_OK</item>
       <item>SEARCHD_RETRY</item>
@@ -3736,6 +3847,24 @@ Changes:
       <item>SI_TIMER</item>
       <item>SI_TKILL</item>
       <item>SI_USER</item>
+      <item>SKF_AD_ALU_XOR_X</item>
+      <item>SKF_AD_CPU</item>
+      <item>SKF_AD_HATYPE</item>
+      <item>SKF_AD_IFINDEX</item>
+      <item>SKF_AD_MARK</item>
+      <item>SKF_AD_MAX</item>
+      <item>SKF_AD_NLATTR</item>
+      <item>SKF_AD_NLATTR_NEST</item>
+      <item>SKF_AD_OFF</item>
+      <item>SKF_AD_PAY_OFFSET</item>
+      <item>SKF_AD_PKTTYPE</item>
+      <item>SKF_AD_PROTOCOL</item>
+      <item>SKF_AD_QUEUE</item>
+      <item>SKF_AD_RANDOM</item>
+      <item>SKF_AD_RXHASH</item>
+      <item>SKF_AD_VLAN_TAG</item>
+      <item>SKF_AD_VLAN_TAG_PRESENT</item>
+      <item>SKF_AD_VLAN_TPID</item>
       <item>SNMP_BIT_STR</item>
       <item>SNMP_COUNTER</item>
       <item>SNMP_COUNTER64</item>
@@ -3925,6 +4054,10 @@ Changes:
       <item>SODIUM_CRYPTO_BOX_SEALBYTES</item>
       <item>SODIUM_CRYPTO_BOX_SECRETKEYBYTES</item>
       <item>SODIUM_CRYPTO_BOX_SEEDBYTES</item>
+      <item>SODIUM_CRYPTO_CORE_RISTRETTO255_BYTES</item>
+      <item>SODIUM_CRYPTO_CORE_RISTRETTO255_HASHBYTES</item>
+      <item>SODIUM_CRYPTO_CORE_RISTRETTO255_NONREDUCEDSCALARBYTES</item>
+      <item>SODIUM_CRYPTO_CORE_RISTRETTO255_SCALARBYTES</item>
       <item>SODIUM_CRYPTO_GENERICHASH_BYTES</item>
       <item>SODIUM_CRYPTO_GENERICHASH_BYTES_MAX</item>
       <item>SODIUM_CRYPTO_GENERICHASH_BYTES_MIN</item>
@@ -3958,6 +4091,8 @@ Changes:
       <item>SODIUM_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_STRPREFIX</item>
       <item>SODIUM_CRYPTO_PWHASH_STRPREFIX</item>
       <item>SODIUM_CRYPTO_SCALARMULT_BYTES</item>
+      <item>SODIUM_CRYPTO_SCALARMULT_RISTRETTO255_BYTES</item>
+      <item>SODIUM_CRYPTO_SCALARMULT_RISTRETTO255_SCALARBYTES</item>
       <item>SODIUM_CRYPTO_SCALARMULT_SCALARBYTES</item>
       <item>SODIUM_CRYPTO_SECRETBOX_KEYBYTES</item>
       <item>SODIUM_CRYPTO_SECRETBOX_MACBYTES</item>
@@ -3971,6 +4106,8 @@ Changes:
       <item>SODIUM_CRYPTO_SIGN_SEEDBYTES</item>
       <item>SODIUM_CRYPTO_STREAM_KEYBYTES</item>
       <item>SODIUM_CRYPTO_STREAM_NONCEBYTES</item>
+      <item>SODIUM_CRYPTO_STREAM_XCHACHA20_KEYBYTES</item>
+      <item>SODIUM_CRYPTO_STREAM_XCHACHA20_NONCEBYTES</item>
       <item>SODIUM_LIBRARY_MAJOR_VERSION</item>
       <item>SODIUM_LIBRARY_MINOR_VERSION</item>
       <item>SODIUM_LIBRARY_VERSION</item>
@@ -3996,13 +4133,19 @@ Changes:
       <item>SORT_NUMERIC</item>
       <item>SORT_REGULAR</item>
       <item>SORT_STRING</item>
+      <item>SO_ACCEPTFILTER</item>
+      <item>SO_BPF_EXTENSIONS</item>
       <item>SO_BROADCAST</item>
       <item>SO_DEBUG</item>
       <item>SO_DONTROUTE</item>
+      <item>SO_DONTTRUNC</item>
       <item>SO_ERROR</item>
       <item>SO_FREE</item>
+      <item>SO_INCOMING_CPU</item>
       <item>SO_KEEPALIVE</item>
       <item>SO_LINGER</item>
+      <item>SO_MARK</item>
+      <item>SO_MEMINFO</item>
       <item>SO_NOSERVER</item>
       <item>SO_OOBINLINE</item>
       <item>SO_RCVBUF</item>
@@ -4010,10 +4153,14 @@ Changes:
       <item>SO_RCVTIMEO</item>
       <item>SO_REUSEADDR</item>
       <item>SO_REUSEPORT</item>
+      <item>SO_RTABLE</item>
+      <item>SO_SETFIB</item>
       <item>SO_SNDBUF</item>
       <item>SO_SNDLOWAT</item>
       <item>SO_SNDTIMEO</item>
       <item>SO_TYPE</item>
+      <item>SO_WANTMORE</item>
+      <item>SO_ZEROCOPY</item>
       <item>SPH_ATTR_BOOL</item>
       <item>SPH_ATTR_FLOAT</item>
       <item>SPH_ATTR_INTEGER</item>
@@ -4453,7 +4600,14 @@ Changes:
       <item>S_SESSION</item>
       <item>S_SQL</item>
       <item>S_VARS</item>
+      <item>TCP_CONGESTION</item>
+      <item>TCP_DEFER_ACCEPT</item>
+      <item>TCP_KEEPALIVE</item>
+      <item>TCP_KEEPCNT</item>
+      <item>TCP_KEEPIDLE</item>
+      <item>TCP_KEEPINTVL</item>
       <item>TCP_NODELAY</item>
+      <item>TCP_NOTSENT_LOWAT</item>
       <item>THOUSANDS_SEP</item>
       <item>THOUSEP</item>
       <item>TIDY_NODETYPE_ASP</item>
@@ -4964,6 +5118,7 @@ Changes:
       <item>VT_I1</item>
       <item>VT_I2</item>
       <item>VT_I4</item>
+      <item>VT_I8</item>
       <item>VT_INT</item>
       <item>VT_NULL</item>
       <item>VT_R4</item>
@@ -4971,6 +5126,7 @@ Changes:
       <item>VT_UI1</item>
       <item>VT_UI2</item>
       <item>VT_UI4</item>
+      <item>VT_UI8</item>
       <item>VT_UINT</item>
       <item>VT_UNKNOWN</item>
       <item>VT_VARIANT</item>
@@ -5897,6 +6053,7 @@ Changes:
       <item>curl_share_strerror</item>
       <item>curl_strerror</item>
       <item>curl_unescape</item>
+      <item>curl_upkeep</item>
       <item>curl_version</item>
       <item>current</item>
       <item>cyrus_authenticate</item>
@@ -7131,6 +7288,7 @@ Changes:
       <item>imap_header</item>
       <item>imap_headerinfo</item>
       <item>imap_headers</item>
+      <item>imap_is_open</item>
       <item>imap_last_error</item>
       <item>imap_list</item>
       <item>imap_listmailbox</item>
@@ -7221,6 +7379,7 @@ Changes:
       <item>ini_alter</item>
       <item>ini_get</item>
       <item>ini_get_all</item>
+      <item>ini_parse_quantity</item>
       <item>ini_restore</item>
       <item>ini_set</item>
       <item>inotify_add_watch</item>
@@ -7333,6 +7492,7 @@ Changes:
       <item>json_encode</item>
       <item>json_last_error</item>
       <item>json_last_error_msg</item>
+      <item>json_validate</item>
       <item>judy_type</item>
       <item>judy_version</item>
       <item>juliantojd</item>
@@ -7417,6 +7577,7 @@ Changes:
       <item>libxml_clear_errors</item>
       <item>libxml_disable_entity_loader</item>
       <item>libxml_get_errors</item>
+      <item>libxml_get_external_entity_loader</item>
       <item>libxml_get_last_error</item>
       <item>libxml_set_external_entity_loader</item>
       <item>libxml_set_streams_context</item>
@@ -7617,6 +7778,8 @@ Changes:
       <item>mb_scrub</item>
       <item>mb_send_mail</item>
       <item>mb_split</item>
+      <item>mb_str_pad</item>
+      <item>mb_str_split</item>
       <item>mb_strcut</item>
       <item>mb_strimwidth</item>
       <item>mb_stripos</item>
@@ -7640,6 +7803,7 @@ Changes:
       <item>memcache_debug</item>
       <item>memory_get_peak_usage</item>
       <item>memory_get_usage</item>
+      <item>memory_reset_peak_usage</item>
       <item>metaphone</item>
       <item>method_exists</item>
       <item>mhash</item>
@@ -7775,6 +7939,7 @@ Changes:
       <item>mysqli_error_list</item>
       <item>mysqli_escape_string</item>
       <item>mysqli_execute</item>
+      <item>mysqli_execute_query</item>
       <item>mysqli_fetch_all</item>
       <item>mysqli_fetch_array</item>
       <item>mysqli_fetch_assoc</item>
@@ -8266,6 +8431,7 @@ Changes:
       <item>oci_set_edition</item>
       <item>oci_set_module_name</item>
       <item>oci_set_prefetch</item>
+      <item>oci_set_prefetch_lob</item>
       <item>oci_statement_type</item>
       <item>oci_unregister_taf_callback</item>
       <item>octdec</item>
@@ -8277,6 +8443,9 @@ Changes:
       <item>odbc_columns</item>
       <item>odbc_commit</item>
       <item>odbc_connect</item>
+      <item>odbc_connection_string_is_quoted</item>
+      <item>odbc_connection_string_quote</item>
+      <item>odbc_connection_string_should_quote</item>
       <item>odbc_cursor</item>
       <item>odbc_data_source</item>
       <item>odbc_do</item>
@@ -8346,6 +8515,7 @@ Changes:
       <item>opendir</item>
       <item>openlog</item>
       <item>openssl_cipher_iv_length</item>
+      <item>openssl_cipher_key_length</item>
       <item>openssl_csr_export</item>
       <item>openssl_csr_export_to_file</item>
       <item>openssl_csr_get_public_key</item>
@@ -8713,7 +8883,9 @@ Changes:
       <item>pos</item>
       <item>posix_access</item>
       <item>posix_ctermid</item>
+      <item>posix_eaccess</item>
       <item>posix_errno</item>
+      <item>posix_fpathconf</item>
       <item>posix_getcwd</item>
       <item>posix_getegid</item>
       <item>posix_geteuid</item>
@@ -8737,6 +8909,7 @@ Changes:
       <item>posix_kill</item>
       <item>posix_mkfifo</item>
       <item>posix_mknod</item>
+      <item>posix_pathconf</item>
       <item>posix_setegid</item>
       <item>posix_seteuid</item>
       <item>posix_setgid</item>
@@ -8745,6 +8918,7 @@ Changes:
       <item>posix_setsid</item>
       <item>posix_setuid</item>
       <item>posix_strerror</item>
+      <item>posix_sysconf</item>
       <item>posix_times</item>
       <item>posix_ttyname</item>
       <item>posix_uname</item>
@@ -9243,6 +9417,10 @@ Changes:
       <item>sodium_crypto_sign_verify_detached</item>
       <item>sodium_crypto_stream</item>
       <item>sodium_crypto_stream_keygen</item>
+      <item>sodium_crypto_stream_xchacha20</item>
+      <item>sodium_crypto_stream_xchacha20_keygen</item>
+      <item>sodium_crypto_stream_xchacha20_xor</item>
+      <item>sodium_crypto_stream_xchacha20_xor_ic</item>
       <item>sodium_crypto_stream_xor</item>
       <item>sodium_hex2bin</item>
       <item>sodium_increment</item>
@@ -9466,6 +9644,7 @@ Changes:
       <item>stream_context_get_options</item>
       <item>stream_context_get_params</item>
       <item>stream_context_set_default</item>
+      <item>stream_context_set_options</item>
       <item>stream_context_set_option</item>
       <item>stream_context_set_params</item>
       <item>stream_copy_to_stream</item>
@@ -10319,7 +10498,10 @@ Changes:
         <item>CurlShareHandle</item>
         <item>CURLStringFile</item>
         <item>DateInterval</item>
+        <item>DateInvalidOperationException</item>
+        <item>DateMalformedIntervalStringException</item>
         <item>DatePeriod</item>
+        <item>DateRangeError</item>
         <item>DateTime</item>
         <item>DateTimeImmutable</item>
         <item>DateTimeInterface</item>
@@ -10369,6 +10551,7 @@ Changes:
         <item>EvWatcher</item>
         <item>Exception</item>
         <item>FANNConnection</item>
+        <item>Fiber</item>
         <item>FilesystemIterator</item>
         <item>FilterIterator</item>
         <item>finfo</item>
@@ -10415,6 +10598,7 @@ Changes:
         <item>IntlChar</item>
         <item>IntlCodePointBreakIterator</item>
         <item>IntlDateFormatter</item>
+        <item>IntlDatePatternGenerator</item>
         <item>IntlException</item>
         <item>IntlGregorianCalendar</item>
         <item>IntlIterator</item>
@@ -10507,6 +10691,7 @@ Changes:
         <item>QuickHashIntSet</item>
         <item>QuickHashIntStringHash</item>
         <item>QuickHashStringIntHash</item>
+        <item>Randomizer</item>
         <item>RangeException</item>
         <item>RecursiveArrayIterator</item>
         <item>RecursiveCachingIterator</item>
@@ -10977,6 +11162,7 @@ Changes:
         <keyword attribute="Library Constant" context="#stay" String="constants"/>
         <keyword attribute="Operator" context="#stay" String="operators"/>
         <keyword attribute="Types" context="#stay" String="types"/>
+        <keyword attribute="Properties" context="#stay" String="properties"/>
         <keyword attribute="Error" context="#stay" String="deprecated"/>
         <RegExpr attribute="Constant" context="#stay" String="\b[A-Z_][A-Z_0-9]*\b"/>
 
@@ -11006,7 +11192,7 @@ Changes:
         <Detect2Chars attribute="Comment" context="MatchComment" char="/" char1="*" lookAhead="true" />
       </context>
 
-      <context name="MatchComment" attribute="PHP Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop">
+      <context name="MatchComment" attribute="PHP Text" lineEndContext="#pop" fallthroughContext="#pop">
         <IncludeRules context="##Doxygen" />
         <Detect2Chars attribute="Comment" context="#pop!onelinecomment" char="/" char1="/" />
         <Detect2Chars attribute="Comment" context="#pop!twolinecomment" char="/" char1="*" beginRegion="Comment" />
@@ -11039,11 +11225,11 @@ Changes:
         $var[$ident]
              ^_ error
       -->
-      <context name="dqaftervarname" attribute="String" lineEndContext="#pop" fallthrough="1" fallthroughContext="#pop">
+      <context name="dqaftervarname" attribute="String" lineEndContext="#pop" fallthroughContext="#pop">
         <DetectChar attribute="Symbol" context="#pop!dqarray" char="["/>
         <Detect2Chars context="#pop!dqobject" char="-" char1=">" lookAhead="1"/>
       </context>
-      <context name="dqarray" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+      <context name="dqarray" attribute="Variable" lineEndContext="#stay" fallthroughContext="#pop">
         <DetectIdentifier attribute="String" context="#pop!dqarrayclose"/>
         <Int attribute="Decimal" context="#pop!dqarrayclose"/>
         <DetectChar attribute="Operator" context="#stay" char="-"/>
@@ -11051,25 +11237,25 @@ Changes:
         <RegExpr attribute="Variable" context="#pop!dqarrayclose" String="\$&varid;"/>
         <IncludeRules context="finddqarraycharerror"/>
       </context>
-      <context name="dqarrayclose" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+      <context name="dqarrayclose" attribute="Variable" lineEndContext="#stay" fallthroughContext="#pop">
         <DetectChar attribute="Symbol" context="#pop" char="]"/>
         <IncludeRules context="finddqarraycharerror"/>
       </context>
-      <context name="dqobject" attribute="String" lineEndContext="#pop" fallthrough="1" fallthroughContext="#pop">
+      <context name="dqobject" attribute="String" lineEndContext="#pop" fallthroughContext="#pop">
         <RegExpr attribute="Symbol" context="#pop!dqobjectmem" String="->(?=&varid;)"/>
       </context>
       <context name="dqobjectmem" attribute="Variable" lineEndContext="#pop">
         <DetectIdentifier attribute="PHP Text" context="#pop"/>
       </context>
-      <context name="finddqarraycharerror" attribute="String" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+      <context name="finddqarraycharerror" attribute="String" lineEndContext="#stay" fallthroughContext="#pop">
         <RegExpr attribute="Error" context="#pop" String="[^&quot;`]"/>
       </context>
 
-      <context name="dqcomplexvariable" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop!finddqarraycharerror">
+      <context name="dqcomplexvariable" attribute="Variable" lineEndContext="#stay" fallthroughContext="#pop!finddqarraycharerror">
         <DetectChar attribute="Symbol" context="#stay" char="{"/>
         <DetectChar attribute="Variable" context="#pop!dqcomplexvariable2" char="$"/>
       </context>
-      <context name="dqcomplexvariable2" attribute="Variable" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop!finddqarraycharerror">
+      <context name="dqcomplexvariable2" attribute="Variable" lineEndContext="#stay" fallthroughContext="#pop!finddqarraycharerror">
         <DetectIdentifier attribute="Variable" context="#pop!dqaftercomplexvariable"/>
         <DetectChar attribute="Variable" context="#stay" char="$"/>
         <IncludeRules context="finddqarraycharerror"/>
@@ -11147,7 +11333,7 @@ Changes:
       </context>
       <context name="heredoc" attribute="String" lineEndContext="#stay" dynamic="true">
         <IncludeRules context="doublestringvariablecommon" />
-        <RegExpr attribute="Heredoc" context="#pop" String="^%1(?=;?$)" dynamic="true" endRegion="Heredoc" column="0" />
+        <RegExpr attribute="Heredoc" context="#pop" String="^\s*%1(?=;?$)" dynamic="true" endRegion="Heredoc" column="0" />
       </context>
 
       <context name="htmlnowdoc" attribute="Normal Text" lineEndContext="#stay" dynamic="true">
@@ -11202,7 +11388,7 @@ Changes:
         <!--/ Alternate PHP Block Syntax -->
         <DetectIdentifier attribute="Control Structures" context="#pop"/>
       </context>
-      <context name="yield" attribute="PHP Text" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+      <context name="yield" attribute="PHP Text" lineEndContext="#stay" fallthroughContext="#pop">
         <DetectSpaces attribute="PHP Text" context="#stay"/>
         <WordDetect attribute="Control Structures" context="#pop" String="from"/>
       </context>
@@ -11210,7 +11396,7 @@ Changes:
         <DetectIdentifier attribute="Control Structures" context="#pop" endRegion="Alternate Block"/>
       </context>
 
-      <context name="MaybeAlternateBlock" attribute="PHP Text" lineEndContext="#stay" fallthrough="1" fallthroughContext="#pop">
+      <context name="MaybeAlternateBlock" attribute="PHP Text" lineEndContext="#stay" fallthroughContext="#pop">
         <DetectChar attribute="Symbol" context="#pop!MaybeAlternateBlockOpen" char="("/>
         <DetectSpaces attribute="PHP Text"/>
         <IncludeRules context="FindComment"/>
@@ -11225,7 +11411,7 @@ Changes:
         <DetectChar attribute="Symbol" context="#pop" char=")"/>
         <IncludeRules context="phpsource"/>
       </context>
-      <context name="MaybeAlternateBlockClose" attribute="PHP Text" lineEndContext="#pop" fallthrough="1" fallthroughContext="#pop">
+      <context name="MaybeAlternateBlockClose" attribute="PHP Text" lineEndContext="#pop" fallthroughContext="#pop">
         <DetectChar attribute="Other" context="#pop" char=":" beginRegion="Alternate Block"/>
         <DetectSpaces attribute="PHP Text"/>
       </context>
@@ -11269,6 +11455,7 @@ Changes:
       <itemData name="Scope Resolution" defStyleNum="dsNormal" spellChecking="false" />
       <itemData name="Other" defStyleNum="dsOthers" spellChecking="false" />
       <itemData name="Types" defStyleNum="dsDataType" spellChecking="false" />
+      <itemData name="Properties" defStyleNum="dsDataType" spellChecking="false" />
       <itemData name="Cast" defStyleNum="dsDataType" spellChecking="false" />
       <itemData name="Error Control Operator" defStyleNum="dsPreprocessor" spellChecking="false" />
       <itemData name="Error" defStyleNum="dsError" spellChecking="false" />
@@ -11276,7 +11463,7 @@ Changes:
   </highlighting>
   <general>
     <comments>
-      <comment name="singleLine" start="//" />
+      <comment name="singleLine" start="//" position="afterwhitespace" />
       <comment name="multiLine" start="/*" end="*/" region="Comment" />
     </comments>
     <keywords casesensitive="0" weakDeliminator="" additionalDeliminator="@" />

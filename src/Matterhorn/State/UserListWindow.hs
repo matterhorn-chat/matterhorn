@@ -40,7 +40,7 @@ enterChannelMembersUserList myTId = do
 
         doAsyncWith Preempt $ do
             stats <- MM.mmGetChannelStatistics cId session
-            return $ Just $ do
+            return $ Just $ Work "enterChannelMembersUserList" $ do
                 enterUserListMode myTId (ChannelMembers cId myTId) (Just $ channelStatsMemberCount stats)
                   (\u -> case u^.uiId /= myId of
                     True -> createOrFocusDMChannel myTId u Nothing >> return True

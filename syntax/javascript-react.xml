@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
 	<!ENTITY simpleName "(?:[a-z][a-z\d]*:)?[a-z][a-z\d]*">
 	<!ENTITY baseName   "[a-zA-Z_\$[:^ascii:]](?:[\w\$\-\.[:^ascii:]]*[\w\$[:^ascii:]])?">

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
     <!ENTITY float1 "0x[0-9a-f_]*+(?:(?:\.[0-9a-f_]*+)?p[-+]?[0-9_]++|\.[0-9a-f_]*+)">
     <!ENTITY float2 "0++p([0-9][0-9_]*+)?">

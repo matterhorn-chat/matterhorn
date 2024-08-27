@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language
+[
+<!ENTITY listbullet "[\+\-]">
+<!ENTITY checkbox "\[[ \-X]\](?=\s)">
+<!-- links. -->
+<!ENTITY startlink "(?:(?:https?|ftp)\://|(?:file|docview|mailto|mhe|rmail|bbdb|irc|info)\:)">
+<!ENTITY link "&startlink;[^&quot;&gt;\s]+">
+<!-- link in normal text.
+     Using the implicitlink entity in markdown.xml for now.
+     Actual doc: https://orgmode.org/guide/Hyperlinks.html -->
+<!ENTITY implicitlink "\b&startlink;[^&quot;&gt;\s`\)]*[^\s!&quot;&apos;`\(\)\*,\.:;&lt;&gt;\?~\]\}\\](?=[[:punct:]]*(?:[\s\]]|$))">
+<!-- org-emphasis-alist -->
+<!ENTITY contentregex_ast "(?:(?:[^\*\s\\]|\\.)(?:[^\\]|\\.)*)?(?:[^\*\s\\]|\\\S)">
+<!ENTITY contentregex_und "(?:(?:[^_\s\\]|\\.)(?:[^\\]|\\.)*)?(?:[^_\s\\]|\\\S)">
+<!ENTITY contentregex_itl "(?:(?:[^/\s\\]|\\.)(?:[^\\]|\\.)*)?(?:[^/\s\\]|\\\S)">
+<!ENTITY contentregex_stk "(?:(?:[^+\s\\]|\\.)(?:[^\\]|\\.)*)?(?:[^+\s\\]|\\\S)">
+<!ENTITY contentregex_cod "(?:(?:[^~\s\\]|\\.)(?:[^\\]|\\.)*)?(?:[^~\s\\]|\\\S)">
+<!ENTITY contentregex_vbt "(?:(?:[^=\s\\]|\\.)(?:[^\\]|\\.)*)?(?:[^=\s\\]|\\\S)">
+<!ENTITY contentregex_mco "(?:(?:[^\{\}\s\\]|\\.)(?:[^\\]|\\.)*)?(?:[^\{\}\s\\]|\\\S)">
+<!ENTITY bold_regex "\*{1}(?:&contentregex_ast;\*{1})">
+<!ENTITY underline_regex "\b_{1}(?:&contentregex_und;_{1})">
+<!ENTITY italic_regex "[/]{1}(?:&contentregex_itl;[/]{1})">
+<!ENTITY strike_regex "\+{1}(?:&contentregex_stk;\+{1})">
+<!ENTITY inlinecode_regex "\~{1}(?:&contentregex_cod;\~{1})">
+<!ENTITY verbatim_regex "\={1}(?:&contentregex_vbt;\={1})">
+<!ENTITY macroreplacement_regex "\{{3}(?:&contentregex_mco;\}{3})">
+<!-- [[plain-link]] -->
+<!ENTITY link_plain_regex "\[\[(?:[^\[\]]+)\]\]">
+<!-- [[link][description]] -->
+<!ENTITY link_desc_regex "\[\[(?:[^\[\]]+)\]\[(?:[^\[\]]+)\]\]">
+]>
+
+<!-- org syntax spec: https://orgmode.org/worg/dev/org-syntax.html -->
+<!-- syntax highlight: https://docs.kde.org/stable5/en/kate/katepart/highlight.html -->
+<language name="Org Mode" version="4" kateversion="5.79" section="Markup" extensions="*.org" priority="15" author="Gary Wang" license="MIT">
+  <highlighting>
+    <list name="org-todo-keywords-todo">
+      <item>TODO</item>
+    </list>
+    <list name="org-todo-keywords-done">
+      <item>DONE</item>
+    </list>
+    <contexts>
+      <context name="Normal Text" attribute="Normal Text" lineEndContext="#stay">
+        <DetectChar context="find-header" char="*" column="0" lookAhead="true"/>
+        <RegExpr attribute="List" context="list" String="^(\s*)&listbullet;(\s+)" column="0"/>
+        <RegExpr attribute="Number List" context="numlist" String="^(\s*)\d+(?:\.|\))(\s+)" column="0"/>
+        <RegExpr attribute="Comment" String="^(\s*)# .*" column="0"/>
+        <RegExpr attribute="Block" context="find-block" String="^#\+BEGIN(_\w+|:).*" beginRegion="RegionBlock" column="0"/>
+        <RegExpr attribute="Babel" String="^(\s*)#\+[A-Z]+(?:\[[A-Z]+\])?:.*" column="0"/>
+        <DetectChar context="find-bold-normal" char="*" lookAhead="true"/>
+        <DetectChar context="find-underline-normal" char="_" lookAhead="true"/>
+        <DetectChar context="find-italic-normal" char="/" lookAhead="true"/>
+        <DetectChar context="find-strike-normal" char="+" lookAhead="true"/>
+        <DetectChar context="find-inlinecode-normal" char="~" lookAhead="true"/>
+        <DetectChar context="find-verbatim-normal" char="=" lookAhead="true"/>
+        <DetectChar context="find-link-normal" char="[" lookAhead="true"/>
+        <StringDetect context="find-macro-replacement" String="{{{" lookAhead="true"/>
+        <RegExpr attribute="Normal Text: Link" String="&implicitlink;"/>
+      </context>
+      <context name="find-header" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr context="parse-header" String="^(?:\*){1,}\s+(?:([A-Z]+)\s+){0,1}(?:(\[#(?:[A-Z\d]+)\])\s+){0,1}(.*)\s*(\[[\d/%]+\]){0,1}\s*$" column="0" lookAhead="true"/>
+      </context>
+      <context name="parse-header" attribute="Heading" lineEndContext="#pop">
+        <RegExpr attribute="Heading" String="(?:\*){1,}\s+" lookAhead="false"/>
+        <keyword String="org-todo-keywords-todo" attribute="Keyword Todo" context="#stay" />
+        <keyword String="org-todo-keywords-done" attribute="Keyword Done" context="#stay" />
+        <RegExpr attribute="Cookie: Priority" String="\[#(?:[A-Z\d]+)\]" lookAhead="false"/>
+        <RegExpr attribute="Cookie: Statistics" String="\[[\d/%]+\]" lookAhead="false"/>
+      </context>
+      <context name="list" attribute="List: Normal Text" lineEndContext="#stay">
+        <RegExpr context="#pop" String="^\s*\S" column="0" lookAhead="true"/>
+        <RegExpr attribute="List: Checkbox" String="\s*&checkbox;"/>
+      </context>
+      <context name="numlist" attribute="List: Normal Text" lineEndContext="#stay">
+        <RegExpr context="#pop" String="^\s*\S" column="0" lookAhead="true"/>
+        <RegExpr attribute="List: Checkbox" String="\s*&checkbox;"/>
+      </context>
+      <context name="find-block" attribute="Block" lineEndContext="#stay">
+        <StringDetect context="#pop" attribute="Block" String="#+END%1" dynamic="true" endRegion="RegionBlock" column="0"/>
+      </context>
+      <context name="find-bold-normal" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Bold Text" context="#pop" minimal="true" String="&bold_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="*"/>
+      </context>
+      <context name="find-underline-normal" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Underline Text" context="#pop" minimal="true" String="&underline_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="_"/>
+      </context>
+      <context name="find-italic-normal" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Italic Text" context="#pop" minimal="true" String="&italic_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="/"/>
+      </context>
+      <context name="find-strike-normal" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Strikethrough Text" context="#pop" minimal="true" String="&strike_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="+"/>
+      </context>
+      <context name="find-verbatim-normal" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Verbatim" context="#pop" minimal="true" String="&verbatim_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="~"/>
+      </context>
+      <context name="find-link-normal" attribute="Link" lineEndContext="#pop">
+        <RegExpr attribute="Plain Link" context="#pop" minimal="true" String="&link_plain_regex;"/>
+        <!-- FIXME: currently, link and description are using the same style -->
+        <RegExpr attribute="Link" context="#pop" minimal="true" String="&link_desc_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="]"/>
+      </context>
+      <context name="find-macro-replacement" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Macro" context="#pop" minimal="true" String="&macroreplacement_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="}"/>
+      </context>
+      <context name="find-inlinecode-normal" attribute="Normal Text" lineEndContext="#pop">
+        <RegExpr attribute="Code" context="#pop" minimal="true" String="&inlinecode_regex;"/>
+        <DetectChar attribute="Normal Text" context="#pop" char="~"/>
+      </context>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text" defStyleNum="dsNormal"/>
+      <itemData name="Normal Text: Link" defStyleNum="dsNormal" underline="true" spellChecking="false"/>
+      <itemData name="Bold Text" defStyleNum="dsNormal" bold="true"/>
+      <itemData name="Underline Text" defStyleNum="dsNormal" underline="true"/>
+      <itemData name="Italic Text" defStyleNum="dsNormal" italic="true"/>
+      <itemData name="Strikethrough Text" defStyleNum="dsNormal" strikeOut="true"/>
+      <itemData name="Keyword Done" defStyleNum="dsInformation" spellChecking="false"/>
+      <itemData name="Keyword Todo" defStyleNum="dsAlert" spellChecking="false"/>
+      <itemData name="Cookie: Priority" defStyleNum="dsInformation" spellChecking="false"/>
+      <itemData name="Cookie: Statistics" defStyleNum="dsInformation" spellChecking="false"/>
+      <itemData name="Heading" defStyleNum="dsFunction"/>
+      <itemData name="List" defStyleNum="dsSpecialString" bold="1" spellChecking="false"/>
+      <itemData name="List: Normal Text" defStyleNum="dsNormal"/>
+      <itemData name="List: Checkbox" defStyleNum="dsVariable" spellChecking="false"/>
+      <itemData name="Number List" defStyleNum="dsSpecialString" spellChecking="false"/>
+      <itemData name="Plain Link" defStyleNum="dsOthers" underline="true" spellChecking="false"/>
+      <itemData name="Link" defStyleNum="dsOthers" underline="true" spellChecking="false"/>
+      <itemData name="Comment" defStyleNum="dsComment"/>
+      <itemData name="Macro" defStyleNum="dsPreprocessor"/>
+      <itemData name="Babel" defStyleNum="dsPreprocessor"/>
+      <itemData name="Verbatim" defStyleNum="dsExtension" spellChecking="false"/>
+      <itemData name="Code" defStyleNum="dsInformation" spellChecking="false"/>
+      <itemData name="Block" defStyleNum="dsInformation"/>
+    </itemDatas>
+  </highlighting>
+  <general>
+    <comments>
+      <!-- Kate will add a space after the char so it's just a "#" here -->
+      <comment name="singleLine" start="#"/>
+    </comments>
+  </general>
+</language>
+<!-- kate: replace-tabs on; indent-width 2; tab-width 2; -->

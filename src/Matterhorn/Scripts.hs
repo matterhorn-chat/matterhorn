@@ -44,7 +44,7 @@ runScript :: Lens' ChatState (EditState Name)
           -> STM.TChan ProgramOutput
           -> FilePath
           -> Text
-          -> IO (Maybe (MH ()))
+          -> IO (Maybe Work)
 runScript which outputChan fp text = do
   outputVar <- newEmptyMVar
   runLoggedCommand outputChan fp [] (Just $ BSL.fromStrict $ T.encodeUtf8 text) (Just outputVar)
@@ -52,7 +52,7 @@ runScript which outputChan fp text = do
   return $ case programExitCode po of
     ExitSuccess -> do
         case null $ programStderr po of
-            True -> Just $ do
+            True -> Just $ Work "runScript" $ do
                 mode <- use (which.esEditMode)
                 cId <- use (which.esChannelId)
                 sendMessage cId mode (T.pack $ programStdout po) []

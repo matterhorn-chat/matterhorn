@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <language name="ChangeLog" version="4" kateversion="2.4" section="Other" extensions="ChangeLog" mimetype="" author="Dominik Haumann (dhaumann@kde.org)" license="MIT">
   <highlighting>
     <contexts>

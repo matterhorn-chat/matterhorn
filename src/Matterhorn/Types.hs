@@ -15,6 +15,7 @@ module Matterhorn.Types
   , MHError(..)
   , CPUUsagePolicy(..)
   , SemEq(..)
+  , Work(..)
   , handleEventWith
   , getServerBaseUrl
   , serverBaseUrl
@@ -178,6 +179,7 @@ module Matterhorn.Types
   , withCurrentChannel
   , withCurrentChannel'
   , withCurrentTeam
+  , forEachTeam
 
   , csTeamZipper
   , csTeams
@@ -1013,6 +1015,7 @@ data LogCategory =
     | LogWebsocket
     | LogError
     | LogUserMark
+    | LogAsyncWork
     deriving (Eq, Show)
 
 -- | A log message.
@@ -1110,7 +1113,7 @@ emptyGlobalEditState =
 
 -- | A 'RequestChan' is a queue of operations we have to perform in the
 -- background to avoid blocking on the main loop
-type RequestChan = STM.TChan (IO (Maybe (MH ())))
+type RequestChan = STM.TChan (IO (Maybe Work))
 
 -- | Help topics
 data HelpTopic =
@@ -1391,8 +1394,8 @@ emptyChannelSelectState tId =
 -- | The state of the post list window.
 data PostListWindowState =
     PostListWindowState { _postListPosts    :: Messages
-                         , _postListSelected :: Maybe PostId
-                         }
+                        , _postListSelected :: Maybe PostId
+                        }
 
 data InternalTheme =
     InternalTheme { internalThemeName :: Text
@@ -1581,14 +1584,16 @@ instance St.MonadState ChatState MH where
 instance St.MonadIO MH where
     liftIO = MH . St.liftIO
 
+data Work = Work String (MH ())
+
 -- | This represents events that we handle in the main application loop.
 data MHEvent =
     WSEvent WebsocketEvent
     -- ^ For events that arise from the websocket
     | WSActionResponse WebsocketActionResponse
     -- ^ For responses to websocket actions
-    | RespEvent (MH ())
-    -- ^ For the result values of async IO operations
+    | RespEvent Work
+    -- ^ For the result values of async operations
     | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
     | WebsocketParseError String
@@ -1808,6 +1813,11 @@ withCurrentTeam f = do
     case mtId of
         Nothing -> return ()
         Just tId -> f tId
+
+forEachTeam :: (TeamId -> MH ()) -> MH ()
+forEachTeam f = do
+    ts <- use csTeams
+    mapM_ f (HM.keys ts)
 
 withCurrentChannel :: TeamId -> (ChannelId -> ClientChannel -> MH ()) -> MH ()
 withCurrentChannel tId f = do

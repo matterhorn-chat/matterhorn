@@ -133,7 +133,7 @@ renderAutocompleteBox st tId mCurChan which ac =
 renderAutocompleteFooterFor :: ChatState -> ClientChannel -> AutocompleteAlternative -> Maybe (Widget Name)
 renderAutocompleteFooterFor _ _ (SpecialMention MentionChannel) = Nothing
 renderAutocompleteFooterFor _ _ (SpecialMention MentionAll) = Nothing
-renderAutocompleteFooterFor st ch (UserCompletion _ False) =
+renderAutocompleteFooterFor st ch (UserCompletion _ False _) =
     Just $ hBox [ txt $ "("
                 , withDefAttr clientEmphAttr (txt userNotInChannelMarker)
                 , txt ": not a member of "
@@ -166,7 +166,7 @@ renderAutocompleteAlternative _ sel (EmojiCompletion e) =
     padRight Max $ renderEmojiCompletion sel e
 renderAutocompleteAlternative _ sel (SpecialMention m) =
     padRight Max $ renderSpecialMention m sel
-renderAutocompleteAlternative curUser sel (UserCompletion u inChan) =
+renderAutocompleteAlternative curUser sel (UserCompletion u inChan _) =
     padRight Max $ renderUserCompletion curUser u inChan sel
 renderAutocompleteAlternative _ sel (ChannelCompletion inChan c) =
     padRight Max $ renderChannelCompletion c inChan sel

@@ -36,7 +36,7 @@ openSaveAttachmentWindow which = do
                     session <- getSession
                     doAsyncWith Normal $ do
                         info <- mmGetMetadataForFile fId session
-                        return $ Just $ do
+                        return $ Just $ Work "openSaveAttachmentWindow" $ do
                             -- Use the message interface's URL list name
                             -- as a unique basis for the names of the UI
                             -- elements in the attachment dialog

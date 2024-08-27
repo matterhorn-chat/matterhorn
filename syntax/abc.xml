@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!-- Andrea Primiani - primiani at dag dot it
  	version1.10 - 12 december 2005 -->
 <language name="ABC" version="8" kateversion="5.0" section="Other" extensions="*.abc;*.ABC" mimetype="text/vnd.abc" casesensitive="1" author="Andrea Primiani (primiani@dag.it)" license="LGPL">

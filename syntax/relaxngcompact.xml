@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <language name="RelaxNG-Compact" version="3" kateversion="5.0" section="Markup" extensions="*.rnc" casesensitive="1" author="Rintze Zelle" license="LGPL">
   <highlighting>
     <list name="Keywords">

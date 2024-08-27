@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <!--
 
 *************************************************************************
@@ -48,7 +48,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 -->
 
-<language name="GNU Assembler" version="8" kateversion="5.0" section="Assembler" extensions="*.s;*.S" mimetype="text/x-asm" author="John Zaitseff (J.Zaitseff@zap.org.au), Roland Pabel (roland@pabel.name), Miquel Sabaté (mikisabate@gmail.com) Waqar Ahmed (waqar.17a@gmail.com)" license="GPLv2+">
+<language name="GNU Assembler" version="9" kateversion="5.0" section="Assembler" extensions="*.s;*.S" mimetype="text/x-asm" author="John Zaitseff (J.Zaitseff@zap.org.au), Roland Pabel (roland@pabel.name), Miquel Sabaté (mikisabate@gmail.com) Waqar Ahmed (waqar.17a@gmail.com)" license="GPLv2+">
   <highlighting>
     <list name="registers">
       <!-- General purpose registers -->
@@ -297,6 +297,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
       <item>cli</item>
       <item>clts</item>
       <item>cltd</item>
+      <item>cbtw</item>
+      <item>cwtl</item>
+      <item>cwtd</item>
+      <item>cltq</item>
+      <item>cqto</item>
       <item>cmc</item>
       <item>cmpb</item>
       <item>cmpw</item>
@@ -319,6 +324,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
       <item>daa</item>
       <item>das</item>
       <item>dec</item>
+      <item>decl</item>
+      <item>decq</item>
       <item>div</item>
       <item>divb</item>
       <item>divw</item>
@@ -444,6 +451,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
       <item>imulq</item>
       <item>in</item>
       <item>inc</item>
+      <item>incl</item>
+      <item>incq</item>
       <item>incbin</item>
       <item>insb</item>
       <item>insd</item>
@@ -506,6 +515,22 @@ with this program; if not, write to the Free Software Foundation, Inc.,
       <item>movsx</item>
       <item>movsxd</item>
       <item>movzx</item>
+      <item>movsbw</item>
+      <item>movsxb</item>
+      <item>movsbl</item>
+      <item>movsbq</item>
+      <item>movswl</item>
+      <item>movsxw</item>
+      <item>movswq</item>
+      <item>movslq</item>
+      <item>movsxl</item>
+      <item>movzbw</item>
+      <item>movzxb</item>
+      <item>movzbl</item>
+      <item>movzbq</item>
+      <item>movzwl</item>
+      <item>movzxw</item>
+      <item>movzwq</item>
       <item>mul</item>
       <item>mulb</item>
       <item>mulw</item>
@@ -705,6 +730,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
       <item>xlatb</item>
       <item>xlat</item>
       <item>xor</item>
+      <item>xorl</item>
+      <item>xorq</item>
       <item>cmove</item>
       <item>cmovz</item>
       <item>cmovne</item>
@@ -2258,6 +2285,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
         <HlCHex       attribute="Hex" context="#stay" />
         <RegExpr      attribute="Binary" context="#stay" String="0[bB][01]+" />
         <Int          attribute="Decimal" context="#stay" />
+        <RegExpr      attribute="Decimal" context="#stay" String="\$[0-9]+" />
         <RegExpr      attribute="Float" context="#stay" String="0[fFeEdD][-+]?[0-9]*\.?[0-9]*[eE]?[-+]?[0-9]+" />
         <RegExpr      attribute="Normal Text" context="#stay" String="[A-Za-z_.$][A-Za-z0-9_.$]*" />
         <HlCChar      attribute="Char" context="#stay" />

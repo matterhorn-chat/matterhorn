@@ -35,7 +35,7 @@ Version 1.0 (2012-03-21) by Igor Zhuravlov
 - initial release
 
 -->
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
   <!ENTITY unum "\d+">                                 <!-- Unsigned integer number -->
   <!ENTITY anum "[a-z\d]+">                            <!-- Non-10-based unsigned integer number, e.g. 1a -->

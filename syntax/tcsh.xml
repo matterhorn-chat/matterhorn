@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
         <!ENTITY funcname "[A-Za-z_:][A-Za-z0-9_:#&#37;@-]*">
         <!ENTITY varname  "[A-Za-z_][A-Za-z0-9_]*">

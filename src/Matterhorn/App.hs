@@ -22,7 +22,7 @@ import qualified Matterhorn.Events as Events
 import           Matterhorn.IOUtil
 import           Matterhorn.InputHistory
 import           Matterhorn.LastRunState
-import           Matterhorn.Options hiding ( ShowHelp )
+import           Matterhorn.Options
 import           Matterhorn.State.Setup
 import           Matterhorn.State.Setup.Threads.Logging ( shutdownLogManager )
 import           Matterhorn.Types

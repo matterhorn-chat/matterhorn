@@ -1,4 +1,7 @@
-module Matterhorn.State.Teams where
+module Matterhorn.State.Teams
+  ( makeClientChannel
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude
@@ -11,4 +14,11 @@ import           Network.Mattermost.Types ( Channel, ChannelMember, UserId, Team
 import           Matterhorn.Types ( MHEvent )
 import           Matterhorn.Types.Channels ( ClientChannel )
 
-makeClientChannel :: (MonadIO m) => BCH.BChan MHEvent -> Maybe Aspell -> UserId -> Maybe TeamId -> Channel -> ChannelMember -> m ClientChannel
+makeClientChannel :: (MonadIO m)
+                  => BCH.BChan MHEvent
+                  -> Maybe Aspell
+                  -> UserId
+                  -> Maybe TeamId
+                  -> Channel
+                  -> ChannelMember
+                  -> m ClientChannel

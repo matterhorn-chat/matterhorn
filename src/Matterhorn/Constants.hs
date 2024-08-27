@@ -1,5 +1,6 @@
 module Matterhorn.Constants
   ( pageAmount
+  , messageFetchPageSize
   , userTypingExpiryInterval
   , numScrollbackPosts
   , previewMaxHeight
@@ -30,6 +31,10 @@ channelListMaxAutoWidth = 44
 -- | The number of rows to consider a "page" when scrolling
 pageAmount :: Int
 pageAmount = 15
+
+-- | The "page size" to use with the message-fetching API
+messageFetchPageSize :: Int
+messageFetchPageSize = 200
 
 -- | The expiry interval in seconds for user typing notifications.
 userTypingExpiryInterval :: NominalDiffTime

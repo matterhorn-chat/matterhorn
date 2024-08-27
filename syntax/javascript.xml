@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
   <!ENTITY identifier "[a-zA-Z_$[:^ascii:]][\w$[:^ascii:]]*">
 
@@ -7,7 +7,7 @@
   <!ENTITY DecimalIntegerLiteral "(0|[1-9][0-9]*+(_[0-9]++)*+)">
   <!ENTITY DecimalDigits "([0-9]++(_[0-9]++)*+)">
   <!ENTITY ExponentPart "([eE][+-]?&DecimalDigits;)">
-  <!ENTITY float "&DecimalIntegerLiteral;(\.&DecimalDigits;?&ExponentPart;?|&ExponentPart;)|\.&DecimalDigits;&ExponentPart;?">
+  <!ENTITY float "\b&DecimalIntegerLiteral;(\.&DecimalDigits;?&ExponentPart;?|&ExponentPart;)|\.&DecimalDigits;&ExponentPart;?">
 ]>
 
 <!--
@@ -23,7 +23,7 @@
    * QML
    * CoffeeScript (embedded)
 -->
-<language name="JavaScript" version="20" kateversion="5.53" section="Scripts" extensions="*.js;*.kwinscript;*.julius"
+<language name="JavaScript" alternativeNames="JS" version="26" kateversion="5.53" section="Scripts" extensions="*.js;*.mjs;*.cjs;*.kwinscript;*.julius"
           mimetype="text/x-javascript;application/x-javascript;application/javascript;text/javascript" indenter="cstyle"
           author="Anders Lund (anders@alweb.dk), Joseph Wenninger (jowenn@kde.org), Whitehawk Stormchaser (zerokode@gmx.net)" license="">
 
@@ -60,6 +60,8 @@
       <item>typeof</item>
       <item>var</item>
       <item>void</item>
+      <item>set</item>
+      <item>get</item>
     </list>
     <list name="reserved">
       <item>async</item>
@@ -1075,7 +1077,6 @@
       <item>port</item>
       <item>prefix</item>
       <item>previous</item>
-      <item>previousDibling</item>
       <item>product</item>
       <item>productSub</item>
       <item>profile</item>
@@ -1649,37 +1650,41 @@
       <context name="Shebang Line" attribute="Comment" lineEndContext="#pop!Normal" />
 
       <!-- Normal Syntax of JavaScript. -->
-      <!-- NOTE: These IncludeRules rules, except BuiltInClasses and FindBrackets are included in qml.xml -->
+      <!-- NOTE: These IncludeRules rules, except BuiltInClasses, FindBrackets, FindPrivateOperator, FindE4X are included in qml.xml -->
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
         <DetectSpaces/>
+        <IncludeRules context="FindSomeSymbols" />
+        <IncludeRules context="FindBrackets" />
+        <IncludeRules context="FindPrivateOperator" />
+        <IncludeRules context="FindComments" />
         <IncludeRules context="FindNumbers" />
+        <IncludeRules context="FindMembers" />
         <IncludeRules context="FindKeywords" />
         <IncludeRules context="FindStrings" />
         <IncludeRules context="BuiltInClasses" />
         <IncludeRules context="FindObjectMembersAndFunctions" />
-        <IncludeRules context="FindBrackets" />
-        <IncludeRules context="JSBase" />
+        <IncludeRules context="FindIdentifier" />
+        <IncludeRules context="FindE4X" />
+        <IncludeRules context="FindRegex" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindSomeSymbols">
+        <IncludeRules context="FindArrowFunction" />
+        <!-- symbol that is not used in any other context (fast path) -->
+        <AnyChar attribute="Symbol" String=":!%&amp;+,-*=&gt;?|~^;" />
       </context>
 
       <!-- Base Syntax. Used by the TypeScript highlighter. -->
       <context attribute="Normal Text" lineEndContext="#stay" name="JSBase">
-        <AnyChar context="NoRegExp" String="])" />
-        <!--DetectIdentifier-->
-        <!-- Do not start RegExp after non-ASCII characters (see bug #393633) -->
-        <RegExpr context="NoRegExp" String="&identifier;" />
-
+        <DetectChar attribute="Symbol" char="?" />
+        <IncludeRules context="FindIdentifier" />
+        <IncludeRules context="FindE4X" />
         <IncludeRules context="FindComments" />
-
-        <!-- E4X extension (=xml inside JavaScript), see bug #373713 -->
-        <RegExpr attribute="Symbol" context="#stay" String="&lt;(?=/\*|//)" />
-        <Detect2Chars attribute="Symbol" context="NoRegExp" char="&lt;" char1="/" />
-        <Detect2Chars attribute="Symbol" context="NoRegExp" char="/" char1="&gt;" />
-
-        <DetectChar attribute="Regular Expression" context="(regex caret first check)" char="/" />
-
-        <!-- NOTE: The brackets {}()[] are highlighted as Normal Text. -->
-        <Detect2Chars attribute="Special Operators" context="#stay" char="=" char1="&gt;" />
-        <AnyChar attribute="Symbol" String=":!%&amp;+,-/.*&lt;=&gt;?|~^&#59;" />
+        <IncludeRules context="FindRegex" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="JSBaseSomeSymboles">
+        <IncludeRules context="FindArrowFunction" />
+        <!-- symbol that is not used in any other context (fast path) -->
+        <AnyChar attribute="Symbol" String="!%&amp;+,-*=&gt;|~^;" />
       </context>
 
 
@@ -1703,8 +1708,27 @@
         <DetectChar attribute="Symbol" context="#pop#pop" char="/" />
       </context>
 
+      <!-- E4X extension (=xml inside JavaScript), see bug #373713 -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindE4X">
+        <RegExpr attribute="Symbol" context="#stay" String="&lt;(?=[^/]|/\*|//|$)" />
+        <Detect2Chars attribute="Symbol" context="NoRegExp" char="&lt;" char1="/" />
+        <Detect2Chars attribute="Symbol" context="NoRegExp" char="/" char1="&gt;" />
+      </context>
+
+      <!--DetectIdentifier-->
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindIdentifier">
+        <!-- Do not start RegExp after non-ASCII characters (see bug #393633) -->
+        <RegExpr context="NoRegExp" String="&identifier;" />
+      </context>
+
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindRegex">
+        <DetectChar attribute="Regular Expression" context="(regex caret first check)" char="/" />
+      </context>
+
       <!-- Object, within { ... } -->
       <context attribute="Normal Text" lineEndContext="#stay" name="FindBrackets">
+        <DetectChar attribute="Normal Text" context="#stay" char="(" />
+        <DetectChar attribute="Normal Text" context="NoRegExp" char=")" />
         <DetectChar attribute="Normal Text" context="Object" char="{" beginRegion="Brace" />
         <DetectChar attribute="Normal Text" context="#stay" char="[" beginRegion="List" />
         <DetectChar attribute="Normal Text" context="NoRegExp" char="]" endRegion="List" />
@@ -1731,6 +1755,11 @@
         <IncludeRules context="Normal" />
       </context>
 
+      <!-- '#' in "#identifier" -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindPrivateOperator">
+        <DetectChar attribute="Private Member Operator" char="#" />
+      </context>
+
       <!-- Keywords -->
       <context attribute="Normal Text" lineEndContext="#stay" name="FindKeywords">
         <WordDetect attribute="Keyword" context="FunctionDeclaration" String="function" />
@@ -1742,22 +1771,40 @@
       </context>
       <context attribute="Normal Text" lineEndContext="#stay" name="FunctionDeclaration" fallthrough="true" fallthroughContext="#pop">
         <DetectSpaces />
+        <IncludeRules context="FindPrivateOperator" />
         <RegExpr attribute="Function Declaration" context="#pop" String="&identifier;(?=\s*\()" /> <!-- NoRegExp -->
         <IncludeRules context="FindComments" />
       </context>
 
       <!-- Numbers -->
       <context attribute="Normal Text" lineEndContext="#stay" name="FindNumbers">
-        <RegExpr attribute="Float" context="NoRegExp" String="\b&float;" />
-        <RegExpr attribute="Hex" context="NumericSufix" String="\b0[xX][0-9a-fA-F]++(_[0-9a-fA-F]++)*+"/>
+        <RegExpr attribute="Float" context="NoRegExp" String="&float;" />
+        <AnyChar context="Integer" String="0123456789" lookAhead="1"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Integer">
+        <RegExpr attribute="Hex" context="#pop!NumericSufix" String="\b0[xX][0-9a-fA-F]++(_[0-9a-fA-F]++)*+"/>
         <!-- 07 is octal, 08 is decimal -->
-        <RegExpr attribute="Octal" context="NumericSufix" String="\b0([oO][0-7]++(_[0-7]++)*+|0*+[1-7][0-7]*+(_[0-7]++)*+(?!_?[89]))" />
-        <RegExpr attribute="Binary" context="NumericSufix" String="\b0[bB][01]++(_[01]++)*+" />
-        <RegExpr attribute="Decimal" context="NumericSufix" String="\b0*+([1-9][0-9]*+(_[0-9]++)*+)?"/>
+        <RegExpr attribute="Octal" context="#pop!NumericSufix" String="\b0([oO][0-7]++(_[0-7]++)*+|0*+[1-7][0-7]*+(_[0-7]++)*+(?!_?[89]))" />
+        <RegExpr attribute="Binary" context="#pop!NumericSufix" String="\b0[bB][01]++(_[01]++)*+" />
+        <!-- 0000_8 is invalid -->
+        <RegExpr attribute="Decimal" context="#pop!NumericSufix" String="\b0*+([1-9][0-9]*+(_[0-9]++)*+)?"/>
       </context>
       <context attribute="Normal Text" lineEndContext="#pop" name="NumericSufix" fallthrough="true" fallthroughContext="#pop!NoRegExp">
         <DetectChar attribute="Normal Text" context="#pop!NoRegExp" char="n" />
+        <IncludeRules context="NumericSufixError" />
+      </context>
+      <context attribute="Normal Text" lineEndContext="#pop" name="NumericSufixError">
         <RegExpr attribute="Error" context="#pop!NoRegExp" String="[0-9]*(&identifier;)?"/>
+      </context>
+
+      <!-- Find => -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindArrowFunction">
+        <Detect2Chars attribute="Special Operators" context="#stay" char="=" char1="&gt;" />
+      </context>
+
+      <!-- Find Objects Member -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="FindMembers">
+        <DetectChar attribute="Symbol" context="Object Member" char="." lookAhead="true" />
       </context>
 
       <!-- Find Objects Member and Functions -->
@@ -1768,7 +1815,6 @@
         <RegExpr attribute="Function Name" context="Function" String="(&identifier;)(?=\s*\()" lookAhead="true" />
         <IncludeRules context="BuiltInConstants" />
         <RegExpr attribute="Objects" context="Object Member" String="&identifier;(?=\s*\.)" />
-        <DetectChar attribute="Symbol" context="Object Member" char="." lookAhead="true" />
       </context>
       <context attribute="Normal Text" lineEndContext="#pop" name="Function">
         <keyword attribute="Function (Built-in)" context="#pop" String="functions" />
@@ -1777,6 +1823,7 @@
       </context>
 
       <context attribute="Normal Text" lineEndContext="#pop" fallthrough="true" fallthroughContext="#pop" name="Object Member">
+        <IncludeRules context="FindPrivateOperator" />
         <IncludeRules context="DefaultMemberObject" />
         <!-- Common functions and properties, only for autocomplete keywords -->
         <keyword attribute="Object Member" context="#pop!NoRegExp" String="dom_property" />
@@ -2030,6 +2077,7 @@
       <itemData name="Comment"      defStyleNum="dsComment" />
       <itemData name="Symbol"       defStyleNum="dsOperator" spellChecking="false" />
       <itemData name="Special Operators" defStyleNum="dsKeyword" spellChecking="false" />
+      <itemData name="Private Member Operator" defStyleNum="dsNormal" spellChecking="false" />
       <itemData name="Regular Expression" defStyleNum="dsSpecialString" spellChecking="false" />
       <itemData name="Pattern Internal Operator" defStyleNum="dsSpecialChar" spellChecking="false" />
       <itemData name="Pattern Character Class" defStyleNum="dsSpecialChar" spellChecking="false" />
@@ -2042,7 +2090,7 @@
 
   <general>
     <comments>
-      <comment name="singleLine" start="//" />
+      <comment name="singleLine" start="//" position="afterwhitespace"/>
       <comment name="multiLine" start="/*" end="*/" region="Comment" />
     </comments>
     <keywords casesensitive="1" />

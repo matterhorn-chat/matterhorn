@@ -26,7 +26,7 @@
     IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 -->
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
 	<!ENTITY rustIdent "(?:[a-zA-Z_]|[^[:ascii:]])(?:\w|[^[:ascii:]])*">
 	<!ENTITY rustIntSuf "(?:[iu](?:8|16|32|64|128|size)?)?">
@@ -40,7 +40,7 @@
 	<!ENTITY scope2 "::(?=[^\s\:])"> <!-- Points after keyword or group { } -->
 
 ]>
-<language name="Rust" version="13" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" priority="15" license="MIT" author="The Rust Project Developers">
+<language name="Rust" alternativeNames="RS" version="15" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" indenter="cstyle" priority="15" license="MIT" author="The Rust Project Developers">
 <highlighting>
 	<list name="fn">
 		<item>fn</item>
@@ -491,7 +491,7 @@
 </highlighting>
 <general>
 	<comments>
-		<comment name="singleLine" start="//" />
+		<comment name="singleLine" start="//" position="afterwhitespace" />
 		<comment name="multiLine" start="/*" end="*/" region="Comment"/>
 	</comments>
 	<keywords casesensitive="1" />

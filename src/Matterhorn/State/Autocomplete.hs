@@ -54,18 +54,28 @@ data AutocompleteContext =
                         -- (False).
                         }
 
+data Completer =
+    Completer { completerType :: AutocompletionType
+              , completerFunc :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
+              }
+
 -- | Check for whether the currently-edited word in the message editor
 -- should cause an autocompletion UI to appear. If so, initiate a server
 -- query or local cache lookup to present the completion alternatives
 -- for the word at the cursor.
-checkForAutocompletion :: Traversal' ChatState (EditState Name)
+checkForAutocompletion :: EditorTarget
                        -> AutocompleteContext
                        -> MH ()
-checkForAutocompletion which ctx = do
+checkForAutocompletion target ctx = do
+    let which :: Traversal' ChatState (EditState Name)
+        which = case target of
+            EditorForChannel cId -> maybeChannelMessageInterface(cId).miEditor
+            EditorForThread tId -> maybeThreadInterface(tId)._Just.miEditor
+
     result <- getCompleterForInput which ctx
     case result of
         Nothing -> resetAutocomplete which
-        Just (ty, runUpdater, searchString) -> do
+        Just (completer, searchString) -> do
             prevResult <- join <$> preuse (which.esAutocomplete)
 
             -- We should update the completion state if EITHER:
@@ -75,17 +85,18 @@ checkForAutocompletion which ctx = do
             -- or
             --
             -- 2) The search string changed but the type did NOT change
-            let shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
+            let ty = completerType completer
+                shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
                                  prevResult) &&
                                 (maybe True ((== ty) . _acType) prevResult)) ||
                                (maybe False ((/= ty) . _acType) prevResult)
             when shouldUpdate $ do
                 which.esAutocompletePending .= Just searchString
-                runUpdater ty ctx searchString
+                completerFunc completer ty ctx searchString
 
 getCompleterForInput :: Traversal' ChatState (EditState Name)
                      -> AutocompleteContext
-                     -> MH (Maybe (AutocompletionType, AutocompletionType -> AutocompleteContext -> Text -> MH (), Text))
+                     -> MH (Maybe (Completer, Text))
 getCompleterForInput which ctx = do
     maybeZipper <- preuse (which.esEditor.editContentsL)
     mmTid <- preuse (which.esTeamId)
@@ -101,15 +112,15 @@ getCompleterForInput which ctx = do
             return $ case wordAtColumn col curLine of
                 Just (startCol, w)
                     | userSigil `T.isPrefixOf` w ->
-                        Just (ACUsers, doUserAutoCompletion which tId, T.tail w)
+                        Just (Completer ACUsers (doUserAutoCompletion which tId), T.tail w)
                     | normalChannelSigil `T.isPrefixOf` w ->
-                        Just (ACChannels, doChannelAutoCompletion tId which, T.tail w)
+                        Just (Completer ACChannels (doChannelAutoCompletion tId which), T.tail w)
                     | ":" `T.isPrefixOf` w && autocompleteManual ctx ->
-                        Just (ACEmoji, doEmojiAutoCompletion which, T.tail w)
+                        Just (Completer ACEmoji (doEmojiAutoCompletion which), T.tail w)
                     | "```" `T.isPrefixOf` w ->
-                        Just (ACCodeBlockLanguage, doSyntaxAutoCompletion which, T.drop 3 w)
+                        Just (Completer ACCodeBlockLanguage (doSyntaxAutoCompletion which), T.drop 3 w)
                     | "/" `T.isPrefixOf` w && startCol == 0 ->
-                        Just (ACCommands, doCommandAutoCompletion which tId, T.tail w)
+                        Just (Completer ACCommands (doCommandAutoCompletion which tId), T.tail w)
                 _ -> Nothing
         _ -> return Nothing
 
@@ -127,7 +138,7 @@ doEmojiAutoCompletion which ty ctx searchString = do
         doAsyncWith Preempt $ do
             results <- getMatchingEmoji session em searchString
             let alts = EmojiCompletion <$> results
-            return $ Just $ setCompletionAlternatives which ctx searchString alts ty
+            return $ Just $ Work "doEmojiAutoCompletion" $ setCompletionAlternatives which ctx searchString alts ty
 
 doSyntaxAutoCompletion :: Traversal' ChatState (EditState Name)
                        -> AutocompletionType
@@ -253,7 +264,7 @@ doCommandAutoCompletion which tId ty ctx searchString = do
                     alts = fmap mkCompletion $
                            clientAlts <> serverAlts
 
-                return $ Just $ do
+                return $ Just $ Work "doCommandAutoCompletion" $ do
                     -- Store the complete list of alterantives in the cache
                     setCompletionAlternatives which ctx serverResponseKey alts ty
 
@@ -292,14 +303,30 @@ doUserAutoCompletion which tId ty ctx searchString = do
     session <- getSession
     myUid <- gets myUserId
     cId <- fromJust <$> preuse (which.esChannelId)
+
+    -- Some commands (e.g. /msg) will take a single user, which is the entirety
+    -- of the current word (searchString).  Some commands take multiple users,
+    -- space separated (e.g. /group-create), which will invoke this
+    -- auto-completion on each work individually and thus work like the single
+    -- user match.  There is a third class of commands that takes a
+    -- comma-separated list of users (e.g. /groupmsg) where searchString is the
+    -- entire list (minus the initial sigil).  Here, we search for the
+    -- comma+sigil and attempt to perform matching/completion only on the last
+    -- such element (although the result will be the full list with the last
+    -- element autocompleted).
+    let (initPart, completePart) =
+          let c = snd $ T.breakOnEnd ("," <> userSigil) searchString
+          in (T.dropEnd (T.length c) searchString, c)
+
     withCachedAutocompleteResults which ctx ty searchString $
         doAsyncWith Preempt $ do
-            ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) searchString session
+            ac <- MM.mmAutocompleteUsers (Just tId) (Just cId) completePart session
 
             let active = Seq.filter (\u -> userId u /= myUid && (not $ userDeleted u))
                 alts = F.toList $
-                       ((\u -> UserCompletion u True) <$> (active $ MM.userAutocompleteUsers ac)) <>
-                       (maybe mempty (fmap (\u -> UserCompletion u False) . active) $
+                       ((\u -> UserCompletion u True initPart) <$> (active $ MM.userAutocompleteUsers ac)) <>
+                       (maybe mempty
+                              (fmap (\u -> UserCompletion u False initPart) . active) $
                               MM.userAutocompleteOutOfChannel ac)
 
                 specials = [ MentionAll
@@ -309,7 +336,7 @@ doUserAutoCompletion which tId ty ctx searchString = do
                          , (T.toLower searchString) `T.isPrefixOf` specialMentionName m
                          ]
 
-            return $ Just $ setCompletionAlternatives which ctx searchString (alts <> extras) ty
+            return $ Just $ Work "doUserAutoCompletion" $ setCompletionAlternatives which ctx searchString (alts <> extras) ty
 
 doChannelAutoCompletion :: TeamId
                         -> Traversal' ChatState (EditState Name)
@@ -328,7 +355,7 @@ doChannelAutoCompletion tId which ty ctx searchString = do
                                   (ChannelCompletion False <$> notInChannels)
                 (inChannels, notInChannels) = Seq.partition isMember results
                 isMember c = isJust $ findChannelById (channelId c) cs
-            return $ Just $ setCompletionAlternatives which ctx searchString alts ty
+            return $ Just $ Work "doChannelAutoCompletion" $ setCompletionAlternatives which ctx searchString alts ty
 
 -- Utility functions
 

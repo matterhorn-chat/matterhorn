@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 
 <!--
 Improvements:
@@ -20,10 +20,10 @@ Improvements:
 
 <language
 	name="Nim"
-	version="3"
+	version="4"
 	kateversion="5.53"
 	section="Sources"
-	extensions="*.nim"
+	extensions="*.nim;*.nims;*.nimble"
 	mimetype="text/x-nim"
 	indenter="python"
 	author="github.com/juancarlospaco"
@@ -224,7 +224,7 @@ Improvements:
 			</context>
 
 			<context name="stringescape" attribute="String" lineEndContext="#stay">
-				<RegExpr attribute="String Char" String="\\[&quot;abfnrtv]" context="#stay"/>
+				<RegExpr attribute="String Char" String="\\[&quot;abfnrtv\\]" context="#stay"/>
 			</context>
 
 			<context name="string" attribute="String" lineEndContext="#stay" noIndentationBasedFolding="true">

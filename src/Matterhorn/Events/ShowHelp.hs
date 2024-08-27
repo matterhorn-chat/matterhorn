@@ -1,4 +1,8 @@
-module Matterhorn.Events.ShowHelp where
+module Matterhorn.Events.ShowHelp
+  ( onEventShowHelp
+  , helpKeyHandlers
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude

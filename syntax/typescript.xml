@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
-	<!ENTITY identifier     "[a-zA-Z_$[:^ascii:]][\w$[:^ascii:]]*">
+	<!ENTITY identifier     "[a-zA-Z_$[:^ascii:]][\w$[:^ascii:]]*+">
 	<!ENTITY numSuffix      "(?=n?(?:[^\w]|$))">
 	<!ENTITY objectOp       "[\?!]?">
 	<!ENTITY objectPoint    "\s*&objectOp;\.">
@@ -13,6 +13,12 @@
 	<!ENTITY functionSuffix "(?=\s*(?:&lt;(?:\{(?:[^\{\}]|\{[^\{\}]*\})*\}|\((?:[^\(\)]|\([^\(\)]*\))*\)|\[(?:[^\[\]]|\[[^\[\]]*\])*\]|'(?:\\.|[^'])*'|&quot;(?:\\.|[^&quot;])*&quot;|`(?:\\.|[^`])*`|[^&lt;&gt;]|&lt;.*&gt;)*&gt;)?\()">
 
 	<!ENTITY codeContent    "&quot;(?:[^&quot;]|\\.)*&quot;|'(?:[^']|\\.)*'|`(?:[^`]|\\.)`|/\*.*\*/|/(?:[^/\\\[]|\\.|\[(?:[^\]\\]|\\.)+\])+/">
+
+  <!-- https://tc39.es/ecma262/#sec-literals-numeric-literals -->
+  <!ENTITY DecimalIntegerLiteral "(0|[1-9][0-9]*+(_[0-9]++)*+)">
+  <!ENTITY DecimalDigits "([0-9]++(_[0-9]++)*+)">
+  <!ENTITY ExponentPart "([eE][+-]?&DecimalDigits;)">
+  <!ENTITY float "\b&DecimalIntegerLiteral;(\.&DecimalDigits;?&ExponentPart;?|&ExponentPart;)|\.&DecimalDigits;&ExponentPart;?">
 ]>
 
 <!--
@@ -61,10 +67,11 @@
 -->
 
 <language name="TypeScript"
-          version="13"
+          alternativeNames="TS"
+          version="18"
           kateversion="5.53"
           section="Scripts"
-          extensions="*.ts"
+          extensions="*.ts;*.mts;*.cts"
           priority="9"
           mimetype="text/typescript;application/typescript;text/x-typescript;application/x-typescript"
           indenter="cstyle"
@@ -242,9 +249,25 @@
 		</context>
 
 		<context name="Normal Pt1" attribute="Normal Text" lineEndContext="#stay">
+			<IncludeRules context="JSBaseSomeSymboles##JavaScript" />
+			<DetectChar context="Types" attribute="Symbol" char=":" />
+
+			<!-- Symbols & Operators -->
+			<!-- NOTE: - The brackets {}()[] are highlighted as Normal Text.
+			           - Bracket highlighting rules must be explicitly included here
+			             for the "Animate Bracket Highlighting" feature to work properly. -->
+			<DetectChar context="Object" attribute="Normal Text" char="{" beginRegion="Brace" />
+			<DetectChar context="#stay" attribute="Normal Text" char="[" beginRegion="List" />
+			<DetectChar context="NoRegExp" attribute="Normal Text" char="]" endRegion="List" />
+			<DetectChar context="#stay" attribute="Normal Text" char="(" />
+			<DetectChar context="NoRegExp" attribute="Normal Text" char=")" />
+
 			<StringDetect context="#stay" attribute="Symbol" String="..." />
 			<IncludeRules context="FindNumbers" />
+			<DetectChar context="MemberObject" attribute="Symbol" char="." />
 			<IncludeRules context="FindStrings" />
+
+			<IncludeRules context="FindPrivateOperator##JavaScript" />
 
 			<!-- Abstract -->
 			<RegExpr context="#stay" attribute="Reserved" String="\babstract(?=\s+(?:class|interface)\b)" />
@@ -271,7 +294,6 @@
 			<IncludeRules context="BuiltInConstants" />
 			<!-- Objects -->
 			<RegExpr context="MemberObject" attribute="Objects" String="&identifier;(?=&objectPoint;)" />
-			<DetectChar context="MemberObject" attribute="Symbol" char="." />
 
 			<RegExpr context="Types" attribute="Module" String="\bas(?=\s)" />
 			<!-- Import -->
@@ -289,16 +311,6 @@
 			<!-- Tagged Template Literals -->
 			<RegExpr context="#stay" attribute="Function Name" String="&identifier;(?=\s*`)" />
 
-			<!-- Symbols & Operators -->
-			<!-- NOTE: - The brackets {}()[] are highlighted as Normal Text.
-			           - Bracket highlighting rules must be explicitly included here
-			             for the "Animate Bracket Highlighting" feature to work properly. -->
-			<DetectChar context="Object" attribute="Normal Text" char="{" beginRegion="Brace" />
-			<DetectChar context="#stay" attribute="Normal Text" char="[" beginRegion="List" />
-			<DetectChar context="NoRegExp" attribute="Normal Text" char="]" endRegion="List" />
-			<DetectChar context="#stay" attribute="Normal Text" char="(" />
-			<DetectChar context="NoRegExp" attribute="Normal Text" char=")" />
-
 			<Detect2Chars context="#stay" attribute="Symbol" char="?" char1="?" /> <!-- Null operator -->
 			<!-- Conditional Expressions:
 			       CASE 1:  '?' ... <identifier> ':'
@@ -308,7 +320,6 @@
 			<RegExpr context="ConditionalExpression" attribute="Symbol" String="\?(?=\s*(?:(?:[^/&quot;'`\s\?:\.;,\=\}\]\)]|&codeContent;)(?:[^/&quot;'`]|&codeContent;)*)?&identifier;\s*(?:/\*.*\*/\s*)*:|(?:&amp;&amp;|\|\||\s*(?:/\*.*\*/\s*)*&identifier;)?&endLine;)" minimal="true" />
 
 			<!-- Type Parameter: Highlight types after ":" and between "<" and ">" -->
-			<DetectChar context="Types" attribute="Symbol" char=":" />
 			<RegExpr context="TypesAngleBracket" attribute="Symbol" String="&lt;(?=(?:&identifier;|[\[\{\(&lt;]).*&gt;)" />
 
 			<IncludeRules context="JSBase##JavaScript" />
@@ -375,11 +386,21 @@
 
 		<!-- Numbers -->
 		<context name="FindNumbers" attribute="Normal Text" lineEndContext="#stay">
-			<RegExpr context="NoRegExp" attribute="Hexadecimal" String="\b0[xX][\da-fA-F][\da-fA-F_]*&numSuffix;" />
-			<RegExpr context="NoRegExp" attribute="Binary" String="\b0[bB][01][01_]*&numSuffix;" />
-			<RegExpr context="NoRegExp" attribute="Float" String="(?:\b\d[\d_]*\.?|(?:\b\d[\d_]*)?\.\d[\d_]*)[eE][\+\-]?\d[\d_]*&numSuffix;|(?:\.\d[\d_]*|\b\d[\d_]*\.(?:\d[\d_]*)?)&numSuffix;" />
-			<RegExpr context="NoRegExp" attribute="Octal" String="\b0[oO]?[0-7][0-7_]*&numSuffix;" />
-			<RegExpr context="NoRegExp" attribute="Decimal" String="\b\d[\d_]*&numSuffix;" />
+			<RegExpr attribute="Float" context="NoRegExp" String="&float;" />
+			<AnyChar context="Integer" String="0123456789" lookAhead="1"/>
+		</context>
+		<!-- same as JS, but with Hexadecimal instead of Hex -->
+		<context name="Integer" attribute="Normal Text" lineEndContext="#stay">
+			<RegExpr attribute="Hexadecimal" context="#pop!NumericSufix" String="\b0[xX][0-9a-fA-F]++(_[0-9a-fA-F]++)*+"/>
+			<!-- 07 is octal, 08 is decimal -->
+			<RegExpr attribute="Octal" context="#pop!NumericSufix" String="\b0([oO][0-7]++(_[0-7]++)*+|0*+[1-7][0-7]*+(_[0-7]++)*+(?!_?[89]))" />
+			<RegExpr attribute="Binary" context="#pop!NumericSufix" String="\b0[bB][01]++(_[01]++)*+" />
+			<!-- 0000_8 is invalid -->
+			<RegExpr attribute="Decimal" context="#pop!NumericSufix" String="\b0*+([1-9][0-9]*+(_[0-9]++)*+)?"/>
+		</context>
+		<context attribute="Normal Text" lineEndContext="#pop" name="NumericSufix" fallthrough="true" fallthroughContext="#pop!NoRegExp">
+			<DetectChar attribute="Normal Text" context="#pop!NoRegExp" char="n" />
+			<IncludeRules context="NumericSufixError##JavaScript" />
 		</context>
 
 		<!-- Function Name -->
@@ -575,7 +596,7 @@
 			<keyword context="#pop!NoRegExp" attribute="Object Property (Built-in)" String="variable_property" />
 			<keyword context="#pop!NoRegExp" attribute="Constant" String="dom_constant" />
 
-			<RegExpr context="#stay" attribute="Normal Text" String="#(?=&identifier;)" /> <!-- Private-Named Instance Fields -->
+			<IncludeRules context="FindPrivateOperator##JavaScript" />
 			<RegExpr context="#stay" attribute="Object Member" String="&identifier;(?=&objectPoint;)" />
 			<RegExpr context="#pop!NoRegExp" attribute="Object Member" String="&identifier;" />
 			<IncludeRules context="NoRegExp" />
@@ -741,11 +762,11 @@
 
 <general>
 	<comments>
-		<comment name="singleLine" start="//" />
+		<comment name="singleLine" start="//" position="afterwhitespace" />
 		<comment name="multiLine" start="/*" end="*/" />
 	</comments>
 	<keywords casesensitive="1" additionalDeliminator="&quot;&apos;`" weakDeliminator="$" />
 </general>
 
 </language>
-<!-- kate: replace-tabs off; tab-width 3; indent-width 3; remove-trailing-spaces mod; dynamic-word-wrap off; -->
+<!-- kate: replace-tabs off; tab-width 3; indent-width 3; remove-trailing-spaces mod; -->

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [
           <!ENTITY atomstr    "\b[a-z][_a-z@-Z0-9]*(?:(?=[^_a-z@-Z0-9])|$)" >
           <!ENTITY varstr    "\b[_A-Z][_a-z@-Z0-9]*(?:(?=[^_a-z@-Z0-9])|$)" >
@@ -36,7 +36,7 @@
                                    - fixed highlighting problem when '@' at end of atom/variable
 -->
 
-<language name="Erlang" version="6" kateversion="5.0" section="Scripts" extensions="*.erl" mimetype="" author="Bill Ross (bill@emailme.net.au)" license="LGPLv2">
+<language name="Erlang" alternativeNames="Erl" version="7" kateversion="5.0" section="Scripts" extensions="*.erl" mimetype="" author="Bill Ross (bill@emailme.net.au)" license="LGPLv2">
   <highlighting>
     <list name="keywords">
       <!-- ====== s3.8 p 24 of erlang spec ===== -->

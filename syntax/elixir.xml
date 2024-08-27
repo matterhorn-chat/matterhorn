@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language
-  SYSTEM 'language.dtd' [
-
+<!DOCTYPE language [
   <!ENTITY symbols "(?:@{1,2}|\$)?[a-zA-Z_][a-zA-Z0-9_]*[=?!]?">
 ]>
 <!--
@@ -25,7 +23,7 @@
 -->
 <!-- Hold the "language" opening tag on a single line, as mentioned in "language.dtd". -->
 <language author="Rubén Caro (ruben.caro.estevez@gmail.com), Boris Egorov (egorov@linux.com)"
-          extensions="*.ex;*.exs;*.eex;*.xml.eex;*.js.eex"
+          extensions="*.ex;*.exs;*.eex;*.xml.eex;*.js.eex;*.heex"
           indenter="elixir"
           kateversion="5.79"
           license="LGPLv2+"
@@ -33,7 +31,8 @@
           name="Elixir"
           section="Sources"
           style="elixir"
-          version="11">
+          version="15"
+          priority="2">
   <highlighting>
     <list name="control-flow">
       <item>catch</item>
@@ -47,8 +46,6 @@
       <item>unless</item>
     </list>
     <list name="keywords">
-      <item>do</item>
-      <item>end</item>
       <item>case</item>
       <item>bc</item>
       <item>lc</item>
@@ -74,7 +71,6 @@
       <item>false</item>
     </list>
     <list name="definitions">
-      <item>fn</item>
       <item>defmodule</item>
       <item>def</item>
       <item>defp</item>
@@ -100,6 +96,25 @@
       <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
         <!-- "shebang" line -->
         <RegExpr String="^#!\/.*" attribute="Keyword" column="0" context="#stay"/>
+
+        <!-- End terminated blocks -->
+        <!-- can be started by do or fn, but not by do: -->
+        <RegExpr String="\bdo\b(?!:)" attribute="Keyword" beginRegion="doend_block"/>
+        <WordDetect String="fn" attribute="Keyword" beginRegion="doend_block"/>
+        <WordDetect String="end" attribute="Keyword" endRegion="doend_block"/>
+
+        <!-- Lists -->
+        <DetectChar char="[" beginRegion="list" attribute="Separator Array"/>
+        <DetectChar char="]" endRegion="list" attribute="Separator Array"/>
+
+        <!-- Maps and Structs and tuples -->
+        <DetectChar char="{" beginRegion="map_or_struct_or_tuple" attribute="Separator Pair"/>
+        <DetectChar char="}" endRegion="map_or_struct_or_tuple" attribute="Separator Pair"/>
+
+        <!-- Function calls and definitions -->
+        <DetectChar char="(" beginRegion="parameters" attribute="Separator Pair"/>
+        <DetectChar char=")" endRegion="parameters" attribute="Separator Pair"/>
+
 
         <!-- Defined words -->
         <keyword String="keywords" attribute="Keyword" context="#stay"/>
@@ -135,10 +150,8 @@
         <DetectChar attribute="Raw String" char="'" context="Apostrophed String"/>
         <Detect2Chars char="?" char1="#" attribute="Normal Text" context="#stay"/>
         <DetectChar attribute="Comment" char="#" context="General Comment"/>
-        <AnyChar attribute="Delimiter" String="[]" context="#stay"/>
         <RegExpr String="@[a-zA-Z_0-9]+" attribute="Attribute" context="#stay"/>
         <!-- handle the different regular expression formats -->
-        <DetectChar attribute="Normal Text" char=")" context="#stay"/>
         <DetectIdentifier attribute="Normal Text" context="#stay"/>
       </context>
       <context attribute="DocComment" lineEndContext="#stay" name="Documentation">
@@ -206,8 +219,9 @@
       <itemData defStyleNum="dsOthers" name="Attribute"/>
       <itemData defStyleNum="dsComment" name="Comment"/>
       <itemData defStyleNum="dsComment" name="DocComment"/>
+      <itemData defStyleNum="dsFunction" name="Separator Pair"/>
+      <itemData defStyleNum="dsOthers" name="Separator Array"/>
       <!-- use these to mark errors and alerts things -->
-      <itemData color="#FF9FEC" defStyleNum="dsNormal" name="Delimiter"/>
       <itemData defStyleNum="dsOperator" name="Operator"/>
       <itemData name="MarkdownHead" defStyleNum="dsFunction" bold="true"/>
       <itemData name="MarkdownBullet" defStyleNum="dsFunction"/>

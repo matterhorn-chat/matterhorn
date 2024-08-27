@@ -57,8 +57,7 @@ We provide a number of avenues for getting support:
 * [Command list](docs/commands.md)
 * [Keybinding list](docs/keybindings.md)
 * Chat with the developers on [the Mattermost Community server](https://community.mattermost.com/core/channels/matterhorn)
-* Get notified about new Matterhorn releases by following
-  [our Twitter account](https://twitter.com/matterhorn_chat)
+* File tickets on this repository
 
 # Features
 

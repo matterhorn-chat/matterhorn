@@ -29,7 +29,7 @@
  * Boston, MA  02110-1301, USA.                                       *
  **********************************************************************
 -->
-<!DOCTYPE language SYSTEM "language.dtd"
+<!DOCTYPE language
 [<!-- [Regular Expressions, Character Classes & Important Tokens]
 E.g. the dot "." has so many different meanings (i.e. in an RegExpr 'any char',
 'fullstop' of a clause, etc. pp.) that I decided it's usefull to write these out
@@ -105,7 +105,7 @@ to make the rules more expressive. -->
     <!ENTITY bs         "\">
 ]>
 <language name="Prolog" section="Sources"
-	  version="16" kateversion="5.62"
+	  version="17" kateversion="5.62"
 	  mimetype="text/x-prolog"
 	  extensions="*.prolog;*.dcg;*.pro"
 	  author="Torsten Eichstädt (torsten.eichstaedt@web.de)"
@@ -597,14 +597,10 @@ TODO sorted by priority
 	    "atomic" and "operator" below with context="#stay" (two or three occurrences) -->
 	    <context name="arith_expr" lineEndContext="#stay" attribute="Syntax Error" noIndentationBasedFolding="true" >
 		<DetectChar char="(" context="nested_expr" beginRegion="nested" attribute="( ) [ ]" />
-		<DetectChar lookAhead="true" char=")" context="#pop" attribute="( ) [ ]" />
-		<DetectChar lookAhead="true" char="}" context="#pop" attribute="{ DCG }" />
-		<DetectChar lookAhead="true" char="]" context="#pop" attribute="( ) [ ]" />
 		<!-- FIXME check if cut may be an op, else (and in any case 99.9% likely) it's a usual cut here -->
-		<AnyChar lookAhead="true" String="&cut;&comma;" context="#pop" attribute="Logic &amp; Control" />
 		<!-- bar & dot could be a user-def'd op, pre-def'd ops could be
 		redef'd; but let's assume the default and just end the expr -->
-		<DetectChar lookAhead="true" char="&bar;" context="#pop" attribute="other built-in operator" />
+		<AnyChar lookAhead="true" String=")}]&bar;&cut;&comma;&bar;" context="#pop"/>
 		<RegExpr lookAhead="true" String="&fullstop_iso;|&logic_control_ops_iso;" context="#pop" attribute="Logic &amp; Control" />
 		<IncludeRules context="arith_expr_common" />
 	    </context>

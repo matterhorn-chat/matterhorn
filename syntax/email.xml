@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
+<!DOCTYPE language>
 <language name="Email" version="7" kateversion="5.0" extensions="*.eml;*.email;*.emlx;*.mbox;*.mbx" section="Other" mimetype="message/rfc822" casesensitive="0" author="Volker Krause (vkrause@kde.org)" license="MIT">
     <highlighting>
         <list name="header-names">

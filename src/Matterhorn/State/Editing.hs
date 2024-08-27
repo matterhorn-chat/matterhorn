@@ -355,7 +355,8 @@ handleEditingInput which e = do
     let ctx = AutocompleteContext { autocompleteManual = False
                                   , autocompleteFirstMatch = False
                                   }
-    checkForAutocompletion which ctx
+    target <- use (which.esTarget)
+    checkForAutocompletion target ctx
 
     -- Reset the spell check timer for this editor
     mReset <- use (which.esSpellCheckTimerReset)
@@ -433,7 +434,7 @@ requestSpellCheck checker target = do
                             MIChannel cId ->
                                 maybeChannelMessageInterface(cId).miEditor.esMisspellings .= allMistakes
 
-                tryMM query (return . Just . postMistakes)
+                tryMM "requestSpellCheck" query (return . Just . Work "requestSpellCheck" . postMistakes)
 
 editorEmpty :: Editor Text a -> Bool
 editorEmpty e = cursorIsAtEnd e &&
@@ -578,7 +579,10 @@ tabComplete which dir = do
             let ctx = AutocompleteContext { autocompleteManual = True
                                           , autocompleteFirstMatch = True
                                           }
-            checkForAutocompletion which ctx
+            mTarget <- preuse (which.esTarget)
+            case mTarget of
+                Nothing -> return ()
+                Just target -> checkForAutocompletion target ctx
         Just ac -> do
             case ac^.acCompletionList.to L.listSelectedElement of
                 Nothing -> return ()

@@ -1,4 +1,7 @@
-module Matterhorn.Events.DeleteChannelConfirm where
+module Matterhorn.Events.DeleteChannelConfirm
+  ( onEventDeleteChannelConfirm
+  )
+where
 
 import           Prelude ()
 import           Matterhorn.Prelude

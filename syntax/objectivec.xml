@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="Objective-C" version="7" kateversion="5.0" section="Sources" extensions="*.m;*.h" mimetype="text/x-objc-src;text/x-c-hdr">
+<!DOCTYPE language>
+<language name="Objective-C" alternativeNames="ObjectiveC;ObjC" version="8" kateversion="5.0" section="Sources" extensions="*.m;*.h" mimetype="text/x-objc-src;text/x-c-hdr">
   <highlighting>
     <list name="keywords">
       <item>break</item>

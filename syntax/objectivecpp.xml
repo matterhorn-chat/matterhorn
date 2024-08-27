@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="Objective-C++" version="10" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objcpp-src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
+<!DOCTYPE language>
+<language name="Objective-C++" alternativeNames="ObjectiveC++;Objective-CPP;ObjectiveCPP;ObjC++;ObjCPP" version="12" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objc++src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
   <highlighting>
     <list name="keywords">
       <item>break</item>

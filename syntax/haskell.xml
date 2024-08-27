@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd" [
+<!DOCTYPE language [
   <!ENTITY symbolops "\-!#\$&#37;&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:">
 ]>
-<language name="Haskell" version="20" kateversion="5.53" section="Sources" extensions="*.hs;*.chs;*.hs-boot" mimetype="text/x-haskell" author="Nicolas Wu (zenzike@gmail.com)" license="LGPL" indenter="haskell" style="haskell">
+<language name="Haskell" alternativeNames="HS" version="21" kateversion="5.53" section="Sources" extensions="*.hs;*.chs;*.hs-boot" mimetype="text/x-haskell" author="Nicolas Wu (zenzike@gmail.com)" license="LGPL" indenter="haskell" style="haskell">
   <highlighting>
   <list name="keywords">
     <item>case</item>

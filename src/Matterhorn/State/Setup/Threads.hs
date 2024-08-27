@@ -48,12 +48,12 @@ import           Matterhorn.TimeUtils ( lookupLocalTimeZone )
 import           Matterhorn.Types
 
 
-updateUserStatuses :: [UserId] -> Session -> IO (Maybe (MH ()))
+updateUserStatuses :: [UserId] -> Session -> IO (Maybe Work)
 updateUserStatuses uIds session =
     case null uIds of
         False -> do
             statuses <- mmGetUserStatusByIds (Seq.fromList uIds) session
-            return $ Just $ do
+            return $ Just $ Work "updateUserStatuses" $ do
                 forM_ statuses $ \s ->
                     setUserStatus (statusUserId s) (statusStatus s)
         True -> return Nothing
@@ -88,7 +88,7 @@ startTypingUsersRefreshThread requestChan = void $ forkIO $ forever refresh
     seconds = (* (1000 * 1000))
     refreshIntervalMicros = ceiling $ seconds $ userTypingExpiryInterval / 2
     refresh = do
-      STM.atomically $ STM.writeTChan requestChan $ return $ Just $ do
+      STM.atomically $ STM.writeTChan requestChan $ return $ Just $ Work "startTypingUsersRefreshThread(refresh)" $ do
         now <- liftIO getCurrentTime
         let expiry = addUTCTime (- userTypingExpiryInterval) now
             expireUsers mi = mi & miEditor.esEphemeral.eesTypingUsers %~ expireTypingUsers expiry
@@ -131,8 +131,8 @@ startSubprocessLoggerThread logChan requestChan = do
                   hFlush logHandle
 
                   STM.atomically $ STM.writeTChan requestChan $ do
-                      return $ Just $ mhError $ ProgramExecutionFailed (T.pack progName)
-                                                                       (T.pack logPath)
+                      return $ Just $ Work "startSubprocessLoggerThread" $
+                          mhError $ ProgramExecutionFailed (T.pack progName) (T.pack logPath)
 
                   logMonitor (Just (logPath, logHandle))
 
@@ -151,13 +151,13 @@ startTimezoneMonitorThread tz requestChan = do
         nextTz <- case newTzResult of
             Left e -> do
                 STM.atomically $ STM.writeTChan requestChan $ do
-                    return $ Just $ do
+                    return $ Just $ Work "startTimezoneMonitorThread[1]" $ do
                         mhLog LogGeneral $ T.pack $ "Could not load time zone information: " <> show e
                 return prevTz
             Right newTz -> do
                 when (newTz /= prevTz) $
                     STM.atomically $ STM.writeTChan requestChan $ do
-                        return $ Just $ do
+                        return $ Just $ Work "startTimezoneMonitorThread[2]" $ do
                             timeZone .= newTz
                             mh invalidateCache
 
@@ -230,7 +230,7 @@ startSpellCheckerThread checker eventChan target spellCheckTimeout = do
   -- requests a spell check.
   void $ forkIO $ forever $ do
     STM.atomically $ waitDelay =<< STM.readTChan delayWorkerChan
-    writeBChan eventChan (RespEvent $ requestSpellCheck checker target)
+    writeBChan eventChan (RespEvent $ Work "startSpellCheckerThread" $ requestSpellCheck checker target)
 
   -- The delay manager waits for requests to start a delay timer and
   -- signals the worker to begin waiting.
@@ -276,20 +276,20 @@ startSyntaxMapLoaderThread config eventChan = void $ forkIO $ do
     let maps = catMaybes mMaps
         finalMap = foldl M.union mempty maps
 
-    writeBChan eventChan $ RespEvent $ do
+    writeBChan eventChan $ RespEvent $ Work "startSyntaxMapLoaderThread" $ do
         csResources.crSyntaxMap .= finalMap
         mh invalidateCache
 
 -------------------------------------------------------------------
 -- Async worker thread
 
-startAsyncWorkerThread :: Config -> STM.TChan (IO (Maybe (MH ()))) -> BChan MHEvent -> IO ()
+startAsyncWorkerThread :: Config -> STM.TChan (IO (Maybe Work)) -> BChan MHEvent -> IO ()
 startAsyncWorkerThread c r e = void $ forkIO $ asyncWorker c r e
 
-asyncWorker :: Config -> STM.TChan (IO (Maybe (MH ()))) -> BChan MHEvent -> IO ()
+asyncWorker :: Config -> STM.TChan (IO (Maybe Work)) -> BChan MHEvent -> IO ()
 asyncWorker c r e = forever $ doAsyncWork c r e
 
-doAsyncWork :: Config -> STM.TChan (IO (Maybe (MH ()))) -> BChan MHEvent -> IO ()
+doAsyncWork :: Config -> STM.TChan (IO (Maybe Work)) -> BChan MHEvent -> IO ()
 doAsyncWork config requestChan eventChan = do
     let rateLimitNotify sec = do
             writeBChan eventChan $ RateLimitExceeded sec
@@ -344,7 +344,7 @@ doAsyncWork config requestChan eventChan = do
 
               -- The IO action was run successfully and returned a state
               -- transformation.
-              Just (Just action) -> writeBChan eventChan (RespEvent action)
+              Just (Just wk) -> writeBChan eventChan (RespEvent wk)
 
 -- | Run an IO action. If the action raises a RateLimitException, invoke
 -- the provided rate limit exception handler with the rate limit window

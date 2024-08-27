@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE language SYSTEM "language.dtd">
-<language name="ColdFusion" version="5" kateversion="5.0" section="Markup" extensions="*.cfm;*.cfc;*.cfml;*.dbm" mimetype="text/x-coldfusion">
+<!DOCTYPE language>
+<language name="ColdFusion" version="6" kateversion="5.0" section="Markup" extensions="*.cfm;*.cfc;*.cfml;*.dbm" mimetype="text/x-coldfusion">
 
 	<highlighting>
 
@@ -510,6 +510,7 @@
 		<contexts>
 
 			<context attribute="Normal Text" lineEndContext="#stay" name="Normal Text">
+				<DetectSpaces attribute="Normal Text" />
 				<StringDetect attribute="CF Comment" context="ctxCF Comment" String="&lt;!---" beginRegion="CF Comment" />
 				<StringDetect attribute="HTML Comment" context="ctxHTML Comment" String="&lt;!--" beginRegion="HTML Comment" />
 				<StringDetect attribute="Script Tags" context="ctxCFSCRIPT Tag" String="&lt;cfscript" insensitive="true" beginRegion="CF Script" />
@@ -532,10 +533,10 @@
 
 
 			<context name="Tag Content" attribute="Normal Text" lineEndContext="#stay">
-				<RegExpr attribute="Tag Attributes" context="#stay" String="(?:\s|^)[A-Za-z_:*][\w.:_-]*(?=\s*\=)" />
 				<DetectChar attribute="Normal Text" context="#stay" char="=" />
 				<RangeDetect attribute="Attribute Values" context="#stay" char="&quot;" char1="&quot;" />
 				<RangeDetect attribute="Attribute Values" context="#stay" char="'" char1="'" />
+				<RegExpr attribute="Tag Attributes" context="#stay" String="(?:\s|^)[A-Za-z_:*][\w.:_-]*(?=\s*\=)" />
 			</context>
 
 			<context name="ctxCFSCRIPT Tag" attribute="Script Tags" lineEndContext="#stay">
@@ -593,23 +594,31 @@
 
 
 			<context name="ctxHTML Comment" attribute="HTML Comment" lineEndContext="#stay">
+				<DetectSpaces attribute="HTML Comment" />
 				<StringDetect attribute="CF Comment" context="ctxCF Comment" String="&lt;!---" beginRegion="CF Comment" />
 				<StringDetect attribute="HTML Comment" context="#pop" String="--&gt;" endRegion="HTML Comment" />
 				<IncludeRules context="##Comments" />
+				<DetectIdentifier attribute="HTML Comment" />
 			</context>
 
 			<context name="ctxCF Comment" attribute="CF Comment" lineEndContext="#stay">
+				<DetectSpaces attribute="CF Comment" />
 				<StringDetect attribute="CF Comment" context="#pop" String="---&gt;" endRegion="CF Comment" />
 				<IncludeRules context="##Comments" />
+				<DetectIdentifier attribute="CF Comment" />
 			</context>
 
 			<context name="ctxC Style Comment" attribute="Script Comment" lineEndContext="#stay">
+				<DetectSpaces attribute="Script Comment" />
 				<Detect2Chars attribute="Script Comment" context="#pop" char="*" char1="/" endRegion="CComment" />
 				<IncludeRules context="##Comments" />
+				<DetectIdentifier attribute="Script Comment" />
 			</context>
 
 			<context name="ctxOne Line Comment" attribute="Script Comment" lineEndContext="#pop">
+				<DetectSpaces attribute="Script Comment" />
 				<IncludeRules context="##Comments" />
+				<DetectIdentifier attribute="Script Comment" />
 			</context>
 
 			<context name="ctxHTML Entities" attribute="HTML Entities" lineEndContext="#pop">
@@ -618,61 +627,69 @@
 
 
 
-			<context name="ctxCFSCRIPT Block" attribute="Normal Text" lineEndContext="#stay">
+			<context name="SCRIPT Block" attribute="Normal Text" lineEndContext="#stay">
+				<DetectSpaces attribute="Normal Text" />
 				<Detect2Chars attribute="Script Comment" context="ctxC Style Comment" char="/" char1="*" beginRegion="CComment" />
 				<Detect2Chars attribute="Script Comment" context="ctxOne Line Comment" char="/" char1="/" />
 				<RangeDetect attribute="Script Strings" context="#stay" char="&quot;" char1="&quot;" />
 				<RangeDetect attribute="Script Strings" context="#stay" char="'" char1="'" />
-				<Int attribute="Script Numbers" context="#stay" />
 				<Float attribute="Script Numbers" context="#stay" />
+				<Int attribute="Script Numbers" context="#stay" />
 				<AnyChar attribute="Script Operators" context="#stay" String="()[]=+-*/" />
 				<AnyChar attribute="Brackets" context="#stay" String="{}" />
+			</context>
+
+
+
+			<context name="ctxCFSCRIPT Block" attribute="Normal Text" lineEndContext="#stay">
+				<IncludeRules context="SCRIPT Block" />
 
 				<keyword attribute="Script Keywords" context="#stay" String="CFSCRIPT Keywords" />
 				<keyword attribute="Script Functions" context="#stay" String="CFSCRIPT Functions" />
 				<StringDetect attribute="Script Tags" context="#pop#pop" String="&lt;/cfscript&gt;" insensitive="true" endRegion="CF Script" />
+				<DetectIdentifier attribute="Normal Text" />
 			</context>
 
 
 
 			<context name="ctxSCRIPT Block" attribute="Normal Text" lineEndContext="#stay">
-				<Detect2Chars attribute="Script Comment" context="ctxC Style Comment" char="/" char1="*" beginRegion="CComment" />
-				<Detect2Chars attribute="Script Comment" context="ctxOne Line Comment" char="/" char1="/" />
-				<RangeDetect attribute="Script Strings" context="#stay" char="&quot;" char1="&quot;" />
-				<RangeDetect attribute="Script Strings" context="#stay" char="'" char1="'" />
-				<Int attribute="Script Numbers" context="#stay" />
-				<Float attribute="Script Numbers" context="#stay" />
-				<AnyChar attribute="Script Operators" context="#stay" String="()[]=+-*/" />
-				<AnyChar attribute="Brackets" context="#stay" String="{}" />
+				<IncludeRules context="SCRIPT Block" />
 
 				<keyword attribute="Script Keywords" context="#stay" String="Script Keywords" />
 				<keyword attribute="Script Objects" context="#stay" String="Script Objects" />
 				<keyword attribute="Script Functions" context="#stay" String="Script Methods" />
 				<StringDetect attribute="Script Tags" context="#pop#pop" String="&lt;/script&gt;" insensitive="true" endRegion="Script" />
+				<DetectIdentifier attribute="Normal Text" />
 			</context>
 
 
 
 			<context name="ctxSTYLE Block" attribute="Style Selectors" lineEndContext="#stay">
+				<DetectSpaces attribute="Style Selectors" />
+				<DetectIdentifier attribute="Style Selectors" />
 				<Detect2Chars attribute="Script Comment" context="ctxC Style Comment" char="/" char1="*" beginRegion="CComment" />
 				<DetectChar attribute="Brackets" context="ctxStyle Properties" char="{" />
 				<StringDetect attribute="Style Tags" context="#pop#pop" String="&lt;/style&gt;" insensitive="true" endRegion="Style" />
 			</context>
 
 			<context name="ctxStyle Properties" attribute="Style Properties" lineEndContext="#stay">
+				<DetectSpaces attribute="Style Properties" />
+				<DetectIdentifier attribute="Style Properties" />
 				<DetectChar attribute="Brackets" context="#pop" char="}" />
 				<Detect2Chars attribute="Script Comment" context="ctxC Style Comment" char="/" char1="*" beginRegion="CComment" />
 				<DetectChar attribute="Normal Text" context="ctxStyle Values" char=":" />
 			</context>
 
 			<context name="ctxStyle Values" attribute="Style Values" lineEndContext="#pop">
+				<DetectSpaces attribute="Style Values" />
+				<DetectIdentifier attribute="Style Values" />
 				<DetectChar attribute="Normal Text" context="#pop" char=";" />
 				<DetectChar attribute="Normal Text" context="#stay" char="," />
-				<Int attribute="Numbers" context="#stay" />
 				<Float attribute="Numbers" context="#stay" />
-				<RegExpr attribute="Numbers" context="#stay" String="#(?:[0-9a-fA-F]{3})|(?:[0-9a-fA-F]{6})" />
+				<Int attribute="Numbers" context="#stay" />
 				<RangeDetect attribute="Attribute Values" context="#stay" char="&quot;" char1="&quot;" />
 				<RangeDetect attribute="Attribute Values" context="#stay" char="'" char1="'" />
+				<RegExpr attribute="Numbers" context="#stay" String="#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3})" />
 			</context>
 
 		</contexts>

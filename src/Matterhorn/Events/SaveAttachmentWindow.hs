@@ -49,7 +49,7 @@ onEventSaveAttachmentWindow which (Vty.EvKey Vty.KEnter []) = do
             when (not $ null path) $ do
                 doAsyncWith Normal $ do
                     result <- E.try $ fetchFileAtPath fId session path
-                    return $ Just $ do
+                    return $ Just $ Work "onEventSaveAttachmentWindow" $ do
                         case result of
                             Left (e::E.SomeException) ->
                                 postErrorMessage' $ T.pack $ "Error saving to " <> path <> ": " <> show e
