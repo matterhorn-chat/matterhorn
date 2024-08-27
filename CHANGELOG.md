@@ -1,4 +1,28 @@
 
+90000.0.1
+=========
+
+Enhancements:
+* Increased the number of scrollback messages fetched when selecting
+  "Load more messages" to 200.
+* Autocompletion now supports comma-separated user lists, such as with
+  the `/groupmsg` command.
+* The `/attach` command now expands `~` in file paths.
+* The syntax highlighting XML specification files were upgraded to those
+  included with `skylighting-core` 0.14.2.
+* One's own DM channel can now be focused with `/focus`. (#831)
+
+Bug fixes:
+* Autocompletion no longer causes a crash under some conditions when
+  using `/leave`. (#832)
+* Matterhorn now builds with `vty-windows-0.2.0.2` to resolve an
+  input-related bug fix on Windows. (#824)
+* Matterhorn now downloads attachments asynchronously, which improves UI
+  responsiveness when attachments take a long time to download.
+
+Other changes:
+* On websocket connect, log the team base URL data for all active teams
+
 90000.0.0
 =========
 
