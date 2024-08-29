@@ -86,6 +86,9 @@ data Name =
     | ViewMessageReactionsArea TeamId
     -- ^ The viewport for the specified team's single-message view
     -- window's reaction tab.
+    | ViewMessageAuthorArea TeamId
+    -- ^ The viewport for the specified team's single-message view
+    -- window's author info tab.
     | ChannelSidebar TeamId
     -- ^ The cache key for the specified team's channel list viewport
     -- contents.

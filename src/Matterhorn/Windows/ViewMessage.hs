@@ -36,6 +36,7 @@ viewMessageWindowTemplate :: TeamId -> TabbedWindowTemplate ChatState MH Name Vi
 viewMessageWindowTemplate tId =
     TabbedWindowTemplate { twtEntries = [ messageEntry tId
                                         , reactionsEntry tId
+                                        , authorInfoEntry tId
                                         ]
                          , twtTitle = const $ txt "View Message"
                          }
@@ -58,9 +59,19 @@ reactionsEntry tId =
                       , tweShowHandler = onShow tId
                       }
 
+authorInfoEntry :: TeamId -> TabbedWindowEntry ChatState MH Name ViewMessageWindowTab
+authorInfoEntry tId =
+    TabbedWindowEntry { tweValue = VMTabAuthorInfo
+                      , tweRender = renderTab tId
+                      , tweHandleEvent = handleEvent tId
+                      , tweTitle = tabTitle
+                      , tweShowHandler = onShow tId
+                      }
+
 tabTitle :: ViewMessageWindowTab -> Bool -> T.Text
 tabTitle VMTabMessage _ = "Message"
 tabTitle VMTabReactions _ = "Reactions"
+tabTitle VMTabAuthorInfo _ = "Author"
 
 -- When we show the tabs, we need to reset the viewport scroll position
 -- for viewports in that tab. This is because an older View Message
@@ -70,6 +81,7 @@ tabTitle VMTabReactions _ = "Reactions"
 onShow :: TeamId -> ViewMessageWindowTab -> MH ()
 onShow tId VMTabMessage = resetVp $ ViewMessageArea tId
 onShow tId VMTabReactions = resetVp $ ViewMessageArea tId
+onShow tId VMTabAuthorInfo = resetVp $ ViewMessageAuthorArea tId
 
 resetVp :: Name -> MH ()
 resetVp n = do
@@ -89,6 +101,7 @@ renderTab tId tab cs =
             case tab of
                 VMTabMessage -> viewMessageBox cs tId latestMessage
                 VMTabReactions -> reactionsText cs tId latestMessage
+                VMTabAuthorInfo -> authorInfo cs tId latestMessage
 
 getLatestMessage :: ChatState -> TeamId -> Message -> Maybe Message
 getLatestMessage cs tId m =
@@ -104,6 +117,27 @@ handleEvent tId VMTabMessage =
     void . mhHandleKeyboardEvent (viewMessageKeybindings tId)
 handleEvent tId VMTabReactions =
     void . mhHandleKeyboardEvent (viewMessageReactionsKeybindings tId)
+handleEvent _ VMTabAuthorInfo =
+    const $ return ()
+
+authorInfo :: ChatState -> TeamId -> Message -> Widget Name
+authorInfo cs tId m =
+    let mkPairs u = [ ("Username:", _uiName u)
+                    , ("Nickname:", fromMaybe "(none)" $ _uiNickName u)
+                    , ("Full name:", _uiFirstName u <> " " <> _uiLastName u)
+                    ]
+        renderPair (label, value) =
+            txt label <+> padBottom (Pad 1) (padLeft (Pad 1) (withDefAttr clientEmphAttr $ txt value))
+    in case _mUser m of
+        NoUser -> txt "No author."
+        UserOverride _ label -> txt $ "User: " <> label
+        UserI _ uId ->
+            case userById uId cs of
+                Nothing ->
+                    txt "Author info not loaded yet."
+                Just author ->
+                    viewport (ViewMessageAuthorArea tId) Vertical $
+                    vBox $ renderPair <$> mkPairs author
 
 reactionsText :: ChatState -> TeamId -> Message -> Widget Name
 reactionsText st tId m = viewport vpName Vertical body

@@ -1336,6 +1336,8 @@ data ViewMessageWindowTab =
     -- ^ The message tab.
     | VMTabReactions
     -- ^ The reactions tab.
+    | VMTabAuthorInfo
+    -- ^ The author info tab.
     deriving (Eq, Show)
 
 data PendingChannelChange =
