@@ -80,7 +80,7 @@ tabTitle VMTabAuthorInfo _ = "Author"
 -- in an existing window resets this state, too.
 onShow :: TeamId -> ViewMessageWindowTab -> MH ()
 onShow tId VMTabMessage = resetVp $ ViewMessageArea tId
-onShow tId VMTabReactions = resetVp $ ViewMessageArea tId
+onShow tId VMTabReactions = resetVp $ ViewMessageReactionsArea tId
 onShow tId VMTabAuthorInfo = resetVp $ ViewMessageAuthorArea tId
 
 resetVp :: Name -> MH ()
