@@ -674,26 +674,17 @@ mkChannelZipperList sorting now config tId cconfig prefs hidden cs us =
             case HM.lookup tId hidden of
                 Nothing -> False
                 Just s -> Set.member label s
-    in [ let unread = length $ filter channelListEntryUnread favEntries
-             coll = isHidden ChannelGroupFavoriteChannels
-         in ( ChannelListGroup ChannelGroupFavoriteChannels unread coll (length favEntries)
-            , if coll then mempty else sortChannelListEntries sorting favEntries
-            )
-       , let unread = length $ filter channelListEntryUnread normEntries
-             coll = isHidden ChannelGroupPublicChannels
-         in ( ChannelListGroup ChannelGroupPublicChannels unread coll (length normEntries)
-            , if coll then mempty else sortChannelListEntries sorting normEntries
-            )
-       , let unread = length $ filter channelListEntryUnread privEntries
-             coll = isHidden ChannelGroupPrivateChannels
-         in ( ChannelListGroup ChannelGroupPrivateChannels unread coll (length privEntries)
-            , if coll then mempty else sortChannelListEntries sorting privEntries
-            )
-       , let unread = length $ filter channelListEntryUnread dmEntries
-             coll = isHidden ChannelGroupDirectMessages
-         in ( ChannelListGroup ChannelGroupDirectMessages unread coll (length dmEntries)
-            , if coll then mempty else sortDMChannelListEntries dmEntries
-            )
+        mkGroup (ty, entries, sortEntries) =
+            let unread = length $ filter channelListEntryUnread entries
+                coll = isHidden ty
+            in ( ChannelListGroup ty unread coll (length entries)
+               , if coll then mempty else sortEntries entries
+               )
+    in mkGroup <$>
+       [ (ChannelGroupFavoriteChannels, favEntries, sortChannelListEntries sorting)
+       , (ChannelGroupPublicChannels, normEntries, sortChannelListEntries sorting)
+       , (ChannelGroupPrivateChannels, privEntries, sortChannelListEntries sorting)
+       , (ChannelGroupDirectMessages, dmEntries, sortDMChannelListEntries)
        ]
 
 sortChannelListEntries :: ChannelListSorting -> [ChannelListEntry] -> [ChannelListEntry]
