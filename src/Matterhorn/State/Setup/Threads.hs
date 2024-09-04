@@ -389,6 +389,7 @@ ignoreErrorSubstrings =
     , "Network.Socket.recvBuf"
     , "Network.Socket.sendBuf"
     , "resource vanished"
+    , "HandshakeFailed Error_EOF"
     , "timeout"
     , "partial packet"
     , "No route to host"
