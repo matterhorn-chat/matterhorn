@@ -121,8 +121,9 @@ lastMsg = withFirstMessage id
 
 -- | Send a message and attachments to the specified channel.
 sendMessage :: ChannelId -> EditMode -> Text -> [AttachmentData] -> MH ()
-sendMessage chanId mode msg attachments =
-    when (not $ shouldSkipMessage msg) $ do
+sendMessage chanId mode rawMsg attachments = do
+    let msg = T.strip rawMsg
+    when (not $ shouldSkipMessage msg attachments) $ do
         status <- use csConnectionStatus
         case status of
             Disconnected -> do
@@ -164,9 +165,10 @@ sendMessage chanId mode msg attachments =
                                                                }
                             void $ MM.mmPatchPost (postId p) update session
 
-shouldSkipMessage :: Text -> Bool
-shouldSkipMessage "" = True
-shouldSkipMessage s = T.all (`elem` (" \t"::String)) s
+shouldSkipMessage :: Text -> [AttachmentData] -> Bool
+shouldSkipMessage "" [] = True
+shouldSkipMessage s [] = T.all (`elem` (" \t"::String)) s
+shouldSkipMessage _ _ = False
 
 editMessage :: Post -> MH ()
 editMessage new = do
