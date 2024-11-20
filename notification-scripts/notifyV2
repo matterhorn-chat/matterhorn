@@ -12,26 +12,27 @@
 
 # See docs/notification-scripts.md for further details.
 
-PGM="`basename $0`"
-function fail {
-	echo $PGM: "$@" >/dev/stderr
+PGM="$(basename "$0")"
+fail () {
+	printf "%s\n" "$PGM : $1" >/dev/stderr
 	exit 1
 }
 
 # Confirm presence of `jq(1)` and `notify-send(1)`.'
-function has {
-	which $1 >/dev/null 2>&1
+has () {
+	which "$1" >/dev/null 2>&1
 }
 has jq || fail 'jq(1) is required but not present'
 has notify-send || fail 'notify-send(1) is required but not present'
 
 # Extract the data to be notified. The data is in a JSON payload at stdin.
-json=`cat`
-version=`echo "$json"|jq -Mr .version`
+json="$(cat)"
+version="$(printf "%s\n" "$json" | jq -Mr .version)"
 [ "$version" = 2 ] || fail 'JSON payload has wrong version'
-sender=`echo "$json"|jq -Mr .from`
-message=`echo "$json"|jq -Mr .message`
-mentioned=`echo "$json"|jq -Mr .mention`
+sender="$(printf "%s\n" "$json" | jq -Mr .from)"
+message="$(printf "%s\n" "$json" | jq -Mr .message)"
+mentioned="$(printf "%s\n" "$json" | jq -Mr .mention)"
+
 
 # Now prepare the notification. The logic is essentially the same as for
 # the V1 notifier.
@@ -42,6 +43,8 @@ ns_URGENCY_MENTIONED=normal  # none, low, normal or critical
 ns_CATEGORY=im.received
 ns_HEADER="Matterhorn message from @$sender"
 ns_BODY="$message"
+ns_APPNAME="Matterhorn"
+ns_ICON=""		     # path of icon
 
 case "$mentioned" in
 false) ns_URGENCY=$ns_URGENCY_GENERAL ;;
@@ -53,7 +56,7 @@ esac
 case "$ns_URGENCY" in
 none) ;;
 low|normal|critical)
-	notify-send -u $ns_URGENCY -c $ns_CATEGORY -- "$ns_HEADER" "$ns_BODY" ;;
+	notify-send -u "$ns_URGENCY" -c "$ns_CATEGORY" -a "$ns_APPNAME" -i "$ns_ICON" -- "$ns_HEADER" "$ns_BODY" ;;
 *) fail "urgency not recognized: $ns_URGENCY" ;;
 esac
 
@@ -61,6 +64,6 @@ esac
 # a path to a file. The file need not exist; the directory must be writable.
 NOTIFY_JSON_LOG=
 [ -n "$NOTIFY_JSON_LOG" ] && {
-	echo `date -Iminutes` $json >> $NOTIFY_JSON_LOG
+	printf "%s\n" "$(date -Iminutes):  $json" >> "$NOTIFY_JSON_LOG"
 }
 true
