@@ -151,13 +151,11 @@ renderBlock (Header n is) = do
              , headerTxt
              ]
 renderBlock (Blockquote bs) = do
-    w <- asks drawLineWidth
     bws <- mapM renderBlock (unBlocks bs)
-    return $ maybeHLimit w $ addQuoting $ vBox bws
+    return $ addQuoting $ vBox bws
 renderBlock (List ty spacing bs) = do
-    w <- asks drawLineWidth
     lst <- renderList ty spacing bs
-    return $ maybeHLimit w lst
+    return lst
 renderBlock (CodeBlock ci tx) = do
     hSet <- asks drawHighlightSet
 
