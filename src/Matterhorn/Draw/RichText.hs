@@ -154,8 +154,7 @@ renderBlock (Blockquote bs) = do
     bws <- mapM renderBlock (unBlocks bs)
     return $ addQuoting $ vBox bws
 renderBlock (List ty spacing bs) = do
-    lst <- renderList ty spacing bs
-    return lst
+    renderList ty spacing bs
 renderBlock (CodeBlock ci tx) = do
     hSet <- asks drawHighlightSet
 
