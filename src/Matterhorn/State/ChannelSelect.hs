@@ -47,12 +47,13 @@ updateChannelSelectMatches tId = do
 
     input <- use (csTeam(tId).tsChannelSelectState.channelSelectInput)
     cconfig <- use csClientConfig
+    appConfig <- use (csResources.crConfiguration)
     prefs <- use (csResources.crUserPreferences)
 
-    let pat = parseChannelSelectPattern $ T.concat $ getEditContents input
+    let pat = parseChannelSelectPattern appConfig $ T.concat $ getEditContents input
         chanNameMatches e = case pat of
             Nothing -> const Nothing
-            Just p -> applySelectPattern p e
+            Just p -> applySelectPattern appConfig p e
         patTy = case pat of
             Nothing -> Nothing
             Just CSPAny -> Nothing
@@ -88,10 +89,10 @@ updateChannelSelectMatches tId = do
     csTeam(tId).tsChannelSelectState.channelSelectMatches %=
         (Z.updateListBy preserveFocus $ Z.toList $ Z.maybeMapZipper matches (st^.csTeam(tId).tsFocus))
 
-applySelectPattern :: ChannelSelectPattern -> ChannelListEntry -> Text -> Maybe ChannelSelectMatch
-applySelectPattern CSPAny entry chanName = do
+applySelectPattern :: Config -> ChannelSelectPattern -> ChannelListEntry -> Text -> Maybe ChannelSelectMatch
+applySelectPattern _ CSPAny entry chanName = do
     return $ ChannelSelectMatch "" "" chanName chanName entry
-applySelectPattern (CSP ty pat) entry chanName = do
+applySelectPattern config (CSP ty pat) entry chanName = do
     let applyType Infix | pat `T.isInfixOf` normalizedChanName =
             case T.breakOn pat normalizedChanName of
                 (pre, _) ->
@@ -121,7 +122,7 @@ applySelectPattern (CSP ty pat) entry chanName = do
 
         applyType _ = Nothing
 
-        caseSensitive = T.any isUpper pat
+        caseSensitive = T.any isUpper pat && not (configChannelSelectCaseInsensitive config)
         normalizedChanName = if caseSensitive
                              then chanName
                              else T.toLower chanName
@@ -129,10 +130,14 @@ applySelectPattern (CSP ty pat) entry chanName = do
     (pre, m, post) <- applyType ty
     return $ ChannelSelectMatch pre m post chanName entry
 
-parseChannelSelectPattern :: Text -> Maybe ChannelSelectPattern
-parseChannelSelectPattern "" = return CSPAny
-parseChannelSelectPattern pat = do
-    let only = if | userSigil `T.isPrefixOf` pat -> Just $ CSP PrefixDMOnly $ T.tail pat
+parseChannelSelectPattern :: Config -> Text -> Maybe ChannelSelectPattern
+parseChannelSelectPattern _ "" = return CSPAny
+parseChannelSelectPattern config patRaw = do
+    let pat = if configChannelSelectCaseInsensitive config
+              then T.toLower patRaw
+              else patRaw
+
+        only = if | userSigil `T.isPrefixOf` pat -> Just $ CSP PrefixDMOnly $ T.tail pat
                   | normalChannelSigil `T.isPrefixOf` pat -> Just $ CSP PrefixNonDMOnly $ T.tail pat
                   | otherwise -> Nothing
 

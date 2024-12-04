@@ -96,6 +96,7 @@ module Matterhorn.Types
   , configThreadOrientationL
   , configMouseModeL
   , configShowLastOpenThreadL
+  , configChannelSelectCaseInsensitiveL
 
   , unsafeKeyDispatcher
   , bindingConflictMessage
@@ -605,6 +606,9 @@ data Config =
            , configShowLastOpenThread :: Bool
            -- ^ Whether to re-open a thread that was open the last time
            -- Matterhorn quit
+           , configChannelSelectCaseInsensitive :: Bool
+           -- ^ Whether channel selection input is always matched
+           -- case-insensitively
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.

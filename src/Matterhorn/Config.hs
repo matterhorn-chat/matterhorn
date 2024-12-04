@@ -156,6 +156,8 @@ fromIni = do
     configDefaultAttachmentPath <- fieldMbOf "defaultAttachmentPath" filePathField
     configMouseMode <- fieldFlagDef "enableMouseMode"
       (configMouseMode defaultConfig)
+    configChannelSelectCaseInsensitive <- fieldFlagDef "channelSelectCaseInsensitive"
+      (configChannelSelectCaseInsensitive defaultConfig)
 
     let configAbsPath = Nothing
         configUserKeys = newKeyConfig allEvents [] []
@@ -441,6 +443,7 @@ defaultConfig = addDefaultKeys $
            , configMouseMode                   = False
            , configChannelListSorting          = ChannelListSortDefault
            , configTeamListSorting             = TeamListSortDefault
+           , configChannelSelectCaseInsensitive = False
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
