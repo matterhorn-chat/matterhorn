@@ -330,12 +330,10 @@ renderLastMessages st hs editCutoff renderReplyIndent tag msgs =
                 if V.imageHeight (result^.imageL) >= remainingHeight
                 then do
                     single <- if newMessagesAbove
-                              then do
-                                  result' <- render $
+                              then render $
                                       vBox [ withDefAttr newMessageTransitionAttr $ hBorderWithLabel (txt "New Messages ↑")
                                            , cropTopBy 1 $ resultToWidget croppedResult
                                            ]
-                                  return result'
                               else do
                                   return croppedResult
                     return [single]
