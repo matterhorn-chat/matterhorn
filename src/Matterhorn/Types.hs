@@ -97,6 +97,7 @@ module Matterhorn.Types
   , configMouseModeL
   , configShowLastOpenThreadL
   , configChannelSelectCaseInsensitiveL
+  , configCharacterWidthsL
 
   , unsafeKeyDispatcher
   , bindingConflictMessage
@@ -609,6 +610,8 @@ data Config =
            , configChannelSelectCaseInsensitive :: Bool
            -- ^ Whether channel selection input is always matched
            -- case-insensitively
+           , configCharacterWidths :: [(Char, Int)]
+           -- ^ Map of Unicode characters to widths to configure Vty
            } deriving (Eq, Show)
 
 -- | The policy for CPU usage.

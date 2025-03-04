@@ -444,6 +444,7 @@ defaultConfig = addDefaultKeys $
            , configChannelListSorting          = ChannelListSortDefault
            , configTeamListSorting             = TeamListSortDefault
            , configChannelSelectCaseInsensitive = False
+           , configCharacterWidths             = []
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
