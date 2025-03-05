@@ -161,6 +161,7 @@ fromIni = do
 
     let configAbsPath = Nothing
         configUserKeys = newKeyConfig allEvents [] []
+        configCharacterWidths = []
     return Config { .. }
 
 defaultBindings :: [(KeyEvent, [Binding])]
