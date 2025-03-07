@@ -19,15 +19,15 @@ main :: IO ()
 main = do
     opts <- grabOptions
 
-    configResult <- if optIgnoreConfig opts
-                    then return $ Right defaultConfig
-                    else fmap snd <$> findConfig (optConfLocation opts)
+    configResult <- findConfig $ if optIgnoreConfig opts
+                                 then Nothing
+                                 else optConfLocation opts
 
     config <- case configResult of
         Left err -> do
             putStrLn $ "Error loading config: " <> err
             exitFailure
-        Right c -> return c
+        Right (_, c) -> return c
 
     let keyConfig = configUserKeys config
         format = optPrintFormat opts

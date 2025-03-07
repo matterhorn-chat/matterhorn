@@ -5,7 +5,6 @@ module Matterhorn.Config
   ( Config(..)
   , PasswordSource(..)
   , findConfig
-  , defaultConfig
   , configConnectionType
   )
 where
