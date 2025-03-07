@@ -454,11 +454,11 @@ findConfig Nothing = runExceptT $ do
     (warns, config) <-
       case cfg of
         Nothing -> return ([], defaultConfig)
-        Just path -> getConfig path
+        Just path -> loadConfig path
     config' <- fixupPaths config
     return (warns, config')
 findConfig (Just path) =
-    runExceptT $ do (warns, config) <- getConfig path
+    runExceptT $ do (warns, config) <- loadConfig path
                     config' <- fixupPaths config
                     return (warns, config')
 
@@ -500,8 +500,8 @@ fixupSyntaxDirs c =
 keybindingsSectionName :: Text
 keybindingsSectionName = "keybindings"
 
-getConfig :: FilePath -> ExceptT String IO ([String], Config)
-getConfig fp = do
+loadConfig :: FilePath -> ExceptT String IO ([String], Config)
+loadConfig fp = do
     absPath <- convertIOException $ makeAbsolute fp
     t <- (convertIOException $ T.readFile absPath) `catchE`
          (\e -> throwE $ "Could not read " <> show absPath <> ": " <> e)
@@ -529,7 +529,7 @@ getConfig fp = do
                 Just (PasswordCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
                             (a:as) -> (a, as)
-                            [] -> error $ "BUG: getConfig: got empty command string"
+                            [] -> error $ "BUG: loadConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute password command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
@@ -540,22 +540,22 @@ getConfig fp = do
                 Just (TokenCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
                             (a:as) -> (a, as)
-                            [] -> error $ "BUG: getConfig: got empty command string"
+                            [] -> error $ "BUG: loadConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute token command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
-                Just (TokenString _) -> error $ "BUG: getConfig: token in the Config was already a TokenString"
+                Just (TokenString _) -> error $ "BUG: loadConfig: token in the Config was already a TokenString"
                 Nothing -> return Nothing
 
             actualOTPToken <- case configOTPToken conf of
                 Just (OTPTokenCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
                             (a:as) -> (a, as)
-                            [] -> error $ "BUG: getConfig: got empty command string"
+                            [] -> error $ "BUG: loadConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute OTP token command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
-                Just (OTPTokenString _) -> error $ "BUG: getConfig: otptoken in the Config was already a OTPTokenString"
+                Just (OTPTokenString _) -> error $ "BUG: loadConfig: otptoken in the Config was already a OTPTokenString"
                 Nothing -> return Nothing
 
             let conf' = conf
