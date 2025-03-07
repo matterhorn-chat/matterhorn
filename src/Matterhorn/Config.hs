@@ -449,18 +449,15 @@ defaultConfig = addDefaultKeys $
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
-findConfig Nothing = runExceptT $ do
-    cfg <- lift $ locateConfig configFileName
-    (warns, config) <-
-      case cfg of
+findConfig mPath = runExceptT $ do
+    located <- lift $ locateConfig configFileName
+
+    (warns, config) <- case mPath <|> located of
         Nothing -> return ([], defaultConfig)
         Just path -> loadConfig path
+
     config' <- fixupPaths config
     return (warns, config')
-findConfig (Just path) =
-    runExceptT $ do (warns, config) <- loadConfig path
-                    config' <- fixupPaths config
-                    return (warns, config')
 
 -- | Fix path references in the configuration:
 --
