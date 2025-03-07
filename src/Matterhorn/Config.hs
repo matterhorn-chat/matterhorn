@@ -500,6 +500,13 @@ fixupSyntaxDirs c =
 keybindingsSectionName :: Text
 keybindingsSectionName = "keybindings"
 
+-- | Given a file path, load a Matterhorn configuration from the
+-- specified path, loading any ancillary information such as passwords
+-- or tokens from external sources as specified in the configuration.
+--
+-- Fails with a string error message; otherwise returns a list of
+-- warnings generated during the loading process as well as the loaded
+-- configuration itself.
 loadConfig :: FilePath -> ExceptT String IO ([String], Config)
 loadConfig fp = do
     absPath <- convertIOException $ makeAbsolute fp
