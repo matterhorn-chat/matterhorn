@@ -43,6 +43,10 @@ module Matterhorn.Types
   , channelTopicDialogEditor
   , channelTopicDialogFocus
 
+  , CharWidths
+  , newCharWidths
+  , buildWidthMap
+
   , resultToWidget
 
   , MHKeyEventHandler
@@ -402,6 +406,7 @@ import           Data.Time.Clock ( getCurrentTime, addUTCTime )
 import           Data.UUID ( UUID )
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as Vty
+import qualified Graphics.Vty.UnicodeWidthTable.Types as Vty
 import           Lens.Micro.Platform ( at, makeLenses, lens, (^?!), (.=)
                                      , (%=), (%~), (.~), _Just, Traversal', to
                                      , SimpleGetter, filtered, traversed, singular
@@ -499,6 +504,22 @@ data ChannelListWidth =
     -- ^ Automatically determine a reasonable width based on the window
     -- dimensions.
     deriving (Eq, Show, Ord)
+
+newtype CharWidths = CharWidths [(Char, Int)]
+                   deriving (Eq, Show)
+
+newCharWidths :: [(Char, Int)] -> CharWidths
+newCharWidths = CharWidths
+
+buildWidthMap :: CharWidths -> Vty.UnicodeWidthTable
+buildWidthMap (CharWidths pairs) =
+    Vty.UnicodeWidthTable (mkRange <$> pairs)
+    where
+        mkRange (ch, w) =
+            Vty.WidthTableRange { Vty.rangeStart = toEnum $ fromEnum ch
+                                , Vty.rangeSize = 1
+                                , Vty.rangeColumns = toEnum w
+                                }
 
 -- | This is how we represent the user's configuration. Most fields
 -- correspond to configuration file settings (see Config.hs) but some
@@ -610,7 +631,7 @@ data Config =
            , configChannelSelectCaseInsensitive :: Bool
            -- ^ Whether channel selection input is always matched
            -- case-insensitively
-           , configCharacterWidths :: [(Char, Int)]
+           , configCharacterWidths :: Maybe CharWidths
            -- ^ Map of Unicode characters to widths to configure Vty
            } deriving (Eq, Show)
 

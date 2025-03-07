@@ -12,7 +12,6 @@ import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Control.Exception as E
 import qualified Graphics.Vty as Vty
 import qualified Graphics.Vty.CrossPlatform as Vty
-import qualified Graphics.Vty.UnicodeWidthTable.Types as Vty
 import qualified Graphics.Vty.UnicodeWidthTable.Install as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
@@ -85,22 +84,12 @@ setupCpuUsage config = do
 
     setNumCapabilities requestedCPUs
 
-buildWidthMap :: [(Char, Int)] -> Vty.UnicodeWidthTable
-buildWidthMap pairs =
-    Vty.UnicodeWidthTable (mkRange <$> pairs)
-    where
-        mkRange (ch, w) =
-            Vty.WidthTableRange { Vty.rangeStart = toEnum $ fromEnum ch
-                                , Vty.rangeSize = 1
-                                , Vty.rangeColumns = toEnum w
-                                }
-
 setupCharWidthMap :: Config -> IO ()
 setupCharWidthMap config = do
     case configCharacterWidths config of
-        [] -> return ()
-        pairs -> do
-            let wMap = buildWidthMap pairs
+        Nothing -> return ()
+        Just widths -> do
+            let wMap = buildWidthMap widths
             Vty.installUnicodeWidthTable wMap `E.catch`
                 (\(_::Vty.TableInstallException) -> return ())
 

@@ -86,7 +86,9 @@ At present Matterhorn does not reliably support graphical emoji due to
 the lack of consistent support for wide Unicode characters in various
 terminal emulators. Results may vary, and use of emoji characters may
 cause terminal rendering issues depending on the terminal emulator in
-use.
+use. However, Matterhorn offers a configuration workaround for this
+for specific characters that cause problems. See the "Configuring Wide
+Unicode Characters" section of the README for details.
 
 ## I'm running Matterhorn in Tmux. How can I paste tmux buffers into Matterhorn's editor?
 

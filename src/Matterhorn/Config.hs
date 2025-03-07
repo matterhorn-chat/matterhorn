@@ -15,6 +15,7 @@ import           Matterhorn.Prelude
 import qualified Paths_matterhorn as Paths
 
 import           Brick.Keybindings
+import qualified Control.Exception as E
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
 import           Data.Char ( isDigit, isAlpha )
@@ -160,7 +161,7 @@ fromIni = do
 
     let configAbsPath = Nothing
         configUserKeys = newKeyConfig allEvents [] []
-        configCharacterWidths = []
+        configCharacterWidths = Nothing
     return Config { .. }
 
 defaultBindings :: [(KeyEvent, [Binding])]
@@ -444,19 +445,56 @@ defaultConfig = addDefaultKeys $
            , configChannelListSorting          = ChannelListSortDefault
            , configTeamListSorting             = TeamListSortDefault
            , configChannelSelectCaseInsensitive = False
-           , configCharacterWidths             = []
+           , configCharacterWidths             = Nothing
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
 findConfig mPath = runExceptT $ do
-    located <- lift $ locateConfig configFileName
+    -- Load the main configuration
+    locatedConfig <- lift $ locateConfig configFileName
 
-    (warns, config) <- case mPath <|> located of
+    (warns, config) <- case mPath <|> locatedConfig of
         Nothing -> return ([], defaultConfig)
         Just path -> loadConfig path
 
     config' <- fixupPaths config
-    return (warns, config')
+
+    -- If there is a char widths file, load that and add it to the
+    -- configuration
+    widthsResult <- liftIO loadCharWidths
+
+    case widthsResult of
+        Nothing ->
+            return (warns, config')
+        Just (Left e) ->
+            return (warns <> [e], config')
+        Just (Right widths) ->
+            return (warns, config' { configCharacterWidths = Just widths })
+
+loadCharWidths :: IO (Maybe (Either String CharWidths))
+loadCharWidths = do
+    locatedPath <- locateConfig charWidthsFileName
+
+    case locatedPath of
+        Nothing -> return Nothing
+        Just p -> Just <$> parseCharWidthsFile p
+
+parseCharWidthsFile :: FilePath -> IO (Either String CharWidths)
+parseCharWidthsFile path = runExceptT $ do
+    contents <- ExceptT $ (Right <$> readFile path) `E.catch`
+                          (\(e::E.SomeException) -> return $ Left $ show e)
+
+    let pairs = catMaybes (parseCharWidth <$> lines contents)
+
+    case pairs of
+        [] -> throwE $ path <> ": could not read any valid character width entries"
+        _ -> return $ newCharWidths pairs
+
+parseCharWidth :: String -> Maybe (Char, Int)
+parseCharWidth s =
+    case words s of
+        [[ch], widthS] -> (ch,) <$> readMaybe widthS
+        _ -> Nothing
 
 -- | Fix path references in the configuration:
 --
