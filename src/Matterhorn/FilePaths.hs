@@ -7,6 +7,7 @@ module Matterhorn.FilePaths
   , lastRunStateFileName
 
   , configFileName
+  , charWidthsFileName
 
   , xdgName
   , locateConfig
@@ -55,6 +56,9 @@ lastRunStateFileName teamId = "last_run_state_" ++ unpack teamId ++ ".json"
 
 configFileName :: FilePath
 configFileName = "config.ini"
+
+charWidthsFileName :: FilePath
+charWidthsFileName = "char_widths.txt"
 
 historyFilePath :: IO FilePath
 historyFilePath = getUserConfigFile xdgName historyFileName

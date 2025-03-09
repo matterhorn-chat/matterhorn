@@ -5,7 +5,6 @@ module Matterhorn.Config
   ( Config(..)
   , PasswordSource(..)
   , findConfig
-  , defaultConfig
   , configConnectionType
   )
 where
@@ -16,6 +15,7 @@ import           Matterhorn.Prelude
 import qualified Paths_matterhorn as Paths
 
 import           Brick.Keybindings
+import qualified Control.Exception as E
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.Class ( lift )
 import           Data.Char ( isDigit, isAlpha )
@@ -161,6 +161,7 @@ fromIni = do
 
     let configAbsPath = Nothing
         configUserKeys = newKeyConfig allEvents [] []
+        configCharacterWidths = Nothing
     return Config { .. }
 
 defaultBindings :: [(KeyEvent, [Binding])]
@@ -444,21 +445,56 @@ defaultConfig = addDefaultKeys $
            , configChannelListSorting          = ChannelListSortDefault
            , configTeamListSorting             = TeamListSortDefault
            , configChannelSelectCaseInsensitive = False
+           , configCharacterWidths             = Nothing
            }
 
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
-findConfig Nothing = runExceptT $ do
-    cfg <- lift $ locateConfig configFileName
-    (warns, config) <-
-      case cfg of
+findConfig mPath = runExceptT $ do
+    -- Load the main configuration
+    locatedConfig <- lift $ locateConfig configFileName
+
+    (warns, config) <- case mPath <|> locatedConfig of
         Nothing -> return ([], defaultConfig)
-        Just path -> getConfig path
+        Just path -> loadConfig path
+
     config' <- fixupPaths config
-    return (warns, config')
-findConfig (Just path) =
-    runExceptT $ do (warns, config) <- getConfig path
-                    config' <- fixupPaths config
-                    return (warns, config')
+
+    -- If there is a char widths file, load that and add it to the
+    -- configuration
+    widthsResult <- liftIO loadCharWidths
+
+    case widthsResult of
+        Nothing ->
+            return (warns, config')
+        Just (Left e) ->
+            return (warns <> [e], config')
+        Just (Right widths) ->
+            return (warns, config' { configCharacterWidths = Just widths })
+
+loadCharWidths :: IO (Maybe (Either String CharWidths))
+loadCharWidths = do
+    locatedPath <- locateConfig charWidthsFileName
+
+    case locatedPath of
+        Nothing -> return Nothing
+        Just p -> Just <$> parseCharWidthsFile p
+
+parseCharWidthsFile :: FilePath -> IO (Either String CharWidths)
+parseCharWidthsFile path = runExceptT $ do
+    contents <- ExceptT $ (Right <$> readFile path) `E.catch`
+                          (\(e::E.SomeException) -> return $ Left $ show e)
+
+    let pairs = catMaybes (parseCharWidth <$> lines contents)
+
+    case pairs of
+        [] -> throwE $ path <> ": could not read any valid character width entries"
+        _ -> return $ newCharWidths pairs
+
+parseCharWidth :: String -> Maybe (Char, Int)
+parseCharWidth s =
+    case words s of
+        [[ch], widthS] -> (ch,) <$> readMaybe widthS
+        _ -> Nothing
 
 -- | Fix path references in the configuration:
 --
@@ -498,8 +534,15 @@ fixupSyntaxDirs c =
 keybindingsSectionName :: Text
 keybindingsSectionName = "keybindings"
 
-getConfig :: FilePath -> ExceptT String IO ([String], Config)
-getConfig fp = do
+-- | Given a file path, load a Matterhorn configuration from the
+-- specified path, loading any ancillary information such as passwords
+-- or tokens from external sources as specified in the configuration.
+--
+-- Fails with a string error message; otherwise returns a list of
+-- warnings generated during the loading process as well as the loaded
+-- configuration itself.
+loadConfig :: FilePath -> ExceptT String IO ([String], Config)
+loadConfig fp = do
     absPath <- convertIOException $ makeAbsolute fp
     t <- (convertIOException $ T.readFile absPath) `catchE`
          (\e -> throwE $ "Could not read " <> show absPath <> ": " <> e)
@@ -527,7 +570,7 @@ getConfig fp = do
                 Just (PasswordCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
                             (a:as) -> (a, as)
-                            [] -> error $ "BUG: getConfig: got empty command string"
+                            [] -> error $ "BUG: loadConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute password command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
@@ -538,22 +581,22 @@ getConfig fp = do
                 Just (TokenCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
                             (a:as) -> (a, as)
-                            [] -> error $ "BUG: getConfig: got empty command string"
+                            [] -> error $ "BUG: loadConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute token command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
-                Just (TokenString _) -> error $ "BUG: getConfig: token in the Config was already a TokenString"
+                Just (TokenString _) -> error $ "BUG: loadConfig: token in the Config was already a TokenString"
                 Nothing -> return Nothing
 
             actualOTPToken <- case configOTPToken conf of
                 Just (OTPTokenCommand cmdString) -> do
                     let (cmd, rest) = case T.unpack <$> T.words cmdString of
                             (a:as) -> (a, as)
-                            [] -> error $ "BUG: getConfig: got empty command string"
+                            [] -> error $ "BUG: loadConfig: got empty command string"
                     output <- convertIOException (readProcess cmd rest "") `catchE`
                               (\e -> throwE $ "Could not execute OTP token command: " <> e)
                     return $ Just $ T.pack (takeWhile (/= '\n') output)
-                Just (OTPTokenString _) -> error $ "BUG: getConfig: otptoken in the Config was already a OTPTokenString"
+                Just (OTPTokenString _) -> error $ "BUG: loadConfig: otptoken in the Config was already a OTPTokenString"
                 Nothing -> return Nothing
 
             let conf' = conf

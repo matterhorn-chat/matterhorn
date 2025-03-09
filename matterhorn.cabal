@@ -186,7 +186,7 @@ library
                      , microlens-platform   >= 0.3     && < 0.5
                      , brick                >= 2.8.2   && < 2.9
                      , brick-skylighting    >= 1.0     && < 1.1
-                     , vty                  >= 6.0     && < 6.3
+                     , vty                  >= 6.4     && < 6.5
                      , vty-crossplatform    >= 0.2.0.0 && < 0.5.0.0
                      , word-wrap            >= 0.4.0   && < 0.5
                      , transformers         >= 0.4     && < 0.7
