@@ -481,19 +481,19 @@ loadCharWidths = do
 
 parseCharWidthsFile :: FilePath -> IO (Either String CharWidths)
 parseCharWidthsFile path = runExceptT $ do
-    contents <- ExceptT $ (Right <$> readFile path) `E.catch`
+    contents <- ExceptT $ (Right <$> T.readFile path) `E.catch`
                           (\(e::E.SomeException) -> return $ Left $ show e)
 
-    let pairs = catMaybes (parseCharWidth <$> lines contents)
+    let pairs = catMaybes (parseCharWidth <$> T.lines contents)
 
     case pairs of
         [] -> throwE $ path <> ": could not read any valid character width entries"
         _ -> return $ newCharWidths pairs
 
-parseCharWidth :: String -> Maybe (Char, Int)
+parseCharWidth :: T.Text -> Maybe (Char, Int)
 parseCharWidth s =
-    case words s of
-        [[ch], widthS] -> (ch,) <$> readMaybe widthS
+    case T.words s of
+        [ch, widthS] | T.length ch == 1 -> (T.head ch,) <$> readMaybe (T.unpack widthS)
         _ -> Nothing
 
 -- | Fix path references in the configuration:
