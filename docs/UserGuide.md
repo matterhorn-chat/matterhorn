@@ -92,6 +92,12 @@ proper character width for a problematic character as follows:
   to treat `💩` as a two-column-wide character.
 * Restart Matterhorn.
 
+Note that lines with multiple characters to the left of the width will
+be ignored. Matterhorn does not support specifying the width of strings
+- just single code points. That means that Unicode characters with
+selectors or that use combining characters will be ignored in the width
+file.
+
 # Using the Client
 
 The user interface has three main areas:
