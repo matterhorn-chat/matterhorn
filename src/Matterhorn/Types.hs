@@ -1990,7 +1990,7 @@ writeBChan :: (MonadIO m) => BCH.BChan MHEvent -> MHEvent -> m ()
 writeBChan chan e = do
     written <- liftIO $ BCH.writeBChanNonBlocking chan e
     when (not written) $
-        error $ "mhSendEvent: BChan full, please report this as a bug!"
+        mhLog LogError $ "mhSendEvent: BChan full, event loop not keeping up"
 
 -- | Log and raise an error.
 mhError :: MHError -> MH ()
