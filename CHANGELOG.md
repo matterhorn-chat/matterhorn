@@ -1,4 +1,33 @@
 
+90000.1.0
+=========
+
+Enhancements:
+* Matterhorn now provides an additional configuration file for
+  specifying Unicode character widths to allow users to configure
+  Matterhorn to avoid layout problems due to wide characters. See the
+  Matterhorn User Guide for details.
+* Channel selection case-handling behavior is now configurable. (#840)
+  This change adds a new configuration setting, `channelSelectCaseInsensitive`.
+  This new setting is used to control channel selection input handling:
+  * When the setting is `False` (the default), the behavior is as before
+    this change: lowercase input was matched on channel names
+    case-insensitively and input containing any uppercase characters
+    resulted in a case-insensitive match.
+  * When the setting is `True`, channel names are matched
+    case-insensitively regardless of case in the input, i.e., as if the
+    input was all lowercase.
+* Improved the layout of block quotes and bullet lists in messages.
+* Messages with attachments but no text may now be sent. (#773)
+* The message view window now has an Author tab with information about
+  the message author. (#833)
+
+Bug fixes:
+* Matterhorn will no longer crash when its internal event queue is full
+  (e.g. due to pathological system conditions). (#835)
+* The `notifyV2` script now has proper JSON quoting. (#836)
+* Network errors due to closed sockets are now silenced. (#837)
+
 90000.0.1
 =========
 
