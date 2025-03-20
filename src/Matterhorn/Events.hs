@@ -115,9 +115,9 @@ onAppEvent (WSEvent we) =
 onAppEvent (WSActionResponse r) =
     handleWebsocketActionResponse r
 onAppEvent (RespEvent (Work label f)) = do
-    mhLog LogAsyncWork $ T.pack $ "onAppEvent: running work from async: " <> show label
+    mhLog LogAsyncWork $ T.pack $ "onAppEvent: running work from async: " <> label
     f
-    mhLog LogAsyncWork $ T.pack $ "onAppEvent: done with work from async: " <> show label
+    mhLog LogAsyncWork $ T.pack $ "onAppEvent: done with work from async: " <> label
 onAppEvent (WebsocketParseError e) = do
     let msg = "A websocket message could not be parsed:\n  " <>
               T.pack e <>
