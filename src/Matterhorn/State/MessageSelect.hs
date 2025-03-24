@@ -209,8 +209,6 @@ openThreadWindow tId which =
             case msg^.mChannelId of
                 Nothing -> return ()
                 Just cId -> do
-                    -- Leave message selection mode
-                    exitMessageSelect which
                     TW.openThreadWindow tId cId (postId p)
 
 yankSelectedMessage :: Lens' ChatState (MessageInterface n i)
