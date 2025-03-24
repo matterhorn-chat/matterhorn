@@ -208,8 +208,7 @@ openThreadWindow tId which =
             let p = fromJust $ rootMsg^.mOriginalPost
             case msg^.mChannelId of
                 Nothing -> return ()
-                Just cId -> do
-                    TW.openThreadWindow tId cId (postId p)
+                Just cId -> TW.openThreadWindow tId cId (postId p)
 
 yankSelectedMessage :: Lens' ChatState (MessageInterface n i)
                     -> MH ()
