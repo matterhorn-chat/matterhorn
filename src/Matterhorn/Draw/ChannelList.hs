@@ -30,6 +30,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Brick.Widgets.Center (hCenter)
 import           Brick.Widgets.Edit ( editContentsL )
+import           Data.List (intersperse)
 import qualified Data.Text as T
 import qualified Data.Text.Zipper as TZ
 import           Data.Maybe ( fromJust )
@@ -45,12 +46,16 @@ import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
 import qualified Matterhorn.Zipper as Z
 
+data ChannelListEntryLabel =
+    Single Text
+    | UserList [Text]
+
 -- | Internal record describing each channel entry and its associated
 -- attributes.  This is the object passed to the rendering function so
 -- that it can determine how to render each channel.
 data ChannelListEntryData =
     ChannelListEntryData { entrySigil       :: Text
-                         , entryLabel       :: Text
+                         , entryLabel       :: ChannelListEntryLabel
                          , entryHasUnread   :: Bool
                          , entryMentions    :: Int
                          , entryIsRecent    :: Bool
@@ -164,7 +169,7 @@ mkChannelEntryData :: ChatState
                    -> ChannelListEntryData
 mkChannelEntryData st tId e =
     ChannelListEntryData { entrySigil       = sigilWithSpace
-                         , entryLabel       = name
+                         , entryLabel       = label
                          , entryHasUnread   = unread
                          , entryMentions    = mentions
                          , entryIsRecent    = recent
@@ -181,17 +186,21 @@ mkChannelEntryData st tId e =
         ret = isReturnChannel st tId cId
         current = isCurrentChannel st tId cId
         muted = channelListEntryMuted e
-        (name, normalSigil, addSpace, status) = case channelListEntryType e of
+        dropComma t = if "," `T.isSuffixOf` t
+                      then T.init t
+                      else t
+        (label, normalSigil, addSpace, status) = case channelListEntryType e of
             CLChannel ->
-                (chan^.ccInfo.cdDisplayName, Nothing, False, Nothing)
+                (Single $ chan^.ccInfo.cdDisplayName, Nothing, False, Nothing)
             CLGroupDM ->
-                (chan^.ccInfo.cdDisplayName, Just " ", True, Nothing)
+                (UserList $ dropComma <$> (T.words $ chan^.ccInfo.cdDisplayName),
+                 Just " ", True, Nothing)
             CLUserDM uId ->
                 let u = fromJust $ userById uId st
                     uname = if useNickname st
                             then u^.uiNickName.non (u^.uiName)
                             else u^.uiName
-                in (uname, Just $ T.singleton $ userSigilFromInfo u,
+                in (Single $ uname, Just $ T.singleton $ userSigilFromInfo u,
                     True, Just $ u^.uiStatus)
         sigilWithSpace = sigil <> if addSpace then " " else ""
         prevEditSigil = "»"
@@ -213,7 +222,7 @@ renderChannelListEntry :: MM.TeamId -> Text -> ChannelListEntryData -> Widget Na
 renderChannelListEntry tId myUName entry = body
     where
     body = decorate $ decorateEntry entry $ decorateMentions entry $ padRight Max $
-           entryWidget $ entrySigil entry <> entryLabel entry
+           txt (entrySigil entry) <+> entryWidget
     decorate = if | entryIsCurrent entry ->
                       reportExtent (SelectedChannelListEntry tId) . forceAttr currentChannelNameAttr
                   | entryMentions entry > 0 && not (entryIsMuted entry) ->
@@ -221,10 +230,16 @@ renderChannelListEntry tId myUName entry = body
                   | entryHasUnread entry ->
                       forceAttr unreadChannelAttr
                   | otherwise -> id
-    entryWidget = case entryUserStatus entry of
-                    Just Offline -> withDefAttr clientMessageAttr . txt
-                    Just _       -> colorUsername myUName (entryLabel entry)
-                    Nothing      -> txt
+    entryWidget =
+        case entryLabel entry of
+            Single label ->
+                case entryUserStatus entry of
+                    Just Offline -> withDefAttr clientMessageAttr $ txt label
+                    Just _       -> colorUsername myUName label label
+                    Nothing      -> txt label
+            UserList usernames ->
+                let color n = colorUsername myUName n n
+                in hBox $ intersperse (txt ", ") $ color <$> usernames
 
 -- | Render an individual entry when in Channel Select mode,
 -- highlighting the matching portion, or completely suppressing the
