@@ -173,14 +173,16 @@ though some of its features and behaviors are informed by `readline`.
 This is also why we provide the ability to invoke an application of your
 choosing to edit messages with `M-k` (`invoke-editor`).
 
-## Matterhorn's default bindings for team switching don't work on Mac OS. What do I do?
+## Matterhorn's default bindings for some feature don't work in my environment. What do I do?
 
-The default bindings for switching teams may collide with bindings in
-the Mac OS settings (typically for switching screens). To address this
-you have two options:
-
-* Unbind or change the Mac OS bindings in the System Preferences, or
-* Configure Matterhorn to use different bindings.
+The default binding for a Matterhorn feature might collide with bindings
+in your operating system's settings, might trigger your terminal
+emulator to generate an input sequence that Matterhorn doesn't know
+about, or just not be supported by your terminal emulator at all. In
+these cases you might need to customize your key bindings to ones that
+work in your environment, either by disabling operating system-level
+bindings to reduce clashes or by providing a custom key binding
+configuration to Matterhorn.
 
 To configure Matterhorn to use different bindings, you can add something
 like the following to your Matterhorn configuration file:
