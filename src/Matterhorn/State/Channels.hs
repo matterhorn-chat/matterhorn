@@ -217,7 +217,9 @@ setLastViewedFor prevId cId = do
           doAsyncChannelMM Preempt cId (\ s _ ->
                                            (,) <$> MM.mmGetChannel cId s
                                                <*> MM.mmGetChannelMember cId UserMe s)
-          (\pcid (cwd, member) -> Just $ Work "setLastViewedFor" $ csChannel(pcid).ccInfo %= channelInfoFromChannelWithData cwd member)
+          (\pcid (cwd, member) -> Just $ Work "setLastViewedFor" $ do
+              un <- gets myUsername
+              csChannel(pcid).ccInfo %= channelInfoFromChannelWithData un cwd member)
 
     -- Update the old channel's previous viewed time (allows tracking of
     -- new messages)
@@ -331,9 +333,10 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
         Nothing -> do
             eventQueue <- use (csResources.crEventQueue)
             spellChecker <- use (csResources.crSpellChecker)
+            un <- gets myUsername
 
             -- Create a new ClientChannel structure
-            cChannel <- (ccInfo %~ channelInfoFromChannelWithData nc member) <$>
+            cChannel <- (ccInfo %~ channelInfoFromChannelWithData un nc member) <$>
                        makeClientChannel eventQueue spellChecker (me^.userIdL) (channelTeamId nc) nc member
 
             st <- use id
@@ -451,7 +454,8 @@ checkPendingChannelChangeByUserId tId uId = do
 updateChannelInfo :: ChannelId -> Channel -> ChannelMember -> MH ()
 updateChannelInfo cid new member = do
     invalidateChannelRenderingCache cid
-    csChannel(cid).ccInfo %= channelInfoFromChannelWithData new member
+    un <- gets myUsername
+    csChannel(cid).ccInfo %= channelInfoFromChannelWithData un new member
     withChannel cid $ \chan ->
         updateSidebar (chan^.ccInfo.cdTeamId)
 

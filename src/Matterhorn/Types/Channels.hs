@@ -60,6 +60,7 @@ import           Matterhorn.Prelude
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
+import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), (.~), Traversal', Lens'
                                      , makeLenses, ix, at
                                      , to, non )
@@ -110,8 +111,24 @@ data NewMessageIndicator =
     | NewPostsStartingAt ServerTime
     deriving (Eq, Show)
 
-channelInfoFromChannelWithData :: Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
-channelInfoFromChannelWithData chan chanMember ci =
+-- | Server channel names for groups come pre-built with display names
+-- containing a comma-separated list of member usernames, including
+-- the username of the authenticated user. We want to remove the
+-- authenticated user's username from the list, which is what this
+-- function does. Non-group channel names are unaffected, defaulting to
+-- the channel's original display name.
+removeMyUsername :: Text -> Channel -> Text
+removeMyUsername myUsername ch
+    | channelType ch == Group = removeUsername dn
+    | otherwise               = dn
+    where
+        dn = sanitizeUserText $ channelDisplayName ch
+        removeUsername = T.unwords .
+                         filter (/= (myUsername <> ",")) .
+                         T.words
+
+channelInfoFromChannelWithData :: Text -> Channel -> ChannelMember -> ChannelInfo -> ChannelInfo
+channelInfoFromChannelWithData myUsername chan chanMember ci =
     let viewed   = chanMember ^. to channelMemberLastViewedAt
         updated  = chan ^. channelLastPostAtL
     in ci { _cdViewed           = Just viewed
@@ -119,8 +136,8 @@ channelInfoFromChannelWithData chan chanMember ci =
               Hide -> if updated > viewed then NewPostsAfterServerTime viewed else Hide
               v -> v
           , _cdUpdated          = updated
-          , _cdName             = preferredChannelName chan
-          , _cdDisplayName      = sanitizeUserText $ channelDisplayName chan
+          , _cdName             = removeMyUsername myUsername chan
+          , _cdDisplayName      = removeMyUsername myUsername chan
           , _cdHeader           = (sanitizeUserText $ chan^.channelHeaderL)
           , _cdPurpose          = (sanitizeUserText $ chan^.channelPurposeL)
           , _cdType             = (chan^.channelTypeL)
