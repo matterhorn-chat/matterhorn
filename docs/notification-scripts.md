@@ -42,7 +42,7 @@ The interface for notification scripts is as follows:
   passing notification details via JSON to the command's standard input.
   The JSON will be UTF-8 encoded; the notification script is responsible
   for decoding it.
-  * NotifyV2 JSON payload fields:
+  * NotifyV3 JSON payload fields:
     * "version": "3"
     * "from": "sender name"
     * "message": "message text..."
