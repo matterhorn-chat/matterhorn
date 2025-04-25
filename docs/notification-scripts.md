@@ -60,6 +60,36 @@ The interface for notification scripts is as follows:
       * `ephemeral`
       * `unknown`
 
+* NotifyV4: Matterhorn will invoke the command with zero arguments,
+  passing notification details via JSON to the command's standard input.
+  The JSON will be UTF-8 encoded; the notification script is responsible
+  for decoding it.
+  * NotifyV4 JSON payload fields:
+    * "version": "4"
+    * "from": "sender name"
+    * "message": "message text..."
+    * "mention": boolean (true or false: did sender mention me?)
+    * "messageType": a string from the following list based on the
+      message type:
+      * `joinChannel`
+      * `leaveChannel`
+      * `addToChannel`
+      * `removeFromChannel`
+      * `headerChange`
+      * `displayNameChange`
+      * `purposeChange`
+      * `channelDeleted`
+      * `ephemeral`
+      * `unknown`
+    * "channel": the channel slug
+    * "channelType": a string from the following list based on the
+      type of channel where the notification originated:
+      * `D` for direct messages
+      * `O` for ordinary channels
+      * `P` for private channels
+      * `G` for group DMs
+      * `U` for unknown types
+
 * Matterhorn will wait for the process to terminate. If the process
   emits any output to standard out OR if the command exits with a
   non-zero exit status, Matterhorn will consider that evidence that

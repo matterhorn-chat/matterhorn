@@ -339,8 +339,9 @@ notifyVersion t =
         "1" -> Right NotifyV1
         "2" -> Right NotifyV2
         "3" -> Right NotifyV3
+        "4" -> Right NotifyV4
         _ -> Left ("Invalid value " <> show t
-                  <> "; must be one of NotifyV1, NotifyV2, NotifyV3")
+                  <> "; must be one of NotifyV1, NotifyV2, NotifyV3, NotifyV4")
 
 parseChannelListSorting :: Text -> Either String ChannelListSorting
 parseChannelListSorting t =

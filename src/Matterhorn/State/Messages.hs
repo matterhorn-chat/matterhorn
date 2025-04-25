@@ -824,6 +824,28 @@ instance A.ToJSON NotificationV3 where
                  , "messageType" A..= msgTy
                  ]
 
+-- Notification Version 4 payload definition
+data NotificationV4 = NotificationV4
+    { notifyV4Version :: Int
+    , notifyV4Message :: Text
+    , notifyV4Mention :: Bool
+    , notifyV4From :: Text
+    , notifyV4MessageType :: Text
+    , notifyV4Channel :: Text
+    , notifyV4ChannelType :: Text
+    } deriving (Show)
+
+instance A.ToJSON NotificationV4 where
+    toJSON (NotificationV4 vers msg mentioned sender msgTy chName chType) =
+        A.object [ "version"     A..= vers
+                 , "message"     A..= msg
+                 , "mention"     A..= mentioned
+                 , "from"        A..= sender
+                 , "messageType" A..= msgTy
+                 , "channel"     A..= chName
+                 , "channelType" A..= chType
+                 ]
+
 -- We define a notifyGetPayload for each notification version.
 notifyGetPayload :: NotificationVersion -> ChatState -> Post -> Bool -> Maybe BSL.ByteString
 notifyGetPayload NotifyV1 _ _ _ = do return mempty
@@ -839,17 +861,39 @@ notifyGetPayload NotifyV3 st post mentioned = do
         where
             msg = sanitizeUserText $ postMessage post
             sender = maybePostUsername st post
-            msgTy = case postType post of
-                PostTypeJoinChannel       -> "joinChannel"
-                PostTypeLeaveChannel      -> "leaveChannel"
-                PostTypeAddToChannel      -> "addToChannel"
-                PostTypeRemoveFromChannel -> "removeFromChannel"
-                PostTypeHeaderChange      -> "headerChange"
-                PostTypeDisplayNameChange -> "displayNameChange"
-                PostTypePurposeChange     -> "purposeChange"
-                PostTypeChannelDeleted    -> "channelDeleted"
-                PostTypeEphemeral         -> "ephemeral"
-                PostTypeUnknown _         -> "unknown"
+            msgTy = notifyGetMessageType post
+notifyGetPayload NotifyV4 st post mentioned = do
+    chan <- findChannelById (post^.postChannelIdL) (st^.csChannels)
+    let chName = chan^.ccInfo.cdName
+    let chType = notifyGetChannelType chan
+    let notification = NotificationV4 4 msg mentioned sender msgTy chName chType
+    return (A.encode notification)
+        where
+            msg = sanitizeUserText $ postMessage post
+            sender = maybePostUsername st post
+            msgTy = notifyGetMessageType post
+
+notifyGetMessageType :: Post -> Text
+notifyGetMessageType post =
+    case postType post of
+        PostTypeJoinChannel       -> "joinChannel"
+        PostTypeLeaveChannel      -> "leaveChannel"
+        PostTypeAddToChannel      -> "addToChannel"
+        PostTypeRemoveFromChannel -> "removeFromChannel"
+        PostTypeHeaderChange      -> "headerChange"
+        PostTypeDisplayNameChange -> "displayNameChange"
+        PostTypePurposeChange     -> "purposeChange"
+        PostTypeChannelDeleted    -> "channelDeleted"
+        PostTypeEphemeral         -> "ephemeral"
+        PostTypeUnknown _         -> "unknown"
+notifyGetChannelType :: ClientChannel -> Text
+notifyGetChannelType chan =
+    case (chan^.ccInfo.cdType) of
+        Direct      -> "D"
+        Ordinary    -> "O"
+        Private     -> "P"
+        Group       -> "G"
+        (Unknown _) -> "U"
 
 handleNotifyCommand :: Post -> Bool -> NotificationVersion -> MH ()
 handleNotifyCommand post mentioned NotifyV1 = do
@@ -881,6 +925,17 @@ handleNotifyCommand post mentioned NotifyV3 = do
     outputChan <- use (csResources.crSubprocessLog)
     st <- use id
     let payload = notifyGetPayload NotifyV3 st post mentioned
+    notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
+    case notifyCommand of
+        Nothing -> return ()
+        Just cmd ->
+            doAsyncWith Preempt $ do
+                runLoggedCommand outputChan (T.unpack cmd) [] payload Nothing
+                return Nothing
+handleNotifyCommand post mentioned NotifyV4 = do
+    outputChan <- use (csResources.crSubprocessLog)
+    st <- use id
+    let payload = notifyGetPayload NotifyV4 st post mentioned
     notifyCommand <- use (csResources.crConfiguration.configActivityNotifyCommandL)
     case notifyCommand of
         Nothing -> return ()
