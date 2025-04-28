@@ -865,8 +865,8 @@ notifyGetPayload NotifyV3 st post mentioned = do
 notifyGetPayload NotifyV4 st post mentioned = do
     chan <- findChannelById (post^.postChannelIdL) (st^.csChannels)
     let chName = chan^.ccInfo.cdName
-    let chType = notifyGetChannelType chan
-    let notification = NotificationV4 4 msg mentioned sender msgTy chName chType
+        chType = notifyGetChannelType chan
+        notification = NotificationV4 4 msg mentioned sender msgTy chName chType
     return (A.encode notification)
         where
             msg = sanitizeUserText $ postMessage post
