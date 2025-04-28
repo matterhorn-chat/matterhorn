@@ -163,7 +163,7 @@ echo
 echo %
 echo % Verify that the command document is current
 echo %
-diff docs/commands.md <(./run.sh -m -f markdown)
+diff docs/commands.md <(./run.sh -i -m -f markdown)
 echo
 
 TMPDIR=$(mktemp -d)
