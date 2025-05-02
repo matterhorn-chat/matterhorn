@@ -96,8 +96,14 @@ checkForAutocompletion target ctx = do
                             (_acType prev /= ty)
 
             when shouldUpdate $ do
-                which.esAutocompletePending .= Just searchString
-                completerFunc completer ty ctx searchString
+                prev <- preuse (which.esAutocompletePending)
+                let continue = case prev of
+                                   Just s -> s /= Just searchString
+                                   Nothing -> True
+
+                when continue $ do
+                    which.esAutocompletePending .= Just searchString
+                    completerFunc completer ty ctx searchString
 
 getCompleterForInput :: Traversal' ChatState (EditState Name)
                      -> AutocompleteContext
