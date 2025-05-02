@@ -3,9 +3,9 @@
 {-# LANGUAGE MultiWayIf #-}
 module Matterhorn.Config
   ( Config(..)
+  , defaultConfig
   , PasswordSource(..)
   , findConfig
-  , tryLoadConfig
   , configConnectionType
   )
 where
@@ -451,16 +451,13 @@ defaultConfig = addDefaultKeys $
            , configCharacterWidths             = Nothing
            }
 
-defaultWarnConfig :: ([String], Config)
-defaultWarnConfig = ([], defaultConfig)
-
 findConfig :: Maybe FilePath -> IO (Either String ([String], Config))
 findConfig mPath = runExceptT $ do
     -- Load the main configuration
     locatedConfig <- lift $ locateConfig configFileName
 
     (warns, config) <- case mPath <|> locatedConfig of
-        Nothing -> return defaultWarnConfig
+        Nothing -> return ([], defaultConfig)
         Just path -> loadConfig path
 
     config' <- fixupPaths config
@@ -476,11 +473,6 @@ findConfig mPath = runExceptT $ do
             return (warns <> [e], config')
         Just (Right widths) ->
             return (warns, config' { configCharacterWidths = Just widths })
-
-tryLoadConfig :: Bool -> Maybe FilePath -> IO (Either String ([String], Config))
-tryLoadConfig True _ = runExceptT $ do
-    return defaultWarnConfig
-tryLoadConfig False cfgLocation = findConfig $ cfgLocation
 
 loadCharWidths :: IO (Maybe (Either String CharWidths))
 loadCharWidths = do

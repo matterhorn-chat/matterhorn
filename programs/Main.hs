@@ -19,7 +19,9 @@ main :: IO ()
 main = do
     opts <- grabOptions
 
-    configResult <- tryLoadConfig (optIgnoreConfig opts) (optConfLocation opts)
+    configResult <- case optIgnoreConfig opts of
+        True -> return $ Right ([], defaultConfig)
+        False -> findConfig (optConfLocation opts)
 
     config <- case configResult of
         Left err -> do
