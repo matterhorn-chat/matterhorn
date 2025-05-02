@@ -87,10 +87,14 @@ checkForAutocompletion target ctx = do
             --
             -- 2) The search string changed but the type did NOT change
             let ty = completerType completer
-                shouldUpdate = ((maybe True ((/= searchString) . _acPreviousSearchString)
-                                 prevResult) &&
-                                (maybe True ((== ty) . _acType) prevResult)) ||
-                               (maybe False ((/= ty) . _acType) prevResult)
+                shouldUpdate =
+                    case prevResult of
+                        Nothing -> True
+                        Just prev ->
+                            ((_acPreviousSearchString prev /= searchString) &&
+                             (_acType prev == ty)) ||
+                            (_acType prev /= ty)
+
             when shouldUpdate $ do
                 which.esAutocompletePending .= Just searchString
                 completerFunc completer ty ctx searchString
