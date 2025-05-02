@@ -2086,12 +2086,10 @@ data SidebarUpdate =
     | SidebarUpdateDeferred
     deriving (Eq, Show)
 
-
 resetAutocomplete :: Traversal' ChatState (EditState n) -> MH ()
 resetAutocomplete which = do
     which.esAutocomplete .= Nothing
     which.esAutocompletePending .= Nothing
-
 
 -- * Slash Commands
 
