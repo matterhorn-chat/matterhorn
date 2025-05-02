@@ -53,6 +53,7 @@ data AutocompleteContext =
                         -- with the first available match (True) or not
                         -- (False).
                         }
+                        deriving (Show)
 
 data Completer =
     Completer { completerType :: AutocompletionType
