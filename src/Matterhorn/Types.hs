@@ -449,6 +449,7 @@ data NotificationVersion =
     NotifyV1
     | NotifyV2
     | NotifyV3
+    | NotifyV4
     deriving (Eq, Read, Show)
 
 -- | A user password is either given to us directly, or a command
