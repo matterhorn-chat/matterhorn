@@ -74,7 +74,7 @@ We provide a number of avenues for getting support:
 * Yank verbatim content from messages into the system clipboard
 * Optional live preview during message editing
 * Optional smart quoting for efficient Markdown entry
-* Edit messages with `$EDITOR`
+* Edit messages with the built-in editor or `$EDITOR` if desired
 * Rebindable keys (see `/help keybindings`)
 * Message editor with kill/yank buffer and readline-style keybindings
 * Support for adding and removing emoji post reactions
