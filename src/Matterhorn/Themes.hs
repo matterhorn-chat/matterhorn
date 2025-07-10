@@ -81,9 +81,10 @@ import           Brick.Widgets.Skylighting ( attrNameForTokenType
                                            , highlightedCodeBlockAttr
                                            )
 import           Brick.Forms ( focusedFormInputAttr )
-import           Data.Hashable ( hash )
+import qualified Data.Digest.CRC32 as CRC
 import qualified Data.Map as M
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import           Graphics.Vty
 import qualified Skylighting.Styles as Sky
 import           Skylighting.Types ( TokenType(..) )
@@ -511,7 +512,14 @@ attrForUsername username =
         aName = if normalizedUsername `elem` specialUserMentions
                 then clientEmphAttr
                 else usernameAttr h
-        h = hash normalizedUsername `mod` usernameColorHashBuckets
+        normalizedUsernameBytes = TE.encodeUtf8 username
+        -- NB: we use CRC32 because it is a stable hash. Unstable
+        -- hashes (such as 'hash' from the 'hashable' package) result
+        -- in username color choices drifting over time, so we need a
+        -- stable hash here (along with being careful not to change the
+        -- number of buckets).
+        crc = CRC.crc32 normalizedUsernameBytes
+        h = fromEnum $ crc `mod` toEnum usernameColorHashBuckets
     in aName
 
 -- | The number of hash buckets to use when hashing usernames to choose
