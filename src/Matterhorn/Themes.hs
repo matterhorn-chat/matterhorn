@@ -492,7 +492,7 @@ colorUsername current username display =
                                else id
     in withDefAttr aName $
        maybeWithCurrentAttr $
-       txt (display)
+       txt display
 
 -- | Return the attribute name to use for the specified username.
 -- The input username is expected to be the username only (i.e. no
