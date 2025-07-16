@@ -42,7 +42,6 @@ openSelectedURL which = do
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)
-    stopUrlSelect which
 
 findUrls :: Messages -> [LinkChoice]
 findUrls ms =
