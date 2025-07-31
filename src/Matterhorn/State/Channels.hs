@@ -815,14 +815,14 @@ leaveCurrentChannel tId = do
     withCurrentChannel tId $ \cId _ -> do
         leaveChannel cId
 
-createGroupChannel :: TeamId -> Text -> MH ()
+createGroupChannel :: TeamId -> [Text] -> MH ()
 createGroupChannel tId usernameList = do
     me <- gets myUser
     session <- getSession
     cs <- use csChannels
 
     doAsyncWith Preempt $ do
-        let usernames = Seq.fromList $ fmap trimUserSigil $ T.words usernameList
+        let usernames = Seq.fromList $ fmap trimUserSigil usernameList
         results <- MM.mmGetUsersByUsernames usernames session
 
         -- If we found all of the users mentioned, then create the group

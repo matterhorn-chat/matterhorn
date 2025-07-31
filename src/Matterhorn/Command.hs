@@ -286,7 +286,7 @@ commandList =
   , Cmd "group-create" "Create or switch to a group chat"
     (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]")) $ \ t -> do
         withCurrentTeam $ \tId ->
-            createGroupChannel tId t
+            createGroupChannel tId $ T.words t
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
