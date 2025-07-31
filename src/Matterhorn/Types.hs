@@ -2101,6 +2101,7 @@ data CmdArgs :: K.Type -> K.Type where
     NoArg    :: CmdArgs ()
     LineArg  :: Text -> CmdArgs Text
     UserArg  :: CmdArgs rest -> CmdArgs (Text, rest)
+    UserListArg  :: CmdArgs rest -> CmdArgs ([Text], rest)
     ChannelArg :: CmdArgs rest -> CmdArgs (Text, rest)
     TokenArg :: Text -> CmdArgs rest -> CmdArgs (Text, rest)
 

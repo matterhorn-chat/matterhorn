@@ -66,6 +66,7 @@ printArgSpec NoArg = ""
 printArgSpec (LineArg ts) = "<" <> ts <> ">"
 printArgSpec (TokenArg t NoArg) = "<" <> t <> ">"
 printArgSpec (UserArg rs) = "<" <> addUserSigil "user" <> ">" <> addSpace (printArgSpec rs)
+printArgSpec (UserListArg rs) = "<" <> addUserSigil "user" <> ",...>" <> addSpace (printArgSpec rs)
 printArgSpec (ChannelArg rs) = "<" <> normalChannelSigil <> "channel>" <> addSpace (printArgSpec rs)
 printArgSpec (TokenArg t rs) = "<" <> t <> ">" <> addSpace (printArgSpec rs)
 
@@ -85,11 +86,24 @@ matchArgs spec@(UserArg rs) t = case unwordHead t of
     NoArg -> Left ("Missing argument: " <> printArgSpec spec)
     _     -> Left ("Missing arguments: " <> printArgSpec spec)
   Just (a, as) -> (,) <$> pure a <*> matchArgs rs as
+matchArgs spec@(UserListArg rs) t = case unwordHead t of
+  Nothing -> case rs of
+    NoArg -> Left ("Missing argument: " <> printArgSpec spec)
+    _     -> Left ("Missing arguments: " <> printArgSpec spec)
+  Just (a, as) ->
+      case T.split (== ',') a of
+          users@(_:_:_) ->
+              (,) <$> pure users <*> matchArgs rs as
+          _ ->
+              Left "Argument must be a comma-separated list of two or more users"
 matchArgs spec@(ChannelArg rs) t = case unwordHead t of
   Nothing -> case rs of
     NoArg -> Left ("Missing argument: " <> printArgSpec spec)
     _     -> Left ("Missing arguments: " <> printArgSpec spec)
-  Just (a, as) -> (,) <$> pure a <*> matchArgs rs as
+  Just (a, as) ->
+      if T.elem ',' a
+      then Left "Invalid channel or username argument"
+      else (,) <$> pure a <*> matchArgs rs as
 matchArgs spec@(TokenArg _ rs) t = case unwordHead t of
   Nothing -> case rs of
     NoArg -> Left ("Missing argument: " <> printArgSpec spec)
