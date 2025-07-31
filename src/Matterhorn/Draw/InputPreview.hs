@@ -68,9 +68,9 @@ inputPreview st editWhich tId vpName hs
                      prview m p = freezeBorders $
                                   renderMessage MessageData
                                   { mdMessage           = m
-                                  , mdUserName          = m^.mUser.to (printableNameForUserRef st)
+                                  , mdUserName          = m^.mUser.to (printableNameForAuthor st)
                                   , mdParentMessage     = p
-                                  , mdParentUserName    = p >>= (^.mUser.to (printableNameForUserRef st))
+                                  , mdParentUserName    = p >>= (^.mUser.to (printableNameForAuthor st))
                                   , mdHighlightSet      = hs
                                   , mdEditThreshold     = Nothing
                                   , mdShowOlderEdits    = False
@@ -104,7 +104,7 @@ previewFromInput baseUrl overrideTy uId s =
        then Nothing
        else Just $ Message { _mText          = parseMarkdown (Just baseUrl) content
                            , _mMarkdownSource = content
-                           , _mUser          = UserI False uId
+                           , _mUser          = AuthorById False uId
                            , _mDate          = ServerTime $ UTCTime (fromGregorian 1970 1 1) 0
                            -- The date is not used for preview
                            -- rendering, but we need to provide one.

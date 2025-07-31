@@ -28,7 +28,7 @@ import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( Inline(EUser) )
 import           Matterhorn.Draw.RichText
-import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), printableNameForUserRef )
+import           Matterhorn.Draw.Messages ( renderMessage, MessageData(..), printableNameForAuthor )
 
 -- | The template for "View Message" windows triggered by message
 -- selection mode.
@@ -129,9 +129,9 @@ authorInfo cs tId m =
         renderPair (label, value) =
             txt label <+> padBottom (Pad 1) (padLeft (Pad 1) (withDefAttr clientEmphAttr $ txt value))
     in case _mUser m of
-        NoUser -> txt "No author."
-        UserOverride _ label -> txt $ "User: " <> label
-        UserI _ uId ->
+        NoAuthor -> txt "No author."
+        AuthorOverride _ label -> txt $ "User: " <> label
+        AuthorById _ uId ->
             case userById uId cs of
                 Nothing ->
                     txt "Author info not loaded yet."
@@ -195,9 +195,9 @@ viewMessageBox st tId msg =
                 md = MessageData { mdEditThreshold     = Nothing
                                  , mdShowOlderEdits    = False
                                  , mdMessage           = msg
-                                 , mdUserName          = msg^.mUser.to (printableNameForUserRef st)
+                                 , mdUserName          = msg^.mUser.to (printableNameForAuthor st)
                                  , mdParentMessage     = parent
-                                 , mdParentUserName    = parent >>= (^.mUser.to (printableNameForUserRef st))
+                                 , mdParentUserName    = parent >>= (^.mUser.to (printableNameForAuthor st))
                                  , mdRenderReplyParent = True
                                  , mdHighlightSet      = hs
                                  , mdIndentBlocks      = True

@@ -4,7 +4,7 @@
 module Matterhorn.Draw.Messages
   ( MessageData(..)
   , renderMessage
-  , printableNameForUserRef
+  , printableNameForAuthor
   , renderSingleMessage
   , unsafeRenderMessageSelection
   , renderLastMessages
@@ -109,14 +109,14 @@ botUserLabel = "[BOT]"
 pinIndicator :: T.Text
 pinIndicator = "[PIN]"
 
--- | printableNameForUserRef converts the UserRef into a printable name,
+-- | printableNameForAuthor converts the UserRef into a printable name,
 -- based on the current known user data.
-printableNameForUserRef :: ChatState -> UserRef -> Maybe Text
-printableNameForUserRef st uref =
+printableNameForAuthor :: ChatState -> MessageAuthor -> Maybe Text
+printableNameForAuthor st uref =
     case uref of
-        NoUser -> Nothing
-        UserOverride _ t -> Just t
-        UserI _ uId -> displayNameForUserId uId st
+        NoAuthor -> Nothing
+        AuthorOverride _ t -> Just t
+        AuthorById _ uId -> displayNameForUserId uId st
 
 -- | renderSingleMessage is the main message drawing function.
 renderSingleMessage :: ChatState
@@ -174,9 +174,9 @@ renderChatMessage st hs ind threadState clickableNameTag renderTimeFunc renderRe
           InReplyTo pId -> getMessageForPostId st pId
         m = renderMessage MessageData
               { mdMessage           = msg
-              , mdUserName          = msg^.mUser.to (printableNameForUserRef st)
+              , mdUserName          = msg^.mUser.to (printableNameForAuthor st)
               , mdParentMessage     = parent
-              , mdParentUserName    = parent >>= (^.mUser.to (printableNameForUserRef st))
+              , mdParentUserName    = parent >>= (^.mUser.to (printableNameForAuthor st))
               , mdEditThreshold     = ind
               , mdHighlightSet      = hs
               , mdShowOlderEdits    = showOlderEdits
@@ -194,7 +194,7 @@ renderChatMessage st hs ind threadState clickableNameTag renderTimeFunc renderRe
               }
         fullMsg =
           case msg^.mUser of
-            NoUser
+            NoAuthor
               | isGap msg -> withDefAttr gapMessageAttr m
               | otherwise ->
                 case msg^.mType of

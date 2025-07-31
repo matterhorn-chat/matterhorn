@@ -24,17 +24,17 @@ genMap gk gv = let kv = (,) <$> gk <*> gv in fromList <$> listOf kv
 genSet :: (Ord v) => Gen v -> Gen (S.Set v)
 genSet gv = S.fromList <$> listOf gv
 
-genUserRef :: Gen UserRef
-genUserRef = oneof [ return NoUser
-                   , UserI <$> arbitrary <*> genUserId
-                   , UserOverride <$> arbitrary <*> genText
-                   ]
+genMessageAuthor :: Gen MessageAuthor
+genMessageAuthor = oneof [ return NoAuthor
+                         , AuthorById <$> arbitrary <*> genUserId
+                         , AuthorOverride <$> arbitrary <*> genText
+                         ]
 
 genMessage :: Gen Message
 genMessage = Message
              <$> genBlocks
              <*> genText
-             <*> genUserRef
+             <*> genMessageAuthor
              <*> genTime
              <*> genMessageType
              <*> arbitrary
@@ -62,7 +62,7 @@ genMessage__DeletedPost = Message__DeletedPost
                           <$> (Message
                               <$> genBlocks
                               <*> genText
-                              <*> genUserRef
+                              <*> genMessageAuthor
                               <*> genTime
                               <*> genMessageType
                               <*> arbitrary
@@ -84,7 +84,7 @@ genMessage__Posted = Message__Posted
                      <$> (Message
                          <$> genBlocks
                          <*> genText
-                         <*> genUserRef
+                         <*> genMessageAuthor
                          <*> genTime
                          <*> genMessageType
                          <*> arbitrary

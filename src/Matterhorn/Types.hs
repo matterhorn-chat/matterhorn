@@ -1999,7 +1999,7 @@ mhError err = do
 isMine :: ChatState -> Message -> Bool
 isMine st msg =
     case msg^.mUser of
-        UserI _ uid -> uid == myUserId st
+        AuthorById _ uid -> uid == myUserId st
         _ -> False
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message

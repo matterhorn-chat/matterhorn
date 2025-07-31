@@ -382,7 +382,7 @@ inputArea st which focused hs =
                 in hBox [ replyArrow
                         , addEllipsis $ renderMessage MessageData
                           { mdMessage           = msgWithoutParent
-                          , mdUserName          = msgWithoutParent^.mUser.to (printableNameForUserRef st)
+                          , mdUserName          = msgWithoutParent^.mUser.to (printableNameForAuthor st)
                           , mdParentMessage     = Nothing
                           , mdParentUserName    = Nothing
                           , mdHighlightSet      = hs
@@ -620,7 +620,7 @@ renderUrlList st hs which =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
-             hBox [ let u = maybe "<server>" id (link^.linkUser.to (printableNameForUserRef st))
+             hBox [ let u = maybe "<server>" id (link^.linkUser.to (printableNameForAuthor st))
                     in colorUsername me u u
                   , case link^.linkLabel of
                       Nothing -> emptyWidget

@@ -50,7 +50,7 @@ module Matterhorn.Types.Messages
   , MentionedUser(..)
   , isPostMessage
   , messagePostId
-  , UserRef(..)
+  , MessageAuthor(..)
   , ReplyState(..)
   , clientMessageToMessage
   , clientPostToMessage
@@ -140,7 +140,7 @@ data ThreadState =
 data Message = Message
   { _mText          :: Blocks
   , _mMarkdownSource :: Text
-  , _mUser          :: UserRef
+  , _mUser          :: MessageAuthor
   , _mDate          :: ServerTime
   , _mType          :: MessageType
   , _mPending       :: Bool
@@ -244,19 +244,21 @@ data MessageType = C ClientMessageType
                  | CP ClientPostType
                  deriving (Show, Eq)
 
--- | There may be no user (usually an internal message), a reference to
--- a user (by Id), or the server may have supplied a specific username
+-- | The author of a message.
+--
+-- There may be no author (usually an internal message), a reference to
+-- a user by Id, or the server may have supplied a specific username
 -- (often associated with bots). The boolean flag indicates whether the
 -- user reference is for a message from a bot.
-data UserRef = NoUser | UserI Bool UserId | UserOverride Bool Text
-               deriving (Eq, Show, Ord)
+data MessageAuthor = NoAuthor | AuthorById Bool UserId | AuthorOverride Bool Text
+                   deriving (Eq, Show, Ord)
 
 isBotMessage :: Message -> Bool
 isBotMessage m =
     case _mUser m of
-        UserI bot _        -> bot
-        UserOverride bot _ -> bot
-        NoUser             -> False
+        AuthorById bot _        -> bot
+        AuthorOverride bot _    -> bot
+        NoAuthor                -> False
 
 -- | The 'ReplyState' of a message represents whether a message
 --   is a reply, and if so, to what message
@@ -268,7 +270,7 @@ data ReplyState =
 -- | This type represents links to things in the 'open links' view.
 data LinkChoice =
     LinkChoice { _linkTime   :: ServerTime
-               , _linkUser   :: UserRef
+               , _linkUser   :: MessageAuthor
                , _linkLabel  :: Maybe Inlines
                , _linkTarget :: LinkTarget
                } deriving (Eq, Show)
@@ -283,7 +285,7 @@ clientMessageToMessage :: ClientMessage -> Message
 clientMessageToMessage cm = Message
   { _mText          = parseMarkdown Nothing (cm^.cmText)
   , _mMarkdownSource = cm^.cmText
-  , _mUser          = NoUser
+  , _mUser          = NoAuthor
   , _mDate          = cm^.cmDate
   , _mType          = C $ cm^.cmType
   , _mPending       = False
@@ -321,8 +323,8 @@ clientPostToMessage cp = (m, mentions)
                     , _mMarkdownSource = cp^.cpMarkdownSource
                     , _mUser =
                         case cp^.cpUserOverride of
-                            Just n | cp^.cpType == NormalPost -> UserOverride (cp^.cpFromWebhook) n
-                            _ -> maybe NoUser (UserI (cp^.cpFromWebhook)) $ cp^.cpUser
+                            Just n | cp^.cpType == NormalPost -> AuthorOverride (cp^.cpFromWebhook) n
+                            _ -> maybe NoAuthor (AuthorById (cp^.cpFromWebhook)) $ cp^.cpUser
                     , _mDate = cp^.cpDate
                     , _mType = CP $ cp^.cpType
                     , _mPending = cp^.cpPending
@@ -345,7 +347,7 @@ newMessageOfType :: Text -> MessageType -> ServerTime -> Message
 newMessageOfType text typ d = Message
   { _mText         = parseMarkdown Nothing text
   , _mMarkdownSource = text
-  , _mUser         = NoUser
+  , _mUser         = NoAuthor
   , _mDate         = d
   , _mType         = typ
   , _mPending      = False
