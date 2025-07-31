@@ -283,7 +283,7 @@ commandList =
             withCurrentChannel tId $ \cId _ -> do
                 findAndRunScript (channelEditor(cId)) script text
 
-  , Cmd "group-create" "Create a group chat"
+  , Cmd "group-create" "Create or switch to a group chat"
     (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]")) $ \ t -> do
         withCurrentTeam $ \tId ->
             createGroupChannel tId t
