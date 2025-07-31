@@ -135,8 +135,8 @@ channelInfoFromChannelWithData myUsername chan chanMember ci =
               Hide -> if updated > viewed then NewPostsAfterServerTime viewed else Hide
               v -> v
           , _cdUpdated          = updated
-          , _cdName             = removeMyUsername myUsername chan
-          , _cdDisplayName      = removeMyUsername myUsername chan
+          , _cdName             = removeMyUsername myUsername chan $ sanitizeUserText $ channelName chan
+          , _cdDisplayName      = removeMyUsername myUsername chan $ sanitizeUserText $ channelDisplayName chan
           , _cdHeader           = (sanitizeUserText $ chan^.channelHeaderL)
           , _cdPurpose          = (sanitizeUserText $ chan^.channelPurposeL)
           , _cdType             = (chan^.channelTypeL)
