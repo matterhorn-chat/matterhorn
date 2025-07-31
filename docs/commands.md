@@ -11,8 +11,9 @@
 | `/delete-channel` | Delete the current channel |
 | `/flags` | Open a window of your flagged posts |
 | `/focus <~channel>` | Focus on a channel or user |
+| `/focus <@user,...>` | Focus on a DM group channel |
 | `/focus` | Select from available channels |
-| `/group-create <@user [@user ...]>` | Create a group chat |
+| `/group-create <@user [@user ...]>` | Create or switch to a group chat |
 | `/help` | Show the main help screen |
 | `/help <topic>` | Show help about a particular topic |
 | `/hide` | Hide the current DM or group channel from the channel list |
