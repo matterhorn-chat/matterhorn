@@ -270,6 +270,11 @@ commandList =
         withCurrentTeam $ \tId ->
             changeChannelByName tId name
 
+  , Cmd "focus" "Focus on a DM group channel"
+    (UserListArg NoArg) $ \ (users, ()) -> do
+        withCurrentTeam $ \tId -> do
+            createGroupChannel tId users
+
   , Cmd "focus" "Select from available channels" NoArg $ \ () -> do
         withCurrentTeam beginChannelSelect
 
