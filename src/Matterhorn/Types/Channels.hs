@@ -117,12 +117,11 @@ data NewMessageIndicator =
 -- authenticated user's username from the list, which is what this
 -- function does. Non-group channel names are unaffected, defaulting to
 -- the channel's original display name.
-removeMyUsername :: Text -> Channel -> Text
-removeMyUsername myUsername ch
-    | channelType ch == Group = removeUsername dn
-    | otherwise               = dn
+removeMyUsername :: Text -> Channel -> Text -> Text
+removeMyUsername myUsername ch chName
+    | channelType ch == Group = removeUsername chName
+    | otherwise               = chName
     where
-        dn = sanitizeUserText $ channelDisplayName ch
         removeUsername = T.unwords .
                          filter (/= (myUsername <> ",")) .
                          T.words

@@ -2056,8 +2056,10 @@ userIdForUsername name st =
 
 channelIdByChannelName :: TeamId -> Text -> ChatState -> Maybe ChannelId
 channelIdByChannelName tId name st =
-    let matches (_, cc) = cc^.ccInfo.cdName == (trimChannelSigil name) &&
-                          cc^.ccInfo.cdTeamId == (Just tId)
+    let matches (_, cc) =
+            ((T.toLower (cc^.ccInfo.cdName) == (T.toLower $ trimChannelSigil name)) ||
+             (T.toLower (cc^.ccInfo.cdDisplayName) == (T.toLower $ trimChannelSigil name))) &&
+            (cc^.ccInfo.cdTeamId == (Just tId))
     in listToMaybe $ fst <$> filteredChannels matches (st^.csChannels)
 
 channelIdByUsername :: Text -> ChatState -> Maybe ChannelId
