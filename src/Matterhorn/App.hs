@@ -93,13 +93,21 @@ setupCharWidthMap config = do
             Vty.installUnicodeWidthTable wMap `E.catch`
                 (\(_::Vty.TableInstallException) -> return ())
 
+vtyModes :: Config -> [(Vty.Mode, Bool)]
+vtyModes config =
+    [ (Vty.BracketedPaste, True)
+    , (Vty.Hyperlink, configHyperlinkingMode config)
+    , (Vty.Mouse, configMouseMode config)
+    ]
+
 vtyBuilder :: Config -> IO Vty.Vty
 vtyBuilder config = do
     vty <- Vty.mkVty Vty.defaultConfig
     let output = Vty.outputIface vty
-    Vty.setMode output Vty.BracketedPaste True
-    Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config
-    Vty.setMode output Vty.Mouse $ configMouseMode config
+
+    forM_ (vtyModes config) $ \(mode, val) ->
+        Vty.setMode output mode val
+
     return vty
 
 runMatterhorn :: Options -> Config -> IO ChatState
