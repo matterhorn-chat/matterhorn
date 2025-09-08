@@ -60,9 +60,9 @@ cursorByMode cs s tId mode =
         LeaveChannelConfirm           -> Nothing
         DeleteChannelConfirm          -> Nothing
         MessageSelectDeleteConfirm {} -> Nothing
-        (PostListWindow {})           -> Nothing
+        PostListWindow {}             -> Nothing
         ViewMessage                   -> Nothing
-        (ShowHelp {})                 -> Nothing
+        ShowHelp {}                   -> Nothing
         EditNotifyPrefs               -> Nothing
         ChannelSelect                 -> B.showFirstCursor s cs
         UserListWindow                -> B.showFirstCursor s cs
