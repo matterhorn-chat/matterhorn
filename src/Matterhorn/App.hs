@@ -105,7 +105,6 @@ vtyBuilder config = do
 runMatterhorn :: Options -> Config -> IO ChatState
 runMatterhorn opts config = do
     setupCpuUsage config
-
     setupCharWidthMap config
 
     let builder = vtyBuilder config
