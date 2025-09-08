@@ -351,8 +351,6 @@ module Matterhorn.Types
   , getEditedMessageCutoff
 
   , HighlightSet(..)
-  , UserSet
-  , ChannelSet
   , getHighlightSet
   , emptyHSet
 
@@ -2166,9 +2164,6 @@ getUsers :: MH Users
 getUsers = use csUsers
 
 -- * HighlightSet
-
-type UserSet = Set Text
-type ChannelSet = Set Text
 
 -- | The set of usernames, channel names, and language names used for
 -- highlighting when rendering messages.
