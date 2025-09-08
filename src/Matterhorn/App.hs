@@ -7,7 +7,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick
+import qualified Brick as B
 import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Control.Exception as E
 import qualified Graphics.Vty as Vty
@@ -30,21 +30,21 @@ import           Matterhorn.State.Setup.Threads.Logging ( shutdownLogManager )
 import           Matterhorn.Types
 
 
-app :: App ChatState MHEvent Name
+app :: B.App ChatState MHEvent Name
 app =
-    App { appDraw         = draw
-        , appHandleEvent  = Events.onEvent
-        , appAttrMap      = (^.csResources.crTheme)
-        , appChooseCursor = \s cs -> do
-            tId <- s^.csCurrentTeamId
-            cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
-        , appStartEvent = do
-            vty <- getVtyHandle
-            (w, h) <- liftIO $ Vty.displayBounds $ Vty.outputIface vty
-            runMHEvent $ Events.setWindowSize w h
-        }
+    B.App { B.appDraw         = draw
+          , B.appHandleEvent  = Events.onEvent
+          , B.appAttrMap      = (^.csResources.crTheme)
+          , B.appChooseCursor = \s cs -> do
+              tId <- s^.csCurrentTeamId
+              cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
+          , B.appStartEvent = do
+              vty <- B.getVtyHandle
+              (w, h) <- liftIO $ Vty.displayBounds $ Vty.outputIface vty
+              runMHEvent $ Events.setWindowSize w h
+          }
 
-cursorByMode :: [CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (CursorLocation Name)
+cursorByMode :: [B.CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (B.CursorLocation Name)
 cursorByMode cs s tId mode =
     case mode of
         Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
@@ -52,11 +52,11 @@ cursorByMode cs s tId mode =
                 cId <- s^.csCurrentChannelId(tId)
                 mi <- s^?maybeChannelMessageInterface(cId)
                 cur <- messageInterfaceCursor mi
-                showCursorNamed cur cs
+                B.showCursorNamed cur cs
             FocusThread -> do
                 ti <- s^.csTeam(tId).tsThreadInterface
                 cur <- messageInterfaceCursor ti
-                showCursorNamed cur cs
+                B.showCursorNamed cur cs
         LeaveChannelConfirm           -> Nothing
         DeleteChannelConfirm          -> Nothing
         MessageSelectDeleteConfirm {} -> Nothing
@@ -64,12 +64,12 @@ cursorByMode cs s tId mode =
         ViewMessage                   -> Nothing
         (ShowHelp {})                 -> Nothing
         EditNotifyPrefs               -> Nothing
-        ChannelSelect                 -> showFirstCursor s cs
-        UserListWindow                -> showFirstCursor s cs
-        ReactionEmojiListWindow       -> showFirstCursor s cs
-        ChannelListWindow             -> showFirstCursor s cs
-        ThemeListWindow               -> showFirstCursor s cs
-        ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
+        ChannelSelect                 -> B.showFirstCursor s cs
+        UserListWindow                -> B.showFirstCursor s cs
+        ReactionEmojiListWindow       -> B.showFirstCursor s cs
+        ChannelListWindow             -> B.showFirstCursor s cs
+        ThemeListWindow               -> B.showFirstCursor s cs
+        ChannelTopicWindow            -> B.showCursorNamed (ChannelTopicEditor tId) cs
 
 applicationMaxCPUs :: Int
 applicationMaxCPUs = 2
@@ -110,7 +110,7 @@ runMatterhorn opts config = do
     let builder = vtyBuilder config
 
     (st, vty) <- setupState builder (optLogLocation opts) config
-    finalSt <- customMain vty builder (Just $ st^.csResources.crEventQueue) app st
+    finalSt <- B.customMain vty builder (Just $ st^.csResources.crEventQueue) app st
 
     case st^.csResources.crSpellChecker of
         Nothing -> return ()
