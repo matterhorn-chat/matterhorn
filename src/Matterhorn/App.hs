@@ -142,7 +142,7 @@ closeMatterhorn finalSt = do
 
   where
     logIfError action msg = do
-      done <- runExceptT $ convertIOException $ action
+      done <- runExceptT $ convertIOException action
       case done of
         Left err -> putStrLn $ msg <> ": " <> err
         Right _  -> return ()
