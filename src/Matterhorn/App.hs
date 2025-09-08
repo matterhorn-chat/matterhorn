@@ -93,22 +93,25 @@ setupCharWidthMap config = do
             Vty.installUnicodeWidthTable wMap `E.catch`
                 (\(_::Vty.TableInstallException) -> return ())
 
+vtyBuilder :: Config -> IO Vty.Vty
+vtyBuilder config = do
+    vty <- Vty.mkVty Vty.defaultConfig
+    let output = Vty.outputIface vty
+    Vty.setMode output Vty.BracketedPaste True
+    Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config
+    Vty.setMode output Vty.Mouse $ configMouseMode config
+    return vty
+
 runMatterhorn :: Options -> Config -> IO ChatState
 runMatterhorn opts config = do
     setupCpuUsage config
 
     setupCharWidthMap config
 
-    let mkVty = do
-          vty <- Vty.mkVty Vty.defaultConfig
-          let output = Vty.outputIface vty
-          Vty.setMode output Vty.BracketedPaste True
-          Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config
-          Vty.setMode output Vty.Mouse $ configMouseMode config
-          return vty
+    let builder = vtyBuilder config
 
-    (st, vty) <- setupState mkVty (optLogLocation opts) config
-    finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
+    (st, vty) <- setupState builder (optLogLocation opts) config
+    finalSt <- customMain vty builder (Just $ st^.csResources.crEventQueue) app st
 
     case st^.csResources.crSpellChecker of
         Nothing -> return ()
