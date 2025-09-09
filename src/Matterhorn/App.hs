@@ -7,7 +7,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick
+import qualified Brick as B
 import           Control.Monad.Trans.Except ( runExceptT )
 import qualified Control.Exception as E
 import qualified Graphics.Vty as Vty
@@ -30,21 +30,21 @@ import           Matterhorn.State.Setup.Threads.Logging ( shutdownLogManager )
 import           Matterhorn.Types
 
 
-app :: App ChatState MHEvent Name
+app :: B.App ChatState MHEvent Name
 app =
-    App { appDraw         = draw
-        , appHandleEvent  = Events.onEvent
-        , appAttrMap      = (^.csResources.crTheme)
-        , appChooseCursor = \s cs -> do
-            tId <- s^.csCurrentTeamId
-            cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
-        , appStartEvent = do
-            vty <- getVtyHandle
-            (w, h) <- liftIO $ Vty.displayBounds $ Vty.outputIface vty
-            runMHEvent $ Events.setWindowSize w h
-        }
+    B.App { B.appDraw         = draw
+          , B.appHandleEvent  = Events.onEvent
+          , B.appAttrMap      = (^.csResources.crTheme)
+          , B.appChooseCursor = \s cs -> do
+              tId <- s^.csCurrentTeamId
+              cursorByMode cs s tId (teamMode $ s^.csTeam(tId))
+          , B.appStartEvent = do
+              vty <- B.getVtyHandle
+              (w, h) <- liftIO $ Vty.displayBounds $ Vty.outputIface vty
+              runMHEvent $ Events.setWindowSize w h
+          }
 
-cursorByMode :: [CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (CursorLocation Name)
+cursorByMode :: [B.CursorLocation Name] -> ChatState -> TeamId -> Mode -> Maybe (B.CursorLocation Name)
 cursorByMode cs s tId mode =
     case mode of
         Main -> case s^.csTeam(tId).tsMessageInterfaceFocus of
@@ -52,24 +52,24 @@ cursorByMode cs s tId mode =
                 cId <- s^.csCurrentChannelId(tId)
                 mi <- s^?maybeChannelMessageInterface(cId)
                 cur <- messageInterfaceCursor mi
-                showCursorNamed cur cs
+                B.showCursorNamed cur cs
             FocusThread -> do
                 ti <- s^.csTeam(tId).tsThreadInterface
                 cur <- messageInterfaceCursor ti
-                showCursorNamed cur cs
+                B.showCursorNamed cur cs
         LeaveChannelConfirm           -> Nothing
         DeleteChannelConfirm          -> Nothing
         MessageSelectDeleteConfirm {} -> Nothing
-        (PostListWindow {})           -> Nothing
+        PostListWindow {}             -> Nothing
         ViewMessage                   -> Nothing
-        (ShowHelp {})                 -> Nothing
+        ShowHelp {}                   -> Nothing
         EditNotifyPrefs               -> Nothing
-        ChannelSelect                 -> showFirstCursor s cs
-        UserListWindow                -> showFirstCursor s cs
-        ReactionEmojiListWindow       -> showFirstCursor s cs
-        ChannelListWindow             -> showFirstCursor s cs
-        ThemeListWindow               -> showFirstCursor s cs
-        ChannelTopicWindow            -> showCursorNamed (ChannelTopicEditor tId) cs
+        ChannelSelect                 -> B.showFirstCursor s cs
+        UserListWindow                -> B.showFirstCursor s cs
+        ReactionEmojiListWindow       -> B.showFirstCursor s cs
+        ChannelListWindow             -> B.showFirstCursor s cs
+        ThemeListWindow               -> B.showFirstCursor s cs
+        ChannelTopicWindow            -> B.showCursorNamed (ChannelTopicEditor tId) cs
 
 applicationMaxCPUs :: Int
 applicationMaxCPUs = 2
@@ -93,22 +93,32 @@ setupCharWidthMap config = do
             Vty.installUnicodeWidthTable wMap `E.catch`
                 (\(_::Vty.TableInstallException) -> return ())
 
+vtyModes :: Config -> [(Vty.Mode, Bool)]
+vtyModes config =
+    [ (Vty.BracketedPaste, True)
+    , (Vty.Hyperlink, configHyperlinkingMode config)
+    , (Vty.Mouse, configMouseMode config)
+    ]
+
+vtyBuilder :: Config -> IO Vty.Vty
+vtyBuilder config = do
+    vty <- Vty.mkVty Vty.defaultConfig
+    let output = Vty.outputIface vty
+
+    forM_ (vtyModes config) $ \(mode, val) ->
+        Vty.setMode output mode val
+
+    return vty
+
 runMatterhorn :: Options -> Config -> IO ChatState
 runMatterhorn opts config = do
     setupCpuUsage config
-
     setupCharWidthMap config
 
-    let mkVty = do
-          vty <- Vty.mkVty Vty.defaultConfig
-          let output = Vty.outputIface vty
-          Vty.setMode output Vty.BracketedPaste True
-          Vty.setMode output Vty.Hyperlink $ configHyperlinkingMode config
-          Vty.setMode output Vty.Mouse $ configMouseMode config
-          return vty
+    let builder = vtyBuilder config
 
-    (st, vty) <- setupState mkVty (optLogLocation opts) config
-    finalSt <- customMain vty mkVty (Just $ st^.csResources.crEventQueue) app st
+    (st, vty) <- setupState builder (optLogLocation opts) config
+    finalSt <- B.customMain vty builder (Just $ st^.csResources.crEventQueue) app st
 
     case st^.csResources.crSpellChecker of
         Nothing -> return ()
@@ -132,7 +142,7 @@ closeMatterhorn finalSt = do
 
   where
     logIfError action msg = do
-      done <- runExceptT $ convertIOException $ action
+      done <- runExceptT $ convertIOException action
       case done of
         Left err -> putStrLn $ msg <> ": " <> err
         Right _  -> return ()
