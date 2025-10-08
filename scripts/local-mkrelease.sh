@@ -111,6 +111,12 @@ function prepare_dist {
     echo $LONG_HEAD > $dest/COMMIT
 
     cd $ROOT && $CABAL_PLAN license-report exe:matterhorn > $dest/COPYRIGHT
+
+    if grep -i gpl $dest/COPYRIGHT >/dev/null
+    then
+        echo "ERROR: $dest/COPYRIGHT indicates that one or more Matterhorn dependencies is GPL-licensed!"
+        exit 1
+    fi
 }
 
 function install_tools {
