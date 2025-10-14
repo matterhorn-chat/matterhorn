@@ -1,4 +1,11 @@
 
+90000.1.1
+=========
+
+Bug fixes:
+* Matterhorn now allows the client configuration's
+  `EnableSignUpWithGitLab` to be omitted. (#852)
+
 90000.1.0
 =========
 

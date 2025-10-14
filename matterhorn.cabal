@@ -1,5 +1,5 @@
 name:                matterhorn
-version:             90000.1.0
+version:             90000.1.1
 synopsis:            Terminal client for the Mattermost chat system
 description:         This is a terminal client for the Mattermost chat
                      system. Please see the README for a list of
@@ -170,7 +170,7 @@ library
     ghc-options: -fhide-source-paths
 
   build-depends:       base                 >=4.8      && <5
-                     , mattermost-api       == 90000.1.0
+                     , mattermost-api       == 90000.1.1
                      , base-compat          >= 0.9     && < 0.13
                      , unordered-containers >= 0.2     && < 0.3
                      , containers           >= 0.5.7   && < 0.7

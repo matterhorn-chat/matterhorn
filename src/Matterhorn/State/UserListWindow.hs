@@ -66,8 +66,8 @@ enterDMSearchUserList :: TeamId -> MH ()
 enterDMSearchUserList myTId = do
     myId <- gets myUserId
     config <- use csClientConfig
-    let restrictTeam = case MM.clientConfigRestrictDirectMessage <$> config of
-            Just (Just MM.RestrictTeam) -> Just myTId
+    let restrictTeam = case MM.clientConfigRestrictDirectMessage =<< config of
+            Just MM.RestrictTeam -> Just myTId
             _ -> Nothing
     enterUserListMode myTId (AllUsers restrictTeam) Nothing
       (\u -> case u^.uiId /= myId of
