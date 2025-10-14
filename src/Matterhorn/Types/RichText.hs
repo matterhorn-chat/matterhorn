@@ -39,6 +39,7 @@ module Matterhorn.Types.RichText
   , blockGetURLs
   , findVerbatimChunk
   , makePermalink
+  , getPermalink
   )
 where
 
