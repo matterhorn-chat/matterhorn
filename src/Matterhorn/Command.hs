@@ -34,6 +34,7 @@ import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelTopicWindow
 import           Matterhorn.State.ChannelSelect
 import           Matterhorn.State.Common
+import           Matterhorn.State.Links ( openLink )
 import           Matterhorn.State.Logging
 import           Matterhorn.State.PostListWindow
 import           Matterhorn.State.UserListWindow
@@ -309,6 +310,8 @@ commandList =
 
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
+
+  , Cmd "open-url" "Open the specified URL" (LineArg "URL") openLink
 
   , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () -> do
         withCurrentTeam enterPinnedPostListMode
