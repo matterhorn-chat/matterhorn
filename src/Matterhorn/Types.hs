@@ -2103,7 +2103,7 @@ data CommandArgs :: K.Type -> K.Type where
     ChannelArg  :: CommandArgs rest -> CommandArgs (Text, rest)
     TokenArg    :: Text -> CommandArgs rest -> CommandArgs (Text, rest)
 
--- | A 'Cmd' packages up a 'CmdArgs' specifier and the 'CmdExec'
+-- | A 'Cmd' packages up a 'CommandArgs' specifier and the command's
 -- implementation with a name and a description.
 data Cmd =
     forall a. Cmd { cmdName    :: Text
