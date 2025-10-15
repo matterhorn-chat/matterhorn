@@ -398,7 +398,7 @@ fetchUsers rawUsernames uids = do
         missingUsernames = filter isMissing usernames
         isMissing n = and [ not $ T.null n
                           , not $ isSpecialMention n
-                          , isNothing $ userByUsername n st
+                          , isNothing $ knownUserByUsername n st
                           ]
         missingIds = filter (\i -> isNothing $ knownUserById i st) uids
 

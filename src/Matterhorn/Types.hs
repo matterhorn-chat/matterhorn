@@ -334,7 +334,7 @@ module Matterhorn.Types
   , myUsername
   , myUserId
   , usernameForUserId
-  , userByUsername
+  , knownUserByUsername
   , userByNickname
   , channelIdByChannelName
   , channelIdByUsername
@@ -2142,12 +2142,10 @@ myUser st = st^.csMe
 myUsername :: ChatState -> Text
 myUsername st = userUsername $ st^.csMe
 
--- BEWARE: you probably don't want this, but instead
--- State.Users.withFetchedUser, since this only looks up users in the
--- collection we have already loaded rather than all valid users on the
--- server.
-userByUsername :: Text -> ChatState -> Maybe UserInfo
-userByUsername name st = do
+-- Look up users in the collection we have already loaded. If you need
+-- to fetch a user from the server, use State.Users.withFetchedUser.
+knownUserByUsername :: Text -> ChatState -> Maybe UserInfo
+knownUserByUsername name st = do
     snd <$> (findUserByUsername name $ st^.csUsers)
 
 -- BEWARE: you probably don't want this, but instead
