@@ -86,7 +86,7 @@ withFetchedUserMaybe fetch handle = do
     let localMatch = case fetch of
             UserFetchById uId -> knownUserById uId st
             UserFetchByUsername uname -> knownUserByUsername uname st
-            UserFetchByNickname nick -> userByNickname nick st
+            UserFetchByNickname nick -> knownUserByNickname nick st
 
     case localMatch of
         Just user -> handle $ Just user
