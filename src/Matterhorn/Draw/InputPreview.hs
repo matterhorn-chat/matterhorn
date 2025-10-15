@@ -122,6 +122,7 @@ previewFromInput baseUrl overrideTy uId s =
                            , _mFlagged       = False
                            , _mPinned        = False
                            , _mChannelId     = Nothing
+                           , _mTeamId        = Nothing
                            }
 
 maybePreviewViewport :: Name -> Widget Name -> Widget Name

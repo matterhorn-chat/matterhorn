@@ -72,7 +72,7 @@ setDateOrderMessages = snd . foldl setTimeAndInsert (startTime, [])
 
 makeMsg :: ServerTime -> Maybe MessageId -> Message
 makeMsg t mId = Message mempty mempty NoAuthor t (CP NormalPost) False False Seq.empty NotAReply
-                        mId Map.empty Nothing False False Nothing
+                        mId Map.empty Nothing False False Nothing Nothing
 
 makeMsgs :: [Message] -> Messages
 makeMsgs = foldr addMessage noMessages

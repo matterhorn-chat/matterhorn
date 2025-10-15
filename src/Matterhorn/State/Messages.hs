@@ -181,7 +181,7 @@ editMessage new = do
 
         hostname <- use (csResources.crConn.cdHostnameL)
 
-        let (msg, mentionedUsers) = clientPostToMessage (toClientPost hostname mBaseUrl new (new^.postRootIdL))
+        let (msg, mentionedUsers) = clientPostToMessage (toClientPost hostname mBaseUrl mTId new (new^.postRootIdL))
             isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
 
         csChannel (new^.postChannelIdL) . ccMessageInterface.miMessages . traversed . filtered isEditedMessage .= msg
@@ -570,7 +570,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                 Nothing -> return Nothing
                 Just tId -> Just <$> getServerBaseUrl tId
 
-            let cp = toClientPost hostname mBaseUrl new (new^.postRootIdL)
+            let cp = toClientPost hostname mBaseUrl mTId new (new^.postRootIdL)
                 fromMe = (cp^.cpUser == (Just $ myUserId st)) &&
                          (isNothing $ cp^.cpUserOverride)
                 userPrefs = st^.csResources.crUserPreferences

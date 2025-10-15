@@ -43,7 +43,7 @@ module Matterhorn.Types.Messages
   , isPinnable, isEmote, isJoinLeave, isTransition, isNewMessagesTransition
   , mText, mUser, mDate, mType, mPending, mDeleted, mPinned
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
-  , mOriginalPost, mChannelId, mMarkdownSource
+  , mOriginalPost, mChannelId, mMarkdownSource, mTeamId
   , isBotMessage
   , MessageType(..)
   , ThreadState(..)
@@ -111,7 +111,7 @@ import           Data.Tuple
 import           Lens.Micro.Platform ( makeLenses )
 
 import           Network.Mattermost.Types ( ChannelId, PostId, Post
-                                          , ServerTime, UserId
+                                          , ServerTime, UserId, TeamId
                                           )
 
 import           Matterhorn.Types.DirectionalSeq
@@ -153,6 +153,7 @@ data Message = Message
   , _mFlagged       :: Bool
   , _mPinned        :: Bool
   , _mChannelId     :: Maybe ChannelId
+  , _mTeamId        :: Maybe TeamId
   } deriving (Show, Eq)
 
 isPostMessage :: Message -> Bool
@@ -298,6 +299,7 @@ clientMessageToMessage cm = Message
   , _mFlagged       = False
   , _mPinned        = False
   , _mChannelId     = Nothing
+  , _mTeamId        = Nothing
   }
 
 
@@ -340,6 +342,7 @@ clientPostToMessage cp = (m, mentions)
                     , _mFlagged = False
                     , _mPinned = cp^.cpPinned
                     , _mChannelId = Just $ cp^.cpChannelId
+                    , _mTeamId = cp^.cpTeamId
                     }
 
 
@@ -360,6 +363,7 @@ newMessageOfType text typ d = Message
   , _mFlagged      = False
   , _mPinned       = False
   , _mChannelId    = Nothing
+  , _mTeamId       = Nothing
   }
 
 -- ** 'Message' Lenses

@@ -35,6 +35,7 @@ module Matterhorn.Types.Posts
   , cpDeleted
   , cpPostId
   , cpPinned
+  , cpTeamId
 
   , unEmote
 
@@ -131,6 +132,7 @@ data ClientPost = ClientPost
   , _cpOriginalPost  :: Post
   , _cpFromWebhook   :: Bool
   , _cpPinned        :: Bool
+  , _cpTeamId        :: Maybe TeamId
   } deriving (Show)
 
 -- | An attachment has a very long URL associated, as well as
@@ -203,8 +205,8 @@ attachmentFromFileInfo hostname info =
 
 -- | Convert a Mattermost 'Post' to a 'ClientPost', passing in a
 --   'ParentId' if it has a known one.
-toClientPost :: T.Text -> Maybe TeamBaseURL -> Post -> Maybe PostId -> ClientPost
-toClientPost hostname baseUrl p parentId =
+toClientPost :: T.Text -> Maybe TeamBaseURL -> Maybe TeamId -> Post -> Maybe PostId -> ClientPost
+toClientPost hostname baseUrl mTeamId p parentId =
   let src = unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p
   in ClientPost { _cpText          = parseMarkdown baseUrl src <> getAttachmentText p
                 , _cpMarkdownSource = src
@@ -222,6 +224,7 @@ toClientPost hostname baseUrl p parentId =
                 , _cpReactions     = mkReactionMap $ postMetadataReactions (postMetadata p)
                 , _cpOriginalPost  = p
                 , _cpFromWebhook   = fromMaybe False $ p^.postPropsL.postPropsFromWebhookL
+                , _cpTeamId        = mTeamId
                 }
 
 mkReactionMap :: Seq Reaction -> Map.Map T.Text (S.Set UserId)

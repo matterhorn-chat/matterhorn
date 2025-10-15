@@ -47,6 +47,7 @@ genMessage = Message
              <*> arbitrary
              <*> arbitrary
              <*> (Just <$> genChannelId)
+             <*> pure Nothing
 
 genUUID :: Gen UUID
 genUUID = (fromMaybe (error "BUG: invalid genUUID result") . fromByteString . BSL.pack) <$>
@@ -74,7 +75,8 @@ genMessage__DeletedPost = Message__DeletedPost
                               <*> genMaybe genPost
                               <*> arbitrary
                               <*> arbitrary
-                              <*> (Just <$> genChannelId))
+                              <*> (Just <$> genChannelId)
+                              <*> pure Nothing)
 
 newtype Message__Posted = Message__Posted { postMsg :: Message }
     deriving Show
@@ -96,7 +98,8 @@ genMessage__Posted = Message__Posted
                          <*> genMaybe genPost
                          <*> arbitrary
                          <*> arbitrary
-                         <*> (Just <$> genChannelId))
+                         <*> (Just <$> genChannelId)
+                         <*> pure Nothing)
 
 
 genMessageType :: Gen MessageType
