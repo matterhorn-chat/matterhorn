@@ -2103,17 +2103,13 @@ data CommandArgs :: K.Type -> K.Type where
     ChannelArg  :: CommandArgs rest -> CommandArgs (Text, rest)
     TokenArg    :: Text -> CommandArgs rest -> CommandArgs (Text, rest)
 
--- | A 'CmdExec' value represents the implementation of a command when
--- provided with its arguments
-type CmdExec a = a -> MH ()
-
 -- | A 'Cmd' packages up a 'CmdArgs' specifier and the 'CmdExec'
 -- implementation with a name and a description.
 data Cmd =
     forall a. Cmd { cmdName    :: Text
                   , cmdDescr   :: Text
                   , cmdArgSpec :: CommandArgs a
-                  , cmdAction  :: CmdExec a
+                  , cmdAction  :: a -> MH ()
                   }
 
 -- | Helper function to extract the name out of a 'Cmd' value
