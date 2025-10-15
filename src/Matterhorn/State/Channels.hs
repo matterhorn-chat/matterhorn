@@ -1001,8 +1001,8 @@ joinChannel' :: TeamId -> ChannelId -> Maybe (MH ()) -> MH ()
 joinChannel' tId chanId act = do
     mChan <- preuse (csChannel(chanId))
     case mChan of
-        Just _ -> do
-            setFocus tId chanId
+        Just ch -> do
+            setFocus (fromMaybe tId $ ch^.ccInfo.cdTeamId) chanId
             fromMaybe (return ()) act
         Nothing -> do
             myId <- gets myUserId
