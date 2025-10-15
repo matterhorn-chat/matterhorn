@@ -57,7 +57,7 @@ cursorByMode cs s tId mode =
                 ti <- s^.csTeam(tId).tsThreadInterface
                 cur <- messageInterfaceCursor ti
                 B.showCursorNamed cur cs
-        LeaveChannelConfirm           -> Nothing
+        LeaveChannelConfirm _         -> Nothing
         DeleteChannelConfirm          -> Nothing
         MessageSelectDeleteConfirm {} -> Nothing
         PostListWindow {}             -> Nothing

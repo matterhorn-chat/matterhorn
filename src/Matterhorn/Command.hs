@@ -157,7 +157,9 @@ commandList =
         postInfoMessage $ "Current theme written to " <> path
 
   , ClientCommand "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () -> do
-        withCurrentTeam startLeaveCurrentChannel
+        withCurrentTeam $ \tId ->
+            withCurrentChannel tId $ \cId _ ->
+                startLeaveChannel tId cId
 
   , ClientCommand "join" "Find a channel to join" NoArg $ \ () -> do
         withCurrentTeam enterChannelListWindowMode

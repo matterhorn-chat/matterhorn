@@ -36,7 +36,7 @@ module Matterhorn.State.Channels
   , isReturnChannel
   , isCurrentChannel
   , deleteCurrentChannel
-  , startLeaveCurrentChannel
+  , startLeaveChannel
   , joinChannel
   , joinChannel'
   , joinChannelByName
@@ -961,13 +961,13 @@ removeUserFromCurrentChannel tId uname =
                       (void $ MM.mmRemoveUserFromChannel cId (UserById $ u^.uiId) session)
                       (const $ return Nothing)
 
-startLeaveCurrentChannel :: TeamId -> MH ()
-startLeaveCurrentChannel tId = do
-    withCurrentChannel tId $ \_ ch -> do
+startLeaveChannel :: TeamId -> ChannelId -> MH ()
+startLeaveChannel tId cId = do
+    withChannel cId $ \ch -> do
         case ch^.ccInfo.cdType of
             Direct -> hideDMChannel (ch^.ccInfo.cdChannelId)
             Group -> hideDMChannel (ch^.ccInfo.cdChannelId)
-            _ -> pushMode tId LeaveChannelConfirm
+            _ -> pushMode tId $ LeaveChannelConfirm cId
 
 deleteCurrentChannel :: TeamId -> MH ()
 deleteCurrentChannel tId = do

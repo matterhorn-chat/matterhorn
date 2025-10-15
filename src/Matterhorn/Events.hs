@@ -234,7 +234,7 @@ teamEventHandlerByMode tId mode e =
         Main                       -> onEventMain tId e
         ShowHelp _                 -> void $ onEventShowHelp tId e
         ChannelSelect              -> void $ onEventChannelSelect tId e
-        LeaveChannelConfirm        -> onEventLeaveChannelConfirm tId e
+        LeaveChannelConfirm cId    -> onEventLeaveChannelConfirm tId cId e
         MessageSelectDeleteConfirm target ->
             case target of
                 MITeamThread tmId ->

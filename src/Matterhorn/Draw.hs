@@ -51,7 +51,7 @@ draw st = fromMaybe (drawMain st Main) $ do
                 ChannelSelect                 -> drawChannelSelectPrompt st tId : drawMain st m
                 MessageSelectDeleteConfirm {} -> drawMessageDeleteConfirm : rest
                 ThemeListWindow               -> drawThemeListWindow st tId : rest
-                LeaveChannelConfirm           -> drawLeaveChannelConfirm st tId : monochrome rest
+                LeaveChannelConfirm _         -> drawLeaveChannelConfirm st tId : monochrome rest
                 DeleteChannelConfirm          -> drawDeleteChannelConfirm st tId : monochrome rest
                 PostListWindow contents       -> drawPostListWindow contents st tId : monochrome rest
                 UserListWindow                -> drawUserListWindow st tId : monochrome rest
