@@ -256,7 +256,7 @@ doCommandAutoCompletion which tId ty ctx searchString = do
     if (isNothing entry || (mActiveTy /= (Just ACCommands)))
        then doAsyncWith Preempt $ do
                 let clientAlts = mkAlt <$> commandList
-                    mkAlt (Cmd name desc args _) =
+                    mkAlt (ClientCommand name desc args _) =
                         (Client, name, printArgSpec args, desc)
 
                 serverCommands <- MM.mmListCommandsForTeam tId False session

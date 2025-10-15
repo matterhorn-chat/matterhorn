@@ -283,7 +283,7 @@ module Matterhorn.Types
 
   , WebsocketAction(..)
 
-  , Cmd(..)
+  , ClientCommand(..)
   , CommandArgs(..)
 
   , MH
@@ -2104,12 +2104,12 @@ data CommandArgs :: K.Type -> K.Type where
 
 -- | A 'Cmd' packages up a 'CommandArgs' specifier and the command's
 -- implementation with a name and a description.
-data Cmd =
-    forall a. Cmd { commandName    :: Text
-                  , commandDescr   :: Text
-                  , commandArgSpec :: CommandArgs a
-                  , commandAction  :: a -> MH ()
-                  }
+data ClientCommand =
+    forall a. ClientCommand { clientCommandName    :: Text
+                            , clientCommandDescr   :: Text
+                            , clientCommandArgSpec :: CommandArgs a
+                            , clientCommandAction  :: a -> MH ()
+                            }
 
 -- *  Channel Updates and Notifications
 

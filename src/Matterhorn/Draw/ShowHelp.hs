@@ -91,12 +91,12 @@ commandHelpInfo :: [(T.Text, T.Text)]
 commandHelpInfo = pairs
     where
         pairs = [ (info, desc)
-                | Cmd cmd desc args _ <- cs
+                | ClientCommand cmd desc args _ <- cs
                 , let argSpec = printArgSpec args
                       spc = if T.null argSpec then "" else " "
                       info = T.cons '/' cmd <> spc <> argSpec
                 ]
-        cs = sortWith commandName commandList
+        cs = sortWith clientCommandName commandList
 
 commandTextTable :: T.Text
 commandTextTable =

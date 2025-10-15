@@ -112,95 +112,95 @@ matchArgs spec@(TokenArg _ rs) t = case unwordHead t of
     _     -> Left ("Missing arguments: " <> printArgSpec spec)
   Just (a, as) -> (,) <$> pure a <*> matchArgs rs as
 
-commandList :: [Cmd]
+commandList :: [ClientCommand]
 commandList =
-  [ Cmd "quit" "Exit Matterhorn" NoArg $ \ () -> requestQuit
+  [ ClientCommand "quit" "Exit Matterhorn" NoArg $ \ () -> requestQuit
 
-  , Cmd "right" "Focus on the next channel" NoArg $ \ () -> do
+  , ClientCommand "right" "Focus on the next channel" NoArg $ \ () -> do
         withCurrentTeam nextChannel
 
-  , Cmd "left" "Focus on the previous channel" NoArg $ \ () -> do
+  , ClientCommand "left" "Focus on the previous channel" NoArg $ \ () -> do
         withCurrentTeam prevChannel
 
-  , Cmd "create-channel" "Create a new public channel"
+  , ClientCommand "create-channel" "Create a new public channel"
     (LineArg "channel name") $ \ name -> do
         withCurrentTeam $ \tId ->
             createOrdinaryChannel tId True name
 
-  , Cmd "create-private-channel" "Create a new private channel"
+  , ClientCommand "create-private-channel" "Create a new private channel"
     (LineArg "channel name") $ \ name -> do
         withCurrentTeam $ \tId ->
             createOrdinaryChannel tId False name
 
-  , Cmd "delete-channel" "Delete the current channel"
+  , ClientCommand "delete-channel" "Delete the current channel"
     NoArg $ \ () -> do
         withCurrentTeam beginCurrentChannelDeleteConfirm
 
-  , Cmd "hide" "Hide the current DM or group channel from the channel list"
+  , ClientCommand "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () -> do
         withCurrentTeam $ \tId ->
             withCurrentChannel tId $ \cId _ -> do
                 hideDMChannel cId
 
-  , Cmd "reconnect" "Force a reconnection attempt to the server"
+  , ClientCommand "reconnect" "Force a reconnection attempt to the server"
     NoArg $ \ () ->
         connectWebsockets
 
-  , Cmd "members" "Show the current channel's members"
+  , ClientCommand "members" "Show the current channel's members"
     NoArg $ \ () -> do
         withCurrentTeam enterChannelMembersUserList
 
-  , Cmd "write-theme" "Write the current theme to a theme settings file"
+  , ClientCommand "write-theme" "Write the current theme to a theme settings file"
     (TokenArg "path" NoArg) $ \(path, ()) -> do
         theme <- use (csResources.crThemeOriginal)
         liftIO $ saveTheme (T.unpack path) theme
         postInfoMessage $ "Current theme written to " <> path
 
-  , Cmd "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () -> do
+  , ClientCommand "leave" "Leave a normal channel or hide a DM channel" NoArg $ \ () -> do
         withCurrentTeam startLeaveCurrentChannel
 
-  , Cmd "join" "Find a channel to join" NoArg $ \ () -> do
+  , ClientCommand "join" "Find a channel to join" NoArg $ \ () -> do
         withCurrentTeam enterChannelListWindowMode
 
-  , Cmd "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) -> do
+  , ClientCommand "join" "Join the specified channel" (ChannelArg NoArg) $ \(n, ()) -> do
         withCurrentTeam $ \tId ->
             joinChannelByName tId n
 
-  , Cmd "theme" "List the available themes" NoArg $ \ () -> do
+  , ClientCommand "theme" "List the available themes" NoArg $ \ () -> do
         withCurrentTeam enterThemeListMode
 
-  , Cmd "theme" "Set the color theme"
+  , ClientCommand "theme" "Set the color theme"
     (TokenArg "theme" NoArg) $ \ (themeName, ()) -> do
         withCurrentTeam $ \tId ->
             setTheme tId themeName
 
-  , Cmd "topic" "Set the current channel's topic (header) interactively"
+  , ClientCommand "topic" "Set the current channel's topic (header) interactively"
     NoArg $ \ () -> do
         withCurrentTeam openChannelTopicWindow
 
-  , Cmd "topic" "Set the current channel's topic (header)"
+  , ClientCommand "topic" "Set the current channel's topic (header)"
     (LineArg "topic") $ \ p -> do
         withCurrentTeam $ \tId ->
             if not (T.null p) then setChannelTopic tId p else return ()
 
-  , Cmd "add-user" "Search for a user to add to the current channel"
+  , ClientCommand "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () -> do
         withCurrentTeam enterChannelInviteUserList
 
-  , Cmd "msg" "Search for a user to enter a private chat"
+  , ClientCommand "msg" "Search for a user to enter a private chat"
     NoArg $ \ () -> do
         withCurrentTeam enterDMSearchUserList
 
-  , Cmd "msg" "Chat with the specified user"
+  , ClientCommand "msg" "Chat with the specified user"
     (UserArg NoArg) $ \ (name, ()) -> do
         withCurrentTeam $ \tId ->
             changeChannelByName tId name
 
-  , Cmd "username-attribute" "Display the attribute used to color the specified username"
+  , ClientCommand "username-attribute" "Display the attribute used to color the specified username"
     (UserArg NoArg) $ \ (name, ()) ->
         displayUsernameAttribute name
 
-  , Cmd "msg" "Go to a user's channel and send the specified message or command"
+  , ClientCommand "msg" "Go to a user's channel and send the specified message or command"
     (UserArg $ LineArg "message or command") $ \ (name, msg) -> do
         withCurrentTeam $ \tId ->
             withFetchedUserMaybe (UserFetchByUsername name) $ \foundUser -> do
@@ -210,131 +210,131 @@ commandList =
                             handleInputSubmission (channelEditor(cId)) msg
                     Nothing -> mhError $ NoSuchUser name
 
-  , Cmd "log-start" "Begin logging debug information to the specified path"
+  , ClientCommand "log-start" "Begin logging debug information to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->
         startLogging $ T.unpack path
 
-  , Cmd "log-snapshot" "Dump the current debug log buffer to the specified path"
+  , ClientCommand "log-snapshot" "Dump the current debug log buffer to the specified path"
     (TokenArg "path" NoArg) $ \ (path, ()) ->
         logSnapshot $ T.unpack path
 
-  , Cmd "log-stop" "Stop logging"
+  , ClientCommand "log-stop" "Stop logging"
     NoArg $ \ () ->
         stopLogging
 
-  , Cmd "log-mark" "Add a custom marker message to the Matterhorn debug log"
+  , ClientCommand "log-mark" "Add a custom marker message to the Matterhorn debug log"
     (LineArg "message") $ \ markMsg ->
         mhLog LogUserMark markMsg
 
-  , Cmd "log-status" "Show current debug logging status"
+  , ClientCommand "log-status" "Show current debug logging status"
     NoArg $ \ () ->
         getLogDestination
 
-  , Cmd "add-user" "Add a user to the current channel"
+  , ClientCommand "add-user" "Add a user to the current channel"
     (UserArg NoArg) $ \ (uname, ()) -> do
         withCurrentTeam $ \tId ->
             addUserByNameToCurrentChannel tId uname
 
-  , Cmd "remove" "Remove a user from the current channel"
+  , ClientCommand "remove" "Remove a user from the current channel"
     (UserArg NoArg) $ \ (uname, ()) -> do
         withCurrentTeam $ \tId ->
             removeUserFromCurrentChannel tId uname
 
-  , Cmd "user" "Show users to initiate a private DM chat channel"
+  , ClientCommand "user" "Show users to initiate a private DM chat channel"
     -- n.b. this is identical to "msg", but is provided as an
     -- alternative mental model for useability.
     NoArg $ \ () -> do
         withCurrentTeam enterDMSearchUserList
 
-  , Cmd "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
+  , ClientCommand "message-preview" "Toggle preview of the current message" NoArg $ \_ ->
         toggleMessagePreview
 
-  , Cmd "toggle-truncate-verbatim-blocks" "Toggle truncation of verbatim and code blocks" NoArg $ \_ ->
+  , ClientCommand "toggle-truncate-verbatim-blocks" "Toggle truncation of verbatim and code blocks" NoArg $ \_ ->
         toggleVerbatimBlockTruncation
 
-  , Cmd "toggle-channel-list" "Toggle channel list visibility" NoArg $ \_ ->
+  , ClientCommand "toggle-channel-list" "Toggle channel list visibility" NoArg $ \_ ->
         toggleChannelListVisibility
 
-  , Cmd "toggle-message-timestamps" "Toggle message timestamps" NoArg $ \_ ->
+  , ClientCommand "toggle-message-timestamps" "Toggle message timestamps" NoArg $ \_ ->
         toggleMessageTimestamps
 
-  , Cmd "toggle-expanded-topics" "Toggle expanded channel topics" NoArg $ \_ ->
+  , ClientCommand "toggle-expanded-topics" "Toggle expanded channel topics" NoArg $ \_ ->
         toggleExpandedChannelTopics
 
-  , Cmd "cycle-channel-list-sorting" "Cycle through channel list sorting modes for this team" NoArg $ \_ ->
+  , ClientCommand "cycle-channel-list-sorting" "Cycle through channel list sorting modes for this team" NoArg $ \_ ->
         withCurrentTeam cycleChannelListSortingMode
 
-  , Cmd "thread-orientation" "Set the orientation of the thread UI" (LineArg "left|right|above|below") $ \o ->
+  , ClientCommand "thread-orientation" "Set the orientation of the thread UI" (LineArg "left|right|above|below") $ \o ->
         setThreadOrientationByName o
 
-  , Cmd "focus" "Focus on a channel or user"
+  , ClientCommand "focus" "Focus on a channel or user"
     (ChannelArg NoArg) $ \ (name, ()) -> do
         withCurrentTeam $ \tId ->
             changeChannelByName tId name
 
-  , Cmd "focus" "Focus on a DM group channel"
+  , ClientCommand "focus" "Focus on a DM group channel"
     (UserListArg NoArg) $ \ (users, ()) -> do
         withCurrentTeam $ \tId -> do
             createGroupChannel tId users
 
-  , Cmd "focus" "Select from available channels" NoArg $ \ () -> do
+  , ClientCommand "focus" "Select from available channels" NoArg $ \ () -> do
         withCurrentTeam beginChannelSelect
 
-  , Cmd "help" "Show the main help screen" NoArg $ \ _ -> do
+  , ClientCommand "help" "Show the main help screen" NoArg $ \ _ -> do
         withCurrentTeam $ \tId ->
             showHelpScreen tId mainHelpTopic
 
-  , Cmd "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ -> do
+  , ClientCommand "shortcuts" "Show keyboard shortcuts" NoArg $ \ _ -> do
         withCurrentTeam $ \tId ->
             showHelpScreen tId mainHelpTopic
 
-  , Cmd "help" "Show help about a particular topic"
+  , ClientCommand "help" "Show help about a particular topic"
       (TokenArg "topic" NoArg) $ \ (topicName, ()) -> do
           withCurrentTeam $ \tId ->
               case lookupHelpTopic topicName of
                   Nothing -> mhError $ NoSuchHelpTopic topicName
                   Just topic -> showHelpScreen tId topic
 
-  , Cmd "sh" "List the available shell scripts" NoArg $ \ () ->
+  , ClientCommand "sh" "List the available shell scripts" NoArg $ \ () ->
         listScripts
 
-  , Cmd "sh" "Run a prewritten shell script"
+  , ClientCommand "sh" "Run a prewritten shell script"
     (TokenArg "script" (LineArg "message")) $ \ (script, text) -> do
         withCurrentTeam $ \tId ->
             withCurrentChannel tId $ \cId _ -> do
                 findAndRunScript (channelEditor(cId)) script text
 
-  , Cmd "group-create" "Create or switch to a group chat"
+  , ClientCommand "group-create" "Create or switch to a group chat"
     (LineArg (addUserSigil "user" <> " [" <> addUserSigil "user" <> " ...]")) $ \ t -> do
         withCurrentTeam $ \tId ->
             createGroupChannel tId $ T.words t
 
-  , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
+  , ClientCommand "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
 
-  , Cmd "open-url" "Open the specified URL" (LineArg "URL") (openLink . URL)
+  , ClientCommand "open-url" "Open the specified URL" (LineArg "URL") (openLink . URL)
 
-  , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () -> do
+  , ClientCommand "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () -> do
         withCurrentTeam enterPinnedPostListMode
 
-  , Cmd "search" "Search for posts with given terms" (LineArg "terms") $ \t -> do
+  , ClientCommand "search" "Search for posts with given terms" (LineArg "terms") $ \t -> do
         withCurrentTeam $ \tId ->
             enterSearchResultPostListMode tId t
 
-  , Cmd "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ -> do
+  , ClientCommand "notify-prefs" "Edit the current channel's notification preferences" NoArg $ \_ -> do
         withCurrentTeam enterEditNotifyPrefsMode
 
-  , Cmd "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) -> do
+  , ClientCommand "rename-channel-url" "Rename the current channel's URL name" (TokenArg "channel name" NoArg) $ \ (name, _) -> do
         withCurrentTeam $ \tId ->
             renameChannelUrl tId name
 
-  , Cmd "move-team-left" "Move the currently-selected team to the left in the team list" NoArg $ \_ ->
+  , ClientCommand "move-team-left" "Move the currently-selected team to the left in the team list" NoArg $ \_ ->
         moveCurrentTeamLeft
 
-  , Cmd "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
+  , ClientCommand "move-team-right" "Move the currently-selected team to the right in the team list" NoArg $ \_ ->
         moveCurrentTeamRight
 
-  , Cmd "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
+  , ClientCommand "attach" "Attach a given file without browsing" (LineArg "path") $ \path -> do
         withCurrentTeam $ \tId -> do
             foc <- use (csTeam(tId).tsMessageInterfaceFocus)
             case foc of
@@ -344,17 +344,17 @@ commandList =
                     withCurrentChannel tId $ \cId _ ->
                         attachFileByPath (csChannelMessageInterface(cId)) path
 
-  , Cmd "toggle-mouse-input" "Toggle whether mouse input is enabled" NoArg $ \_ ->
+  , ClientCommand "toggle-mouse-input" "Toggle whether mouse input is enabled" NoArg $ \_ ->
         toggleMouseMode
 
-  , Cmd "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
+  , ClientCommand "toggle-favorite" "Toggle the favorite status of the current channel" NoArg $ \_ -> do
         withCurrentTeam toggleChannelFavoriteStatus
 
-  , Cmd "toggle-sidebar-group" "Toggle the visibility of the current channel's sidebar group" NoArg $ \_ -> do
+  , ClientCommand "toggle-sidebar-group" "Toggle the visibility of the current channel's sidebar group" NoArg $ \_ -> do
         withCurrentTeam toggleCurrentChannelChannelListGroup
 
   , let names = T.intercalate "|" $ fst <$> channelListGroupNames
-    in Cmd "toggle-sidebar-group" "Toggle the visibility of the named sidebar group" (LineArg names) $ \name -> do
+    in ClientCommand "toggle-sidebar-group" "Toggle the visibility of the named sidebar group" (LineArg names) $ \name -> do
         withCurrentTeam (toggleCurrentChannelChannelListGroupByName name)
   ]
 
@@ -409,17 +409,14 @@ dispatchCommand :: MM.TeamId -> Text -> MH ()
 dispatchCommand tId cmd =
   case unwordHead cmd of
     Just (x, xs)
-      | matchingCmds <- [ c
-                        | c@(Cmd name _ _ _) <- commandList
-                        , name == x
-                        ] -> go [] matchingCmds
+      | matchingCmds <- filter ((== x) . clientCommandName) commandList -> go [] matchingCmds
       where go [] [] = do
               execMMCommand tId x xs
             go errs [] = do
               let msg = ("error running command /" <> x <> ":\n" <>
                          mconcat [ "    " <> e | e <- errs ])
               mhError $ GenericError msg
-            go errs (Cmd _ _ spec exe : cs) =
+            go errs (ClientCommand _ _ spec exe : cs) =
               case matchArgs spec xs of
                 Left e -> go (e:errs) cs
                 Right args -> exe args
