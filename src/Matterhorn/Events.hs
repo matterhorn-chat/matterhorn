@@ -251,7 +251,7 @@ teamEventHandlerByMode tId mode e =
                                               (csTeam(tId).tsViewedMessage.singular _Just._2)
                                               tId e)
         EditNotifyPrefs            -> void $ onEventEditNotifyPrefs tId e
-        ChannelTopicWindow         -> onEventChannelTopicWindow tId e
+        ChannelTopicWindow cId     -> onEventChannelTopicWindow tId cId e
 
 -- | Refresh client-accessible server configuration information. This
 -- is usually triggered when a reconnect event for the WebSocket to the

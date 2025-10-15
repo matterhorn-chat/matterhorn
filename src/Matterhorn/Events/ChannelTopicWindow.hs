@@ -14,22 +14,22 @@ import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%=) )
 import qualified Graphics.Vty as Vty
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, ChannelId )
 
 import           Matterhorn.Types
 import           Matterhorn.State.Channels ( setChannelTopic )
 
 
-onEventChannelTopicWindow :: TeamId -> Vty.Event -> MH ()
-onEventChannelTopicWindow tId (Vty.EvKey (Vty.KChar '\t') []) =
+onEventChannelTopicWindow :: TeamId -> ChannelId -> Vty.Event -> MH ()
+onEventChannelTopicWindow tId _ (Vty.EvKey (Vty.KChar '\t') []) =
     csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus %= focusNext
-onEventChannelTopicWindow tId (Vty.EvKey Vty.KBackTab []) =
+onEventChannelTopicWindow tId _ (Vty.EvKey Vty.KBackTab []) =
     csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus %= focusPrev
-onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
+onEventChannelTopicWindow tId cId e@(Vty.EvKey Vty.KEnter []) = do
     f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicSaveButton {}) -> do
-            doSaveTopic tId
+            doSaveTopic tId cId
         Just (ChannelTopicEditor {}) ->
             mhZoom (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
                                 handleEditorEvent (VtyEvent e)
@@ -37,9 +37,9 @@ onEventChannelTopicWindow tId e@(Vty.EvKey Vty.KEnter []) = do
             doCancelTopicEdit tId
         _ ->
             popMode tId
-onEventChannelTopicWindow tId (Vty.EvKey Vty.KEsc []) = do
+onEventChannelTopicWindow tId _ (Vty.EvKey Vty.KEsc []) = do
     popMode tId
-onEventChannelTopicWindow tId e = do
+onEventChannelTopicWindow tId _ e = do
     f <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogFocus)
     case focusGetCurrent f of
         Just (ChannelTopicEditor {}) ->
@@ -48,16 +48,16 @@ onEventChannelTopicWindow tId e = do
         _ ->
             return ()
 
-channelTopicWindowMouseHandler :: TeamId -> BrickEvent Name MHEvent -> MH ()
-channelTopicWindowMouseHandler tId (MouseDown (ChannelTopicSaveButton {}) _ _ _) = doSaveTopic tId
-channelTopicWindowMouseHandler tId (MouseDown (ChannelTopicCancelButton {}) _ _ _) = doCancelTopicEdit tId
-channelTopicWindowMouseHandler _ _ = return ()
+channelTopicWindowMouseHandler :: TeamId -> ChannelId -> BrickEvent Name MHEvent -> MH ()
+channelTopicWindowMouseHandler tId cId (MouseDown (ChannelTopicSaveButton {}) _ _ _) = doSaveTopic tId cId
+channelTopicWindowMouseHandler tId _ (MouseDown (ChannelTopicCancelButton {}) _ _ _) = doCancelTopicEdit tId
+channelTopicWindowMouseHandler _ _ _ = return ()
 
-doSaveTopic :: TeamId -> MH ()
-doSaveTopic tId = do
+doSaveTopic :: TeamId -> ChannelId -> MH ()
+doSaveTopic tId cId = do
     ed <- use (csTeam(tId).tsChannelTopicDialog.channelTopicDialogEditor)
     let topic = T.unlines $ getEditContents ed
-    setChannelTopic tId topic
+    setChannelTopic cId topic
     popMode tId
 
 doCancelTopicEdit :: TeamId -> MH ()

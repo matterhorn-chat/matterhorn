@@ -59,7 +59,7 @@ draw st = fromMaybe (drawMain st Main) $ do
                 ReactionEmojiListWindow       -> drawReactionEmojiListWindow st tId : monochrome rest
                 ViewMessage                   -> drawTabbedWindow messageViewWindow st tId : monochrome rest
                 EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
-                ChannelTopicWindow            -> drawChannelTopicWindow st tId : monochrome rest
+                ChannelTopicWindow _          -> drawChannelTopicWindow st tId : monochrome rest
         topMode = teamMode $ st^.csTeam(tId)
         otherModes = tail $ teamModes $ st^.csTeam(tId)
 

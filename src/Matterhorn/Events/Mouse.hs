@@ -30,7 +30,7 @@ mouseHandlerByMode tId mode =
         ChannelSelect            -> channelSelectMouseHandler tId
         EditNotifyPrefs          -> void . handleEditNotifyPrefsEvent tId
         ReactionEmojiListWindow -> reactionEmojiListMouseHandler tId
-        ChannelTopicWindow       -> channelTopicWindowMouseHandler tId
+        ChannelTopicWindow cId   -> channelTopicWindowMouseHandler tId cId
         _                        -> globalMouseHandler tId
 
 -- Handle global mouse click events (when mode is not important).

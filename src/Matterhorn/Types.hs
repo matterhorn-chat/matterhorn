@@ -1162,7 +1162,7 @@ data Mode =
     | ThemeListWindow
     | ViewMessage
     | EditNotifyPrefs
-    | ChannelTopicWindow
+    | ChannelTopicWindow ChannelId
     deriving (Eq, Show)
 
 -- | We're either connected or we're not.

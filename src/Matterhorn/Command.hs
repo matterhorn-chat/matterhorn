@@ -176,12 +176,15 @@ commandList =
 
   , ClientCommand "topic" "Set the current channel's topic (header) interactively"
     NoArg $ \ () -> do
-        withCurrentTeam openChannelTopicWindow
+        withCurrentTeam $ \tId ->
+            withCurrentChannel tId $ \cId _ ->
+                openChannelTopicWindow tId cId
 
   , ClientCommand "topic" "Set the current channel's topic (header)"
     (LineArg "topic") $ \ p -> do
         withCurrentTeam $ \tId ->
-            setChannelTopic tId p
+            withCurrentChannel tId $ \cId _ -> do
+                setChannelTopic cId p
 
   , ClientCommand "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () -> do

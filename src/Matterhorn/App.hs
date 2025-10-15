@@ -69,7 +69,7 @@ cursorByMode cs s tId mode =
         ReactionEmojiListWindow       -> B.showFirstCursor s cs
         ChannelListWindow             -> B.showFirstCursor s cs
         ThemeListWindow               -> B.showFirstCursor s cs
-        ChannelTopicWindow            -> B.showCursorNamed (ChannelTopicEditor tId) cs
+        ChannelTopicWindow _          -> B.showCursorNamed (ChannelTopicEditor tId) cs
 
 applicationMaxCPUs :: Int
 applicationMaxCPUs = 2
