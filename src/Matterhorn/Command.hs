@@ -63,7 +63,7 @@ unwordHead t =
        then Nothing
        else Just (w, T.dropWhile Char.isSpace rs)
 
-printArgSpec :: CmdArgs a -> Text
+printArgSpec :: CommandArgs a -> Text
 printArgSpec NoArg = ""
 printArgSpec (LineArg ts) = "<" <> ts <> ">"
 printArgSpec (TokenArg t NoArg) = "<" <> t <> ">"
@@ -76,7 +76,7 @@ addSpace :: Text -> Text
 addSpace "" = ""
 addSpace t = " " <> t
 
-matchArgs :: CmdArgs a -> Text -> Either Text a
+matchArgs :: CommandArgs a -> Text -> Either Text a
 matchArgs NoArg t = case unwordHead t of
   Nothing -> return ()
   Just (a, as)

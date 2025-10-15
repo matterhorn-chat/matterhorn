@@ -285,7 +285,7 @@ module Matterhorn.Types
 
   , Cmd(..)
   , commandName
-  , CmdArgs(..)
+  , CommandArgs(..)
 
   , MH
   , runMHEvent
@@ -2093,15 +2093,15 @@ resetAutocomplete which = do
 
 -- * Slash Commands
 
--- | The 'CmdArgs' type represents the arguments to a slash-command; the
--- type parameter represents the argument structure.
-data CmdArgs :: K.Type -> K.Type where
-    NoArg    :: CmdArgs ()
-    LineArg  :: Text -> CmdArgs Text
-    UserArg  :: CmdArgs rest -> CmdArgs (Text, rest)
-    UserListArg  :: CmdArgs rest -> CmdArgs ([Text], rest)
-    ChannelArg :: CmdArgs rest -> CmdArgs (Text, rest)
-    TokenArg :: Text -> CmdArgs rest -> CmdArgs (Text, rest)
+-- | This represents the arguments to a slash-command; the type
+-- parameter represents the argument structure.
+data CommandArgs :: K.Type -> K.Type where
+    NoArg       :: CommandArgs ()
+    LineArg     :: Text -> CommandArgs Text
+    UserArg     :: CommandArgs rest -> CommandArgs (Text, rest)
+    UserListArg :: CommandArgs rest -> CommandArgs ([Text], rest)
+    ChannelArg  :: CommandArgs rest -> CommandArgs (Text, rest)
+    TokenArg    :: Text -> CommandArgs rest -> CommandArgs (Text, rest)
 
 -- | A 'CmdExec' value represents the implementation of a command when
 -- provided with its arguments
@@ -2112,7 +2112,7 @@ type CmdExec a = a -> MH ()
 data Cmd =
     forall a. Cmd { cmdName    :: Text
                   , cmdDescr   :: Text
-                  , cmdArgSpec :: CmdArgs a
+                  , cmdArgSpec :: CommandArgs a
                   , cmdAction  :: CmdExec a
                   }
 

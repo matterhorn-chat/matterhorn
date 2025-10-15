@@ -9,8 +9,8 @@ import Prelude ()
 import Matterhorn.Prelude
 
 import Network.Mattermost.Types ( TeamId )
-import Matterhorn.Types ( MH, Cmd, CmdArgs )
+import Matterhorn.Types ( MH, Cmd, CommandArgs )
 
 commandList :: [Cmd]
-printArgSpec :: CmdArgs a -> Text
+printArgSpec :: CommandArgs a -> Text
 dispatchCommand :: TeamId -> Text -> MH ()
