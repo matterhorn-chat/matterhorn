@@ -2102,13 +2102,20 @@ data CommandArgs :: K.Type -> K.Type where
     ChannelArg  :: CommandArgs rest -> CommandArgs (Text, rest)
     TokenArg    :: Text -> CommandArgs rest -> CommandArgs (Text, rest)
 
--- | A 'ClientCommand' describes a client-side command, including its
--- argument specification, name, description, and implementation.
+-- | A 'ClientCommand' describes a client-side "slash" command,
+-- including its argument specification, name, description, and
+-- implementation.
 data ClientCommand =
-    forall a. ClientCommand { clientCommandName    :: Text
-                            , clientCommandDescr   :: Text
+    forall a. ClientCommand { clientCommandName :: Text
+                            -- ^ The name of the slash command without
+                            -- the slash.
+                            , clientCommandDescr :: Text
+                            -- ^ The command's description to be shown
+                            -- as help text.
                             , clientCommandArgSpec :: CommandArgs a
-                            , clientCommandAction  :: a -> MH ()
+                            -- ^ The command's argument specification.
+                            , clientCommandAction :: a -> MH ()
+                            -- ^ The command's implementation.
                             }
 
 -- *  Channel Updates and Notifications
