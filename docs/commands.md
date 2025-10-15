@@ -34,6 +34,7 @@
 | `/msg <@user>` | Chat with the specified user |
 | `/msg <@user> <message or command>` | Go to a user's channel and send the specified message or command |
 | `/notify-prefs` | Edit the current channel's notification preferences |
+| `/open-url <URL>` | Open the specified URL |
 | `/pinned-posts` | Open a window of this channel's pinned posts |
 | `/quit` | Exit Matterhorn |
 | `/reconnect` | Force a reconnection attempt to the server |
