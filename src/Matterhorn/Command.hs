@@ -181,7 +181,7 @@ commandList =
   , ClientCommand "topic" "Set the current channel's topic (header)"
     (LineArg "topic") $ \ p -> do
         withCurrentTeam $ \tId ->
-            if not (T.null p) then setChannelTopic tId p else return ()
+            setChannelTopic tId p
 
   , ClientCommand "add-user" "Search for a user to add to the current channel"
     NoArg $ \ () -> do

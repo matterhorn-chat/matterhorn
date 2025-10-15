@@ -1065,12 +1065,14 @@ changeChannelByName tId name = do
               err
 
 setChannelTopic :: TeamId -> Text -> MH ()
-setChannelTopic tId msg = do
-    withCurrentChannel tId $ \cId _ -> do
-        let patch = defaultChannelPatch { channelPatchHeader = Just msg }
-        doAsyncChannelMM Preempt cId
-            (\s _ -> MM.mmPatchChannel cId patch s)
-            (\_ _ -> Nothing)
+setChannelTopic tId topic' = do
+    let topic = T.strip topic'
+    when (not $ T.null topic) $
+        withCurrentChannel tId $ \cId _ -> do
+            let patch = defaultChannelPatch { channelPatchHeader = Just topic }
+            doAsyncChannelMM Preempt cId
+                (\s _ -> MM.mmPatchChannel cId patch s)
+                (\_ _ -> Nothing)
 
 -- | This renames the current channel's url name. It makes a request
 -- to the server to change the name, but does not actually change the
