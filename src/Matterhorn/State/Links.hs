@@ -17,20 +17,20 @@ import           Network.Mattermost.Types
 import           Matterhorn.State.Common
 import {-# SOURCE #-} Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( URL(..), getPermalink, unURL )
+import           Matterhorn.Types.RichText ( URL, getPermalink, unURL )
 
 
-openLink :: T.Text -> MH ()
+openLink :: URL -> MH ()
 openLink url = openLinkTarget =<< linkTargetForURL url
 
-linkTargetForURL :: T.Text -> MH LinkTarget
+linkTargetForURL :: URL -> MH LinkTarget
 linkTargetForURL url = do
     teamIds <- HM.keys <$> use csTeams
     st <- use id
     let pairs = catMaybes [getPermalink (serverBaseUrl st tId) url | tId <- teamIds]
     return $ case pairs of
         [(tName, pId)] -> LinkPermalink tName pId
-        _              -> LinkURL $ URL url
+        _              -> LinkURL url
 
 openLinkTarget :: LinkTarget -> MH ()
 openLinkTarget target = do

@@ -379,8 +379,8 @@ makePermalink (TeamBaseURL (TeamURLName tName) (ServerBaseURL baseUrl)) pId =
 -- | If the specified URL matches the active server base URL and team
 -- and refers to a post, extract the team name and post ID values and
 -- return them.
-getPermalink :: TeamBaseURL -> Text -> Maybe (TeamURLName, PostId)
-getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) url =
+getPermalink :: TeamBaseURL -> URL -> Maybe (TeamURLName, PostId)
+getPermalink (TeamBaseURL tName (ServerBaseURL baseUrl)) (URL url) =
     let newBaseUrl = if "/" `T.isSuffixOf` baseUrl
                      then baseUrl
                      else baseUrl <> "/"
@@ -420,7 +420,7 @@ rewriteInlinePermalinks u (Inlines is) = Inlines $ rewriteInlinePermalink u <$> 
 -- permalinks.
 rewriteInlinePermalink :: TeamBaseURL -> Inline -> Inline
 rewriteInlinePermalink u i@(EHyperlink url label) =
-    case getPermalink u (unURL url) of
+    case getPermalink u url of
         Nothing -> i
         Just (tName, pId) ->
             -- Get rid of permalink labels if they just match the URL,

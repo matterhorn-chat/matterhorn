@@ -46,6 +46,7 @@ import           Matterhorn.State.Teams
 import           Matterhorn.State.Users
 import           Matterhorn.Themes ( attrForUsername )
 import           Matterhorn.Types
+import           Matterhorn.Types.RichText ( URL(URL) )
 
 
 -- | This function skips any initial whitespace and returns the first
@@ -311,7 +312,7 @@ commandList =
   , Cmd "flags" "Open a window of your flagged posts" NoArg $ \ () -> do
         withCurrentTeam enterFlaggedPostListMode
 
-  , Cmd "open-url" "Open the specified URL" (LineArg "URL") openLink
+  , Cmd "open-url" "Open the specified URL" (LineArg "URL") (openLink . URL)
 
   , Cmd "pinned-posts" "Open a window of this channel's pinned posts" NoArg $ \ () -> do
         withCurrentTeam enterPinnedPostListMode
