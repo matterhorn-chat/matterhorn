@@ -47,6 +47,7 @@ import           Matterhorn.Constants
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelList ( updateSidebar )
 import           Matterhorn.State.Common
+import           Matterhorn.State.Teams ( setTeam )
 import           Matterhorn.State.ThreadWindow
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.Users
@@ -1157,6 +1158,9 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
       Just msg ->
         case msg ^. mChannelId of
           Just cId -> do
+              case msg^.mTeamId of
+                  Nothing -> return ()
+                  Just mtId -> setTeam mtId
               -- Are we a member of the channel?
               case findChannelById cId (st^.csChannels) of
                   Nothing ->
