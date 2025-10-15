@@ -35,7 +35,7 @@ module Matterhorn.State.Channels
   , isRecentChannel
   , isReturnChannel
   , isCurrentChannel
-  , deleteCurrentChannel
+  , deleteChannel
   , startLeaveChannel
   , joinChannel
   , joinChannel'
@@ -43,7 +43,7 @@ module Matterhorn.State.Channels
   , changeChannelByName
   , setChannelTopic
   , getCurrentChannelTopic
-  , beginCurrentChannelDeleteConfirm
+  , beginChannelDeleteConfirm
   , toggleExpandedChannelTopics
   , updateChannelNotifyProps
   , renameChannelUrl
@@ -969,10 +969,8 @@ startLeaveChannel tId cId = do
             Group -> hideDMChannel (ch^.ccInfo.cdChannelId)
             _ -> pushMode tId $ LeaveChannelConfirm cId
 
-deleteCurrentChannel :: TeamId -> MH ()
-deleteCurrentChannel tId = do
-    withCurrentChannel tId $ \cId _ -> do
-        leaveChannelIfPossible cId True
+deleteChannel :: ChannelId -> MH ()
+deleteChannel cId = leaveChannelIfPossible cId True
 
 isCurrentChannel :: ChatState -> TeamId -> ChannelId -> Bool
 isCurrentChannel st tId cId = st^.csCurrentChannelId(tId) == Just cId
@@ -1091,12 +1089,12 @@ getCurrentChannelTopic tId =
     withCurrentChannel' tId $ \_ c -> do
         return $ Just $ c^.ccInfo.cdHeader
 
-beginCurrentChannelDeleteConfirm :: TeamId -> MH ()
-beginCurrentChannelDeleteConfirm tId = do
-    withCurrentChannel tId $ \_ chan -> do
+beginChannelDeleteConfirm :: TeamId -> ChannelId -> MH ()
+beginChannelDeleteConfirm tId cId = do
+    withChannel cId $ \chan -> do
         let chType = chan^.ccInfo.cdType
         if chType /= Direct
-            then pushMode tId DeleteChannelConfirm
+            then pushMode tId $ DeleteChannelConfirm cId
             else mhError $ GenericError "Direct message channels cannot be deleted."
 
 updateChannelNotifyProps :: ChannelId -> ChannelNotifyProps -> MH ()

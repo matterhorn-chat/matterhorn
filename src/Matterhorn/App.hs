@@ -58,7 +58,7 @@ cursorByMode cs s tId mode =
                 cur <- messageInterfaceCursor ti
                 B.showCursorNamed cur cs
         LeaveChannelConfirm _         -> Nothing
-        DeleteChannelConfirm          -> Nothing
+        DeleteChannelConfirm _        -> Nothing
         MessageSelectDeleteConfirm {} -> Nothing
         PostListWindow {}             -> Nothing
         ViewMessage                   -> Nothing

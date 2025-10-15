@@ -1153,7 +1153,7 @@ data Mode =
     | ShowHelp HelpTopic
     | ChannelSelect
     | LeaveChannelConfirm ChannelId
-    | DeleteChannelConfirm
+    | DeleteChannelConfirm ChannelId
     | MessageSelectDeleteConfirm MessageInterfaceTarget
     | PostListWindow PostListContents
     | UserListWindow

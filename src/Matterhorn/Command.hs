@@ -134,7 +134,9 @@ commandList =
 
   , ClientCommand "delete-channel" "Delete the current channel"
     NoArg $ \ () -> do
-        withCurrentTeam beginCurrentChannelDeleteConfirm
+        withCurrentTeam $ \tId ->
+            withCurrentChannel tId $ \cId _ ->
+                beginChannelDeleteConfirm tId cId
 
   , ClientCommand "hide" "Hide the current DM or group channel from the channel list"
     NoArg $ \ () -> do

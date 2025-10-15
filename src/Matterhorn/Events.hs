@@ -241,7 +241,7 @@ teamEventHandlerByMode tId mode e =
                     onEventMessageSelectDeleteConfirm tId (unsafeThreadInterface(tmId)) e
                 MIChannel cId ->
                     onEventMessageSelectDeleteConfirm tId (csChannelMessageInterface(cId)) e
-        DeleteChannelConfirm       -> onEventDeleteChannelConfirm tId e
+        DeleteChannelConfirm cId   -> onEventDeleteChannelConfirm tId cId e
         ThemeListWindow            -> onEventThemeListWindow tId e
         PostListWindow _           -> onEventPostListWindow tId e
         UserListWindow             -> onEventUserListWindow tId e
