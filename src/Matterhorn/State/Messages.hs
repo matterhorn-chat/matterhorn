@@ -616,7 +616,7 @@ addMessageToState doFetchMentionedUsers fetchAuthor newPostData = do
                     case cp^.cpUser of
                         Nothing -> return ()
                         Just authorId -> when fetchAuthor $ do
-                            authorResult <- gets (userById authorId)
+                            authorResult <- gets (knownUserById authorId)
                             when (isNothing authorResult) $
                                 handleNewUsers (Seq.singleton authorId) (return ())
 

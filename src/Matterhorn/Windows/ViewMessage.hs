@@ -132,7 +132,7 @@ authorInfo cs tId m =
         NoAuthor -> txt "No author."
         AuthorOverride _ label -> txt $ "User: " <> label
         AuthorById _ uId ->
-            case userById uId cs of
+            case knownUserById uId cs of
                 Nothing ->
                     txt "Author info not loaded yet."
                 Just author ->

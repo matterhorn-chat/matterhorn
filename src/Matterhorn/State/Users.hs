@@ -84,7 +84,7 @@ withFetchedUserMaybe fetch handle = do
     session <- getSession
 
     let localMatch = case fetch of
-            UserFetchById uId -> userById uId st
+            UserFetchById uId -> knownUserById uId st
             UserFetchByUsername uname -> userByUsername uname st
             UserFetchByNickname nick -> userByNickname nick st
 

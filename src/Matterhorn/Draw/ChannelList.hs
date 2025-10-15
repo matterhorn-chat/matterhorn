@@ -94,7 +94,7 @@ renderChannelListHeader st tId =
                          (T.singleton statusSigil <> " " <> addUserSigil myUsername_)
         teamNameStr = T.strip $ sanitizeUserText $ MM.teamDisplayName $ st^.csTeam(tId).tsTeam
         statusSigil = maybe ' ' userSigilFromInfo me
-        me = userById (myUserId st) st
+        me = knownUserById (myUserId st) st
         unreadCountHeader = hCenter $ txt $ "Unread: " <> (T.pack $ show unreadCount)
         unreadCount = sum $ (channelListGroupUnread . fst) <$> Z.toList (st^.csTeam(tId).tsFocus)
 
@@ -196,7 +196,7 @@ mkChannelEntryData st tId e =
                 (UserList $ dropComma <$> (T.words $ chan^.ccInfo.cdDisplayName),
                  Just " ", True, Nothing)
             CLUserDM uId ->
-                let u = fromJust $ userById uId st
+                let u = fromJust $ knownUserById uId st
                     uname = if useNickname st
                             then u^.uiNickName.non (u^.uiName)
                             else u^.uiName

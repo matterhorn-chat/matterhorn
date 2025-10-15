@@ -400,7 +400,7 @@ fetchUsers rawUsernames uids = do
                           , not $ isSpecialMention n
                           , isNothing $ userByUsername n st
                           ]
-        missingIds = filter (\i -> isNothing $ userById i st) uids
+        missingIds = filter (\i -> isNothing $ knownUserById i st) uids
 
     when (not $ null missingUsernames) $ do
         mhLog LogGeneral $ T.pack $ "fetchUsers: getting " <> show missingUsernames

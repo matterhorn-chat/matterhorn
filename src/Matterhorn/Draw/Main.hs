@@ -188,7 +188,7 @@ renderChannelHeader st tId hs chan =
                                    else firstTopicLine
         channelNameString = case chnType of
             Direct ->
-                case chan^.ccInfo.cdDMUserId >>= flip userById st of
+                case chan^.ccInfo.cdDMUserId >>= flip knownUserById st of
                     Nothing -> chanName
                     Just u -> userHeader u
             Private ->

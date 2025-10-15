@@ -338,7 +338,7 @@ module Matterhorn.Types
   , userByNickname
   , channelIdByChannelName
   , channelIdByUsername
-  , userById
+  , knownUserById
   , allUserIds
   , addNewUser
   , useNickname
@@ -2128,12 +2128,10 @@ userList st = filter showUser $ allUsers (st^.csUsers)
 allUserIds :: ChatState -> [UserId]
 allUserIds st = getAllUserIds $ st^.csUsers
 
--- BEWARE: you probably don't want this, but instead
--- State.Users.withFetchedUser, since this only looks up users in the
--- collection we have already loaded rather than all valid users on the
--- server.
-userById :: UserId -> ChatState -> Maybe UserInfo
-userById uId st = findUserById uId (st^.csUsers)
+-- Look up users in the collection we have already loaded. If you need
+-- to fetch a user from the server, use State.Users.withFetchedUser.
+knownUserById :: UserId -> ChatState -> Maybe UserInfo
+knownUserById uId st = findUserById uId (st^.csUsers)
 
 myUserId :: ChatState -> UserId
 myUserId st = myUser st ^. userIdL

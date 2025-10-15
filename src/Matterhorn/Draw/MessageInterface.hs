@@ -320,7 +320,7 @@ emptyChannelFillerMessage st cId =
         chanName = mkChannelName st (chan^.ccInfo)
         msg = case chan^.ccInfo.cdType of
             Direct ->
-                let u = chan^.ccInfo.cdDMUserId >>= flip userById st
+                let u = chan^.ccInfo.cdDMUserId >>= flip knownUserById st
                 in case u of
                     Nothing -> userMsg Nothing
                     Just _ -> userMsg (Just chanName)

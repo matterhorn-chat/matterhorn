@@ -353,7 +353,7 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                 Direct -> case userIdForDMChannel (myUserId st) (sanitizeUserText $ channelName nc) of
                     Nothing -> return True
                     Just otherUserId ->
-                        case userById otherUserId st of
+                        case knownUserById otherUserId st of
                             -- If we found a user ID in the channel
                             -- name string but don't have that user's
                             -- metadata, postpone adding this channel
