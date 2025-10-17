@@ -429,7 +429,7 @@ themeHelp = vBox
             vBox [ hBox [ withDefAttr clientEmphAttr $ txt opt
                         , padLeft Max $ forceAttr n $ txt "(demo)"
                         ]
-                 , txt msg
+                 , txtWrap msg
                  ]
     in vBox $ mkEntry <$> names
   ]
