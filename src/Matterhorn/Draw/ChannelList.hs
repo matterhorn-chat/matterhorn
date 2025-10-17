@@ -47,22 +47,22 @@ import           Matterhorn.Types.Common ( sanitizeUserText )
 import qualified Matterhorn.Zipper as Z
 
 data ChannelListEntryLabel =
-    Single Text
-    | UserList [Text]
+    Single !Text
+    | UserList ![Text]
 
 -- | Internal record describing each channel entry and its associated
 -- attributes.  This is the object passed to the rendering function so
 -- that it can determine how to render each channel.
 data ChannelListEntryData =
-    ChannelListEntryData { entrySigil       :: Text
-                         , entryLabel       :: ChannelListEntryLabel
-                         , entryHasUnread   :: Bool
-                         , entryMentions    :: Int
-                         , entryIsRecent    :: Bool
-                         , entryIsReturn    :: Bool
-                         , entryIsCurrent   :: Bool
-                         , entryIsMuted     :: Bool
-                         , entryUserStatus  :: Maybe UserStatus
+    ChannelListEntryData { entrySigil       :: !Text
+                         , entryLabel       :: !ChannelListEntryLabel
+                         , entryHasUnread   :: !Bool
+                         , entryMentions    :: !Int
+                         , entryIsRecent    :: !Bool
+                         , entryIsReturn    :: !Bool
+                         , entryIsCurrent   :: !Bool
+                         , entryIsMuted     :: !Bool
+                         , entryUserStatus  :: !(Maybe UserStatus)
                          }
 
 sbRenderer :: VScrollbarRenderer n

@@ -37,11 +37,11 @@ import           Matterhorn.Types
 -- | Run state of the program. This is saved in a file on program exit and
 -- | looked up from the file on program startup.
 data LastRunState =
-    LastRunState { _lrsHost              :: Hostname  -- ^ Host of the server
-                 , _lrsPort              :: Port      -- ^ Post of the server
-                 , _lrsUserId            :: UserId    -- ^ ID of the logged-in user
-                 , _lrsSelectedChannelId :: Maybe ChannelId -- ^ ID of the last selected channel
-                 , _lrsOpenThread        :: Maybe (ChannelId, PostId)
+    LastRunState { _lrsHost              :: !Hostname  -- ^ Host of the server
+                 , _lrsPort              :: !Port      -- ^ Post of the server
+                 , _lrsUserId            :: !UserId    -- ^ ID of the logged-in user
+                 , _lrsSelectedChannelId :: !(Maybe ChannelId) -- ^ ID of the last selected channel
+                 , _lrsOpenThread        :: !(Maybe (ChannelId, PostId))
                  }
 
 instance A.ToJSON LastRunState where

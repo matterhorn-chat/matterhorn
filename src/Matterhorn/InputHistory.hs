@@ -30,7 +30,7 @@ import           Matterhorn.IOUtil
 
 
 data InputHistory =
-    InputHistory { _historyEntries :: HashMap ChannelId (V.Vector Text)
+    InputHistory { _historyEntries :: !(HashMap ChannelId (V.Vector Text))
                  }
                  deriving (Show)
 

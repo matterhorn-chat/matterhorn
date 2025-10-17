@@ -93,9 +93,9 @@ import           Matterhorn.Types.Common
 -- | A 'ClientChannel' contains both the message
 --   listing and the metadata about a channel
 data ClientChannel = ClientChannel
-  { _ccInfo :: ChannelInfo
+  { _ccInfo :: !ChannelInfo
     -- ^ The 'ChannelInfo' for the channel
-  , _ccMessageInterface :: MessageInterface Name ()
+  , _ccMessageInterface :: !(MessageInterface Name ())
     -- ^ The channel's message interface
   }
 
@@ -107,8 +107,8 @@ preferredChannelName ch
 
 data NewMessageIndicator =
     Hide
-    | NewPostsAfterServerTime ServerTime
-    | NewPostsStartingAt ServerTime
+    | NewPostsAfterServerTime !ServerTime
+    | NewPostsStartingAt !ServerTime
     deriving (Eq, Show)
 
 -- | Server channel names for groups come pre-built with display names
@@ -161,44 +161,44 @@ emptyChannelMessages = do
 -- | The 'ChannelInfo' record represents metadata
 --   about a channel
 data ChannelInfo = ChannelInfo
-  { _cdChannelId        :: ChannelId
+  { _cdChannelId        :: !ChannelId
     -- ^ The channel's ID
-  , _cdTeamId           :: Maybe TeamId
+  , _cdTeamId           :: !(Maybe TeamId)
     -- ^ The channel's team ID
-  , _cdViewed           :: Maybe ServerTime
+  , _cdViewed           :: !(Maybe ServerTime)
     -- ^ The last time we looked at a channel
-  , _cdNewMessageIndicator :: NewMessageIndicator
+  , _cdNewMessageIndicator :: !NewMessageIndicator
     -- ^ The state of the channel's new message indicator.
-  , _cdEditedMessageThreshold :: Maybe ServerTime
+  , _cdEditedMessageThreshold :: !(Maybe ServerTime)
     -- ^ The channel's edited message threshold.
-  , _cdMentionCount     :: Int
+  , _cdMentionCount     :: !Int
     -- ^ The current number of unread mentions
-  , _cdUpdated          :: ServerTime
+  , _cdUpdated          :: !ServerTime
     -- ^ The last time a message showed up in the channel
-  , _cdName             :: Text
+  , _cdName             :: !Text
     -- ^ The name of the channel
-  , _cdDisplayName      :: Text
+  , _cdDisplayName      :: !Text
     -- ^ The display name of the channel
-  , _cdHeader           :: Text
+  , _cdHeader           :: !Text
     -- ^ The header text of a channel
-  , _cdPurpose          :: Text
+  , _cdPurpose          :: !Text
     -- ^ The stated purpose of the channel
-  , _cdType             :: Type
+  , _cdType             :: !Type
     -- ^ The type of a channel: public, private, or DM
-  , _cdNotifyProps      :: ChannelNotifyProps
+  , _cdNotifyProps      :: !ChannelNotifyProps
     -- ^ The user's notification settings for this channel
-  , _cdDMUserId         :: Maybe UserId
+  , _cdDMUserId         :: !(Maybe UserId)
     -- ^ The user associated with this channel, if it is a DM channel
-  , _cdSidebarShowOverride :: Maybe UTCTime
+  , _cdSidebarShowOverride :: !(Maybe UTCTime)
     -- ^ If set, show this channel in the sidebar regardless of other
     -- considerations as long as the specified timestamp meets a cutoff.
     -- Otherwise fall back to other application policy to determine
     -- whether to show the channel.
-  , _cdFetchPending :: Bool
+  , _cdFetchPending :: !Bool
     -- ^ Whether a fetch in this channel is pending
-  , _cdTotalMessageCount :: Int
+  , _cdTotalMessageCount :: !Int
     -- ^ Total message count
-  , _cdViewedMessageCount :: Int
+  , _cdViewedMessageCount :: !Int
     -- ^ Viewed message count, for tracking unread status
   }
 
@@ -226,9 +226,9 @@ canLeaveChannel cInfo = not $ cInfo^.cdType `elem` [Direct]
 -- ** Manage the collection of all Channels
 
 data ClientChannels =
-    ClientChannels { _chanMap :: HashMap ChannelId ClientChannel
-                   , _channelNameSet :: HashMap TeamId (S.Set Text)
-                   , _userChannelMap :: HashMap UserId ChannelId
+    ClientChannels { _chanMap :: !(HashMap ChannelId ClientChannel)
+                   , _channelNameSet :: !(HashMap TeamId (S.Set Text))
+                   , _userChannelMap :: !(HashMap UserId ChannelId)
                    }
 
 makeLenses ''ClientChannels

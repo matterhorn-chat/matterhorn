@@ -65,11 +65,11 @@ import           Network.Mattermost.Types ( PostId(..), Id(..), ServerBaseURL(..
 import           Matterhorn.Constants ( userSigilChar, normalChannelSigilChar )
 
 -- | A team name found in a Mattermost post URL
-data TeamURLName = TeamURLName Text
+data TeamURLName = TeamURLName !Text
                  deriving (Eq, Show, Ord)
 
 -- | A server base URL with a team name.
-data TeamBaseURL = TeamBaseURL TeamURLName ServerBaseURL
+data TeamBaseURL = TeamBaseURL !TeamURLName !ServerBaseURL
                  deriving (Eq, Show)
 
 -- | A sequence of rich text blocks.
@@ -87,21 +87,21 @@ singleB = Blocks . Seq.singleton
 -- NOTE: update 'sameBlockType' when constructors are added to this
 -- type.
 data Block =
-    Para Inlines
+    Para !Inlines
     -- ^ A paragraph.
-    | Header Int Inlines
+    | Header !Int !Inlines
     -- ^ A section header with specified depth and contents.
-    | Blockquote Blocks
+    | Blockquote !Blocks
     -- ^ A blockquote.
-    | List C.ListType C.ListSpacing (Seq Blocks)
+    | List !C.ListType !C.ListSpacing !(Seq Blocks)
     -- ^ An itemized list.
-    | CodeBlock CodeBlockInfo Text
+    | CodeBlock !CodeBlockInfo !Text
     -- ^ A code block.
-    | HTMLBlock Text
+    | HTMLBlock !Text
     -- ^ A fragment of raw HTML.
     | HRule
     -- ^ A horizontal rule.
-    | Table [C.ColAlignment] [Inlines] [[Inlines]]
+    | Table ![C.ColAlignment] ![Inlines] ![[Inlines]]
     -- ^ A table.
     deriving (Show, Eq)
 
@@ -117,12 +117,12 @@ sameBlockType _               _               = False
 
 -- | Information about a code block.
 data CodeBlockInfo =
-    CodeBlockInfo { codeBlockLanguage :: Maybe Text
+    CodeBlockInfo { codeBlockLanguage :: !(Maybe Text)
                   -- ^ The language of the source code in the code
                   -- block, if any. This is encoded in Markdown as a
                   -- sequence of non-whitespace characters following the
                   -- fenced code block opening backticks.
-                  , codeBlockInfo :: Maybe Text
+                  , codeBlockInfo :: !(Maybe Text)
                   -- ^ Any text that comes after the language token.
                   -- This text is separated from the language token by
                   -- whitespace.
@@ -138,16 +138,16 @@ unURL (URL url) = url
 
 -- | The kinds of inline values that can appear in rich text blocks.
 data Inline =
-    EText Text
+    EText !Text
     -- ^ Plain text that SHOULD be a contiguous sequence of
     -- non-whitespace characters.
-    | EEmph Inlines
+    | EEmph !Inlines
     -- ^ Emphasized (usually italicized) content.
-    | EStrikethrough Inlines
+    | EStrikethrough !Inlines
     -- ^ Strikethrough content.
-    | EStrong Inlines
+    | EStrong !Inlines
     -- ^ Boldface content.
-    | ECode Inlines
+    | ECode !Inlines
     -- ^ A sequence of non-whitespace characters.
     | ESpace
     -- ^ A single space.
@@ -155,36 +155,36 @@ data Inline =
     -- ^ A soft line break.
     | ELineBreak
     -- ^ A hard line break.
-    | ERawHtml Text
+    | ERawHtml !Text
     -- ^ Raw HTML.
-    | EEditSentinel Bool
+    | EEditSentinel !Bool
     -- ^ A sentinel indicating that some text has been edited (used
     -- to indicate that mattermost messages have been edited by their
     -- authors). This has no parsable representation; it is only used
     -- to annotate a message prior to rendering to add a visual editing
     -- indicator. The boolean indicates whether the edit was "recent"
     -- (True) or not (False).
-    | EUser Text
+    | EUser !Text
     -- ^ A user reference. The text here includes only the username, not
     -- the sigil.
-    | EChannel Text
+    | EChannel !Text
     -- ^ A channel reference. The text here includes only the channel
     -- name, not the sigil.
-    | EHyperlink URL Inlines
+    | EHyperlink !URL !Inlines
     -- ^ A hyperlink to the specified URL. Optionally provides an
     -- element sequence indicating the URL's text label; if absent, the
     -- label is understood to be the URL itself.
-    | EImage URL Inlines
+    | EImage !URL !Inlines
     -- ^ An image at the specified URL. Optionally provides an element
     -- sequence indicating the image's "alt" text label; if absent, the
     -- label is understood to be the URL itself.
-    | EEmoji Text
+    | EEmoji !Text
     -- ^ An emoji reference. The text here includes only the text
     -- portion, not the colons, e.g. "foo" instead of ":foo:".
-    | ENonBreaking Inlines
+    | ENonBreaking !Inlines
     -- ^ A sequence of elements that must never be separated during line
     -- wrapping.
-    | EPermalink TeamURLName PostId (Maybe Inlines)
+    | EPermalink !TeamURLName !PostId !(Maybe Inlines)
     -- ^ A permalink to the specified team (name) and post ID with an
     -- optional label.
     deriving (Show, Eq, Ord)

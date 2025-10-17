@@ -79,19 +79,19 @@ data SpecialMention =
     -- ^ @channel: notify everyone in the channel.
 
 data AutocompleteAlternative =
-    UserCompletion User Bool Text
+    UserCompletion !User !Bool !Text
     -- ^ User, plus whether the user is in the channel that triggered the
     -- autocomplete and any prefix (e.g. the preceeding portion of a user list)
     -- that should be retained when subtituting this autocompletion.
-    | SpecialMention SpecialMention
+    | SpecialMention !SpecialMention
     -- ^ A special mention.
-    | ChannelCompletion Bool Channel
+    | ChannelCompletion !Bool !Channel
     -- ^ Channel, plus whether the user is a member of the channel
-    | SyntaxCompletion Text
+    | SyntaxCompletion !Text
     -- ^ Name of a skylighting syntax definition
-    | CommandCompletion CompletionSource Text Text Text
+    | CommandCompletion !CompletionSource !Text !Text !Text
     -- ^ Source, name of a slash command, argspec, and description
-    | EmojiCompletion Text
+    | EmojiCompletion !Text
     -- ^ The text of an emoji completion
 
 -- | This returns the potential auto-completion final portion that might be used
@@ -160,8 +160,8 @@ data AutocompletionType =
 
 -- | An attachment.
 data AttachmentData =
-    AttachmentData { attachmentDataFileInfo :: FB.FileInfo
-                   , attachmentDataBytes :: BS.ByteString
+    AttachmentData { attachmentDataFileInfo :: !FB.FileInfo
+                   , attachmentDataBytes :: !BS.ByteString
                    }
                    deriving (Eq, Show)
 
@@ -169,26 +169,26 @@ data AttachmentData =
 data EditMode =
     NewPost
     -- ^ The input is for a new post.
-    | Editing Post MessageType
+    | Editing !Post !MessageType
     -- ^ The input is ultimately to replace the body of an existing post
     -- of the specified type.
-    | Replying Message Post
+    | Replying !Message !Post
     -- ^ The input is to be used as a new post in reply to the specified
     -- post.
     deriving (Show, Eq)
 
 data AutocompleteState n =
-    AutocompleteState { _acPreviousSearchString :: Text
+    AutocompleteState { _acPreviousSearchString :: !Text
                       -- ^ The search string used for the
                       -- currently-displayed autocomplete results, for
                       -- use in deciding whether to issue another server
                       -- query
-                      , _acCompletionList :: List n AutocompleteAlternative
+                      , _acCompletionList :: !(List n AutocompleteAlternative)
                       -- ^ The list of alternatives that the user
                       -- selects from
-                      , _acType :: AutocompletionType
+                      , _acType :: !AutocompletionType
                       -- ^ The type of data that we're completing
-                      , _acCachedResponses :: HM.HashMap Text [AutocompleteAlternative]
+                      , _acCachedResponses :: !(HM.HashMap Text [AutocompleteAlternative])
                       -- ^ A cache of alternative lists, keyed on search
                       -- string, for use in avoiding server requests.
                       -- The idea here is that users type quickly enough
@@ -201,23 +201,23 @@ data AutocompleteState n =
                       }
 
 data EditorTarget =
-    EditorForThread TeamId
-    | EditorForChannel ChannelId
+    EditorForThread !TeamId
+    | EditorForChannel !ChannelId
     deriving (Eq, Show)
 
 -- | The 'EditState' value contains the editor widget itself as well as
 -- history and metadata we need for editing-related operations.
 data EditState n =
-    EditState { _esEditor :: Editor Text n
-              , _esEditMode :: EditMode
-              , _esEphemeral :: EphemeralEditState
-              , _esMisspellings :: Set Text
-              , _esAutocomplete :: Maybe (AutocompleteState n)
+    EditState { _esEditor :: !(Editor Text n)
+              , _esEditMode :: !EditMode
+              , _esEphemeral :: !EphemeralEditState
+              , _esMisspellings :: !(Set Text)
+              , _esAutocomplete :: !(Maybe (AutocompleteState n))
               -- ^ The autocomplete state. The autocompletion UI is
               -- showing only when this state is present.
-              , _esResetEditMode :: EditMode
+              , _esResetEditMode :: !EditMode
               -- ^ The editing mode to reset to after input is handled.
-              , _esAutocompletePending :: Maybe (Text, AutocompletionType)
+              , _esAutocompletePending :: !(Maybe (Text, AutocompletionType))
               -- ^ The search string and search type associated with the
               -- latest in-flight autocompletion request. This is used
               -- to determine whether any (potentially late-arriving)
@@ -225,29 +225,29 @@ data EditState n =
               -- can type more quickly than the server can get us
               -- the results, and we wouldn't want to show results
               -- associated with old editor states.
-              , _esAttachmentList :: List n AttachmentData
+              , _esAttachmentList :: !(List n AttachmentData)
               -- ^ The list of attachments to be uploaded with the post
               -- being edited.
-              , _esFileBrowser :: Maybe (FB.FileBrowser n)
+              , _esFileBrowser :: !(Maybe (FB.FileBrowser n))
               -- ^ The browser for selecting attachment files. This is
               -- a Maybe because the instantiation of the FileBrowser
               -- causes it to read and ingest the target directory, so
               -- this action is deferred until the browser is needed.
-              , _esJustCompleted :: Bool
+              , _esJustCompleted :: !Bool
               -- A flag that indicates whether the most recent editing
               -- event was a tab-completion. This is used by the smart
               -- trailing space handling.
-              , _esShowReplyPrompt :: Bool
+              , _esShowReplyPrompt :: !Bool
               -- ^ Whether to show the reply prompt when replying
-              , _esSpellCheckTimerReset :: Maybe (IO ())
+              , _esSpellCheckTimerReset :: !(Maybe (IO ()))
               -- ^ An action to reset the spell check timer for this
               -- editor, if a spell checker is running.
-              , _esChannelId :: ChannelId
+              , _esChannelId :: !ChannelId
               -- ^ Channel ID associated with this edit state
-              , _esTeamId :: Maybe TeamId
+              , _esTeamId :: !(Maybe TeamId)
               -- ^ Team ID associated with this edit state (optional
               -- since not all channels are associated with teams)
-              , _esTarget :: EditorTarget
+              , _esTarget :: !EditorTarget
               -- ^ Target for this editor
               }
 
@@ -271,15 +271,15 @@ newEditState editorName attachmentListName target tId cId initialEditMode showRe
               }
 
 data EphemeralEditState =
-    EphemeralEditState { _eesMultiline :: Bool
+    EphemeralEditState { _eesMultiline :: !Bool
                        -- ^ Whether the editor is in multiline mode
-                       , _eesInputHistoryPosition :: Maybe Int
+                       , _eesInputHistoryPosition :: !(Maybe Int)
                        -- ^ The input history position, if any
-                       , _eesLastInput :: (T.Text, EditMode)
+                       , _eesLastInput :: !(T.Text, EditMode)
                        -- ^ The input entered into the text editor last
                        -- time the user was focused on the channel
                        -- associated with this state.
-                       , _eesTypingUsers :: TypingUsers
+                       , _eesTypingUsers :: !TypingUsers
                        }
 
 defaultEphemeralEditState :: EphemeralEditState

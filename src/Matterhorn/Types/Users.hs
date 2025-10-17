@@ -110,8 +110,8 @@ makeLenses ''UserInfo
 
 -- | Define a binary kinded type to allow derivation of functor.
 data AllMyUsers a =
-    AllUsers { _ofUsers :: HashMap UserId a
-             , _usernameSet :: S.Set Text
+    AllUsers { _ofUsers :: !(HashMap UserId a)
+             , _usernameSet :: !(S.Set Text)
              }
              deriving Functor
 

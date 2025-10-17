@@ -44,43 +44,43 @@ import           Matterhorn.Types.DirectionalSeq
 -- | A bundled structure that includes all the information necessary
 -- to render a given message
 data MessageData =
-    MessageData { mdEditThreshold :: Maybe ServerTime
+    MessageData { mdEditThreshold :: !(Maybe ServerTime)
                 -- ^ If specified, any messages edited before this point
                 -- in time are not indicated as edited.
-                , mdShowOlderEdits :: Bool
+                , mdShowOlderEdits :: !Bool
                 -- ^ Indicates whether "edited" markers should be shown
                 -- for old messages (i.e., ignore the mdEditThreshold
                 -- value).
-                , mdShowReactions :: Bool
+                , mdShowReactions :: !Bool
                 -- ^ Whether to render reactions.
-                , mdMessage :: Message
+                , mdMessage :: !Message
                 -- ^ The message to render.
-                , mdUserName :: Maybe Text
+                , mdUserName :: !(Maybe Text)
                 -- ^ The username of the message's author, if any. This
                 -- is passed here rather than obtaining from the message
                 -- because we need to do lookups in the ChatState to
                 -- compute this, and we don't pass the ChatState into
                 -- renderMessage.
-                , mdParentMessage :: Maybe Message
+                , mdParentMessage :: !(Maybe Message)
                 -- ^ The parent message of this message, if any.
-                , mdParentUserName :: Maybe Text
+                , mdParentUserName :: !(Maybe Text)
                 -- ^ The author of the parent message, if any.
-                , mdThreadState :: ThreadState
+                , mdThreadState :: !ThreadState
                 -- ^ The thread state of this message.
-                , mdRenderReplyParent :: Bool
+                , mdRenderReplyParent :: !Bool
                 -- ^ Whether to render the parent message.
-                , mdRenderReplyIndent :: Bool
+                , mdRenderReplyIndent :: !Bool
                 -- ^ Whether to render reply indent decorations
-                , mdHighlightSet :: HighlightSet
+                , mdHighlightSet :: !HighlightSet
                 -- ^ The highlight set to use to highlight usernames,
                 -- channel names, etc.
-                , mdIndentBlocks :: Bool
+                , mdIndentBlocks :: !Bool
                 -- ^ Whether to indent the message underneath the
                 -- author's name (True) or just display it to the right
                 -- of the author's name (False).
-                , mdTruncateVerbatimBlocks :: Maybe Int
+                , mdTruncateVerbatimBlocks :: !(Maybe Int)
                 -- ^ At what height to truncate long verbatim/code blocks.
-                , mdMessageWidthLimit :: Maybe Int
+                , mdMessageWidthLimit :: !(Maybe Int)
                 -- ^ A width override to use to wrap non-code blocks
                 -- and code blocks without syntax highlighting. If
                 -- unspecified, all blocks in the message will be
@@ -88,14 +88,14 @@ data MessageData =
                 -- rendering context. If specified, all non-code blocks
                 -- will be wrapped at this width and highlighted code
                 -- blocks will be rendered using the context's width.
-                , mdMyUsername :: Text
+                , mdMyUsername :: !Text
                 -- ^ The username of the user running Matterhorn.
-                , mdMyUserId :: UserId
+                , mdMyUserId :: !UserId
                 -- ^ The user ID of the user running Matterhorn.
-                , mdWrapNonhighlightedCodeBlocks :: Bool
+                , mdWrapNonhighlightedCodeBlocks :: !Bool
                 -- ^ Whether to wrap text in non-highlighted code
                 -- blocks.
-                , mdClickableNameTag :: Name
+                , mdClickableNameTag :: !Name
                 -- ^ Used to namespace clickable extents produced by
                 -- rendering this message
                 }

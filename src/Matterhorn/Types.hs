@@ -1120,7 +1120,7 @@ data ChatResources =
 -- | The 'GlobalEditState' value contains state not specific to any
 -- single editor.
 data GlobalEditState =
-    GlobalEditState { _gedYankBuffer :: Text
+    GlobalEditState { _gedYankBuffer :: !Text
                     }
 
 emptyGlobalEditState :: GlobalEditState
@@ -1192,54 +1192,54 @@ data ThreadOrientation =
 -- | This type represents the current state of our application at any
 -- given time.
 data ChatState =
-    ChatState { _csResources :: ChatResources
+    ChatState { _csResources :: !ChatResources
               -- ^ Global application-wide resources that don't change
               -- much.
-              , _csLastMouseDownEvent :: Maybe (Brick.BrickEvent Name MHEvent)
+              , _csLastMouseDownEvent :: !(Maybe (Brick.BrickEvent Name MHEvent))
               -- ^ The most recent mouse click event we got. We reset
               -- this on mouse up so we can ignore clicks whenever this
               -- is already set.
-              , _csVerbatimTruncateSetting :: Maybe Int
+              , _csVerbatimTruncateSetting :: !(Maybe Int)
               -- ^ The current verbatim block truncation setting. This
               -- is used to toggle truncation behavior and is updated
               -- from the configTruncateVerbatimBlocks Config field.
-              , _csTeams :: HashMap TeamId TeamState
+              , _csTeams :: !(HashMap TeamId TeamState)
               -- ^ The state for each team that we are in.
-              , _csTeamZipper :: Z.Zipper () TeamId
+              , _csTeamZipper :: !(Z.Zipper () TeamId)
               -- ^ The list of teams we can cycle through.
-              , _csChannelListOrientation :: ChannelListOrientation
+              , _csChannelListOrientation :: !ChannelListOrientation
               -- ^ The orientation of the channel list.
-              , _csMe :: User
+              , _csMe :: !User
               -- ^ The authenticated user.
-              , _csChannels :: ClientChannels
+              , _csChannels :: !ClientChannels
               -- ^ The channels that we are showing, including their
               -- message lists.
-              , _csHiddenChannelGroups :: HM.HashMap TeamId (Set ChannelListGroupLabel)
+              , _csHiddenChannelGroups :: !(HM.HashMap TeamId (Set ChannelListGroupLabel))
               -- ^ The set of channel list groups that are currently
               -- collapsed in the sidebar.
-              , _csPostMap :: HashMap PostId Message
+              , _csPostMap :: !(HashMap PostId Message)
               -- ^ The map of post IDs to messages. This allows us to
               -- access messages by ID without having to linearly scan
               -- channel message lists.
-              , _csUsers :: Users
+              , _csUsers :: !Users
               -- ^ All of the users we know about.
-              , _timeZone :: TimeZoneSeries
+              , _timeZone :: !TimeZoneSeries
               -- ^ The client time zone.
-              , _csConnectionStatus :: ConnectionStatus
+              , _csConnectionStatus :: !ConnectionStatus
               -- ^ Our view of the connection status.
-              , _csWorkerIsBusy :: Maybe (Maybe Int)
+              , _csWorkerIsBusy :: !(Maybe (Maybe Int))
               -- ^ Whether the async worker thread is busy, and its
               -- queue length if so.
-              , _csClientConfig :: Maybe ClientConfig
+              , _csClientConfig :: !(Maybe ClientConfig)
               -- ^ The Mattermost client configuration, as we understand it.
-              , _csInputHistory :: InputHistory
+              , _csInputHistory :: !InputHistory
               -- ^ The map of per-channel input history for the
               -- application. We don't distribute the per-channel
               -- history into the per-channel states (like we do
               -- for other per-channel state) since keeping it
               -- under the InputHistory banner lets us use a nicer
               -- startup/shutdown disk file management API.
-              , _csGlobalEditState :: GlobalEditState
+              , _csGlobalEditState :: !GlobalEditState
               -- ^ Bits of global state common to all editors.
               }
 
@@ -1364,19 +1364,19 @@ data PendingChannelChange =
 -- | Startup state information that is constructed prior to building a
 -- ChatState.
 data StartupStateInfo =
-    StartupStateInfo { startupStateResources      :: ChatResources
-                     , startupStateConnectedUser  :: User
-                     , startupStateTeams          :: HM.HashMap TeamId TeamState
-                     , startupStateTimeZone       :: TimeZoneSeries
-                     , startupStateInitialHistory :: InputHistory
-                     , startupStateInitialTeam    :: TeamId
+    StartupStateInfo { startupStateResources      :: !ChatResources
+                     , startupStateConnectedUser  :: !User
+                     , startupStateTeams          :: !(HM.HashMap TeamId TeamState)
+                     , startupStateTimeZone       :: !TimeZoneSeries
+                     , startupStateInitialHistory :: !InputHistory
+                     , startupStateInitialTeam    :: !TeamId
                      }
 
 -- | The state of the channel topic editor window.
 data ChannelTopicDialogState =
-    ChannelTopicDialogState { _channelTopicDialogEditor :: Editor T.Text Name
+    ChannelTopicDialogState { _channelTopicDialogEditor :: !(Editor T.Text Name)
                             -- ^ The topic string editor state.
-                            , _channelTopicDialogFocus :: FocusRing Name
+                            , _channelTopicDialogFocus :: !(FocusRing Name)
                             -- ^ The window focus state (editor/buttons)
                             }
 
@@ -1400,8 +1400,8 @@ teamZipperIds = concat . fmap snd . Z.toList
 
 -- | The state of channel selection mode.
 data ChannelSelectState =
-    ChannelSelectState { _channelSelectInput :: Editor Text Name
-                       , _channelSelectMatches :: Z.Zipper ChannelListGroup ChannelSelectMatch
+    ChannelSelectState { _channelSelectInput :: !(Editor Text Name)
+                       , _channelSelectMatches :: !(Z.Zipper ChannelListGroup ChannelSelectMatch)
                        }
 
 emptyChannelSelectState :: TeamId -> ChannelSelectState
@@ -1412,27 +1412,27 @@ emptyChannelSelectState tId =
 
 -- | The state of the post list window.
 data PostListWindowState =
-    PostListWindowState { _postListPosts    :: Messages
-                        , _postListSelected :: Maybe PostId
+    PostListWindowState { _postListPosts    :: !Messages
+                        , _postListSelected :: !(Maybe PostId)
                         }
 
 data InternalTheme =
-    InternalTheme { internalThemeName :: Text
-                  , internalTheme :: Theme
-                  , internalThemeDesc :: Text
+    InternalTheme { internalThemeName :: !Text
+                  , internalTheme :: !Theme
+                  , internalThemeDesc :: !Text
                   }
 
 -- | The state of the search result list window. Type 'a' is the type
 -- of data in the list. Type 'b' is the search scope type.
 data ListWindowState a b =
-    ListWindowState { _listWindowSearchResults :: List Name a
+    ListWindowState { _listWindowSearchResults :: !(List Name a)
                      -- ^ The list of search results currently shown in
                      -- the window.
-                     , _listWindowSearchInput :: Editor Text Name
+                     , _listWindowSearchInput :: !(Editor Text Name)
                      -- ^ The editor for the window's search input.
-                     , _listWindowSearchScope :: b
+                     , _listWindowSearchScope :: !b
                      -- ^ The window's current search scope.
-                     , _listWindowSearching :: Bool
+                     , _listWindowSearching :: !Bool
                      -- ^ Whether a search is in progress (i.e. whether
                      -- we are currently awaiting a response from a
                      -- search query to the server).
@@ -1445,15 +1445,15 @@ data ListWindowState a b =
                      , _listWindowFetchResults :: b -> Session -> Text -> IO (Vec.Vector a)
                      -- ^ The function to call to issue a search query
                      -- to the server.
-                     , _listWindowRecordCount :: Maybe Int
+                     , _listWindowRecordCount :: !(Maybe Int)
                      -- ^ The total number of available records, if known.
                      }
 
 -- | The scope for searching for users in a user list window.
 data UserSearchScope =
-    ChannelMembers ChannelId TeamId
-    | ChannelNonMembers ChannelId TeamId
-    | AllUsers (Maybe TeamId)
+    ChannelMembers !ChannelId !TeamId
+    | ChannelNonMembers !ChannelId !TeamId
+    | AllUsers !(Maybe TeamId)
 
 -- | The scope for searching for channels to join.
 data ChannelSearchScope =
@@ -1461,7 +1461,7 @@ data ChannelSearchScope =
 
 -- | Actions that can be sent on the websocket to the server.
 data WebsocketAction =
-    UserTyping UTCTime ChannelId (Maybe PostId) -- ^ user typing in the input box
+    UserTyping !UTCTime !ChannelId !(Maybe PostId) -- ^ user typing in the input box
     deriving (Read, Show, Eq, Ord)
 
 -- * MH Monad
@@ -1469,23 +1469,23 @@ data WebsocketAction =
 -- | Logging context information, in the event that metadata should
 -- accompany a log message.
 data LogContext =
-    LogContext { logContextChannelId :: Maybe ChannelId
+    LogContext { logContextChannelId :: !(Maybe ChannelId)
                }
                deriving (Eq, Show)
 
 -- | A user fetching strategy.
 data UserFetch =
-    UserFetchById UserId
+    UserFetchById !UserId
     -- ^ Fetch the user with the specified ID.
-    | UserFetchByUsername Text
+    | UserFetchByUsername !Text
     -- ^ Fetch the user with the specified username.
-    | UserFetchByNickname Text
+    | UserFetchByNickname !Text
     -- ^ Fetch the user with the specified nickname.
     deriving (Eq, Show)
 
 data MHState =
-    MHState { mhUsersToFetch :: [UserFetch]
-            , mhPendingStatusList :: Maybe [UserId]
+    MHState { mhUsersToFetch :: ![UserFetch]
+            , mhPendingStatusList :: !(Maybe [UserId])
             }
 
 -- | A value of type 'MH' @a@ represents a computation that can
@@ -1607,15 +1607,15 @@ data Work = Work String (MH ())
 
 -- | This represents events that we handle in the main application loop.
 data MHEvent =
-    WSEvent WebsocketEvent
+    WSEvent !WebsocketEvent
     -- ^ For events that arise from the websocket
-    | WSActionResponse WebsocketActionResponse
+    | WSActionResponse !WebsocketActionResponse
     -- ^ For responses to websocket actions
-    | RespEvent Work
+    | RespEvent !Work
     -- ^ For the result values of async operations
     | RefreshWebsocketEvent
     -- ^ Tell our main loop to refresh the websocket connection
-    | WebsocketParseError String
+    | WebsocketParseError !String
     -- ^ We failed to parse an incoming websocket event
     | WebsocketDisconnect
     -- ^ The websocket connection went down.
@@ -1623,9 +1623,9 @@ data MHEvent =
     -- ^ The websocket connection came up.
     | BGIdle
     -- ^ background worker is idle
-    | BGBusy (Maybe Int)
+    | BGBusy !(Maybe Int)
     -- ^ background worker is busy (with n requests)
-    | RateLimitExceeded Int
+    | RateLimitExceeded !Int
     -- ^ A request initially failed due to a rate limit but will be
     -- retried if possible. The argument is the number of seconds in
     -- which the retry will be attempted.
@@ -1635,50 +1635,50 @@ data MHEvent =
     | RequestDropped
     -- ^ A request was reattempted due to a rate limit and was rate
     -- limited again
-    | IEvent InternalEvent
+    | IEvent !InternalEvent
     -- ^ MH-internal events
 
 -- | Internal application events.
 data InternalEvent =
-    DisplayError MHError
+    DisplayError !MHError
     -- ^ Some kind of application error occurred
-    | LoggingStarted FilePath
-    | LoggingStopped FilePath
-    | LogStartFailed FilePath String
-    | LogDestination (Maybe FilePath)
-    | LogSnapshotSucceeded FilePath
-    | LogSnapshotFailed FilePath String
+    | LoggingStarted !FilePath
+    | LoggingStopped !FilePath
+    | LogStartFailed !FilePath !String
+    | LogDestination !(Maybe FilePath)
+    | LogSnapshotSucceeded !FilePath
+    | LogSnapshotFailed !FilePath !String
     -- ^ Logging events from the logging thread
 
 -- | Application errors.
 data MHError =
-    GenericError T.Text
+    GenericError !T.Text
     -- ^ A generic error message constructor
-    | NoSuchChannel T.Text
+    | NoSuchChannel !T.Text
     -- ^ The specified channel does not exist
-    | NoSuchUser T.Text
+    | NoSuchUser !T.Text
     -- ^ The specified user does not exist
-    | AmbiguousName T.Text
+    | AmbiguousName !T.Text
     -- ^ The specified name matches both a user and a channel
-    | ServerError MattermostError
+    | ServerError !MattermostError
     -- ^ A Mattermost server error occurred
-    | ClipboardError T.Text
+    | ClipboardError !T.Text
     -- ^ A problem occurred trying to deal with yanking or the system
     -- clipboard
-    | ConfigOptionMissing T.Text
+    | ConfigOptionMissing !T.Text
     -- ^ A missing config option is required to perform an operation
-    | ProgramExecutionFailed T.Text T.Text
+    | ProgramExecutionFailed !T.Text !T.Text
     -- ^ Args: program name, path to log file. A problem occurred when
     -- running the program.
-    | NoSuchScript T.Text
+    | NoSuchScript !T.Text
     -- ^ The specified script was not found
-    | NoSuchHelpTopic T.Text
+    | NoSuchHelpTopic !T.Text
     -- ^ The specified help topic was not found
-    | AttachmentException SomeException
+    | AttachmentException !SomeException
     -- ^ IO operations for attaching a file threw an exception
-    | BadAttachmentPath T.Text
+    | BadAttachmentPath !T.Text
     -- ^ The specified file is either a directory or doesn't exist
-    | AsyncErrEvent SomeException
+    | AsyncErrEvent !SomeException
     -- ^ For errors that arise in the course of async IO operations
     deriving (Show)
 
@@ -2106,13 +2106,13 @@ data CommandArgs :: K.Type -> K.Type where
 -- including its argument specification, name, description, and
 -- implementation.
 data ClientCommand =
-    forall a. ClientCommand { clientCommandName :: Text
+    forall a. ClientCommand { clientCommandName :: !Text
                             -- ^ The name of the slash command without
                             -- the slash.
-                            , clientCommandDescr :: Text
+                            , clientCommandDescr :: !Text
                             -- ^ The command's description to be shown
                             -- as help text.
-                            , clientCommandArgSpec :: CommandArgs a
+                            , clientCommandArgSpec :: !(CommandArgs a)
                             -- ^ The command's argument specification.
                             , clientCommandAction :: a -> MH ()
                             -- ^ The command's implementation.
@@ -2162,8 +2162,8 @@ getUsers = use csUsers
 -- | The set of usernames, channel names, and language names used for
 -- highlighting when rendering messages.
 data HighlightSet =
-    HighlightSet { hUserSet    :: Set Text
-                 , hChannelSet :: Set Text
+    HighlightSet { hUserSet    :: !(Set Text)
+                 , hChannelSet :: !(Set Text)
                  , hSyntaxMap  :: SyntaxMap
                  }
 

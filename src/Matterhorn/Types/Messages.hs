@@ -138,22 +138,22 @@ data ThreadState =
 -- | A 'Message' is any message we might want to render, either from
 --   Mattermost itself or from a client-internal source.
 data Message = Message
-  { _mText          :: Blocks
-  , _mMarkdownSource :: Text
-  , _mUser          :: MessageAuthor
-  , _mDate          :: ServerTime
-  , _mType          :: MessageType
-  , _mPending       :: Bool
-  , _mDeleted       :: Bool
-  , _mAttachments   :: Seq Attachment
-  , _mInReplyToMsg  :: ReplyState
-  , _mMessageId     :: Maybe MessageId
-  , _mReactions     :: Map.Map Text (S.Set UserId)
-  , _mOriginalPost  :: Maybe Post
-  , _mFlagged       :: Bool
-  , _mPinned        :: Bool
-  , _mChannelId     :: Maybe ChannelId
-  , _mTeamId        :: Maybe TeamId
+  { _mText          :: !Blocks
+  , _mMarkdownSource :: !Text
+  , _mUser          :: !MessageAuthor
+  , _mDate          :: !ServerTime
+  , _mType          :: !MessageType
+  , _mPending       :: !Bool
+  , _mDeleted       :: !Bool
+  , _mAttachments   :: !(Seq Attachment)
+  , _mInReplyToMsg  :: !ReplyState
+  , _mMessageId     :: !(Maybe MessageId)
+  , _mReactions     :: !(Map.Map Text (S.Set UserId))
+  , _mOriginalPost  :: !(Maybe Post)
+  , _mFlagged       :: !Bool
+  , _mPinned        :: !Bool
+  , _mChannelId     :: !(Maybe ChannelId)
+  , _mTeamId        :: !(Maybe TeamId)
   } deriving (Show, Eq)
 
 isPostMessage :: Message -> Bool
@@ -251,7 +251,7 @@ data MessageType = C ClientMessageType
 -- a user by Id, or the server may have supplied a specific username
 -- (often associated with bots). The boolean flag indicates whether the
 -- user reference is for a message from a bot.
-data MessageAuthor = NoAuthor | AuthorById Bool UserId | AuthorOverride Bool Text
+data MessageAuthor = NoAuthor | AuthorById !Bool !UserId | AuthorOverride !Bool !Text
                    deriving (Eq, Show, Ord)
 
 isBotMessage :: Message -> Bool
@@ -265,15 +265,15 @@ isBotMessage m =
 --   is a reply, and if so, to what message
 data ReplyState =
     NotAReply
-    | InReplyTo PostId
+    | InReplyTo !PostId
     deriving (Show, Eq)
 
 -- | This type represents links to things in the 'open links' view.
 data LinkChoice =
-    LinkChoice { _linkTime   :: Maybe ServerTime
-               , _linkUser   :: MessageAuthor
-               , _linkLabel  :: Maybe Inlines
-               , _linkTarget :: LinkTarget
+    LinkChoice { _linkTime   :: !(Maybe ServerTime)
+               , _linkUser   :: !MessageAuthor
+               , _linkLabel  :: !(Maybe Inlines)
+               , _linkTarget :: !LinkTarget
                } deriving (Eq, Show)
 
 makeLenses ''LinkChoice
@@ -304,8 +304,8 @@ clientMessageToMessage cm = Message
 
 
 data MentionedUser =
-    UsernameMention Text
-    | UserIdMention UserId
+    UsernameMention !Text
+    | UserIdMention !UserId
     deriving (Eq, Show, Ord)
 
 clientPostReactionUserIds :: ClientPost -> S.Set UserId

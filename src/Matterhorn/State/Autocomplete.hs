@@ -37,7 +37,7 @@ import           Matterhorn.Emoji
 
 
 data AutocompleteContext =
-    AutocompleteContext { autocompleteManual :: Bool
+    AutocompleteContext { autocompleteManual :: !Bool
                         -- ^ Whether the autocompletion was manual
                         -- (True) or automatic (False). The automatic
                         -- case is the case where the autocomplete
@@ -46,7 +46,7 @@ data AutocompleteContext =
                         -- The manual case is the case where the
                         -- autocomplete lookups and UI are triggered
                         -- explicitly by a user's TAB keypress.
-                        , autocompleteFirstMatch :: Bool
+                        , autocompleteFirstMatch :: !Bool
                         -- ^ Once the results of the autocomplete lookup
                         -- are available, this flag determines whether
                         -- the user's input is replaced immediately
@@ -56,7 +56,7 @@ data AutocompleteContext =
                         deriving (Show)
 
 data Completer =
-    Completer { completerType :: AutocompletionType
+    Completer { completerType :: !AutocompletionType
               , completerFunc :: AutocompletionType -> AutocompleteContext -> Text -> MH ()
               }
 

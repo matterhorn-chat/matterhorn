@@ -48,28 +48,28 @@ import           Matterhorn.Types.Messages
 -- | A UI region in which a specific message listing is viewed, where
 -- the user can send messages in that channel or thread.
 data MessageInterface n i =
-    MessageInterface { _miMessages :: Messages
+    MessageInterface { _miMessages :: !Messages
                      -- ^ The messages.
-                     , _miEditor :: EditState n
+                     , _miEditor :: !(EditState n)
                      -- ^ The editor and associated state for composing
                      -- messages in this channel or thread.
-                     , _miMessageSelect :: MessageSelectState
+                     , _miMessageSelect :: !MessageSelectState
                      -- ^ Message selection state for the interface.
-                     , _miRootPostId :: i
+                     , _miRootPostId :: !i
                      -- ^ The root post ID if these messages belong to a
                      -- thread.
-                     , _miChannelId :: ChannelId
+                     , _miChannelId :: !ChannelId
                      -- ^ The channel that these messages belong to.
-                     , _miMode :: MessageInterfaceMode
+                     , _miMode :: !MessageInterfaceMode
                      -- ^ The mode of the interface.
-                     , _miTarget :: MessageInterfaceTarget
+                     , _miTarget :: !MessageInterfaceTarget
                      -- ^ The target value for this message interface
-                     , _miUrlListSource :: URLListSource
+                     , _miUrlListSource :: !URLListSource
                      -- ^ How to characterize the URLs found in messages
                      -- in this interface
-                     , _miUrlList :: URLList n
+                     , _miUrlList :: !(URLList n)
                      -- ^ The URL listing for this interface
-                     , _miSaveAttachmentDialog :: SaveAttachmentDialogState n
+                     , _miSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
                      -- ^ The state for the interactive attachment-saving
                      -- editor window.
                      }
@@ -91,7 +91,7 @@ data MessageInterfaceMode =
     -- ^ Selecting from messages in the listing
     | ShowUrlList
     -- ^ Show the URL listing
-    | SaveAttachment LinkChoice
+    | SaveAttachment !LinkChoice
     -- ^ Show the attachment save UI
     | ManageAttachments
     -- ^ Managing the attachment list
@@ -100,25 +100,25 @@ data MessageInterfaceMode =
     deriving (Eq, Show)
 
 data URLListSource =
-    FromChannel ChannelId
-    | FromThreadIn ChannelId
+    FromChannel !ChannelId
+    | FromThreadIn !ChannelId
     deriving (Show, Eq)
 
 data MessageInterfaceTarget =
-    MITeamThread TeamId
-    | MIChannel ChannelId
+    MITeamThread !TeamId
+    | MIChannel !ChannelId
     deriving (Eq, Show)
 
 data URLList n =
-    URLList { _ulList :: List n (Int, LinkChoice)
-            , _ulSource :: Maybe URLListSource
+    URLList { _ulList :: !(List n (Int, LinkChoice))
+            , _ulSource :: !(Maybe URLListSource)
             }
 
 -- | The state of the attachment path window.
 data SaveAttachmentDialogState n =
-    SaveAttachmentDialogState { _attachmentPathEditor :: Editor T.Text n
+    SaveAttachmentDialogState { _attachmentPathEditor :: !(Editor T.Text n)
                               -- ^ The attachment path editor state.
-                              , _attachmentPathDialogFocus :: FocusRing n
+                              , _attachmentPathDialogFocus :: !(FocusRing n)
                               -- ^ The window focus state (editor/buttons)
                               }
 

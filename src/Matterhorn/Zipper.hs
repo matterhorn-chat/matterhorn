@@ -29,8 +29,8 @@ import qualified Data.CircularList as C
 import           Lens.Micro.Platform
 
 data Zipper a b =
-    Zipper { zRing :: C.CList b
-           , zTrees :: Seq.Seq (a, Seq.Seq b)
+    Zipper { zRing :: !(C.CList b)
+           , zTrees :: !(Seq.Seq (a, Seq.Seq b))
            }
 
 instance F.Foldable (Zipper a) where
