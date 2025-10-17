@@ -43,6 +43,7 @@
 | `PgUp` | `page-up` | Page up in the message list (enters message select mode) |
 | `S-Home` | `select-oldest-message` | Scroll to top of message list |
 | `C-o` | `enter-url-open` | Select and open a URL from the current message list |
+| `C-M-o` | `enter-topic-url-open` | Select and open a URL from the current channel's topic |
 
 # Message Editing
 | Keybinding | Event Name | Description |

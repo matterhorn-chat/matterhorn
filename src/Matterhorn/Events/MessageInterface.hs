@@ -77,7 +77,11 @@ messageInterfaceKeyHandlers which =
         messageSelectFirst which
 
     , onEvent EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startUrlSelect which
+        startMessageUrlSelect which
+
+    , onEvent EnterOpenTopicURLModeEvent "Select and open a URL from the current channel's topic" $
+        withCurrentTeam $ \tId ->
+            startTopicUrlSelect tId which
     ]
 
 extraEditorKeybindings :: Lens' ChatState (MessageInterface Name i)

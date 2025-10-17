@@ -185,6 +185,7 @@ defaultBindings =
     , (NextUnreadUserOrChannelEvent     , [ ])
     , (LastChannelEvent                 , [ meta 's' ])
     , (EnterOpenURLModeEvent            , [ ctrl 'o' ])
+    , (EnterOpenTopicURLModeEvent       , [ meta $ ctrl 'o' ])
     , (ClearUnreadEvent                 , [ meta 'l' ])
     , (ToggleMultiLineEvent             , [ meta 'e' ])
     , (EnterFlaggedPostsEvent           , [ meta '8' ])

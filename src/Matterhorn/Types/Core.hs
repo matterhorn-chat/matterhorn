@@ -286,6 +286,7 @@ data KeyEvent
   | NextUnreadUserOrChannelEvent
   | LastChannelEvent
   | EnterOpenURLModeEvent
+  | EnterOpenTopicURLModeEvent
   | ClearUnreadEvent
   | ToggleMultiLineEvent
   | EnterFlaggedPostsEvent
@@ -444,6 +445,7 @@ allEvents =
     , ("show-help", ShowHelpEvent)
     , ("select-mode", EnterSelectModeEvent)
     , ("enter-url-open", EnterOpenURLModeEvent)
+    , ("enter-topic-url-open", EnterOpenTopicURLModeEvent)
     , ("load-more", LoadMoreEvent)
     , ("open-message-url", OpenMessageURLEvent)
     , ("scroll-up", ScrollUpEvent)
