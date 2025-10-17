@@ -96,14 +96,24 @@ checkForAutocompletion target ctx = do
                             (_acType prev /= ty)
 
             when shouldUpdate $ do
-                prev <- preuse (which.esAutocompletePending)
+                prev <- preuse (which.esAutocompletePending._Just)
                 let continue = case prev of
-                                   Just s -> s /= Just searchString
+                                   Just (s, prevTy) -> (s /= searchString && prevTy == ty) || prevTy /= ty
                                    Nothing -> True
 
                 when continue $ do
-                    which.esAutocompletePending .= Just searchString
-                    completerFunc completer ty ctx searchString
+                    mVal <- preuse which
+                    case mVal of
+                        Nothing -> return ()
+                        Just esVal -> do
+                            let emptyList = L.list (CompletionList $ getName $ esVal^.esEditor) mempty 1
+                            which.esAutocomplete .= Just (AutocompleteState { _acPreviousSearchString = searchString
+                                                                            , _acCompletionList = emptyList
+                                                                            , _acCachedResponses = mempty
+                                                                            , _acType = ty
+                                                                            })
+                            which.esAutocompletePending .= Just (searchString, ty)
+                            completerFunc completer ty ctx searchString
 
 getCompleterForInput :: Traversal' ChatState (EditState Name)
                      -> AutocompleteContext
@@ -423,8 +433,7 @@ setCompletionAlternatives which ctx searchString alts ty = do
                                           }
 
             case pending of
-                Just val | val == searchString -> do
-
+                Just (val, pendingTy) | val == searchString && pendingTy == ty -> do
                     -- If there is already state, update it, but also cache the
                     -- search results.
                     which.esAutocomplete %= \prev ->
@@ -440,7 +449,7 @@ setCompletionAlternatives which ctx searchString alts ty = do
 
                     when (autocompleteFirstMatch ctx) $
                         tabComplete which Forwards
-                _ ->
+                _ -> do
                     -- Do not update the state if this result does not
                     -- correspond to the search string we used most
                     -- recently. This happens when the editor changes

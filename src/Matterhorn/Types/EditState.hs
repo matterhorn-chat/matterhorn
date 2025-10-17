@@ -217,14 +217,14 @@ data EditState n =
               -- showing only when this state is present.
               , _esResetEditMode :: EditMode
               -- ^ The editing mode to reset to after input is handled.
-              , _esAutocompletePending :: Maybe Text
-              -- ^ The search string associated with the latest
-              -- in-flight autocompletion request. This is used to
-              -- determine whether any (potentially late-arriving) API
-              -- responses are for stale queries since the user can type
-              -- more quickly than the server can get us the results,
-              -- and we wouldn't want to show results associated with
-              -- old editor states.
+              , _esAutocompletePending :: Maybe (Text, AutocompletionType)
+              -- ^ The search string and search type associated with the
+              -- latest in-flight autocompletion request. This is used
+              -- to determine whether any (potentially late-arriving)
+              -- API responses are for stale queries since the user
+              -- can type more quickly than the server can get us
+              -- the results, and we wouldn't want to show results
+              -- associated with old editor states.
               , _esAttachmentList :: List n AttachmentData
               -- ^ The list of attachments to be uploaded with the post
               -- being edited.
