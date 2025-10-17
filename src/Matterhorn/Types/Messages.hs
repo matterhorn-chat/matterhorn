@@ -270,7 +270,7 @@ data ReplyState =
 
 -- | This type represents links to things in the 'open links' view.
 data LinkChoice =
-    LinkChoice { _linkTime   :: ServerTime
+    LinkChoice { _linkTime   :: Maybe ServerTime
                , _linkUser   :: MessageAuthor
                , _linkLabel  :: Maybe Inlines
                , _linkTarget :: LinkTarget
@@ -714,11 +714,11 @@ msgURLs msg =
   let uRef = msg^.mUser
       mkTarget (Right url) = LinkURL url
       mkTarget (Left (tName, pId)) = LinkPermalink tName pId
-      mkEntry (val, text) = LinkChoice (msg^.mDate) uRef text (mkTarget val)
+      mkEntry (val, text) = LinkChoice (Just $ msg^.mDate) uRef text (mkTarget val)
       msgUrls = mkEntry <$> (Seq.fromList $ mconcat $ blockGetURLs <$> (F.toList $ unBlocks $ msg^.mText))
       attachmentURLs = (\ a ->
                           LinkChoice
-                            (msg^.mDate)
+                            (Just $ msg^.mDate)
                             uRef
                             (Just $ attachmentLabel a)
                             (LinkFileId $ a^.attachmentFileId))

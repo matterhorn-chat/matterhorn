@@ -620,20 +620,25 @@ renderUrlList st hs which =
           let time = link^.linkTime
           in attr sel $ vLimit 2 $
             (vLimit 1 $
-             hBox [ let u = maybe "<server>" id (link^.linkUser.to (printableNameForAuthor st))
-                    in colorUsername me u u
-                  , case link^.linkLabel of
-                      Nothing -> emptyWidget
-                      Just label ->
-                          case Seq.null (unInlines label) of
-                              True -> emptyWidget
-                              False -> txt ": " <+> renderRichText me hs Nothing False Nothing Nothing
-                                                    (Blocks $ Seq.singleton $ Para label)
-                  , fill ' '
-                  , renderDate st $ withServerTime time
-                  , str " "
-                  , renderTime st $ withServerTime time
-                  ] ) <=>
+             hBox $ [ let u = maybe "<server>" id (link^.linkUser.to (printableNameForAuthor st))
+                      in colorUsername me u u
+                    , case link^.linkLabel of
+                        Nothing -> emptyWidget
+                        Just label ->
+                            case Seq.null (unInlines label) of
+                                True -> emptyWidget
+                                False -> txt ": " <+> renderRichText me hs Nothing False Nothing Nothing
+                                                      (Blocks $ Seq.singleton $ Para label)
+                    , fill ' '
+                    ] <>
+                    case time of
+                        Nothing -> []
+                        Just t ->
+                            [ renderDate st $ withServerTime t
+                            , str " "
+                            , renderTime st $ withServerTime t
+                            ]
+            ) <=>
             (vLimit 1 (clickable (ClickableURLListEntry i (link^.linkTarget)) $ renderLinkTarget (link^.linkTarget)))
 
         renderLinkTarget (LinkPermalink (TeamURLName tName) pId) =
