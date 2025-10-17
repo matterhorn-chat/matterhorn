@@ -387,7 +387,7 @@ import           Control.Concurrent ( ThreadId )
 import           Control.Concurrent.Async ( Async )
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception ( SomeException )
-import qualified Control.Monad.State as St
+import qualified Control.Monad.State.Strict as St
 import qualified Control.Monad.Reader as R
 import qualified Data.Set as Set
 import qualified Data.Foldable as F
