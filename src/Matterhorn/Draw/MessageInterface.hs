@@ -563,12 +563,12 @@ doHighlightMisspellings hs misspellings contents =
             | T.null t = [curTok]
             | ignoreChar $ T.head t =
                 case curTok of
-                    Ignore s -> tokenize (T.tail t) (Ignore $ s <> (T.singleton $ T.head t))
-                    Check s -> Check s : tokenize (T.tail t) (Ignore $ T.singleton $ T.head t)
+                    Ignore s -> tokenize (T.tail t) (Ignore $ s <> (T.take 1 t))
+                    Check s -> Check s : tokenize (T.tail t) (Ignore $ T.take 1 t)
             | otherwise =
                 case curTok of
-                    Ignore s -> Ignore s : tokenize (T.tail t) (Check $ T.singleton $ T.head t)
-                    Check s -> tokenize (T.tail t) (Check $ s <> (T.singleton $ T.head t))
+                    Ignore s -> Ignore s : tokenize (T.tail t) (Check $ T.take 1 t)
+                    Check s -> tokenize (T.tail t) (Check $ s <> (T.take 1 t))
 
     in vBox $ handleLine <$> contents
 
