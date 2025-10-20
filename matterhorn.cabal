@@ -175,7 +175,7 @@ library
                      , unordered-containers >= 0.2     && < 0.3
                      , containers           >= 0.5.7   && < 0.7
                      , split                >= 0.2     && < 0.3
-                     , data-clist           >= 0.1.2   && < 0.2
+                     , data-clist           >= 0.1.2   && < 0.3
                      , semigroups           >= 0.18    && < 0.20
                      , crypton-connection   >= 0.3.1   && < 0.4
                      , text                 >= 1.2.5.0 && < 2.1
