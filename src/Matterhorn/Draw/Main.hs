@@ -20,6 +20,7 @@ import           Network.Mattermost.Types ( Type(Direct, Private, Group)
                                           )
 
 
+import           Matterhorn.Constants ( userSigil )
 import           Matterhorn.Draw.ChannelList ( renderChannelList, channelListWidth )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.MessageInterface
@@ -194,9 +195,13 @@ renderChannelHeader st tId hs chan =
             Private ->
                 channelNamePair <> " (Private)"
             Group ->
-                chan^.ccInfo.cdDisplayName <> " (Private group)"
+                -- Since group channel names are made of username lists,
+                -- expand them to usernames with sigils so that the rich
+                -- text rendering will colorize them.
+                addUserSigils (chan^.ccInfo.cdDisplayName) <> " (Private group)"
             _ ->
                 channelNamePair
+        addUserSigils s = T.unwords $ (userSigil <>) <$> T.words s
         channelNamePair = chanName <> " - " <> (chan^.ccInfo.cdDisplayName)
         chanName = mkChannelName st (chan^.ccInfo)
         baseUrl = serverBaseUrl st tId
