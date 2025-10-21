@@ -194,7 +194,7 @@ renderChannelHeader st tId hs chan =
             Private ->
                 channelNamePair <> " (Private)"
             Group ->
-                channelNamePair <> " (Private group)"
+                chan^.ccInfo.cdDisplayName <> " (Private group)"
             _ ->
                 channelNamePair
         channelNamePair = chanName <> " - " <> (chan^.ccInfo.cdDisplayName)
