@@ -719,16 +719,15 @@ addPostToOpenThread (Just tId) new msg =
 
 editPostInOpenThread :: Maybe TeamId -> Post -> Message -> MH ()
 editPostInOpenThread Nothing _ _ = return ()
-editPostInOpenThread (Just tId) new msg =
-     case postRootId new of
-        Nothing -> return ()
-        Just parentId -> do
-            mRoot <- preuse (maybeThreadInterface(tId)._Just.miRootPostId)
-            when (mRoot == Just parentId) $ do
-                mhLog LogGeneral "editPostInOpenThread: updating message"
-                let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
-                modifyEachThreadMessage tId (new^.postChannelIdL)
-                    (\m -> if isEditedMessage m then msg else m)
+editPostInOpenThread (Just tId) new msg = do
+    let inThread post rootId = postRootId post == rootId || Just (postId post) == rootId
+
+    mRoot <- preuse (maybeThreadInterface(tId)._Just.miRootPostId)
+    when (inThread new mRoot) $ do
+        mhLog LogGeneral "editPostInOpenThread: updating message"
+        let isEditedMessage m = m^.mMessageId == Just (MessagePostId $ new^.postIdL)
+        modifyEachThreadMessage tId (new^.postChannelIdL)
+            (\m -> if isEditedMessage m then msg else m)
 
 -- | PostProcessMessageAdd is an internal value that informs the main
 -- code whether the user should be notified (e.g., ring the bell) or
