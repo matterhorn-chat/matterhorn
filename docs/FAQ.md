@@ -106,15 +106,27 @@ Some terminal emulators cannot handle the extra escaping that occurs
 when the URL hyperlinking mode is enabled. Try setting `hyperlinkUrls =
 False` in your `config.ini` file.
 
-## Does Matterhorn support graphical emoji?
+## Does Matterhorn support emoji?
 
-At present Matterhorn does not reliably support graphical emoji due to
-the lack of consistent support for wide Unicode characters in various
-terminal emulators. Results may vary, and use of emoji characters may
-cause terminal rendering issues depending on the terminal emulator in
-use. However, Matterhorn offers a configuration workaround for this
-for specific characters that cause problems. See the "Configuring Wide
-Unicode Characters" section of the README for details.
+There are two kinds of emoji in Mattermost: Unicode-based emoji
+and custom, graphical emoji.
+
+Matterhorn has partial support for Unicode-based emoji. The support
+is partial due to the lack of consistent support for wide Unicode
+characters in various terminal emulators and in Matterhorn itself.
+Results may vary, and use of Unicode-based emoji characters may
+cause terminal rendering issues depending on the terminal emulator
+and character(s) in use. However, Matterhorn offers a configuration
+workaround for this for specific characters that cause problems. See the
+"Configuring Wide Unicode Characters" section of the README for details.
+For some technical information on the problem of Unicode in terminals,
+see this publication:
+
+https://www.jeffquast.com/post/state-of-terminal-emulation-2025/
+
+Matterhorn does not support custom server-defined emoji since it does
+not have support for rendering graphics in the terminal; these will be
+rendered in their text form (":...:").
 
 ## I'm running Matterhorn in Tmux. How can I paste tmux buffers into Matterhorn's editor?
 
