@@ -436,7 +436,7 @@ renderMessage md@MessageData { mdMessage = msg, .. } =
           then Nothing
           else Just $ withDefAttr clientMessageAttr $ vBox
                  [ padLeft (Pad 2) $ clickable (ClickableAttachmentInMessage mdClickableNameTag (a^.attachmentFileId)) $
-                                     txt ("[attached: `" <> a^.attachmentName <> "`]")
+                                     txt ("[attached: " <> a^.attachmentName <> "]")
                  | a <- toList (msg^.mAttachments)
                  ]
 
