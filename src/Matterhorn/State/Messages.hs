@@ -38,7 +38,6 @@ import           Graphics.Vty.Output ( ringTerminalBell )
 import           Lens.Micro.Platform ( Traversal', (.=), (%=), (%~), (.~)
                                      , to, at, traversed, filtered, ix, _1, _Just )
 
-import           Network.Mattermost
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types

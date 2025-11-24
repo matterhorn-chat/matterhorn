@@ -415,7 +415,6 @@ import           System.Exit ( ExitCode )
 import           System.Random ( randomIO )
 import           Text.Aspell ( Aspell )
 
-import           Network.Mattermost ( ConnectionData )
 import           Network.Mattermost.Exceptions
 import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types

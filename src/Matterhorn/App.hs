@@ -16,7 +16,7 @@ import qualified Graphics.Vty.UnicodeWidthTable.Install as Vty
 import           Text.Aspell ( stopAspell )
 import           GHC.Conc (getNumProcessors, setNumCapabilities)
 
-import           Network.Mattermost
+import           Network.Mattermost.Types
 
 import           Matterhorn.Config
 import           Matterhorn.Draw
@@ -129,7 +129,7 @@ runMatterhorn opts config = do
 -- | Cleanup resources and save data for restoring on program restart.
 closeMatterhorn :: ChatState -> IO ()
 closeMatterhorn finalSt = do
-  logIfError (mmCloseSession $ getResourceSession $ finalSt^.csResources)
+  logIfError (closeSession $ getResourceSession $ finalSt^.csResources)
       "Error in closing session"
 
   logIfError (writeHistory (finalSt^.csInputHistory))

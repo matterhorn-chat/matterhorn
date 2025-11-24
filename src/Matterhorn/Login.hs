@@ -74,10 +74,11 @@ import           Lens.Micro.Platform ( (.~), (.=), Lens', makeLenses )
 import qualified System.IO.Error as Err
 import           Network.URI ( URI(..), URIAuth(..), parseURI )
 
-import           Network.Mattermost ( ConnectionData )
 import           Network.Mattermost.Types.Internal ( Token(..) )
 import           Network.Mattermost.Types ( Session(..), User, Login(..), ConnectionPoolConfig(..)
-                                          , initConnectionData, ConnectionType(..), UserParam(..) )
+                                          , initConnectionData, ConnectionType(..), UserParam(..)
+                                          , ConnectionData(..)
+                                          )
 import           Network.Mattermost.Exceptions ( LoginFailureException(..), MattermostError(..) )
 import           Network.Mattermost.Endpoints ( mmGetUser, mmGetLimitedClientConfiguration, mmLogin )
 
