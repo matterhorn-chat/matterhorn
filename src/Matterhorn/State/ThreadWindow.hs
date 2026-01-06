@@ -7,6 +7,7 @@ where
 import Prelude ()
 import Matterhorn.Prelude
 
+import Brick.Main ( invalidateCache )
 import qualified Data.HashMap.Strict as HM
 import Lens.Micro.Platform ( (.=), _Just )
 
@@ -58,7 +59,4 @@ closeThreadWindow :: TeamId -> MH ()
 closeThreadWindow tId = do
     csTeam(tId).tsThreadInterface .= Nothing
     csTeam(tId).tsMessageInterfaceFocus .= FocusCurrentChannel
-    mcId <- use (csCurrentChannelId(tId))
-    case mcId of
-        Just curId -> invalidateChannelRenderingCache curId
-        Nothing -> return ()
+    mh invalidateCache
