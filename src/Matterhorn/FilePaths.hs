@@ -154,9 +154,8 @@ isExecutable fp = do
   return (executable perm)
 
 locateScriptPath :: FilePath -> IO Script
-locateScriptPath name
-  | head name == '.' = return ScriptNotFound
-  | otherwise = do
+locateScriptPath ('.':_) = return ScriptNotFound
+locateScriptPath name = do
     xdgLocations <- getAllConfigFiles xdgName scriptDirName
     let cmdLocations = [ xdgLoc ++ "/" ++ name
                        | xdgLoc <- xdgLocations
