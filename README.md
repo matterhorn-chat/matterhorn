@@ -147,6 +147,8 @@ for it, or create a new issue and let us know!
 If you decide to contribute, that's great! Here are some guidelines you
 should consider to make submitting patches easier for all concerned:
 
+ - Patches written completely or partially by AI are unlikely to be
+   accepted.
  - If you are new to Haskell and are unsure how much Haskell you need
    to know in order to contribute, please see [our list of Haskell
    skills needed](docs/HASKELL.md).
