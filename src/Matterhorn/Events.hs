@@ -106,6 +106,10 @@ onAppEvent RequestDropped =
         "An API request was retried and dropped due to a rate limit. Matterhorn " <>
         "may now be inconsistent with the server. Please contact your " <>
         "Mattermost administrator about API rate limiting issues."
+onAppEvent RequestTooLarge =
+    mhError $ GenericError $
+        "An API request failed because the server rejected it due to size. " <>
+        "Please contact your Mattermost administrator about server request size issues."
 onAppEvent BGIdle =
     csWorkerIsBusy .= Nothing
 onAppEvent (BGBusy n) =

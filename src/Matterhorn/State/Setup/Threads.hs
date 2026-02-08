@@ -37,6 +37,7 @@ import           System.Timeout ( timeout )
 import           Text.Aspell ( Aspell, AspellOption(..), startAspell )
 
 import           Network.Mattermost.Exceptions ( RateLimitException
+                                               , RequestTooLargeException
                                                , rateLimitExceptionReset )
 import           Network.Mattermost.Endpoints
 import           Network.Mattermost.Types
@@ -324,13 +325,17 @@ doAsyncWork config requestChan eventChan = do
       Left e -> do
           when (not $ shouldIgnore e) $ do
               case fromException e of
-                  Just (_::RateLimitException) ->
-                      writeBChan eventChan RequestDropped
-                  Nothing -> do
-                      let err = case fromException e of
-                            Nothing -> AsyncErrEvent e
-                            Just mmErr -> ServerError mmErr
-                      writeBChan eventChan $ IEvent $ DisplayError err
+                  Just (_::RequestTooLargeException) ->
+                      writeBChan eventChan RequestTooLarge
+                  Nothing ->
+                      case fromException e of
+                          Just (_::RateLimitException) ->
+                              writeBChan eventChan RequestDropped
+                          Nothing -> do
+                              let err = case fromException e of
+                                    Nothing -> AsyncErrEvent e
+                                    Just mmErr -> ServerError mmErr
+                              writeBChan eventChan $ IEvent $ DisplayError err
       Right upd ->
           case upd of
               -- The IO action triggered a rate limit error but could

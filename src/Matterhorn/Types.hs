@@ -1634,6 +1634,8 @@ data MHEvent =
     | RequestDropped
     -- ^ A request was reattempted due to a rate limit and was rate
     -- limited again
+    | RequestTooLarge
+    -- ^ A request failed because the server rejected it due to size.
     | IEvent !InternalEvent
     -- ^ MH-internal events
 
