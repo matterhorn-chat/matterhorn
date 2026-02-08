@@ -30,6 +30,8 @@
 | `C-g` | `enter-fast-select` | Enter fast channel selection mode |
 | `C-Up` | `channel-list-scroll-up` | Scroll up in the channel list |
 | `C-Down` | `channel-list-scroll-down` | Scroll down in the channel list |
+| (unbound) | `channel-list-page-up` | Page up in the channel list |
+| (unbound) | `channel-list-page-down` | Page down in the channel list |
 | `F4` | `cycle-channel-list-sorting` | Cycle through channel list sorting modes |
 | `M-o` | `change-message-editor-focus` | Cycle between message editors when a thread is open |
 | `C-n` | `focus-next-channel` | Change to the next channel in the channel list |

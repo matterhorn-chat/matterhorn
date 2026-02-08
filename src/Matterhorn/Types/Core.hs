@@ -339,6 +339,8 @@ data KeyEvent
   | SelectOldestMessageEvent
   | ChannelListScrollUpEvent
   | ChannelListScrollDownEvent
+  | ChannelListPageUpEvent
+  | ChannelListPageDownEvent
 
   -- select events---not the same as scrolling sometimes!
   | SelectUpEvent
@@ -454,6 +456,8 @@ allEvents =
     , ("scroll-right", ScrollRightEvent)
     , ("channel-list-scroll-up", ChannelListScrollUpEvent)
     , ("channel-list-scroll-down", ChannelListScrollDownEvent)
+    , ("channel-list-page-up", ChannelListPageUpEvent)
+    , ("channel-list-page-down", ChannelListPageDownEvent)
     , ("page-up", PageUpEvent)
     , ("page-down", PageDownEvent)
     , ("page-left", PageLeftEvent)

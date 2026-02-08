@@ -69,6 +69,18 @@ mainKeyHandlers tId =
             mh $ vScrollBy vp 1
 
     , onEvent
+        ChannelListPageUpEvent
+        "Page up in the channel list" $ do
+            let vp = viewportScroll $ ChannelListViewport tId
+            mh $ vScrollBy vp (-15)
+
+    , onEvent
+        ChannelListPageDownEvent
+        "Page down in the channel list" $ do
+            let vp = viewportScroll $ ChannelListViewport tId
+            mh $ vScrollBy vp 15
+
+    , onEvent
         CycleChannelListSorting
         "Cycle through channel list sorting modes" $
         cycleChannelListSortingMode tId
