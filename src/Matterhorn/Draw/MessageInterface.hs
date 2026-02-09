@@ -77,7 +77,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
 
     renderMessages inMsgSel =
         vBox [ freezeBorders $
-               renderMessageListing st inMsgSel showNewMsgLine tId hs which renderReplyIndent region
+               renderMessageListing st inMsgSel showNewMsgLine tId hs (which.miListing) renderReplyIndent region
              , bottomBorder
              , inputPreview st (which.miEditor) tId previewVpName hs
              , inputArea st (which.miEditor) focused hs
@@ -180,7 +180,7 @@ renderMessageListing :: ChatState
                      -> Bool
                      -> TeamId
                      -> HighlightSet
-                     -> Lens' ChatState (MessageInterface Name i)
+                     -> Lens' ChatState (MessageListing Name)
                      -> Bool
                      -> Name
                      -> Widget Name
@@ -197,7 +197,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
             Just cId ->
                 if inMsgSelect
                 then freezeBorders $
-                     renderMessagesWithSelect cId (st^.which.miListing.mlMessageSelect) (buildMessages cId)
+                     renderMessagesWithSelect cId (st^.which.mlMessageSelect) (buildMessages cId)
                 else cached region $
                      freezeBorders $
                      renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region $
@@ -235,7 +235,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
         let cutoff = if showNewMsgLine
                      then getNewMessageCutoff cId st
                      else Nothing
-            ms = filterMessageListing st (which.miListing.mlMessages)
+            ms = filterMessageListing st (which.mlMessages)
         in if F.null ms
            then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
            else insertTransitions ms
