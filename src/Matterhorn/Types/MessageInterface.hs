@@ -87,7 +87,7 @@ data MessageInterface n i =
                      , _miTarget :: !MessageInterfaceTarget
                      -- ^ The target value for this message interface
                      , _miListing :: MessageListing n
-                     -- ^ THe message listing in this interface
+                     -- ^ The message listing in this interface
                      }
 
 messageInterfaceCursor :: MessageInterface n i -> Maybe n
