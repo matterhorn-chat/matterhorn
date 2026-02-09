@@ -38,6 +38,7 @@ import           Matterhorn.Draw.InputPreview
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Events.MessageSelect
+import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.MessageSelect
 import           Matterhorn.Themes
@@ -149,77 +150,13 @@ messageSelectionKeyOptions :: ChatState
                            -> [(T.Text, T.Text)]
 messageSelectionKeyOptions st tId which msg =
     let ev = keyEventBindings st (messageSelectKeybindings tId which)
-        hasVerb = isJust (findVerbatimChunk (msg^.mText))
-        hasURLs = numURLs > 0
-        numURLs = Seq.length $ msgURLs msg
-        s = if numURLs == 1 then "" else "s"
-        openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
-        getUsable (usable, key, label) = if usable then Just (key, label) else Nothing
-        options = [ ( not $ isGap msg
-                  , ev YankWholeMessageEvent
-                  , "yank-all"
-                  )
-                , ( isFlaggable msg && not (msg^.mFlagged)
-                  , ev FlagMessageEvent
-                  , "flag"
-                  )
-                , ( isFlaggable msg && msg^.mFlagged
-                  , ev FlagMessageEvent
-                  , "unflag"
-                  )
-                , ( isReplyable msg
-                  , ev OpenThreadEvent
-                  , "thread"
-                  )
-                , ( isPostMessage msg
-                  , ev CopyPostLinkEvent
-                  , "copy-link"
-                  )
-                , ( isPinnable msg && not (msg^.mPinned)
-                  , ev PinMessageEvent
-                  , "pin"
-                  )
-                , ( isPinnable msg && msg^.mPinned
-                  , ev PinMessageEvent
-                  , "unpin"
-                  )
-                , ( isReplyable msg
-                  , ev ReplyMessageEvent
-                  , "reply"
-                  )
-                , ( not $ isGap msg
-                  , ev ViewMessageEvent
-                  , "view"
-                  )
-                , ( not $ isGap msg
-                  , ev OpenMessageInExternalEditorEvent
-                  , "open"
-                  )
-                , ( isGap msg
-                  , ev FillGapEvent
-                  , "load messages"
-                  )
-                , ( isMine st msg && isEditable msg
-                  , ev EditMessageEvent
-                  , "edit"
-                  )
-                , ( isMine st msg && isDeletable msg
-                  , ev DeleteMessageEvent
-                  , "delete"
-                  )
-                , ( hasURLs
-                  , ev OpenMessageURLEvent
-                  , openUrlsMsg
-                  )
-                , ( hasVerb
-                  , ev YankMessageEvent
-                  , "yank-code"
-                  )
-                , ( isReactable msg
-                  , ev ReactToMessageEvent
-                  , "react"
-                  )
-                ]
+        myId = myUserId st
+        getUsable (eventVal, label, _, isUsable, _) =
+            if isUsable myId msg
+            then Just (ev eventVal, label)
+            else Nothing
+        options = contextSensitiveOptions tId (which.miListing) <>
+                  editingContextSensitiveOptions tId which
     in catMaybes $ getUsable <$> options
 
 renderMessageListing :: ChatState

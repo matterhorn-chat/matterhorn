@@ -17,6 +17,7 @@ module Matterhorn.State.MessageListing
   , messageSelectFirst
   , messageSelectLast
   , getListingSelectedMessage
+  , withListingSelectedMessage
   , exitMessageSelect
   )
 where

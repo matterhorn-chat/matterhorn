@@ -4,6 +4,7 @@ module Matterhorn.Events.MessageSelect
   , messageSelectKeyHandlers
   , onEventMessageSelect
   , onEventMessageSelectDeleteConfirm
+  , editingContextSensitiveOptions
   )
 where
 
@@ -11,10 +12,11 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Keybindings
+import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens' )
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, UserId )
 
 import           Matterhorn.Events.MessageListing
 import           Matterhorn.State.MessageSelect
@@ -55,22 +57,39 @@ messageSelectEditingKeyHandlers :: TeamId
                                 -> Lens' ChatState (MessageInterface n i)
                                 -> [MHKeyEventHandler]
 messageSelectEditingKeyHandlers tId which =
-    [ onEvent ReplyMessageEvent "Begin composing a reply to the selected message" $
-         beginReplyCompose which
+    handlerForOption which <$> editingContextSensitiveOptions tId which
 
-    , onEvent EditMessageEvent "Begin editing the selected message" $
-         beginEditMessage which
+handlerForOption :: Lens' ChatState (MessageInterface n i)
+                 -> (KeyEvent, T.Text, T.Text, UserId -> Message -> Bool, MH ())
+                 -> MHKeyEventHandler
+handlerForOption which (ev, _, desc, canUse, act) =
+    onEvent ev desc $ do
+        myId <- gets myUserId
+        withSelectedMessage which $ \msg ->
+            when (canUse myId msg) act
 
-    , onEvent DeleteMessageEvent "Delete the selected message (with confirmation)" $
-         beginConfirmDeleteSelectedMessage tId which
+editingContextSensitiveOptions :: TeamId
+                               -> Lens' ChatState (MessageInterface n i)
+                               -> [(KeyEvent, T.Text, T.Text, UserId -> Message -> Bool, MH ())]
+editingContextSensitiveOptions tId which =
+    [ (ReplyMessageEvent, "reply", "Begin composing a reply to the selected message",
+         const isReplyable, beginReplyCompose which)
 
-    , onEvent OpenThreadEvent "Open the selected message's thread in a thread window" $ do
-         openThreadWindow tId which
+    , (EditMessageEvent, "edit", "Begin editing the selected message",
+         \uId m -> isMyMessage uId m && isEditable m,
+         beginEditMessage which)
 
-    , onEvent FillGapEvent "Fetch messages for the selected gap" $
-         fillSelectedGap which
+    , (DeleteMessageEvent, "delete", "Delete the selected message (with confirmation)",
+         \uId m -> isMyMessage uId m && isDeletable m,
+         beginConfirmDeleteSelectedMessage tId which)
 
-    , onEvent OpenMessageInExternalEditorEvent "Open the message's source in $EDITOR" $
-         openSelectedMessageInEditor which
+    , (OpenThreadEvent, "thread", "Open the selected message's thread in a thread window",
+         const isReplyable, openThreadWindow tId which)
+
+    , (FillGapEvent, "load messages", "Fetch messages for the selected gap",
+         const isGap, fillSelectedGap which)
+
+    , (OpenMessageInExternalEditorEvent, "open in editor", "Open the message's source in $EDITOR",
+         const (not . isGap), openSelectedMessageInEditor which)
 
     ]

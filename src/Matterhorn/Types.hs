@@ -329,6 +329,7 @@ module Matterhorn.Types
   , userList
   , resetAutocomplete
   , isMine
+  , isMyMessage
   , setUserStatus
   , myUser
   , myUsername
@@ -1996,6 +1997,12 @@ isMine :: ChatState -> Message -> Bool
 isMine st msg =
     case msg^.mUser of
         AuthorById _ uid -> uid == myUserId st
+        _ -> False
+
+isMyMessage :: UserId -> Message -> Bool
+isMyMessage myId m =
+    case m^.mUser of
+        AuthorById _ authorId -> authorId == myId
         _ -> False
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message

@@ -10,6 +10,7 @@ module Matterhorn.State.MessageSelect
   , beginEditMessage
   , getSelectedMessage
   , openThreadWindow
+  , withSelectedMessage
   )
 where
 
