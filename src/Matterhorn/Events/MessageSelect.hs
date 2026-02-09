@@ -52,6 +52,13 @@ messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState (MessageInterface n i)
                          -> [MHKeyEventHandler]
 messageSelectKeyHandlers tId which =
+    messageSelectCommonKeyHandlers tId (which.miListing) <>
+    messageSelectEditingKeyHandlers tId which
+
+messageSelectCommonKeyHandlers :: TeamId
+                               -> Lens' ChatState (MessageListing n)
+                               -> [MHKeyEventHandler]
+messageSelectCommonKeyHandlers tId which =
     [ onEvent CancelEvent "Cancel message selection" $
         exitMessageSelect which
 
@@ -80,15 +87,6 @@ messageSelectKeyHandlers tId which =
     , onEvent OpenMessageURLEvent "Open all URLs in the selected message" $
         openSelectedMessageURLs which
 
-    , onEvent ReplyMessageEvent "Begin composing a reply to the selected message" $
-         beginReplyCompose which
-
-    , onEvent EditMessageEvent "Begin editing the selected message" $
-         beginEditMessage which
-
-    , onEvent DeleteMessageEvent "Delete the selected message (with confirmation)" $
-         beginConfirmDeleteSelectedMessage tId which
-
     , onEvent YankMessageEvent "Copy a verbatim section or message to the clipboard" $
          yankSelectedMessageVerbatim which
 
@@ -104,14 +102,8 @@ messageSelectKeyHandlers tId which =
     , onEvent ViewMessageEvent "View the selected message" $
          viewSelectedMessage tId which
 
-    , onEvent OpenThreadEvent "Open the selected message's thread in a thread window" $ do
-         openThreadWindow tId which
-
-    , onEvent FillGapEvent "Fetch messages for the selected gap" $
-         fillSelectedGap which
-
     , onEvent ReactToMessageEvent "Post a reaction to the selected message" $ do
-         mMsg <- use (to (getSelectedMessage which))
+         mMsg <- use (to (getListingSelectedMessage which))
          case mMsg of
              Nothing -> return ()
              Just m -> enterReactionEmojiListWindowMode tId m
@@ -119,6 +111,28 @@ messageSelectKeyHandlers tId which =
     , onEvent CopyPostLinkEvent "Copy a post's link to the clipboard" $
          copyPostLink tId which
 
+    ]
+
+messageSelectEditingKeyHandlers :: TeamId
+                                -> Lens' ChatState (MessageInterface n i)
+                                -> [MHKeyEventHandler]
+messageSelectEditingKeyHandlers tId which =
+    [ onEvent ReplyMessageEvent "Begin composing a reply to the selected message" $
+         beginReplyCompose which
+
+    , onEvent EditMessageEvent "Begin editing the selected message" $
+         beginEditMessage which
+
+    , onEvent DeleteMessageEvent "Delete the selected message (with confirmation)" $
+         beginConfirmDeleteSelectedMessage tId which
+
+    , onEvent OpenThreadEvent "Open the selected message's thread in a thread window" $ do
+         openThreadWindow tId which
+
+    , onEvent FillGapEvent "Fetch messages for the selected gap" $
+         fillSelectedGap which
+
     , onEvent OpenMessageInExternalEditorEvent "Open the message's source in $EDITOR" $
          openSelectedMessageInEditor which
+
     ]

@@ -26,10 +26,10 @@ import           Matterhorn.Types.RichText ( TeamBaseURL, parseMarkdown, unBlock
 import           Matterhorn.Util
 
 
-startMessageUrlSelect :: Lens' ChatState (MessageInterface n i)
+startMessageUrlSelect :: Lens' ChatState (MessageListing n)
                       -> MH ()
 startMessageUrlSelect which = do
-    msgs <- use (which.miListing.mlMessages)
+    msgs <- use (which.mlMessages)
     let urls = V.fromList $ findMessageUrls msgs
     startUrlSelect which urls
 
@@ -41,17 +41,17 @@ startTopicUrlSelect tId which = do
     cId <- use (which.miChannelId)
     withChannel cId $ \ch -> do
         let urls = V.fromList $ findTopicUrls baseUrl $ ch^.ccInfo.cdHeader
-        startUrlSelect which urls
+        startUrlSelect (which.miListing) urls
 
-startUrlSelect :: Lens' ChatState (MessageInterface n i)
+startUrlSelect :: Lens' ChatState (MessageListing n)
                -> V.Vector LinkChoice
                -> MH ()
 startUrlSelect which urls = do
-    src <- use (which.miListing.mlUrlListSource)
+    src <- use (which.mlUrlListSource)
     let urlsWithIndexes = V.indexed urls
-    which.miListing.mlMode .= ShowUrlList
-    which.miListing.mlUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
-    which.miListing.mlUrlList.ulSource .= Just src
+    which.mlMode .= ShowUrlList
+    which.mlUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
+    which.mlUrlList.ulSource .= Just src
 
 stopUrlSelect :: Lens' ChatState (MessageListing n)
               -> MH ()

@@ -70,17 +70,17 @@ messageInterfaceKeyHandlers :: Lens' ChatState (MessageInterface n i)
 messageInterfaceKeyHandlers which =
     [ onEvent EnterSelectModeEvent
         "Select a message to edit/reply/delete" $
-        beginMessageSelect which
+        beginMessageSelect (which.miListing)
 
     , onEvent PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect which
+        beginMessageSelect (which.miListing)
 
     , onEvent SelectOldestMessageEvent "Scroll to top of message list" $ do
-        beginMessageSelect which
-        messageSelectFirst which
+        beginMessageSelect (which.miListing)
+        messageSelectFirst (which.miListing)
 
     , onEvent EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startMessageUrlSelect which
+        startMessageUrlSelect (which.miListing)
 
     , onEvent EnterOpenTopicURLModeEvent "Select and open a URL from the current channel's topic" $
         withCurrentTeam $ \tId ->
