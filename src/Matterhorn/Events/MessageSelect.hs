@@ -22,9 +22,6 @@ import           Matterhorn.State.ReactionEmojiListWindow
 import           Matterhorn.Types
 
 
-messagesPerPageOperation :: Int
-messagesPerPageOperation = 10
-
 onEventMessageSelect :: TeamId
                      -> Lens' ChatState (MessageInterface n i)
                      -> Vty.Event

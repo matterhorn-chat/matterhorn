@@ -11,6 +11,7 @@ module Matterhorn.Constants
   , editMarking
   , channelListMinAutoWidth
   , channelListMaxAutoWidth
+  , messagesPerPageOperation
   )
 where
 
@@ -46,6 +47,9 @@ numScrollbackPosts = 100
 -- | The maximum height of the message preview, in lines.
 previewMaxHeight :: Int
 previewMaxHeight = 5
+
+messagesPerPageOperation :: Int
+messagesPerPageOperation = 10
 
 -- Sigils
 normalChannelSigil :: Text
