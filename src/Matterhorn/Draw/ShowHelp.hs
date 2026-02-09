@@ -31,6 +31,7 @@ import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.MessageInterface
+import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.ThemeListWindow
 import           Matterhorn.Events.PostListWindow
 import           Matterhorn.Events.ShowHelp
@@ -439,7 +440,8 @@ keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk <>
-                         messageInterfaceKeyHandlers whichThunk)
+                         messageInterfaceKeyHandlers whichThunk <>
+                         messageListingKeyHandlers whichListingThunk)
     , ("Message Editing", extraEditorKeyHandlers whichThunk)
     , ("Text Editing", editingKeyHandlers editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)

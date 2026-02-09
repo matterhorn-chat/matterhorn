@@ -20,6 +20,7 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Types
 import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.ManageAttachments
+import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.Attachments
@@ -63,26 +64,14 @@ messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig KeyEvent
                             -> KeyDispatcher KeyEvent MH
 messageInterfaceKeybindings which kc =
-    unsafeKeyDispatcher kc (messageInterfaceKeyHandlers which)
+    unsafeKeyDispatcher kc $
+        messageInterfaceKeyHandlers which <>
+        messageListingKeyHandlers (which.miListing)
 
 messageInterfaceKeyHandlers :: Lens' ChatState (MessageInterface n i)
                             -> [MHKeyEventHandler]
 messageInterfaceKeyHandlers which =
-    [ onEvent EnterSelectModeEvent
-        "Select a message to edit/reply/delete" $
-        beginMessageSelect (which.miListing)
-
-    , onEvent PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect (which.miListing)
-
-    , onEvent SelectOldestMessageEvent "Scroll to top of message list" $ do
-        beginMessageSelect (which.miListing)
-        messageSelectFirst (which.miListing)
-
-    , onEvent EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startMessageUrlSelect (which.miListing)
-
-    , onEvent EnterOpenTopicURLModeEvent "Select and open a URL from the current channel's topic" $
+    [ onEvent EnterOpenTopicURLModeEvent "Select and open a URL from the current channel's topic" $
         withCurrentTeam $ \tId ->
             startTopicUrlSelect tId which
     ]

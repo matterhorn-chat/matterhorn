@@ -89,6 +89,7 @@ library
                        Matterhorn.Events.Global
                        Matterhorn.Events.Main
                        Matterhorn.Events.ManageAttachments
+                       Matterhorn.Events.MessageListing
                        Matterhorn.Events.MessageSelect
                        Matterhorn.Events.MessageInterface
                        Matterhorn.Events.Mouse

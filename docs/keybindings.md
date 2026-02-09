@@ -39,11 +39,11 @@
 | `M-s` | `focus-last-channel` | Change to the most recently-focused channel |
 | `M-l` | `clear-unread` | Clear the current channel's unread / edited indicators |
 | `M-8` | `show-flagged-posts` | View currently flagged posts |
+| `C-M-o` | `enter-topic-url-open` | Select and open a URL from the current channel's topic |
 | `C-s` | `select-mode` | Select a message to edit/reply/delete |
 | `PgUp` | `page-up` | Page up in the message list (enters message select mode) |
 | `S-Home` | `select-oldest-message` | Scroll to top of message list |
 | `C-o` | `enter-url-open` | Select and open a URL from the current message list |
-| `C-M-o` | `enter-topic-url-open` | Select and open a URL from the current channel's topic |
 
 # Message Editing
 | Keybinding | Event Name | Description |
@@ -99,18 +99,18 @@
 | `PgUp` | `page-up` | Move the cursor up by 10 messages |
 | `PgDown` | `page-down` | Move the cursor down by 10 messages |
 | `o` | `open-message-url` | Open all URLs in the selected message |
-| `r` | `reply-message` | Begin composing a reply to the selected message |
-| `e` | `edit-message` | Begin editing the selected message |
-| `d` | `delete-message` | Delete the selected message (with confirmation) |
 | `y` | `yank-message` | Copy a verbatim section or message to the clipboard |
 | `Y` | `yank-whole-message` | Copy an entire message to the clipboard |
 | `p` | `pin-message` | Toggle whether the selected message is pinned |
 | `f` | `flag-message` | Flag the selected message |
 | `v` | `view-message` | View the selected message |
-| `t` | `open-thread` | Open the selected message's thread in a thread window |
-| `Enter` | `fetch-for-gap` | Fetch messages for the selected gap |
 | `a` | `react-to-message` | Post a reaction to the selected message |
 | `l` | `copy-post-link` | Copy a post's link to the clipboard |
+| `r` | `reply-message` | Begin composing a reply to the selected message |
+| `e` | `edit-message` | Begin editing the selected message |
+| `d` | `delete-message` | Delete the selected message (with confirmation) |
+| `t` | `open-thread` | Open the selected message's thread in a thread window |
+| `Enter` | `fetch-for-gap` | Fetch messages for the selected gap |
 | `O` | `open-message-in-editor` | Open the message's source in $EDITOR |
 
 # User Listings
