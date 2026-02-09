@@ -22,9 +22,10 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.State.Common
-import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.Messages ( addObtainedMessages
-                                           , asyncFetchMessagesSurrounding )
+                                           , asyncFetchMessagesSurrounding
+                                           , flagMessage
+                                           )
 import           Matterhorn.Types
 import           Matterhorn.Types.DirectionalSeq (emptyDirSeq)
 

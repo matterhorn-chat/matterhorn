@@ -2,27 +2,14 @@
 module Matterhorn.State.MessageSelect
   (
   -- * Message selection mode
-    beginMessageSelect
-  , flagSelectedMessage
-  , pinSelectedMessage
-  , viewSelectedMessage
-  , openSelectedMessageInEditor
+    openSelectedMessageInEditor
   , fillSelectedGap
   , copyPostLink
-  , yankSelectedMessageVerbatim
   , yankSelectedMessage
-  , openSelectedMessageURLs
   , beginConfirmDeleteSelectedMessage
-  , messageSelectUp
-  , messageSelectUpBy
-  , messageSelectDown
-  , messageSelectDownBy
-  , messageSelectFirst
-  , messageSelectLast
   , deleteSelectedMessage
   , beginReplyCompose
   , beginEditMessage
-  , flagMessage
   , getSelectedMessage
   , getListingSelectedMessage
   , openThreadWindow
@@ -33,9 +20,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick ( invalidateCache )
 import           Brick.Widgets.Edit ( applyEdit )
-import           Control.Monad ( replicateM_ )
 import qualified Data.Text as T
 import           Data.Text.Zipper ( clearZipper, insertMany )
 import           Data.Maybe ( fromJust )
@@ -48,14 +33,11 @@ import qualified System.Process as Sys
 import qualified Network.Mattermost.Endpoints as MM
 import           Network.Mattermost.Types
 
-import           Matterhorn.Clipboard ( copyToClipboard )
 import           Matterhorn.State.Common
-import           Matterhorn.State.Links
-import {-# SOURCE #-} Matterhorn.State.Messages ( asyncFetchMessagesForGap )
+import           Matterhorn.State.MessageListing
+import           Matterhorn.State.Messages ( asyncFetchMessagesForGap )
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( findVerbatimChunk, makePermalink )
 import           Matterhorn.Types.Common
-import           Matterhorn.Windows.ViewMessage
 import qualified Matterhorn.State.ThreadWindow as TW
 
 
@@ -67,23 +49,6 @@ getSelectedMessage which st = do
     let chanMsgs = st^.which.miListing.mlMessages
     findMessage selMsgId chanMsgs
 
-getListingSelectedMessage :: Lens' ChatState (MessageListing n)
-                          -> ChatState
-                          -> Maybe Message
-getListingSelectedMessage which st = do
-    selMsgId <- selectMessageId $ st^.which.mlMessageSelect
-    let chanMsgs = st^.which.mlMessages
-    findMessage selMsgId chanMsgs
-
-withListingSelectedMessage :: Lens' ChatState (MessageListing n)
-                           -> (Message -> MH ())
-                           -> MH ()
-withListingSelectedMessage which act = do
-    selectedMessage <- use (to (getListingSelectedMessage which))
-    case selectedMessage of
-        Nothing -> return ()
-        Just m -> act m
-
 withSelectedMessage :: Lens' ChatState (MessageInterface n i)
                     -> (Message -> MH ())
                     -> MH ()
@@ -92,62 +57,6 @@ withSelectedMessage which act = do
     case selectedMessage of
         Nothing -> return ()
         Just m -> act m
-
-beginMessageSelect :: Lens' ChatState (MessageListing n)
-                   -> MH ()
-beginMessageSelect which = do
-    -- Invalidate the rendering cache since we cache messages to speed
-    -- up the selection UI responsiveness. (See Draw.Messages for
-    -- caching behavior.)
-    mh invalidateCache
-
-    -- Get the number of messages in the listing and set the currently
-    -- selected message index to be the most recently received message
-    -- that corresponds to a Post (i.e. exclude informative messages).
-    --
-    -- If we can't find one at all, we ignore the mode switch request
-    -- and just return.
-    msgs <- use (which.mlMessages)
-    let recentMsg = getLatestSelectableMessage msgs
-
-    when (isJust recentMsg) $ do
-        which.mlMode .= MessageSelect
-        which.mlMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
-
-exitMessageSelect :: Lens' ChatState (MessageListing n) -> MH ()
-exitMessageSelect which = do
-    m <- use (which.mlMode)
-    when (m == MessageSelect) $ do
-        which.mlMode .= ShowingTail
-
--- | Tell the server that the message we currently have selected
--- should have its flagged state toggled.
-flagSelectedMessage :: Lens' ChatState (MessageListing n)
-                    -> MH ()
-flagSelectedMessage which =
-    withListingSelectedMessage which $ \msg ->
-        when (isFlaggable msg) $ do
-            case messagePostId msg of
-                Just pId -> flagMessage pId (not (msg^.mFlagged))
-                Nothing -> return ()
-
--- | Tell the server that the message we currently have selected
--- should have its pinned state toggled.
-pinSelectedMessage :: Lens' ChatState (MessageListing n)
-                   -> MH ()
-pinSelectedMessage which =
-    withListingSelectedMessage which $ \msg -> do
-        when (isPinnable msg) $ do
-            case messagePostId msg of
-                Just pId -> pinMessage pId (not (msg^.mPinned))
-                Nothing -> return ()
-
-viewSelectedMessage :: TeamId
-                    -> Lens' ChatState (MessageListing n)
-                    -> MH ()
-viewSelectedMessage tId which =
-    withListingSelectedMessage which $ \msg ->
-        when (not (isGap msg)) $ viewMessage tId msg
 
 openSelectedMessageInEditor :: Lens' ChatState (MessageInterface n i)
                             -> MH ()
@@ -166,24 +75,6 @@ fillSelectedGap which = do
     cId <- use (which.miChannelId)
     withSelectedMessage which $ \msg ->
         when (isGap msg) $ asyncFetchMessagesForGap cId msg
-
-copyPostLink :: TeamId
-             -> Lens' ChatState (MessageListing n)
-             -> MH ()
-copyPostLink tId which =
-    withListingSelectedMessage which $ \msg ->
-        when (isPostMessage msg) $ do
-            baseUrl <- getServerBaseUrl tId
-            let pId = fromJust (messageIdPostId =<< _mMessageId msg)
-            copyToClipboard $ makePermalink baseUrl pId
-            exitMessageSelect which
-
-viewMessage :: TeamId -> Message -> MH ()
-viewMessage tId m = do
-    let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) (78, 25)
-    csTeam(tId).tsViewedMessage .= Just (m, w)
-    runTabShowHandlerFor (twValue w) w
-    pushMode tId ViewMessage
 
 openMessageInEditor :: Message -> Lens' ChatState (MessageInterface n i) -> MH ()
 openMessageInEditor m which = do
@@ -207,15 +98,6 @@ openMessageInEditor m which = do
 
     exitMessageSelect (which.miListing)
 
-yankSelectedMessageVerbatim :: Lens' ChatState (MessageListing n)
-                            -> MH ()
-yankSelectedMessageVerbatim which =
-    withListingSelectedMessage which $ \msg -> do
-        exitMessageSelect which
-        case findVerbatimChunk (msg^.mText) of
-            Just txt -> copyToClipboard txt
-            Nothing  -> return ()
-
 openThreadWindow :: TeamId
                  -> Lens' ChatState (MessageInterface n i)
                  -> MH ()
@@ -228,21 +110,6 @@ openThreadWindow tId which =
                 Nothing -> return ()
                 Just cId -> TW.openThreadWindow tId cId (postId p)
 
-yankSelectedMessage :: Lens' ChatState (MessageListing n)
-                    -> MH ()
-yankSelectedMessage which =
-    withListingSelectedMessage which $ \msg -> do
-        exitMessageSelect which
-        copyToClipboard $ msg^.mMarkdownSource
-
-openSelectedMessageURLs :: Lens' ChatState (MessageListing n)
-                        -> MH ()
-openSelectedMessageURLs which =
-    withListingSelectedMessage which $ \msg -> do
-        let urls = msgURLs msg
-        when (not (null urls)) $ do
-            mapM_ (openLinkTarget . _linkTarget) urls
-
 beginConfirmDeleteSelectedMessage :: TeamId
                                   -> Lens' ChatState (MessageInterface n i)
                                   -> MH ()
@@ -252,58 +119,6 @@ beginConfirmDeleteSelectedMessage tId which = do
     withSelectedMessage which $ \msg ->
         when (isDeletable msg && isMine st msg) $
             pushMode tId $ MessageSelectDeleteConfirm target
-
-messageSelectUp :: Lens' ChatState (MessageListing n)
-                -> MH ()
-messageSelectUp which =
-    withListingSelectedMessage which $ \msg -> do
-        let selected = _mMessageId msg
-        msgs <- use (which.mlMessages)
-        let nextMsgId = getPrevMessageId selected msgs
-        which.mlMessageSelect .= MessageSelectState (nextMsgId <|> selected)
-
-messageSelectDown :: Lens' ChatState (MessageListing n)
-                  -> MH ()
-messageSelectDown which =
-    withListingSelectedMessage which $ \msg -> do
-        let selected = _mMessageId msg
-        msgs <- use (which.mlMessages)
-        let nextMsgId = getNextMessageId selected msgs
-        which.mlMessageSelect .= MessageSelectState (nextMsgId <|> selected)
-
-messageSelectDownBy :: Lens' ChatState (MessageListing n)
-                    -> Int
-                    -> MH ()
-messageSelectDownBy which amt =
-    replicateM_ amt $ messageSelectDown which
-
-messageSelectUpBy :: Lens' ChatState (MessageListing n)
-                  -> Int
-                  -> MH ()
-messageSelectUpBy which amt =
-    replicateM_ amt $ messageSelectUp which
-
-messageSelectFirst :: Lens' ChatState (MessageListing n)
-                   -> MH ()
-messageSelectFirst which =
-    withListingSelectedMessage which $ \msg -> do
-        let selected = _mMessageId msg
-        msgs <- use (which.mlMessages)
-        case getEarliestSelectableMessage msgs of
-          Just firstMsg ->
-            which.mlMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
-          Nothing -> mhLog LogError "No first message found from current message?!"
-
-messageSelectLast :: Lens' ChatState (MessageListing n)
-                  -> MH ()
-messageSelectLast which =
-    withListingSelectedMessage which $ \msg -> do
-        let selected = _mMessageId msg
-        msgs <- use (which.mlMessages)
-        case getLatestSelectableMessage msgs of
-          Just lastSelMsg ->
-            which.mlMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
-          Nothing -> mhLog LogError "No last message found from current message?!"
 
 deleteSelectedMessage :: Lens' ChatState (MessageInterface n i)
                       -> MH ()
@@ -350,22 +165,3 @@ beginEditMessage which = do
                          then removeEmoteFormatting sanitized
                          else sanitized
             which.miEditor.esEditor %= applyEdit (insertMany toEdit . clearZipper)
-
--- | Tell the server that we have flagged or unflagged a message.
-flagMessage :: PostId -> Bool -> MH ()
-flagMessage pId f = do
-    session <- getSession
-    myId <- gets myUserId
-    doAsyncWith Normal $ do
-        let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
-        doFlag myId pId session
-        return Nothing
-
--- | Tell the server that we have pinned or unpinned a message.
-pinMessage :: PostId -> Bool -> MH ()
-pinMessage pId f = do
-    session <- getSession
-    doAsyncWith Normal $ do
-        let doPin = if f then MM.mmPinPostToChannel else MM.mmUnpinPostToChannel
-        void $ doPin pId session
-        return Nothing

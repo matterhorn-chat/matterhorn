@@ -17,7 +17,7 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Constants
 import           Matterhorn.Types
 import           Matterhorn.State.UrlSelect
-import           Matterhorn.State.MessageSelect
+import           Matterhorn.State.MessageListing
 import           Matterhorn.State.ReactionEmojiListWindow
 
 

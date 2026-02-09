@@ -5,6 +5,8 @@ module Matterhorn.State.Messages
   , sendMessage
   , jumpToPost
   , asyncFetchMessagesForGap
+  , flagMessage
+  , pinMessage
   )
 where
 
@@ -25,3 +27,5 @@ addMessageToState :: Bool -> Bool -> PostToAdd -> MH PostProcessMessageAdd
 sendMessage :: ChannelId -> EditMode -> Text -> [AttachmentData] -> MH ()
 jumpToPost :: PostId -> MH ()
 asyncFetchMessagesForGap :: ChannelId -> Message -> MH ()
+flagMessage :: PostId -> Bool -> MH ()
+pinMessage :: PostId -> Bool -> MH ()

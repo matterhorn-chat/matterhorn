@@ -17,6 +17,9 @@ module Matterhorn.State.Messages
   , toggleVerbatimBlockTruncation
   , jumpToPost
   , addMessageToState
+  , flagMessage
+  , pinMessage
+  , viewMessage
   )
 where
 
@@ -46,10 +49,11 @@ import           Matterhorn.Constants
 import           Matterhorn.State.Channels
 import           Matterhorn.State.ChannelList ( updateSidebar )
 import           Matterhorn.State.Common
+import           Matterhorn.State.MessageListing ( beginMessageSelect )
 import           Matterhorn.State.Teams ( setTeam )
 import           Matterhorn.State.ThreadWindow
-import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.Users
+import           Matterhorn.Windows.ViewMessage
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
@@ -1190,3 +1194,29 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
                                   jumpToPost pId
                       Left (_::SomeException) ->
                           postErrorMessage' "Could not fetch linked post"
+
+-- | Tell the server that we have flagged or unflagged a message.
+flagMessage :: PostId -> Bool -> MH ()
+flagMessage pId f = do
+    session <- getSession
+    myId <- gets myUserId
+    doAsyncWith Normal $ do
+        let doFlag = if f then MM.mmFlagPost else MM.mmUnflagPost
+        doFlag myId pId session
+        return Nothing
+
+-- | Tell the server that we have pinned or unpinned a message.
+pinMessage :: PostId -> Bool -> MH ()
+pinMessage pId f = do
+    session <- getSession
+    doAsyncWith Normal $ do
+        let doPin = if f then MM.mmPinPostToChannel else MM.mmUnpinPostToChannel
+        void $ doPin pId session
+        return Nothing
+
+viewMessage :: TeamId -> Message -> MH ()
+viewMessage tId m = do
+    let w = tabbedWindow VMTabMessage (viewMessageWindowTemplate tId) (78, 25)
+    csTeam(tId).tsViewedMessage .= Just (m, w)
+    runTabShowHandlerFor (twValue w) w
+    pushMode tId ViewMessage

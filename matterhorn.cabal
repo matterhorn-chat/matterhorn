@@ -129,6 +129,7 @@ library
                        Matterhorn.State.ListWindow
                        Matterhorn.State.Logging
                        Matterhorn.State.MessageSelect
+                       Matterhorn.State.MessageListing
                        Matterhorn.State.Messages
                        Matterhorn.State.NotifyPrefs
                        Matterhorn.State.PostListWindow
