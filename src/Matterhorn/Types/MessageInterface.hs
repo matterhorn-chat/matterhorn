@@ -50,8 +50,9 @@ import           Matterhorn.Types.EditState
 import           Matterhorn.Types.Messages
 
 
--- | A UI region in which a specific message listing is viewed, where
--- the user can send messages in that channel or thread.
+-- | A UI region in which a specific message listing is viewed, in which
+-- the user can select from the listed messages and take actions on
+-- them.
 data MessageListing n =
     MessageListing { _mlMessages :: !Messages
                    -- ^ The messages.
@@ -70,7 +71,8 @@ data MessageListing n =
                    }
 
 -- | A UI region in which a specific message listing is viewed, where
--- the user can send messages in that channel or thread.
+-- the user can send messages in that channel or thread and edit,
+-- delete, or otherwise modify messages.
 data MessageInterface n i =
     MessageInterface { _miEditor :: !(EditState n)
                      -- ^ The editor and associated state for composing
