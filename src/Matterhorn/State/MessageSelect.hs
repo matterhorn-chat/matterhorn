@@ -93,15 +93,13 @@ beginMessageSelect which = do
     let recentMsg = getLatestSelectableMessage msgs
 
     when (isJust recentMsg) $ do
-        which.miMode .= MessageListingMode
         which.miListing.mlMode .= MessageSelect
         which.miListing.mlMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 exitMessageSelect :: Lens' ChatState (MessageInterface n i) -> MH ()
 exitMessageSelect which = do
-    m <- use (which.miMode)
-    when (m == MessageListingMode) $ do
-        which.miMode .= Compose
+    m <- use (which.miListing.mlMode)
+    when (m == MessageSelect) $ do
         which.miListing.mlMode .= ShowingTail
 
 -- | Tell the server that the message we currently have selected

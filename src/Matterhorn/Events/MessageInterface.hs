@@ -36,30 +36,28 @@ handleMessageInterfaceEvent :: TeamId
 handleMessageInterfaceEvent tId which ev = do
     mode <- use (which.miMode)
     listingMode <- use (which.miListing.mlMode)
-    case mode of
-        Compose ->
-            handleEventWith [ mhHandleKeyboardEvent (extraEditorKeybindings which)
-                            , mhHandleKeyboardEvent (messageInterfaceKeybindings which)
-                            , \e -> do
-                                case e of
-                                    (Vty.EvPaste bytes) -> handlePaste (which.miEditor) bytes
-                                    _ -> handleEditingInput (which.miEditor) e
-                                return True
-                            ] ev
-        SaveAttachment {} ->
-            onEventSaveAttachmentWindow which ev
-        ManageAttachments ->
-            onEventAttachmentList which ev
-        BrowseFiles ->
-            onEventBrowseFile which ev
-        MessageListingMode ->
-            case listingMode of
-                ShowUrlList ->
-                    onEventUrlSelect which ev
-                MessageSelect ->
-                    onEventMessageSelect tId which ev
-                ShowingTail ->
-                    return False
+    case listingMode of
+        ShowUrlList ->
+            onEventUrlSelect which ev
+        MessageSelect ->
+            onEventMessageSelect tId which ev
+        ShowingTail ->
+            case mode of
+                Compose ->
+                    handleEventWith [ mhHandleKeyboardEvent (extraEditorKeybindings which)
+                                    , mhHandleKeyboardEvent (messageInterfaceKeybindings which)
+                                    , \e -> do
+                                        case e of
+                                            (Vty.EvPaste bytes) -> handlePaste (which.miEditor) bytes
+                                            _ -> handleEditingInput (which.miEditor) e
+                                        return True
+                                    ] ev
+                SaveAttachment {} ->
+                    onEventSaveAttachmentWindow which ev
+                ManageAttachments ->
+                    onEventAttachmentList which ev
+                BrowseFiles ->
+                    onEventBrowseFile which ev
 
 messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig KeyEvent

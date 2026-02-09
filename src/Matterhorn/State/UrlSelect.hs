@@ -49,7 +49,6 @@ startUrlSelect :: Lens' ChatState (MessageInterface n i)
 startUrlSelect which urls = do
     src <- use (which.miListing.mlUrlListSource)
     let urlsWithIndexes = V.indexed urls
-    which.miMode .= MessageListingMode
     which.miListing.mlMode .= ShowUrlList
     which.miListing.mlUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
     which.miListing.mlUrlList.ulSource .= Just src
@@ -57,7 +56,7 @@ startUrlSelect which urls = do
 stopUrlSelect :: Lens' ChatState (MessageInterface n i)
               -> MH ()
 stopUrlSelect which = do
-    which.miMode .= Compose
+    which.miListing.mlMode .= ShowingTail
 
 openSelectedURL :: Lens' ChatState (MessageInterface n i) -> MH ()
 openSelectedURL which = do

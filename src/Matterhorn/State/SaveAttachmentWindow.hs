@@ -42,6 +42,7 @@ openSaveAttachmentWindow which = do
                             -- elements in the attachment dialog
                             listName <- getName <$> use (which.miListing.mlUrlList.ulList)
                             which.miSaveAttachmentDialog .= newSaveAttachmentDialog listName (fileInfoName info)
+                            which.miListing.mlMode .= ShowingTail
                             which.miMode .= SaveAttachment link
                 _ ->
                     -- The selected link is not for an attachment.

@@ -58,23 +58,21 @@ drawMessageInterface :: ChatState
 drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents
     where
-    inMsgSelect = st^.which.miListing.mlMode == MessageSelect &&
-                  st^.which.miMode == MessageListingMode
+    inMsgSelect = st^.which.miListing.mlMode == MessageSelect
     eName = getName $ st^.which.miEditor.esEditor
     region = MessageInterfaceMessages eName
     previewVpName = MessagePreviewViewport eName
 
     interfaceContents =
-        case st^.which.miMode of
-            Compose           -> renderMessages False
-            SaveAttachment {} -> drawSaveAttachmentWindow st which
-            ManageAttachments -> drawAttachmentList st which
-            BrowseFiles       -> drawFileBrowser st which
-            MessageListingMode ->
-                case st^.which.miListing.mlMode of
-                    MessageSelect -> renderMessages True
-                    ShowUrlList   -> drawUrlSelectWindow st hs which
-                    ShowingTail   -> renderMessages False
+        case st^.which.miListing.mlMode of
+            MessageSelect -> renderMessages True
+            ShowUrlList   -> drawUrlSelectWindow st hs which
+            ShowingTail   ->
+                case st^.which.miMode of
+                    Compose           -> renderMessages False
+                    SaveAttachment {} -> drawSaveAttachmentWindow st which
+                    ManageAttachments -> drawAttachmentList st which
+                    BrowseFiles       -> drawFileBrowser st which
 
     renderMessages inMsgSel =
         vBox [ freezeBorders $

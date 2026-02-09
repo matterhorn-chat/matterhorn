@@ -90,12 +90,15 @@ data MessageInterface n i =
 
 messageInterfaceCursor :: MessageInterface n i -> Maybe n
 messageInterfaceCursor mi =
-    case _miMode mi of
-        Compose           -> Just $ getName $ _esEditor $ _miEditor mi
-        SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
-        BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
-        ManageAttachments -> Nothing
-        MessageListingMode -> Nothing
+    case _mlMode (_miListing mi) of
+        MessageSelect -> Nothing
+        ShowUrlList -> Nothing
+        ShowingTail ->
+            case _miMode mi of
+                Compose           -> Just $ getName $ _esEditor $ _miEditor mi
+                SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
+                BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
+                ManageAttachments -> Nothing
 
 data MessageListingMode =
     MessageSelect
@@ -115,8 +118,6 @@ data MessageInterfaceMode =
     -- ^ Managing the attachment list
     | BrowseFiles
     -- ^ Browsing the filesystem for attachment files
-    | MessageListingMode
-    -- ^ A mode specific to the message listing
     deriving (Eq, Show)
 
 data URLListSource =
