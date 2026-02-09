@@ -24,17 +24,17 @@ import           Matterhorn.State.Common ( postInfoMessage, fetchFileAtPath
                                          )
 
 
-onEventSaveAttachmentWindow :: Lens' ChatState (MessageInterface Name i) -> Vty.Event -> MH Bool
+onEventSaveAttachmentWindow :: Lens' ChatState (MessageListing Name) -> Vty.Event -> MH Bool
 onEventSaveAttachmentWindow which (Vty.EvKey (Vty.KChar '\t') []) = do
-    which.miSaveAttachmentDialog.attachmentPathDialogFocus %= focusNext
+    which.mlSaveAttachmentDialog.attachmentPathDialogFocus %= focusNext
     return True
 onEventSaveAttachmentWindow which (Vty.EvKey Vty.KBackTab []) = do
-    which.miSaveAttachmentDialog.attachmentPathDialogFocus %= focusPrev
+    which.mlSaveAttachmentDialog.attachmentPathDialogFocus %= focusPrev
     return True
 onEventSaveAttachmentWindow which (Vty.EvKey Vty.KEnter []) = do
-    f <- use (which.miSaveAttachmentDialog.attachmentPathDialogFocus)
+    f <- use (which.mlSaveAttachmentDialog.attachmentPathDialogFocus)
     session <- getSession
-    mode <- use (which.miMode)
+    mode <- use (which.mlMode)
 
     let link = case mode of
             SaveAttachment l -> l
@@ -43,7 +43,7 @@ onEventSaveAttachmentWindow which (Vty.EvKey Vty.KEnter []) = do
             LinkFileId i -> i
             _ -> error $ "BUG: invalid link target " <> show (link^.linkTarget) <> " in onEventSaveAttachmentWindow"
         save = do
-            ed <- use (which.miSaveAttachmentDialog.attachmentPathEditor)
+            ed <- use (which.mlSaveAttachmentDialog.attachmentPathEditor)
             let path = T.unpack $ T.strip $ T.concat $ getEditContents ed
 
             when (not $ null path) $ do
@@ -68,10 +68,10 @@ onEventSaveAttachmentWindow which (Vty.EvKey Vty.KEsc []) = do
     closeSaveAttachmentWindow which
     return True
 onEventSaveAttachmentWindow which e = do
-    f <- use (which.miSaveAttachmentDialog.attachmentPathDialogFocus)
+    f <- use (which.mlSaveAttachmentDialog.attachmentPathDialogFocus)
     case focusGetCurrent f of
         Just (AttachmentPathEditor {}) -> do
-            mhZoom (which.miSaveAttachmentDialog.attachmentPathEditor)
+            mhZoom (which.mlSaveAttachmentDialog.attachmentPathEditor)
                                 handleEditorEvent (VtyEvent e)
             return True
         _ ->

@@ -445,7 +445,7 @@ keybindSections =
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
     , ("Message Select Mode", messageSelectKeyHandlers teamIdThunk whichThunk)
     , ("User Listings", userListWindowKeyHandlers teamIdThunk)
-    , ("URL Select Mode", urlSelectKeyHandlers whichThunk)
+    , ("URL Select Mode", urlSelectKeyHandlers whichListingThunk)
     , ("Theme List Window", themeListWindowKeyHandlers teamIdThunk)
     , ("Channel Search Window", channelListWindowKeyHandlers teamIdThunk)
     , ("Message Viewer: Common", tabbedWindowKeyHandlers teamIdThunk tabbedWinThunk)
@@ -468,6 +468,9 @@ editorThunk = error "BUG: should not evaluate editorThunk"
 
 whichThunk :: Lens' ChatState (MessageInterface n i)
 whichThunk = error "BUG: should not evaluate whichThunk"
+
+whichListingThunk :: Lens' ChatState (MessageListing n)
+whichListingThunk = error "BUG: should not evaluate whichListingThunk"
 
 helpBox :: HelpScreen -> Widget Name -> Widget Name
 helpBox scr helpText =

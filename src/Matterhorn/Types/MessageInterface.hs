@@ -6,7 +6,6 @@ module Matterhorn.Types.MessageInterface
   , miRootPostId
   , miChannelId
   , miTarget
-  , miSaveAttachmentDialog
   , miListing
 
   , MessageListing(..)
@@ -15,6 +14,7 @@ module Matterhorn.Types.MessageInterface
   , mlMessageSelect
   , mlMessages
   , mlMode
+  , mlSaveAttachmentDialog
 
   , messageInterfaceCursor
 
@@ -64,6 +64,9 @@ data MessageListing n =
                    -- in this listing
                    , _mlUrlList :: !(URLList n)
                    -- ^ The URL listing for this listing
+                   , _mlSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
+                   -- ^ The state for the interactive attachment-saving
+                   -- editor window.
                    }
 
 -- | A UI region in which a specific message listing is viewed, where
@@ -81,9 +84,6 @@ data MessageInterface n i =
                      -- ^ The mode of the interface.
                      , _miTarget :: !MessageInterfaceTarget
                      -- ^ The target value for this message interface
-                     , _miSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
-                     -- ^ The state for the interactive attachment-saving
-                     -- editor window.
                      , _miListing :: MessageListing n
                      -- ^ THe message listing in this interface
                      }
@@ -93,10 +93,10 @@ messageInterfaceCursor mi =
     case _mlMode (_miListing mi) of
         MessageSelect -> Nothing
         ShowUrlList -> Nothing
+        SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _mlSaveAttachmentDialog $ _miListing mi
         ShowingTail ->
             case _miMode mi of
                 Compose           -> Just $ getName $ _esEditor $ _miEditor mi
-                SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
                 BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
                 ManageAttachments -> Nothing
 
@@ -107,13 +107,13 @@ data MessageListingMode =
     -- ^ Show the URL listing
     | ShowingTail
     -- ^ Showing the most recent messages of the listing
+    | SaveAttachment !LinkChoice
+    -- ^ Show the attachment save UI
     deriving (Eq, Show)
 
 data MessageInterfaceMode =
     Compose
     -- ^ Composing messages and interacting with the editor
-    | SaveAttachment !LinkChoice
-    -- ^ Show the attachment save UI
     | ManageAttachments
     -- ^ Managing the attachment list
     | BrowseFiles

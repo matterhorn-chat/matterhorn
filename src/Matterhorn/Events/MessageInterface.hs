@@ -34,14 +34,16 @@ handleMessageInterfaceEvent :: TeamId
                             -> Vty.Event
                             -> MH Bool
 handleMessageInterfaceEvent tId which ev = do
-    mode <- use (which.miMode)
     listingMode <- use (which.miListing.mlMode)
     case listingMode of
         ShowUrlList ->
-            onEventUrlSelect which ev
+            onEventUrlSelect (which.miListing) ev
         MessageSelect ->
             onEventMessageSelect tId which ev
-        ShowingTail ->
+        SaveAttachment {} ->
+            onEventSaveAttachmentWindow (which.miListing) ev
+        ShowingTail -> do
+            mode <- use (which.miMode)
             case mode of
                 Compose ->
                     handleEventWith [ mhHandleKeyboardEvent (extraEditorKeybindings which)
@@ -52,8 +54,6 @@ handleMessageInterfaceEvent tId which ev = do
                                             _ -> handleEditingInput (which.miEditor) e
                                         return True
                                     ] ev
-                SaveAttachment {} ->
-                    onEventSaveAttachmentWindow which ev
                 ManageAttachments ->
                     onEventAttachmentList which ev
                 BrowseFiles ->

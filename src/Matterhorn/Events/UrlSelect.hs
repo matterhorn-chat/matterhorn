@@ -19,16 +19,16 @@ import           Matterhorn.State.SaveAttachmentWindow
 import           Matterhorn.Types
 
 
-onEventUrlSelect :: Lens' ChatState (MessageInterface Name i) -> Vty.Event -> MH Bool
+onEventUrlSelect :: Lens' ChatState (MessageListing Name) -> Vty.Event -> MH Bool
 onEventUrlSelect which =
     handleEventWith [ mhHandleKeyboardEvent (urlSelectKeybindings which)
-                    , \e -> mhZoom (which.miListing.mlUrlList.ulList) handleListEvent e >> return True
+                    , \e -> mhZoom (which.mlUrlList.ulList) handleListEvent e >> return True
                     ]
 
-urlSelectKeybindings :: Lens' ChatState (MessageInterface Name i) -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
+urlSelectKeybindings :: Lens' ChatState (MessageListing Name) -> KeyConfig KeyEvent -> KeyDispatcher KeyEvent MH
 urlSelectKeybindings which kc = unsafeKeyDispatcher kc (urlSelectKeyHandlers which)
 
-urlSelectKeyHandlers :: Lens' ChatState (MessageInterface Name i) -> [MHKeyEventHandler]
+urlSelectKeyHandlers :: Lens' ChatState (MessageListing Name) -> [MHKeyEventHandler]
 urlSelectKeyHandlers which =
     [ onKey (bind Vty.KEnter)
           "Open the selected URL, if any" $
@@ -40,10 +40,10 @@ urlSelectKeyHandlers which =
     , onEvent CancelEvent "Cancel URL selection" $ stopUrlSelect which
 
     , onEvent SelectUpEvent "Move cursor up" $
-        mhZoom (which.miListing.mlUrlList.ulList) handleListEvent (Vty.EvKey Vty.KUp [])
+        mhZoom (which.mlUrlList.ulList) handleListEvent (Vty.EvKey Vty.KUp [])
 
     , onEvent SelectDownEvent "Move cursor down" $
-        mhZoom (which.miListing.mlUrlList.ulList) handleListEvent (Vty.EvKey Vty.KDown [])
+        mhZoom (which.mlUrlList.ulList) handleListEvent (Vty.EvKey Vty.KDown [])
 
     , onKey (bind 'q')
          "Cancel URL selection" $

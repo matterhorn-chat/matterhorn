@@ -327,7 +327,6 @@ newMessageInterface cId pId msgs es target src =
                         , _miMode = Compose
                         , _miEditor = es
                         , _miTarget = target
-                        , _miSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
                         , _miListing = MessageListing { _mlUrlListSource = src
                                                       , _mlUrlList = URLList { _ulList = list urlListName mempty 2
                                                                              , _ulSource = Nothing
@@ -335,6 +334,7 @@ newMessageInterface cId pId msgs es target src =
                                                       , _mlMode = ShowingTail
                                                       , _mlMessages = msgs
                                                       , _mlMessageSelect = MessageSelectState Nothing
+                                                      , _mlSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
                                                       }
                         }
 

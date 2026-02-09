@@ -53,14 +53,14 @@ startUrlSelect which urls = do
     which.miListing.mlUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
     which.miListing.mlUrlList.ulSource .= Just src
 
-stopUrlSelect :: Lens' ChatState (MessageInterface n i)
+stopUrlSelect :: Lens' ChatState (MessageListing n)
               -> MH ()
 stopUrlSelect which = do
-    which.miListing.mlMode .= ShowingTail
+    which.mlMode .= ShowingTail
 
-openSelectedURL :: Lens' ChatState (MessageInterface n i) -> MH ()
+openSelectedURL :: Lens' ChatState (MessageListing n) -> MH ()
 openSelectedURL which = do
-    selected <- use (which.miListing.mlUrlList.ulList.to listSelectedElement)
+    selected <- use (which.mlUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)

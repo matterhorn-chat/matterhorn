@@ -25,9 +25,9 @@ import           Matterhorn.State.Teams ( newSaveAttachmentDialog )
 -- to save the attachment. If the URL list is empty or if the selected
 -- entry is not for an attachment, this returns to the Main mode but
 -- otherwise does nothing.
-openSaveAttachmentWindow :: Lens' ChatState (MessageInterface Name i) -> MH ()
+openSaveAttachmentWindow :: Lens' ChatState (MessageListing Name) -> MH ()
 openSaveAttachmentWindow which = do
-    selected <- use (which.miListing.mlUrlList.ulList.to listSelectedElement)
+    selected <- use (which.mlUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) ->
@@ -40,15 +40,14 @@ openSaveAttachmentWindow which = do
                             -- Use the message interface's URL list name
                             -- as a unique basis for the names of the UI
                             -- elements in the attachment dialog
-                            listName <- getName <$> use (which.miListing.mlUrlList.ulList)
-                            which.miSaveAttachmentDialog .= newSaveAttachmentDialog listName (fileInfoName info)
-                            which.miListing.mlMode .= ShowingTail
-                            which.miMode .= SaveAttachment link
+                            listName <- getName <$> use (which.mlUrlList.ulList)
+                            which.mlSaveAttachmentDialog .= newSaveAttachmentDialog listName (fileInfoName info)
+                            which.mlMode .= SaveAttachment link
                 _ ->
                     -- The selected link is not for an attachment.
                     return ()
 
-closeSaveAttachmentWindow :: Lens' ChatState (MessageInterface n i)
+closeSaveAttachmentWindow :: Lens' ChatState (MessageListing n)
                           -> MH ()
 closeSaveAttachmentWindow which =
-    which.miMode .= Compose
+    which.mlMode .= ShowUrlList

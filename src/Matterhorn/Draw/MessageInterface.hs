@@ -66,11 +66,11 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents =
         case st^.which.miListing.mlMode of
             MessageSelect -> renderMessages True
-            ShowUrlList   -> drawUrlSelectWindow st hs which
+            ShowUrlList   -> drawUrlSelectWindow st hs (which.miListing)
+            SaveAttachment {} -> drawSaveAttachmentWindow st (which.miListing)
             ShowingTail   ->
                 case st^.which.miMode of
                     Compose           -> renderMessages False
-                    SaveAttachment {} -> drawSaveAttachmentWindow st which
                     ManageAttachments -> drawAttachmentList st which
                     BrowseFiles       -> drawFileBrowser st which
 
@@ -575,7 +575,7 @@ doHighlightMisspellings hs misspellings contents =
     in vBox $ handleLine <$> contents
 
 drawSaveAttachmentWindow :: ChatState
-                         -> Lens' ChatState (MessageInterface Name i)
+                         -> Lens' ChatState (MessageListing Name)
                          -> Widget Name
 drawSaveAttachmentWindow st which =
     center $
@@ -594,19 +594,19 @@ drawSaveAttachmentWindow st which =
          ]
     where
         editorHeight = 1
-        listName = getName $ st^.which.miListing.mlUrlList.ulList
-        foc = st^.which.miSaveAttachmentDialog.attachmentPathDialogFocus
-        ed = st^.which.miSaveAttachmentDialog.attachmentPathEditor
+        listName = getName $ st^.which.mlUrlList.ulList
+        foc = st^.which.mlSaveAttachmentDialog.attachmentPathDialogFocus
+        ed = st^.which.mlSaveAttachmentDialog.attachmentPathEditor
         drawEditorTxt = txt . T.unlines
 
-drawUrlSelectWindow :: ChatState -> HighlightSet -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+drawUrlSelectWindow :: ChatState -> HighlightSet -> Lens' ChatState (MessageListing Name) -> Widget Name
 drawUrlSelectWindow st hs which =
     vBox [ renderUrlList st hs which
          , urlSelectBottomBar st which
          , urlSelectInputArea st which
          ]
 
-renderUrlList :: ChatState -> HighlightSet -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+renderUrlList :: ChatState -> HighlightSet -> Lens' ChatState (MessageListing Name) -> Widget Name
 renderUrlList st hs which =
     urlDisplay
     where
@@ -614,7 +614,7 @@ renderUrlList st hs which =
                      then str "No links found." <=> fill ' '
                      else renderList renderItem True urls
 
-        urls = st^.which.miListing.mlUrlList.ulList
+        urls = st^.which.mlUrlList.ulList
 
         me = myUsername st
 
@@ -651,9 +651,9 @@ renderUrlList st hs which =
         attr True = forceAttr urlListSelectedAttr
         attr False = id
 
-urlSelectBottomBar :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+urlSelectBottomBar :: ChatState -> Lens' ChatState (MessageListing Name) -> Widget Name
 urlSelectBottomBar st which =
-    case listSelectedElement $ st^.which.miListing.mlUrlList.ulList of
+    case listSelectedElement $ st^.which.mlUrlList.ulList of
         Nothing -> hBorder
         Just (_, (_, link)) ->
             let options = [ ( isFile
@@ -681,7 +681,7 @@ urlSelectBottomBar st which =
                          , hBorder
                          ]
 
-urlSelectInputArea :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+urlSelectInputArea :: ChatState -> Lens' ChatState (MessageListing Name) -> Widget Name
 urlSelectInputArea st which =
     let getBinding = keyEventBindings st (urlSelectKeybindings which)
     in hCenter $ hBox [ withDefAttr clientEmphAttr $ txt "Enter"
