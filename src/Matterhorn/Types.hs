@@ -1876,7 +1876,7 @@ channelEditor cId =
 
 channelMessageSelect :: ChannelId -> Lens' ChatState MessageSelectState
 channelMessageSelect cId =
-    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miMessageSelect
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miListing.mlMessageSelect
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
@@ -1915,7 +1915,7 @@ csChannel cId =
 
 csChannelMessages :: ChannelId -> Traversal' ChatState Messages
 csChannelMessages cId =
-    csChannelMessageInterface(cId).miMessages
+    csChannelMessageInterface(cId).miListing.mlMessages
 
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()
@@ -2240,7 +2240,7 @@ maybeThreadInterface tId = csTeam(tId).tsThreadInterface
 
 threadInterfaceEmpty :: TeamId -> MH Bool
 threadInterfaceEmpty tId = do
-    mLen <- preuse (maybeThreadInterface(tId)._Just.miMessages.to messagesLength)
+    mLen <- preuse (maybeThreadInterface(tId)._Just.miListing.mlMessages.to messagesLength)
     case mLen of
         Nothing -> return True
         Just len -> return $ len == 0
@@ -2255,15 +2255,15 @@ withThreadInterface tId cId act = do
 threadInterfaceDeleteWhere :: TeamId -> ChannelId -> (Message -> Bool) -> MH ()
 threadInterfaceDeleteWhere tId cId f =
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.miMessages.traversed.filtered f %=
+        maybeThreadInterface(tId)._Just.miListing.mlMessages.traversed.filtered f %=
             (& mDeleted .~ True)
 
 modifyThreadMessages :: TeamId -> ChannelId -> (Messages -> Messages) -> MH ()
 modifyThreadMessages tId cId f = do
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.miMessages %= f
+        maybeThreadInterface(tId)._Just.miListing.mlMessages %= f
 
 modifyEachThreadMessage :: TeamId -> ChannelId -> (Message -> Message) -> MH ()
 modifyEachThreadMessage tId cId f = do
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.miMessages.traversed %= f
+        maybeThreadInterface(tId)._Just.miListing.mlMessages.traversed %= f

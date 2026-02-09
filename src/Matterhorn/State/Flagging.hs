@@ -55,7 +55,7 @@ updateMessageFlag pId f = do
               mTi <- preuse (threadInterface(tId))
               case mTi of
                   Just ti | ti^.miChannelId == cId ->
-                      threadInterface(tId).miMessages.traversed.filtered isTargetMessage.mFlagged .= f
+                      threadInterface(tId).miListing.mlMessages.traversed.filtered isTargetMessage.mFlagged .= f
                   _ -> return ()
 
               -- We also want to update the post window if this happens

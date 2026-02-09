@@ -58,7 +58,8 @@ drawMessageInterface :: ChatState
 drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents
     where
-    inMsgSelect = st^.which.miMode == MessageSelect
+    inMsgSelect = st^.which.miListing.mlMode == MessageSelect &&
+                  st^.which.miMode == MessageListingMode
     eName = getName $ st^.which.miEditor.esEditor
     region = MessageInterfaceMessages eName
     previewVpName = MessagePreviewViewport eName
@@ -66,11 +67,14 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents =
         case st^.which.miMode of
             Compose           -> renderMessages False
-            MessageSelect     -> renderMessages True
-            ShowUrlList       -> drawUrlSelectWindow st hs which
             SaveAttachment {} -> drawSaveAttachmentWindow st which
             ManageAttachments -> drawAttachmentList st which
             BrowseFiles       -> drawFileBrowser st which
+            MessageListingMode ->
+                case st^.which.miListing.mlMode of
+                    MessageSelect -> renderMessages True
+                    ShowUrlList   -> drawUrlSelectWindow st hs which
+                    ShowingTail   -> renderMessages False
 
     renderMessages inMsgSel =
         vBox [ freezeBorders $
@@ -242,7 +246,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
             Just cId ->
                 if inMsgSelect
                 then freezeBorders $
-                     renderMessagesWithSelect cId (st^.which.miMessageSelect) (buildMessages cId)
+                     renderMessagesWithSelect cId (st^.which.miListing.mlMessageSelect) (buildMessages cId)
                 else cached region $
                      freezeBorders $
                      renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region $
@@ -280,7 +284,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
         let cutoff = if showNewMsgLine
                      then getNewMessageCutoff cId st
                      else Nothing
-            ms = filterMessageListing st (which.miMessages)
+            ms = filterMessageListing st (which.miListing.mlMessages)
         in if F.null ms
            then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
            else insertTransitions ms
@@ -592,7 +596,7 @@ drawSaveAttachmentWindow st which =
          ]
     where
         editorHeight = 1
-        listName = getName $ st^.which.miUrlList.ulList
+        listName = getName $ st^.which.miListing.mlUrlList.ulList
         foc = st^.which.miSaveAttachmentDialog.attachmentPathDialogFocus
         ed = st^.which.miSaveAttachmentDialog.attachmentPathEditor
         drawEditorTxt = txt . T.unlines
@@ -612,7 +616,7 @@ renderUrlList st hs which =
                      then str "No links found." <=> fill ' '
                      else renderList renderItem True urls
 
-        urls = st^.which.miUrlList.ulList
+        urls = st^.which.miListing.mlUrlList.ulList
 
         me = myUsername st
 
@@ -651,7 +655,7 @@ renderUrlList st hs which =
 
 urlSelectBottomBar :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
 urlSelectBottomBar st which =
-    case listSelectedElement $ st^.which.miUrlList.ulList of
+    case listSelectedElement $ st^.which.miListing.mlUrlList.ulList of
         Nothing -> hBorder
         Just (_, (_, link)) ->
             let options = [ ( isFile

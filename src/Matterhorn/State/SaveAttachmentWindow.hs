@@ -27,7 +27,7 @@ import           Matterhorn.State.Teams ( newSaveAttachmentDialog )
 -- otherwise does nothing.
 openSaveAttachmentWindow :: Lens' ChatState (MessageInterface Name i) -> MH ()
 openSaveAttachmentWindow which = do
-    selected <- use (which.miUrlList.ulList.to listSelectedElement)
+    selected <- use (which.miListing.mlUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) ->
@@ -40,7 +40,7 @@ openSaveAttachmentWindow which = do
                             -- Use the message interface's URL list name
                             -- as a unique basis for the names of the UI
                             -- elements in the attachment dialog
-                            listName <- getName <$> use (which.miUrlList.ulList)
+                            listName <- getName <$> use (which.miListing.mlUrlList.ulList)
                             which.miSaveAttachmentDialog .= newSaveAttachmentDialog listName (fileInfoName info)
                             which.miMode .= SaveAttachment link
                 _ ->

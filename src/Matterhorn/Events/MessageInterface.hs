@@ -35,6 +35,7 @@ handleMessageInterfaceEvent :: TeamId
                             -> MH Bool
 handleMessageInterfaceEvent tId which ev = do
     mode <- use (which.miMode)
+    listingMode <- use (which.miListing.mlMode)
     case mode of
         Compose ->
             handleEventWith [ mhHandleKeyboardEvent (extraEditorKeybindings which)
@@ -45,16 +46,20 @@ handleMessageInterfaceEvent tId which ev = do
                                     _ -> handleEditingInput (which.miEditor) e
                                 return True
                             ] ev
-        MessageSelect ->
-            onEventMessageSelect tId which ev
-        ShowUrlList ->
-            onEventUrlSelect which ev
         SaveAttachment {} ->
             onEventSaveAttachmentWindow which ev
         ManageAttachments ->
             onEventAttachmentList which ev
         BrowseFiles ->
             onEventBrowseFile which ev
+        MessageListingMode ->
+            case listingMode of
+                ShowUrlList ->
+                    onEventUrlSelect which ev
+                MessageSelect ->
+                    onEventMessageSelect tId which ev
+                ShowingTail ->
+                    return False
 
 messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig KeyEvent

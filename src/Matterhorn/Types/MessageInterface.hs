@@ -1,20 +1,25 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Matterhorn.Types.MessageInterface
   ( MessageInterface(..)
-  , miMessages
   , miEditor
   , miMode
-  , miMessageSelect
   , miRootPostId
   , miChannelId
   , miTarget
-  , miUrlListSource
-  , miUrlList
   , miSaveAttachmentDialog
+  , miListing
+
+  , MessageListing(..)
+  , mlUrlList
+  , mlUrlListSource
+  , mlMessageSelect
+  , mlMessages
+  , mlMode
 
   , messageInterfaceCursor
 
   , MessageInterfaceMode(..)
+  , MessageListingMode(..)
   , MessageInterfaceTarget(..)
   , URLListSource(..)
 
@@ -47,14 +52,26 @@ import           Matterhorn.Types.Messages
 
 -- | A UI region in which a specific message listing is viewed, where
 -- the user can send messages in that channel or thread.
+data MessageListing n =
+    MessageListing { _mlMessages :: !Messages
+                   -- ^ The messages.
+                   , _mlMessageSelect :: !MessageSelectState
+                   -- ^ Message selection state for the listing.
+                   , _mlMode :: !MessageListingMode
+                   -- ^ The mode of the listing.
+                   , _mlUrlListSource :: !URLListSource
+                   -- ^ How to characterize the URLs found in messages
+                   -- in this listing
+                   , _mlUrlList :: !(URLList n)
+                   -- ^ The URL listing for this listing
+                   }
+
+-- | A UI region in which a specific message listing is viewed, where
+-- the user can send messages in that channel or thread.
 data MessageInterface n i =
-    MessageInterface { _miMessages :: !Messages
-                     -- ^ The messages.
-                     , _miEditor :: !(EditState n)
+    MessageInterface { _miEditor :: !(EditState n)
                      -- ^ The editor and associated state for composing
                      -- messages in this channel or thread.
-                     , _miMessageSelect :: !MessageSelectState
-                     -- ^ Message selection state for the interface.
                      , _miRootPostId :: !i
                      -- ^ The root post ID if these messages belong to a
                      -- thread.
@@ -64,14 +81,11 @@ data MessageInterface n i =
                      -- ^ The mode of the interface.
                      , _miTarget :: !MessageInterfaceTarget
                      -- ^ The target value for this message interface
-                     , _miUrlListSource :: !URLListSource
-                     -- ^ How to characterize the URLs found in messages
-                     -- in this interface
-                     , _miUrlList :: !(URLList n)
-                     -- ^ The URL listing for this interface
                      , _miSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
                      -- ^ The state for the interactive attachment-saving
                      -- editor window.
+                     , _miListing :: MessageListing n
+                     -- ^ THe message listing in this interface
                      }
 
 messageInterfaceCursor :: MessageInterface n i -> Maybe n
@@ -81,22 +95,28 @@ messageInterfaceCursor mi =
         SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
         BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
         ManageAttachments -> Nothing
-        MessageSelect     -> Nothing
-        ShowUrlList       -> Nothing
+        MessageListingMode -> Nothing
+
+data MessageListingMode =
+    MessageSelect
+    -- ^ Selecting from messages in the listing
+    | ShowUrlList
+    -- ^ Show the URL listing
+    | ShowingTail
+    -- ^ Showing the most recent messages of the listing
+    deriving (Eq, Show)
 
 data MessageInterfaceMode =
     Compose
     -- ^ Composing messages and interacting with the editor
-    | MessageSelect
-    -- ^ Selecting from messages in the listing
-    | ShowUrlList
-    -- ^ Show the URL listing
     | SaveAttachment !LinkChoice
     -- ^ Show the attachment save UI
     | ManageAttachments
     -- ^ Managing the attachment list
     | BrowseFiles
     -- ^ Browsing the filesystem for attachment files
+    | MessageListingMode
+    -- ^ A mode specific to the message listing
     deriving (Eq, Show)
 
 data URLListSource =
@@ -123,5 +143,6 @@ data SaveAttachmentDialogState n =
                               }
 
 makeLenses ''MessageInterface
+makeLenses ''MessageListing
 makeLenses ''URLList
 makeLenses ''SaveAttachmentDialogState

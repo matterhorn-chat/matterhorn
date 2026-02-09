@@ -322,18 +322,20 @@ newMessageInterface :: ChannelId
 newMessageInterface cId pId msgs es target src =
     let urlListName = UrlList eName
         eName = getName $ es^.esEditor
-    in MessageInterface { _miMessages = msgs
-                        , _miRootPostId = pId
+    in MessageInterface { _miRootPostId = pId
                         , _miChannelId = cId
-                        , _miMessageSelect = MessageSelectState Nothing
                         , _miMode = Compose
                         , _miEditor = es
                         , _miTarget = target
-                        , _miUrlListSource = src
-                        , _miUrlList = URLList { _ulList = list urlListName mempty 2
-                                               , _ulSource = Nothing
-                                               }
                         , _miSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
+                        , _miListing = MessageListing { _mlUrlListSource = src
+                                                      , _mlUrlList = URLList { _ulList = list urlListName mempty 2
+                                                                             , _ulSource = Nothing
+                                                                             }
+                                                      , _mlMode = ShowingTail
+                                                      , _mlMessages = msgs
+                                                      , _mlMessageSelect = MessageSelectState Nothing
+                                                      }
                         }
 
 newTeamState :: Config

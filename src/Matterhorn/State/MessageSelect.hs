@@ -62,8 +62,8 @@ getSelectedMessage :: Lens' ChatState (MessageInterface n i)
                    -> ChatState
                    -> Maybe Message
 getSelectedMessage which st = do
-    selMsgId <- selectMessageId $ st^.which.miMessageSelect
-    let chanMsgs = st^.which.miMessages
+    selMsgId <- selectMessageId $ st^.which.miListing.mlMessageSelect
+    let chanMsgs = st^.which.miListing.mlMessages
     findMessage selMsgId chanMsgs
 
 withSelectedMessage :: Lens' ChatState (MessageInterface n i)
@@ -89,18 +89,20 @@ beginMessageSelect which = do
     --
     -- If we can't find one at all, we ignore the mode switch request
     -- and just return.
-    msgs <- use (which.miMessages)
+    msgs <- use (which.miListing.mlMessages)
     let recentMsg = getLatestSelectableMessage msgs
 
     when (isJust recentMsg) $ do
-        which.miMode .= MessageSelect
-        which.miMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
+        which.miMode .= MessageListingMode
+        which.miListing.mlMode .= MessageSelect
+        which.miListing.mlMessageSelect .= MessageSelectState (recentMsg >>= _mMessageId)
 
 exitMessageSelect :: Lens' ChatState (MessageInterface n i) -> MH ()
 exitMessageSelect which = do
     m <- use (which.miMode)
-    when (m == MessageSelect) $
+    when (m == MessageListingMode) $ do
         which.miMode .= Compose
+        which.miListing.mlMode .= ShowingTail
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.
@@ -240,18 +242,18 @@ messageSelectUp :: Lens' ChatState (MessageInterface n i)
 messageSelectUp which =
     withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use (which.miMessages)
+        msgs <- use (which.miListing.mlMessages)
         let nextMsgId = getPrevMessageId selected msgs
-        which.miMessageSelect .= MessageSelectState (nextMsgId <|> selected)
+        which.miListing.mlMessageSelect .= MessageSelectState (nextMsgId <|> selected)
 
 messageSelectDown :: Lens' ChatState (MessageInterface n i)
                   -> MH ()
 messageSelectDown which =
     withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use (which.miMessages)
+        msgs <- use (which.miListing.mlMessages)
         let nextMsgId = getNextMessageId selected msgs
-        which.miMessageSelect .= MessageSelectState (nextMsgId <|> selected)
+        which.miListing.mlMessageSelect .= MessageSelectState (nextMsgId <|> selected)
 
 messageSelectDownBy :: Lens' ChatState (MessageInterface n i)
                     -> Int
@@ -270,10 +272,10 @@ messageSelectFirst :: Lens' ChatState (MessageInterface n i)
 messageSelectFirst which =
     withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use (which.miMessages)
+        msgs <- use (which.miListing.mlMessages)
         case getEarliestSelectableMessage msgs of
           Just firstMsg ->
-            which.miMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
+            which.miListing.mlMessageSelect .= MessageSelectState (firstMsg^.mMessageId <|> selected)
           Nothing -> mhLog LogError "No first message found from current message?!"
 
 messageSelectLast :: Lens' ChatState (MessageInterface n i)
@@ -281,10 +283,10 @@ messageSelectLast :: Lens' ChatState (MessageInterface n i)
 messageSelectLast which =
     withSelectedMessage which $ \msg -> do
         let selected = _mMessageId msg
-        msgs <- use (which.miMessages)
+        msgs <- use (which.miListing.mlMessages)
         case getLatestSelectableMessage msgs of
           Just lastSelMsg ->
-            which.miMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
+            which.miListing.mlMessageSelect .= MessageSelectState (lastSelMsg^.mMessageId <|> selected)
           Nothing -> mhLog LogError "No last message found from current message?!"
 
 deleteSelectedMessage :: Lens' ChatState (MessageInterface n i)

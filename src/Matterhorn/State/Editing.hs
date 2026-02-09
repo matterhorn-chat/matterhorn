@@ -518,7 +518,7 @@ cancelAutocompleteOrReplyOrEdit which = do
 
 replyToLatestMessage :: Lens' ChatState (MessageInterface n i) -> MH ()
 replyToLatestMessage which = do
-    msgs <- use (which.miMessages)
+    msgs <- use (which.miListing.mlMessages)
     cId <- use (which.miChannelId)
     case findLatestUserMessage isReplyable msgs of
       Just msg | isReplyable msg ->
