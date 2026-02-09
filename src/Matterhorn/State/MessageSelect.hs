@@ -4,16 +4,12 @@ module Matterhorn.State.MessageSelect
   -- * Message selection mode
     openSelectedMessageInEditor
   , fillSelectedGap
-  , copyPostLink
-  , yankSelectedMessage
   , beginConfirmDeleteSelectedMessage
   , deleteSelectedMessage
   , beginReplyCompose
   , beginEditMessage
   , getSelectedMessage
-  , getListingSelectedMessage
   , openThreadWindow
-  , exitMessageSelect
   )
 where
 

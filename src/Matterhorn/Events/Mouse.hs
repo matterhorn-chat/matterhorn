@@ -17,7 +17,7 @@ import           Matterhorn.Types
 
 import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent )
 import           Matterhorn.Events.ChannelTopicWindow ( channelTopicWindowMouseHandler )
-import           Matterhorn.State.MessageSelect ( exitMessageSelect )
+import           Matterhorn.State.MessageListing ( exitMessageSelect )
 import           Matterhorn.State.Reactions ( toggleReaction )
 import           Matterhorn.State.Links ( openLinkTarget )
 
