@@ -40,7 +40,7 @@ import           Matterhorn.Draw.RichText
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.UrlSelect
-import           Matterhorn.State.MessageSelect
+import           Matterhorn.State.MessageListing ( getListingSelectedMessage )
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( justAfter, justBefore )
 import           Matterhorn.Types
@@ -127,13 +127,15 @@ messageSelectBottomBar :: ChatState
                        -> Lens' ChatState (MessageInterface Name i)
                        -> Widget Name
 messageSelectBottomBar st tId which =
-    case getSelectedMessage which st of
+    case getListingSelectedMessage (which.miListing) st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
                              then txt "(no actions available for this message)"
                              else hBox $ intersperse (txt " ") usableOptions
-                usableOptions = mkOption <$> messageSelectionKeyOptions st tId which postMsg
+                usableOptions = mkOption <$> allOptions
+                allOptions = messageInterfaceSelectionKeyOptions st tId which postMsg <>
+                             messageListingSelectionKeyOptions st tId (which.miListing) postMsg
                 mkOption (k, desc) = withDefAttr messageSelectStatusAttr (txt k) <+>
                                      txt (":" <> desc)
             in hBox [ hLimit 1 hBorder
@@ -143,20 +145,34 @@ messageSelectBottomBar st tId which =
                     , hBorder
                     ]
 
-messageSelectionKeyOptions :: ChatState
-                           -> TeamId
-                           -> Lens' ChatState (MessageInterface Name i)
-                           -> Message
-                           -> [(T.Text, T.Text)]
-messageSelectionKeyOptions st tId which msg =
+messageInterfaceSelectionKeyOptions :: ChatState
+                                    -> TeamId
+                                    -> Lens' ChatState (MessageInterface Name i)
+                                    -> Message
+                                    -> [(T.Text, T.Text)]
+messageInterfaceSelectionKeyOptions st tId which msg =
     let ev = keyEventBindings st (messageSelectKeybindings tId which)
         myId = myUserId st
         getUsable (eventVal, label, _, isUsable, _) =
             if isUsable myId msg
             then Just (ev eventVal, label)
             else Nothing
-        options = contextSensitiveOptions tId (which.miListing) <>
-                  editingContextSensitiveOptions tId which
+        options = editingContextSensitiveOptions tId which
+    in catMaybes $ getUsable <$> options
+
+messageListingSelectionKeyOptions :: ChatState
+                                  -> TeamId
+                                  -> Lens' ChatState (MessageListing Name)
+                                  -> Message
+                                  -> [(T.Text, T.Text)]
+messageListingSelectionKeyOptions st tId which msg =
+    let ev = keyEventBindings st (messageListingKeybindings tId which)
+        myId = myUserId st
+        getUsable (eventVal, label, _, isUsable, _) =
+            if isUsable myId msg
+            then Just (ev eventVal, label)
+            else Nothing
+        options = contextSensitiveOptions tId which
     in catMaybes $ getUsable <$> options
 
 renderMessageListing :: ChatState
