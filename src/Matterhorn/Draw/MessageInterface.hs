@@ -76,8 +76,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                     BrowseFiles       -> drawFileBrowser st which
 
     renderMessages inMsgSel =
-        vBox [ freezeBorders $
-               renderMessageListing st inMsgSel showNewMsgLine tId hs (which.miListing) renderReplyIndent region
+        vBox [ renderMessageListing st inMsgSel showNewMsgLine tId hs (which.miListing) renderReplyIndent region
              , bottomBorder
              , inputPreview st (which.miEditor) tId previewVpName hs
              , inputArea st (which.miEditor) focused hs
@@ -185,7 +184,7 @@ renderMessageListing :: ChatState
                      -> Name
                      -> Widget Name
 renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region =
-    messages
+    freezeBorders messages
     where
     mcId = st^.(csCurrentChannelId tId)
 
