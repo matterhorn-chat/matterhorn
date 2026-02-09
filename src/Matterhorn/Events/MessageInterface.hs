@@ -26,7 +26,6 @@ import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.Editing
 import           Matterhorn.State.UrlSelect
-import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.Channels
 
 
