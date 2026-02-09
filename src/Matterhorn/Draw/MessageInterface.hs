@@ -59,7 +59,6 @@ drawMessageInterface :: ChatState
 drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents
     where
-    inMsgSelect = st^.which.miListing.mlMode == MessageSelect
     eName = getName $ st^.which.miEditor.esEditor
     region = MessageInterfaceMessages eName
     previewVpName = MessagePreviewViewport eName
@@ -77,13 +76,13 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
 
     renderMessages inMsgSel =
         vBox [ renderMessageListing st inMsgSel showNewMsgLine tId hs (which.miListing) renderReplyIndent region
-             , bottomBorder
+             , bottomBorder inMsgSel
              , inputPreview st (which.miEditor) tId previewVpName hs
              , inputArea st (which.miEditor) focused hs
              ]
 
-    bottomBorder =
-        if inMsgSelect
+    bottomBorder inMsgSel =
+        if inMsgSel
         then messageSelectBottomBar st tId which
         else hBox [ showAttachmentCount
                   , hBorder
