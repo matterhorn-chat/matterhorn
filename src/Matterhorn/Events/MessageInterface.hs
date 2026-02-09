@@ -146,4 +146,3 @@ extraEditorKeyHandlers which =
            ReplyRecentEvent "Reply to the most recent message" $
            replyToLatestMessage which
        ]
-
