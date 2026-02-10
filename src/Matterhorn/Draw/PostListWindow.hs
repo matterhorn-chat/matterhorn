@@ -57,9 +57,9 @@ drawPostsBox contents st tId =
 
         entries = filterMessages knownChannel $ st^.csTeam(tId).tsPostListWindow.postListPosts
         messages = insertDateMarkers
-                     entries
                      (getDateFormat st)
                      (st^.timeZone)
+                     entries
 
         knownChannel msg =
             case msg^.mChannelId of

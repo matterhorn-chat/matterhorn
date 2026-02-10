@@ -248,7 +248,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
 
 insertTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
 insertTransitions cutoff fmt tz ms =
-    insertDateMarkers (insertNewMessagesCutoff cutoff ms) fmt tz
+    insertDateMarkers fmt tz (insertNewMessagesCutoff cutoff ms)
 
 insertNewMessagesCutoff :: Maybe NewMessageIndicator -> Messages -> Messages
 insertNewMessagesCutoff Nothing ms = ms
