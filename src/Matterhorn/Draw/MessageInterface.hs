@@ -73,6 +73,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                     ManageAttachments -> drawAttachmentList st which
                     BrowseFiles       -> drawFileBrowser st which
 
+    editCutoff = getEditedMessageCutoff cId st
     newMsgCutoff = if not showNewMsgLine
                    then Nothing
                    else getNewMessageCutoff cId st
@@ -80,7 +81,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     insertTransitions = insertAllTransitions newMsgCutoff (getDateFormat st) (st ^. timeZone)
 
     renderMessages inMsgSel =
-        vBox [ renderMessageListing st inMsgSel tId hs (which.miListing)
+        vBox [ renderMessageListing st inMsgSel editCutoff hs (which.miListing)
                    renderReplyIndent region insertTransitions
              , bottomBorder inMsgSel
              , inputPreview st (which.miEditor) tId previewVpName hs
@@ -181,37 +182,27 @@ messageListingSelectionKeyOptions st tId which msg =
 
 renderMessageListing :: ChatState
                      -> Bool
-                     -> TeamId
+                     -> Maybe ServerTime
                      -> HighlightSet
                      -> Lens' ChatState (MessageListing Name)
                      -> Bool
                      -> Name
                      -> (Messages -> Messages)
                      -> Widget Name
-renderMessageListing st inMsgSelect tId hs which renderReplyIndent region insertTransitions =
+renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region insertTransitions =
     freezeBorders messages
     where
-    mcId = st^.(csCurrentChannelId tId)
-
     messages = padTop Max chatText
 
-    editCutoff = do
-        cId <- mcId
-        getEditedMessageCutoff cId st
-
-    chatText =
-        case mcId of
-            Nothing -> fill ' '
-            Just _ ->
-                if inMsgSelect
-                then freezeBorders $
-                     renderMessagesWithSelect (st^.which.mlMessageSelect) buildMessages
-                else cached region $
-                     freezeBorders $
-                     renderLastMessages st hs editCutoff renderReplyIndent region $
-                     retrogradeMsgsWithThreadStates $
-                     reverseMessages
-                     buildMessages
+    chatText = if inMsgSelect
+               then freezeBorders $
+                    renderMessagesWithSelect (st^.which.mlMessageSelect) buildMessages
+               else cached region $
+                    freezeBorders $
+                    renderLastMessages st hs editCutoff renderReplyIndent region $
+                    retrogradeMsgsWithThreadStates $
+                    reverseMessages
+                    buildMessages
 
     renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
