@@ -289,22 +289,20 @@ inputArea :: ChatState
           -> HighlightSet
           -> Widget Name
 inputArea st which focused hs =
-    let replyPrompt = "reply> "
-        normalPrompt = "> "
-        editPrompt = "edit> "
+    let replyPrompt = "reply"
+        normalPrompt = ""
+        editPrompt = "edit"
+        addDelimiter = (<> "> ")
         showReplyPrompt = st^.which.esShowReplyPrompt
         maybeHighlight = if focused
                          then withDefAttr focusedEditorPromptAttr
                          else id
         prompt = maybeHighlight $
                  reportExtent (MessageInputPrompt $ getName editor) $
-                 txt $ case st^.which.esEditMode of
-            Replying {} ->
-                if showReplyPrompt then replyPrompt else normalPrompt
-            Editing {}  ->
-                editPrompt
-            NewPost ->
-                normalPrompt
+                 txt $ addDelimiter $ case st^.which.esEditMode of
+                     Replying {} -> if showReplyPrompt then replyPrompt else normalPrompt
+                     Editing {}  -> editPrompt
+                     NewPost     -> normalPrompt
         editor = st^.which.esEditor
         inputBox = renderEditor (drawEditorContents st which hs) True editor
         curContents = getEditContents editor
