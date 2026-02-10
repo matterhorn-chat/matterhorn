@@ -199,7 +199,7 @@ renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region
                     renderMessagesWithSelect (st^.which.mlMessageSelect) buildMessages
                else cached region $
                     freezeBorders $
-                    renderLastMessages st hs editCutoff renderReplyIndent region $
+                    renderMostRecentMessages st hs editCutoff renderReplyIndent region $
                     retrogradeMsgsWithThreadStates $
                     reverseMessages
                     buildMessages
@@ -222,7 +222,7 @@ renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region
             msgsWithStates = chronologicalMsgsWithThreadStates msgs
         in case s of
              Nothing ->
-                 renderLastMessages st hs editCutoff renderReplyIndent region before
+                 renderMostRecentMessages st hs editCutoff renderReplyIndent region before
              Just m ->
                  unsafeRenderMessageSelection (m, (before, after))
                      (renderSingleMessage st hs renderReplyIndent Nothing) region
