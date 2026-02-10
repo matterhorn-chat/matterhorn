@@ -241,13 +241,13 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
         let ms = filterMessageListing st (which.mlMessages)
         in if F.null ms
            then addMessage emptyChannelFillerMessage emptyDirSeq
-           else insertTransitions ms
-                                  newMsgCutoff
+           else insertTransitions newMsgCutoff
                                   (getDateFormat st)
                                   (st ^. timeZone)
+                                  ms
 
-insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages
-insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessagesT
+insertTransitions :: Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages -> Messages
+insertTransitions cutoff fmt tz ms = insertDateMarkers (foldr addMessage ms newMessagesT) fmt tz
     where anyNondeletedNewMessages t =
               isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
           newMessagesT = case cutoff of
