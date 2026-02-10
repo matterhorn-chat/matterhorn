@@ -72,8 +72,21 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                     ManageAttachments -> drawAttachmentList st which
                     BrowseFiles       -> drawFileBrowser st which
 
+    -- NOTE: is this even right? Shouldn't this be the channel ID of the
+    -- interface? What about the thread window case?
+    mcId = st^.(csCurrentChannelId tId)
+
+    newMsgCutoff = if not showNewMsgLine
+                   then Nothing
+                   else do
+                       cId <- mcId
+                       getNewMessageCutoff cId st
+
+    insertTransitions = insertAllTransitions newMsgCutoff (getDateFormat st) (st ^. timeZone)
+
     renderMessages inMsgSel =
-        vBox [ renderMessageListing st inMsgSel showNewMsgLine tId hs (which.miListing) renderReplyIndent region
+        vBox [ renderMessageListing st inMsgSel tId hs (which.miListing)
+                   renderReplyIndent region insertTransitions
              , bottomBorder inMsgSel
              , inputPreview st (which.miEditor) tId previewVpName hs
              , inputArea st (which.miEditor) focused hs
@@ -173,14 +186,14 @@ messageListingSelectionKeyOptions st tId which msg =
 
 renderMessageListing :: ChatState
                      -> Bool
-                     -> Bool
                      -> TeamId
                      -> HighlightSet
                      -> Lens' ChatState (MessageListing Name)
                      -> Bool
                      -> Name
+                     -> (Messages -> Messages)
                      -> Widget Name
-renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region =
+renderMessageListing st inMsgSelect tId hs which renderReplyIndent region insertTransitions =
     freezeBorders messages
     where
     mcId = st^.(csCurrentChannelId tId)
@@ -190,12 +203,6 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
     editCutoff = do
         cId <- mcId
         getEditedMessageCutoff cId st
-
-    newMsgCutoff = if not showNewMsgLine
-                   then Nothing
-                   else do
-                       cId <- mcId
-                       getNewMessageCutoff cId st
 
     chatText =
         case mcId of
@@ -241,13 +248,10 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
         let ms = filterMessageListing st (which.mlMessages)
         in if F.null ms
            then addMessage emptyChannelFillerMessage emptyDirSeq
-           else insertTransitions newMsgCutoff
-                                  (getDateFormat st)
-                                  (st ^. timeZone)
-                                  ms
+           else insertTransitions ms
 
-insertTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
-insertTransitions cutoff fmt tz =
+insertAllTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
+insertAllTransitions cutoff fmt tz =
     insertDateMarkers fmt tz .
     insertNewMessagesCutoff cutoff
 
