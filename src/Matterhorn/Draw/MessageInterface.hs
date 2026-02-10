@@ -40,7 +40,7 @@ import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.MessageListing ( getListingSelectedMessage )
 import           Matterhorn.Themes
-import           Matterhorn.TimeUtils ( justAfter, justBefore )
+import           Matterhorn.TimeUtils ( DateTimeFormat, justAfter, justBefore )
 import           Matterhorn.Types
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.RichText
@@ -246,7 +246,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
                                   (st ^. timeZone)
                                   ms
 
-insertTransitions :: Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages -> Messages
+insertTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
 insertTransitions cutoff fmt tz ms = insertDateMarkers (foldr addMessage ms newMessagesT) fmt tz
     where anyNondeletedNewMessages t =
               isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
