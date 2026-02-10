@@ -90,7 +90,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
 
     bottomBorder inMsgSel =
         if inMsgSel
-        then messageSelectBottomBar st tId which
+        then messageInterfaceBottomBar st tId which
         else hBox [ showAttachmentCount
                   , hBorder
                   , showTypingUsers
@@ -127,11 +127,11 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                      , txt " to manage)"
                      ]
 
-messageSelectBottomBar :: ChatState
-                       -> TeamId
-                       -> Lens' ChatState (MessageInterface Name i)
-                       -> Widget Name
-messageSelectBottomBar st tId which =
+messageInterfaceBottomBar :: ChatState
+                          -> TeamId
+                          -> Lens' ChatState (MessageInterface Name i)
+                          -> Widget Name
+messageInterfaceBottomBar st tId which =
     case getListingSelectedMessage (which.miListing) st of
         Nothing -> emptyWidget
         Just postMsg ->
