@@ -196,13 +196,12 @@ renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region
 
     chatText = if inMsgSelect
                then freezeBorders $
-                    renderMessagesWithSelect (st^.which.mlMessageSelect) buildMessages
+                    renderMessagesWithSelect (st^.which.mlMessageSelect) messagesWithTransitions
                else cached region $
                     freezeBorders $
                     renderMostRecentMessages st hs editCutoff renderReplyIndent region $
                     retrogradeMsgsWithThreadStates $
-                    reverseMessages
-                    buildMessages
+                    reverseMessages messagesWithTransitions
 
     renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
@@ -227,7 +226,7 @@ renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region
                  unsafeRenderMessageSelection (m, (before, after))
                      (renderSingleMessage st hs renderReplyIndent Nothing) region
 
-    buildMessages =
+    messagesWithTransitions =
         -- If the message list is empty, add an informative message to
         -- the message listing to make it explicit that this listing is
         -- empty.
