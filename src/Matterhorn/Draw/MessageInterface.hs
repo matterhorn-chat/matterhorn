@@ -253,11 +253,11 @@ renderMessageListing st inMsgSelect tId hs which renderReplyIndent region insert
 insertAllTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
 insertAllTransitions cutoff fmt tz =
     insertDateMarkers fmt tz .
-    insertNewMessagesCutoff cutoff
+    insertNewMessagesLine cutoff
 
-insertNewMessagesCutoff :: Maybe NewMessageIndicator -> Messages -> Messages
-insertNewMessagesCutoff Nothing ms = ms
-insertNewMessagesCutoff (Just val) ms = fromMaybe ms $ do
+insertNewMessagesLine :: Maybe NewMessageIndicator -> Messages -> Messages
+insertNewMessagesLine Nothing ms = ms
+insertNewMessagesLine (Just val) ms = fromMaybe ms $ do
     newMsg <- case val of
         NewPostsAfterServerTime t
             | anyNondeletedNewMessages t ->
