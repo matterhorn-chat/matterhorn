@@ -57,6 +57,7 @@ drawMessageInterface :: ChatState
 drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents
     where
+    cId = st^.which.miChannelId
     eName = getName $ st^.which.miEditor.esEditor
     region = MessageInterfaceMessages eName
     previewVpName = MessagePreviewViewport eName
@@ -72,15 +73,9 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                     ManageAttachments -> drawAttachmentList st which
                     BrowseFiles       -> drawFileBrowser st which
 
-    -- NOTE: is this even right? Shouldn't this be the channel ID of the
-    -- interface? What about the thread window case?
-    mcId = st^.(csCurrentChannelId tId)
-
     newMsgCutoff = if not showNewMsgLine
                    then Nothing
-                   else do
-                       cId <- mcId
-                       getNewMessageCutoff cId st
+                   else getNewMessageCutoff cId st
 
     insertTransitions = insertAllTransitions newMsgCutoff (getDateFormat st) (st ^. timeZone)
 
