@@ -18,7 +18,6 @@ import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditConten
 import           Data.Char ( isSpace, isPunctuation )
 import qualified Data.Foldable as F
 import           Data.List ( intersperse )
-import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -26,8 +25,7 @@ import           Data.Text.Zipper ( cursorPosition )
 import           Data.Time.Clock ( UTCTime(..) )
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, Lens', Traversal', SimpleGetter )
 
-import           Network.Mattermost.Types ( ChannelId, Type(Direct, Group)
-                                          , ServerTime(..), TeamId, idString
+import           Network.Mattermost.Types ( ServerTime(..), TeamId, idString
                                           )
 
 import           Matterhorn.Constants
@@ -235,7 +233,7 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
                      else Nothing
             ms = filterMessageListing st (which.mlMessages)
         in if F.null ms
-           then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
+           then addMessage emptyChannelFillerMessage emptyDirSeq
            else insertTransitions ms
                                   cutoff
                                   (getDateFormat st)
@@ -259,8 +257,8 @@ insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessage
 
 -- | Construct a single message to be displayed in the specified channel
 -- when it does not yet have any user messages posted to it.
-emptyChannelFillerMessage :: ChatState -> ChannelId -> Message
-emptyChannelFillerMessage st cId =
+emptyChannelFillerMessage :: Message
+emptyChannelFillerMessage =
     newMessageOfType msg (C Informative) ts
     where
         -- This is a bogus timestamp, but its value does not matter
@@ -269,22 +267,7 @@ emptyChannelFillerMessage st cId =
         -- otherwise include this bogus date) or other messages (which
         -- would make for a broken message sorting).
         ts = ServerTime $ UTCTime (toEnum 0) 0
-        chan = fromJust $ findChannelById cId (st^.csChannels)
-        chanName = mkChannelName st (chan^.ccInfo)
-        msg = case chan^.ccInfo.cdType of
-            Direct ->
-                let u = chan^.ccInfo.cdDMUserId >>= flip knownUserById st
-                in case u of
-                    Nothing -> userMsg Nothing
-                    Just _ -> userMsg (Just chanName)
-            Group ->
-                groupMsg (chan^.ccInfo.cdDisplayName)
-            _ ->
-                chanMsg chanName
-        userMsg (Just cn) = "You have not yet sent any direct messages to " <> cn <> "."
-        userMsg Nothing   = "You have not yet sent any direct messages to this user."
-        groupMsg us = "There are not yet any direct messages in the group " <> us <> "."
-        chanMsg cn = "There are not yet any messages in the " <> cn <> " channel."
+        msg = "There are not yet any messages in this channel."
 
 filterMessageListing :: ChatState -> Traversal' ChatState Messages -> Messages
 filterMessageListing st msgsWhich =
