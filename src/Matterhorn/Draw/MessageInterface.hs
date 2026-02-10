@@ -248,19 +248,28 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
 
 insertTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
 insertTransitions cutoff fmt tz ms =
-    insertDateMarkers (foldr addMessage ms newMessagesT) fmt tz
+    insertDateMarkers (insertNewMessagesCutoff cutoff ms) fmt tz
+
+insertNewMessagesCutoff :: Maybe NewMessageIndicator -> Messages -> Messages
+insertNewMessagesCutoff Nothing ms = ms
+insertNewMessagesCutoff (Just val) ms = fromMaybe ms $ do
+    newMsg <- case val of
+        NewPostsAfterServerTime t
+            | anyNondeletedNewMessages t ->
+                return $ newMessagesMsg $ justAfter t
+            | otherwise ->
+                Nothing
+        NewPostsStartingAt t
+            | anyNondeletedNewMessages (justBefore t) ->
+                return $ newMessagesMsg $ justBefore t
+            | otherwise ->
+                Nothing
+        Hide ->
+            Nothing
+    return $ addMessage newMsg ms
     where
         anyNondeletedNewMessages t =
             isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
-        newMessagesT = case cutoff of
-            Nothing -> []
-            Just Hide -> []
-            Just (NewPostsAfterServerTime t)
-                | anyNondeletedNewMessages t -> [newMessagesMsg $ justAfter t]
-                | otherwise -> []
-            Just (NewPostsStartingAt t)
-                | anyNondeletedNewMessages (justBefore t) -> [newMessagesMsg $ justBefore t]
-                | otherwise -> []
         newMessagesMsg d = newMessageOfType (T.pack "New Messages")
                            (C NewMessagesTransition) d
 
