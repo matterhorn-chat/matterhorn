@@ -187,21 +187,31 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
 
     messages = padTop Max chatText
 
+    editCutoff = do
+        cId <- mcId
+        getEditedMessageCutoff cId st
+
+    newMsgCutoff = if not showNewMsgLine
+                   then Nothing
+                   else do
+                       cId <- mcId
+                       getNewMessageCutoff cId st
+
     chatText =
         case mcId of
             Nothing -> fill ' '
-            Just cId ->
+            Just _ ->
                 if inMsgSelect
                 then freezeBorders $
-                     renderMessagesWithSelect cId (st^.which.mlMessageSelect) (buildMessages cId)
+                     renderMessagesWithSelect (st^.which.mlMessageSelect) buildMessages
                 else cached region $
                      freezeBorders $
-                     renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region $
+                     renderLastMessages st hs editCutoff renderReplyIndent region $
                      retrogradeMsgsWithThreadStates $
-                     reverseMessages $
-                     buildMessages cId
+                     reverseMessages
+                     buildMessages
 
-    renderMessagesWithSelect cId (MessageSelectState selMsgId) msgs =
+    renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
         -- but use the post ID as a cursor. To do this efficiently we
         -- only want to render enough messages to fill the screen.
@@ -219,23 +229,20 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
             msgsWithStates = chronologicalMsgsWithThreadStates msgs
         in case s of
              Nothing ->
-                 renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region before
+                 renderLastMessages st hs editCutoff renderReplyIndent region before
              Just m ->
                  unsafeRenderMessageSelection (m, (before, after))
                      (renderSingleMessage st hs renderReplyIndent Nothing) region
 
-    buildMessages cId =
+    buildMessages =
         -- If the message list is empty, add an informative message to
         -- the message listing to make it explicit that this listing is
         -- empty.
-        let cutoff = if showNewMsgLine
-                     then getNewMessageCutoff cId st
-                     else Nothing
-            ms = filterMessageListing st (which.mlMessages)
+        let ms = filterMessageListing st (which.mlMessages)
         in if F.null ms
            then addMessage emptyChannelFillerMessage emptyDirSeq
            else insertTransitions ms
-                                  cutoff
+                                  newMsgCutoff
                                   (getDateFormat st)
                                   (st ^. timeZone)
 
