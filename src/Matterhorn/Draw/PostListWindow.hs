@@ -56,7 +56,7 @@ drawPostsBox contents st tId =
             else " (" <> (T.pack . show . length) entries <> "): " <> terms
 
         entries = filterMessages knownChannel $ st^.csTeam(tId).tsPostListWindow.postListPosts
-        messages = insertDateMarkers
+        messages = insertDateLines
                      (getDateFormat st)
                      (st^.timeZone)
                      entries

@@ -3,7 +3,7 @@ module Matterhorn.Draw.Util
   , renderTime
   , renderDate
   , renderKeybindingHelp
-  , insertDateMarkers
+  , insertDateLines
   , getDateFormat
   , mkChannelName
   , userSigilFromInfo
@@ -70,8 +70,8 @@ renderKeybindingHelp st label evs =
 -- in between messages with different creation dates. Server dates from
 -- messages are converted to local time (via the current timezone)
 -- and midnight of that timezone used to generate date markers.
-insertDateMarkers :: DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
-insertDateMarkers datefmt tz ms = foldr (addMessage . dateMsg) ms dateRange
+insertDateLines :: DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
+insertDateLines datefmt tz ms = foldr (addMessage . dateMsg) ms dateRange
     where dateRange = foldr checkDateChange Set.empty ms
           checkDateChange m = let msgDay = startOfDay (Just tz) (withServerTime (m^.mDate))
                               in if m^.mDeleted then id else Set.insert msgDay

@@ -252,7 +252,7 @@ renderMessageListing st inMsgSelect tId hs which renderReplyIndent region insert
 
 insertAllTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
 insertAllTransitions cutoff fmt tz =
-    insertDateMarkers fmt tz .
+    insertDateLines fmt tz .
     insertNewMessagesLine cutoff
 
 insertNewMessagesLine :: Maybe NewMessageIndicator -> Messages -> Messages
