@@ -247,20 +247,22 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
                                   ms
 
 insertTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
-insertTransitions cutoff fmt tz ms = insertDateMarkers (foldr addMessage ms newMessagesT) fmt tz
-    where anyNondeletedNewMessages t =
-              isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
-          newMessagesT = case cutoff of
-              Nothing -> []
-              Just Hide -> []
-              Just (NewPostsAfterServerTime t)
-                  | anyNondeletedNewMessages t -> [newMessagesMsg $ justAfter t]
-                  | otherwise -> []
-              Just (NewPostsStartingAt t)
-                  | anyNondeletedNewMessages (justBefore t) -> [newMessagesMsg $ justBefore t]
-                  | otherwise -> []
-          newMessagesMsg d = newMessageOfType (T.pack "New Messages")
-                             (C NewMessagesTransition) d
+insertTransitions cutoff fmt tz ms =
+    insertDateMarkers (foldr addMessage ms newMessagesT) fmt tz
+    where
+        anyNondeletedNewMessages t =
+            isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
+        newMessagesT = case cutoff of
+            Nothing -> []
+            Just Hide -> []
+            Just (NewPostsAfterServerTime t)
+                | anyNondeletedNewMessages t -> [newMessagesMsg $ justAfter t]
+                | otherwise -> []
+            Just (NewPostsStartingAt t)
+                | anyNondeletedNewMessages (justBefore t) -> [newMessagesMsg $ justBefore t]
+                | otherwise -> []
+        newMessagesMsg d = newMessageOfType (T.pack "New Messages")
+                           (C NewMessagesTransition) d
 
 -- | Construct a single message to be displayed in the specified channel
 -- when it does not yet have any user messages posted to it.
