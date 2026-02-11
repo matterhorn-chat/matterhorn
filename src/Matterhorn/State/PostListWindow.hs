@@ -83,7 +83,6 @@ enterSearchResultPostListMode :: TeamId -> Text -> MH ()
 enterSearchResultPostListMode tId terms
   | T.null (T.strip terms) = postInfoMessage "Search command requires at least one search term."
   | otherwise = do
-      enterPostListMode tId (PostListSearch terms True) noMessages
       createPostList tId (PostListSearch terms False) $
         mmSearchForTeamPosts tId (SearchPosts terms False)
 
