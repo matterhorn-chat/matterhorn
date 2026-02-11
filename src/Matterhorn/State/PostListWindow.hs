@@ -61,7 +61,6 @@ createPostList tId contentsType fetchOp = do
       mapM_ (\p -> addObtainedMessages (postChannelId p) 0 False $ postsSpec p) plist
       enterPostListMode tId contentsType messages
 
-
 -- | Create a PostListWindow with flagged messages from the server.
 enterFlaggedPostListMode :: TeamId -> MH ()
 enterFlaggedPostListMode tId = do
