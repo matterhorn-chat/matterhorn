@@ -20,7 +20,9 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.State.Common
-import           Matterhorn.State.MessageListing ( withListingSelectedMessage )
+import           Matterhorn.State.MessageListing ( withListingSelectedMessage
+                                                 , exitMessageSelect
+                                                 )
 import           Matterhorn.State.Messages ( addObtainedMessages
                                            , flagPost
                                            )
@@ -100,7 +102,10 @@ postListJumpToCurrent tId =
         msgs <- use (csTeam(tId).tsPostListWindow.mlMessages)
         case postIdForMessageId msgs =<< (msg^.mMessageId) of
             Nothing -> return ()
-            Just pId -> jumpToPost pId
+            Just pId -> do
+                exitMessageSelect (csTeam(tId).tsPostListWindow)
+                exitPostListMode tId
+                jumpToPost pId
 
 postIdForMessageId :: Messages -> MessageId -> Maybe PostId
 postIdForMessageId msgs mId = findMessage mId msgs >>= messagePostId
