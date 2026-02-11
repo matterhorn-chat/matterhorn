@@ -16,10 +16,8 @@ import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( (%~), to )
 
-import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
-import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.MessageInterface ( renderMessageListing )
 import           Matterhorn.Draw.Util
 import           Matterhorn.Themes
