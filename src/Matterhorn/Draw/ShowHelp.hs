@@ -462,7 +462,6 @@ keybindSections =
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
     , ("Attachment List", attachmentListKeyHandlers whichThunk)
     , ("Attachment File Browser", attachmentBrowseKeyHandlers whichThunk)
-    , ("Flagged Messages", genericPostListWindowKeyHandlers)
     , ("Post Search Window", genericPostListWindowKeyHandlers)
     , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
     ]
