@@ -132,15 +132,25 @@ messageInterfaceBottomBar :: ChatState
                           -> Lens' ChatState (MessageInterface Name i)
                           -> Widget Name
 messageInterfaceBottomBar st tId which =
-    case getListingSelectedMessage (which.miListing) st of
+    messageListingBottomBar st tId (which.miListing) mkExtraOptions
+    where
+        mkExtraOptions postMsg = messageInterfaceSelectionKeyOptions st tId which postMsg
+
+messageListingBottomBar :: ChatState
+                        -> TeamId
+                        -> Lens' ChatState (MessageListing Name)
+                        -> (Message -> [(T.Text, T.Text)])
+                        -> Widget Name
+messageListingBottomBar st tId which mkExtraOptions =
+    case getListingSelectedMessage which st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
                              then txt "(no actions available for this message)"
                              else hBox $ intersperse (txt " ") usableOptions
                 usableOptions = mkOption <$> allOptions
-                allOptions = messageInterfaceSelectionKeyOptions st tId which postMsg <>
-                             messageListingSelectionKeyOptions st tId (which.miListing) postMsg
+                allOptions = messageListingSelectionKeyOptions st tId which postMsg <>
+                             mkExtraOptions postMsg
                 mkOption (k, desc) = withDefAttr messageSelectStatusAttr (txt k) <+>
                                      txt (":" <> desc)
             in hBox [ hLimit 1 hBorder
