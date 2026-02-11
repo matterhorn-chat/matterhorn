@@ -125,6 +125,7 @@ data MessageInterfaceMode =
 data URLListSource =
     FromChannel !ChannelId
     | FromThreadIn !ChannelId
+    | FromPostList
     deriving (Show, Eq)
 
 data MessageInterfaceTarget =

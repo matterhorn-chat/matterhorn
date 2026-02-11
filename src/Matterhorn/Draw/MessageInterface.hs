@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.MessageInterface
   ( drawMessageInterface
+  , renderMessageListing
   )
 where
 

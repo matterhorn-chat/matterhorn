@@ -3,8 +3,6 @@ module Matterhorn.State.PostListWindow
   , enterPinnedPostListMode
   , enterSearchResultPostListMode
   , postListJumpToCurrent
-  , postListSelectUp
-  , postListSelectDown
   , postListUnflagSelected
   , exitPostListMode
   )
@@ -22,29 +20,29 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.State.Common
+import           Matterhorn.State.MessageListing ( withListingSelectedMessage )
 import           Matterhorn.State.Messages ( addObtainedMessages
                                            , flagPost
                                            )
 import           Matterhorn.Types
-import           Matterhorn.Types.DirectionalSeq (emptyDirSeq)
 
 
 -- | Create a PostListWindow with the given content description and
 -- with a specified list of messages.
 enterPostListMode :: TeamId -> PostListContents -> Messages -> MH ()
 enterPostListMode tId contents msgs = do
-  csTeam(tId).tsPostListWindow.postListPosts .= msgs
   let mlatest = getLatestPostMsg msgs
       mId = mlatest >>= _mMessageId
-  csTeam(tId).tsPostListWindow.postListSelected .= mId
+
+  csTeam(tId).tsPostListWindow.mlMessages .= msgs
+  csTeam(tId).tsPostListWindow.mlMessageSelect .= MessageSelectState mId
+  csTeam(tId).tsPostListWindow.mlMode .= MessageSelect
+
   pushMode tId $ PostListWindow contents
 
 -- | Clear out the state of a PostListWindow
 exitPostListMode :: TeamId -> MH ()
-exitPostListMode tId = do
-  csTeam(tId).tsPostListWindow.postListPosts .= emptyDirSeq
-  csTeam(tId).tsPostListWindow.postListSelected .= Nothing
-  popMode tId
+exitPostListMode tId = popMode tId
 
 createPostList :: TeamId -> PostListContents -> (Session -> IO Posts) -> MH ()
 createPostList tId contentsType fetchOp = do
@@ -86,55 +84,24 @@ enterSearchResultPostListMode tId terms
       createPostList tId (PostListSearch terms False) $
         mmSearchForTeamPosts tId (SearchPosts terms False)
 
-
--- | Move the selection up in the PostListWindow, which corresponds
--- to finding a chronologically /newer/ message.
-postListSelectDown :: TeamId -> MH ()
-postListSelectDown tId = do
-  selId <- use (csTeam(tId).tsPostListWindow.postListSelected)
-  posts <- use (csTeam(tId).tsPostListWindow.postListPosts)
-  let nextMsg = getNextMessage selId posts
-  case nextMsg of
-    Nothing -> return ()
-    Just m -> do
-      let mId = m^.mMessageId
-      csTeam(tId).tsPostListWindow.postListSelected .= mId
-
--- | Move the selection down in the PostListWindow, which corresponds
--- to finding a chronologically /old/ message.
-postListSelectUp :: TeamId -> MH ()
-postListSelectUp tId = do
-  selId <- use (csTeam(tId).tsPostListWindow.postListSelected)
-  posts <- use (csTeam(tId).tsPostListWindow.postListPosts)
-  let prevMsg = getPrevMessage selId posts
-  case prevMsg of
-    Nothing -> return ()
-    Just m -> do
-      let mId = m^.mMessageId
-      csTeam(tId).tsPostListWindow.postListSelected .= mId
-
 -- | Unflag the post currently selected in the PostListWindow, if any
 postListUnflagSelected :: TeamId -> MH ()
-postListUnflagSelected tId = do
-  msgId <- use (csTeam(tId).tsPostListWindow.postListSelected)
-  msgs <- use (csTeam(tId).tsPostListWindow.postListPosts)
-  case msgId of
-    Nothing  -> return ()
-    Just mId -> case postIdForMessageId mId msgs of
-        Nothing -> return ()
-        Just pId -> flagPost pId False
+postListUnflagSelected tId =
+    withListingSelectedMessage (csTeam(tId).tsPostListWindow) $ \msg -> do
+        msgs <- use (csTeam(tId).tsPostListWindow.mlMessages)
+        case postIdForMessageId msgs =<< (msg^.mMessageId) of
+            Nothing -> return ()
+            Just pId -> flagPost pId False
 
 -- | Jumps to the specified message in the message's main channel
 -- display and changes to MessageSelectState.
 postListJumpToCurrent :: TeamId -> MH ()
-postListJumpToCurrent tId = do
-  msgId <- use (csTeam(tId).tsPostListWindow.postListSelected)
-  msgs <- use (csTeam(tId).tsPostListWindow.postListPosts)
-  case msgId of
-    Nothing  -> return ()
-    Just mId -> case postIdForMessageId mId msgs of
-        Nothing -> return ()
-        Just pId -> jumpToPost pId
+postListJumpToCurrent tId =
+    withListingSelectedMessage (csTeam(tId).tsPostListWindow) $ \msg -> do
+        msgs <- use (csTeam(tId).tsPostListWindow.mlMessages)
+        case postIdForMessageId msgs =<< (msg^.mMessageId) of
+            Nothing -> return ()
+            Just pId -> jumpToPost pId
 
-postIdForMessageId :: MessageId -> Messages -> Maybe PostId
-postIdForMessageId mId msgs = findMessage mId msgs >>= messagePostId
+postIdForMessageId :: Messages -> MessageId -> Maybe PostId
+postIdForMessageId msgs mId = findMessage mId msgs >>= messagePostId

@@ -1,7 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Events.MessageSelect
   ( messageSelectKeybindings
-  , messageListingKeybindings
   , messageSelectKeyHandlers
   , onEventMessageSelect
   , onEventMessageSelectDeleteConfirm
@@ -46,13 +45,6 @@ messageSelectKeybindings :: TeamId
                          -> KeyDispatcher KeyEvent MH
 messageSelectKeybindings tId which kc =
     unsafeKeyDispatcher kc (messageSelectKeyHandlers tId which)
-
-messageListingKeybindings :: TeamId
-                          -> Lens' ChatState (MessageListing n)
-                          -> KeyConfig KeyEvent
-                          -> KeyDispatcher KeyEvent MH
-messageListingKeybindings tId which kc =
-    unsafeKeyDispatcher kc (messageSelectCommonKeyHandlers tId which)
 
 messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState (MessageInterface n i)

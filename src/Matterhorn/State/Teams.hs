@@ -52,7 +52,6 @@ import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Types
 import           Matterhorn.Types.Common
-import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.NonemptyStack
 import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
@@ -347,7 +346,6 @@ newTeamState config team chanList =
     in TeamState { _tsModeStack                = newStack Main
                  , _tsFocus                    = chanList
                  , _tsTeam                     = team
-                 , _tsPostListWindow           = PostListWindowState emptyDirSeq Nothing
                  , _tsUserListWindow           = nullUserListWindowState tId
                  , _tsChannelListWindow        = nullChannelListWindowState tId
                  , _tsChannelSelectState       = emptyChannelSelectState tId
@@ -362,6 +360,16 @@ newTeamState config team chanList =
                  , _tsChannelListSorting       = configChannelListSorting config
                  , _tsThreadInterface          = Nothing
                  , _tsMessageInterfaceFocus    = FocusCurrentChannel
+                 , _tsPostListWindow           =
+                     MessageListing { _mlMessages = mempty
+                                    , _mlMessageSelect = MessageSelectState Nothing
+                                    , _mlMode = MessageSelect
+                                    , _mlUrlListSource = FromPostList
+                                    , _mlUrlList = URLList { _ulList = list (UrlList PostList) mempty 2
+                                                           , _ulSource = Nothing
+                                                           }
+                                                           , _mlSaveAttachmentDialog = newSaveAttachmentDialog PostList "(unused)"
+                                                           }
                  }
 
 nullChannelListWindowState :: TeamId -> ListWindowState Channel ChannelSearchScope

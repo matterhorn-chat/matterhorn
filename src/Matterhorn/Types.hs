@@ -221,10 +221,6 @@ module Matterhorn.Types
   , emptyGlobalEditState
   , gedYankBuffer
 
-  , PostListWindowState(..)
-  , postListSelected
-  , postListPosts
-
   , UserSearchScope(..)
   , ChannelSearchScope(..)
 
@@ -1286,7 +1282,7 @@ data TeamState =
               -- consult the chat state for the latest *version* of any
               -- message with an ID here, to be sure that the latest
               -- version is used (e.g. if it gets edited, etc.).
-              , _tsPostListWindow :: PostListWindowState
+              , _tsPostListWindow :: MessageListing Name
               -- ^ The state of the post list window.
               , _tsUserListWindow :: ListWindowState UserInfo UserSearchScope
               -- ^ The state of the user list window.
@@ -1409,12 +1405,6 @@ emptyChannelSelectState tId =
     ChannelSelectState { _channelSelectInput = editor (ChannelSelectInput tId) (Just 1) ""
                        , _channelSelectMatches = Z.fromList []
                        }
-
--- | The state of the post list window.
-data PostListWindowState =
-    PostListWindowState { _postListPosts    :: !Messages
-                        , _postListSelected :: !(Maybe MessageId)
-                        }
 
 data InternalTheme =
     InternalTheme { internalThemeName :: !Text
@@ -1688,7 +1678,6 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''TeamState
 makeLenses ''GlobalEditState
-makeLenses ''PostListWindowState
 makeLenses ''ListWindowState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences

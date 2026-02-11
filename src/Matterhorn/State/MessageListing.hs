@@ -81,9 +81,15 @@ beginMessageSelect which = do
 
 exitMessageSelect :: Lens' ChatState (MessageListing n) -> MH ()
 exitMessageSelect which = do
-    m <- use (which.mlMode)
-    when (m == MessageSelect) $ do
+    listingMode <- use (which.mlMode)
+    when (listingMode == MessageSelect) $ do
         which.mlMode .= ShowingTail
+
+        withCurrentTeam $ \tId -> do
+            m <- getTeamMode tId
+            case m of
+                PostListWindow {} -> popMode tId
+                _ -> return ()
 
 -- | Tell the server that the message we currently have selected
 -- should have its flagged state toggled.

@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.ShowHelp
   ( drawShowHelp
   , commandTextTable
@@ -435,6 +436,12 @@ themeHelp = vBox
     in vBox $ mkEntry <$> names
   ]
 
+genericPostListWindowKeyHandlers :: [MHKeyEventHandler]
+genericPostListWindowKeyHandlers =
+    postListWindowKeyHandlers teamIdThunk <>
+    messageListingKeyHandlers whichListingThunk <>
+    messageSelectCommonKeyHandlers teamIdThunk whichListingThunk
+
 keybindSections :: [(Text, [MHKeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
@@ -455,7 +462,8 @@ keybindSections =
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
     , ("Attachment List", attachmentListKeyHandlers whichThunk)
     , ("Attachment File Browser", attachmentBrowseKeyHandlers whichThunk)
-    , ("Flagged Messages", postListWindowKeyHandlers teamIdThunk)
+    , ("Flagged Messages", genericPostListWindowKeyHandlers)
+    , ("Post Search Window", genericPostListWindowKeyHandlers)
     , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
     ]
 

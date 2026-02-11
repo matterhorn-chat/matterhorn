@@ -98,7 +98,7 @@ extraEditorKeyHandlers which =
            beginMessageSelect (which.miListing)
 
        , onEvent CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
-            cancelAutocompleteOrReplyOrEdit editWhich
+           cancelAutocompleteOrReplyOrEdit editWhich
 
        , onEvent
            InvokeEditorEvent

@@ -40,8 +40,6 @@
 | `M-l` | `clear-unread` | Clear the current channel's unread / edited indicators |
 | `M-8` | `show-flagged-posts` | View currently flagged posts |
 | `C-M-o` | `enter-topic-url-open` | Select and open a URL from the current channel's topic |
-| `C-s` | `select-mode` | Select a message to edit/reply/delete |
-| `PgUp` | `page-up` | Page up in the message list (enters message select mode) |
 | `S-Home` | `select-oldest-message` | Scroll to top of message list |
 | `C-o` | `enter-url-open` | Select and open a URL from the current message list |
 
@@ -49,6 +47,8 @@
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
 | `M-e` | `toggle-multiline` | Toggle multi-line message compose mode |
+| `C-s` | `select-mode` | Select a message to edit/reply/delete |
+| `PgUp` | `page-up` | Page up in the message list (enters message select mode) |
 | `Esc`, `C-c` | `cancel` | Cancel autocomplete, message reply, or edit, in that order |
 | `M-k` | `invoke-editor` | Invoke `$EDITOR` to edit the current message |
 | `Tab` | (non-customizable key) | Tab-complete forward |
@@ -91,8 +91,8 @@
 # Message Select Mode
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
-| `Esc`, `C-c` | `cancel` | Cancel message selection |
 | `k`, `Up` | `select-up` | Select the previous message |
+| `Esc`, `C-c` | `cancel` | Cancel message selection |
 | `j`, `Down` | `select-down` | Select the next message |
 | `Home`, `M-<` | `scroll-top` | Scroll to top and select the oldest message |
 | `End`, `M->` | `scroll-bottom` | Scroll to bottom and select the latest message |
@@ -214,11 +214,46 @@
 # Flagged Messages
 | Keybinding | Event Name | Description |
 | ---------- | ---------- | ----------- |
-| `Esc`, `C-c` | `cancel` | Exit post browsing |
-| `k`, `Up` | `select-up` | Select the previous message |
-| `j`, `Down` | `select-down` | Select the next message |
-| `f` | `flag-message` | Toggle the selected message flag |
 | `Enter` | `activate-list-item` | Jump to and select current message |
+| `S-Home` | `select-oldest-message` | Scroll to top of message list |
+| `C-o` | `enter-url-open` | Select and open a URL from the current message list |
+| `k`, `Up` | `select-up` | Select the previous message |
+| `Esc`, `C-c` | `cancel` | Cancel message selection |
+| `j`, `Down` | `select-down` | Select the next message |
+| `Home`, `M-<` | `scroll-top` | Scroll to top and select the oldest message |
+| `End`, `M->` | `scroll-bottom` | Scroll to bottom and select the latest message |
+| `PgUp` | `page-up` | Move the cursor up by 10 messages |
+| `PgDown` | `page-down` | Move the cursor down by 10 messages |
+| `o` | `open-message-url` | Open all URLs in the selected message |
+| `y` | `yank-message` | Copy a verbatim section or message to the clipboard |
+| `Y` | `yank-whole-message` | Copy an entire message to the clipboard |
+| `p` | `pin-message` | Toggle whether the selected message is pinned |
+| `f` | `flag-message` | Flag the selected message |
+| `v` | `view-message` | View the selected message |
+| `a` | `react-to-message` | Post a reaction to the selected message |
+| `l` | `copy-post-link` | Copy a post's link to the clipboard |
+
+# Post Search Window
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `Enter` | `activate-list-item` | Jump to and select current message |
+| `S-Home` | `select-oldest-message` | Scroll to top of message list |
+| `C-o` | `enter-url-open` | Select and open a URL from the current message list |
+| `k`, `Up` | `select-up` | Select the previous message |
+| `Esc`, `C-c` | `cancel` | Cancel message selection |
+| `j`, `Down` | `select-down` | Select the next message |
+| `Home`, `M-<` | `scroll-top` | Scroll to top and select the oldest message |
+| `End`, `M->` | `scroll-bottom` | Scroll to bottom and select the latest message |
+| `PgUp` | `page-up` | Move the cursor up by 10 messages |
+| `PgDown` | `page-down` | Move the cursor down by 10 messages |
+| `o` | `open-message-url` | Open all URLs in the selected message |
+| `y` | `yank-message` | Copy a verbatim section or message to the clipboard |
+| `Y` | `yank-whole-message` | Copy an entire message to the clipboard |
+| `p` | `pin-message` | Toggle whether the selected message is pinned |
+| `f` | `flag-message` | Flag the selected message |
+| `v` | `view-message` | View the selected message |
+| `a` | `react-to-message` | Post a reaction to the selected message |
+| `l` | `copy-post-link` | Copy a post's link to the clipboard |
 
 # Reaction Emoji Search Window
 | Keybinding | Event Name | Description |

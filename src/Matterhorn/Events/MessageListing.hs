@@ -3,6 +3,7 @@ module Matterhorn.Events.MessageListing
   ( messageListingKeyHandlers
   , messageSelectCommonKeyHandlers
   , contextSensitiveOptions
+  , messageListingKeybindings
   )
 where
 
@@ -21,6 +22,15 @@ import           Matterhorn.State.UrlSelect
 import           Matterhorn.State.MessageListing
 import           Matterhorn.State.ReactionEmojiListWindow
 
+
+messageListingKeybindings :: TeamId
+                          -> Lens' ChatState (MessageListing n)
+                          -> KeyConfig KeyEvent
+                          -> KeyDispatcher KeyEvent MH
+messageListingKeybindings tId which kc =
+    unsafeKeyDispatcher kc $
+        messageListingKeyHandlers which <>
+        messageSelectCommonKeyHandlers tId which
 
 messageListingKeyHandlers :: Lens' ChatState (MessageListing n)
                           -> [MHKeyEventHandler]
@@ -44,11 +54,11 @@ messageSelectCommonKeyHandlers tId which =
 messageSelectAlwaysEnabledKeyHandlers :: Lens' ChatState (MessageListing n)
                                       -> [MHKeyEventHandler]
 messageSelectAlwaysEnabledKeyHandlers which =
-    [ onEvent CancelEvent "Cancel message selection" $
-        exitMessageSelect which
-
-    , onEvent SelectUpEvent "Select the previous message" $
+    [ onEvent SelectUpEvent "Select the previous message" $
         messageSelectUp which
+
+    , onEvent CancelEvent "Cancel message selection" $
+        exitMessageSelect which
 
     , onEvent SelectDownEvent "Select the next message" $
         messageSelectDown which
