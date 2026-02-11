@@ -2,6 +2,7 @@
 module Matterhorn.Draw.MessageInterface
   ( drawMessageInterface
   , renderMessageListing
+  , messageListingBottomBar
   )
 where
 

@@ -18,7 +18,9 @@ import           Lens.Micro.Platform ( (%~) )
 
 import           Network.Mattermost.Types
 
-import           Matterhorn.Draw.MessageInterface ( renderMessageListing )
+import           Matterhorn.Draw.MessageInterface ( renderMessageListing
+                                                  , messageListingBottomBar
+                                                  )
 import           Matterhorn.Draw.Util
 import           Matterhorn.Themes
 import           Matterhorn.Types
@@ -42,9 +44,10 @@ drawPostsBox contents st tId =
   centerLayer $
   hLimitWithPadding 10 $
   borderWithLabel contentHeader $
-  padRight (Pad 1) $
-  renderMessageListing st True Nothing hs (csTeam(tId).tsPostListWindow)
-    False PostList id
+  (padRight (Pad 1) $
+   renderMessageListing st True Nothing hs (csTeam(tId).tsPostListWindow)
+     False PostList id) <=>
+  (messageListingBottomBar st tId (csTeam(tId).tsPostListWindow) (const []))
 
   where
         hs = getHighlightSet st tId
