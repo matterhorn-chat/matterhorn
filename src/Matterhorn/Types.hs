@@ -1422,7 +1422,7 @@ data InternalTheme =
                   , internalThemeDesc :: !Text
                   }
 
--- | The state of the search result list window. Type 'a' is the type
+-- | The state of a search result list window. Type 'a' is the type
 -- of data in the list. Type 'b' is the search scope type.
 data ListWindowState a b =
     ListWindowState { _listWindowSearchResults :: !(List Name a)
