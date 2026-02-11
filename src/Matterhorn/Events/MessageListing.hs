@@ -25,14 +25,7 @@ import           Matterhorn.State.ReactionEmojiListWindow
 messageListingKeyHandlers :: Lens' ChatState (MessageListing n)
                           -> [MHKeyEventHandler]
 messageListingKeyHandlers which =
-    [ onEvent EnterSelectModeEvent
-        "Select a message to edit/reply/delete" $
-        beginMessageSelect which
-
-    , onEvent PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect which
-
-    , onEvent SelectOldestMessageEvent "Scroll to top of message list" $ do
+    [ onEvent SelectOldestMessageEvent "Scroll to top of message list" $ do
         beginMessageSelect which
         messageSelectFirst which
 

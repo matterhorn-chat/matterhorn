@@ -27,6 +27,7 @@ import           Matterhorn.State.Attachments
 import           Matterhorn.State.Editing
 import           Matterhorn.State.UrlSelect
 import           Matterhorn.State.Channels
+import           Matterhorn.State.MessageListing ( beginMessageSelect )
 
 
 handleMessageInterfaceEvent :: TeamId
@@ -88,6 +89,13 @@ extraEditorKeyHandlers which =
         editWhich = which.miEditor
     in [ onEvent ToggleMultiLineEvent "Toggle multi-line message compose mode" $
               toggleMultilineEditing editWhich
+
+       , onEvent EnterSelectModeEvent
+           "Select a message to edit/reply/delete" $
+           beginMessageSelect (which.miListing)
+
+       , onEvent PageUpEvent "Page up in the message list (enters message select mode)" $
+           beginMessageSelect (which.miListing)
 
        , onEvent CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
             cancelAutocompleteOrReplyOrEdit editWhich
