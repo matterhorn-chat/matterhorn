@@ -17,7 +17,7 @@ module Matterhorn.State.Messages
   , toggleVerbatimBlockTruncation
   , jumpToPost
   , addMessageToState
-  , flagMessage
+  , flagPost
   , pinMessage
   , viewMessage
   )
@@ -1196,8 +1196,8 @@ jumpToPost pId = withCurrentTeam $ \tId -> do
                           postErrorMessage' "Could not fetch linked post"
 
 -- | Tell the server that we have flagged or unflagged a message.
-flagMessage :: PostId -> Bool -> MH ()
-flagMessage pId f = do
+flagPost :: PostId -> Bool -> MH ()
+flagPost pId f = do
     session <- getSession
     myId <- gets myUserId
     doAsyncWith Normal $ do

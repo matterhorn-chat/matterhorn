@@ -23,8 +23,7 @@ import           Network.Mattermost.Types
 import           Matterhorn.State.Messages ( jumpToPost )
 import           Matterhorn.State.Common
 import           Matterhorn.State.Messages ( addObtainedMessages
-                                           , asyncFetchMessagesSurrounding
-                                           , flagMessage
+                                           , flagPost
                                            )
 import           Matterhorn.Types
 import           Matterhorn.Types.DirectionalSeq (emptyDirSeq)
@@ -36,13 +35,9 @@ enterPostListMode :: TeamId -> PostListContents -> Messages -> MH ()
 enterPostListMode tId contents msgs = do
   csTeam(tId).tsPostListWindow.postListPosts .= msgs
   let mlatest = getLatestPostMsg msgs
-      pId = mlatest >>= messagePostId
-      cId = mlatest >>= \m -> m^.mChannelId
-  csTeam(tId).tsPostListWindow.postListSelected .= pId
+      mId = mlatest >>= _mMessageId
+  csTeam(tId).tsPostListWindow.postListSelected .= mId
   pushMode tId $ PostListWindow contents
-  case (pId, cId) of
-    (Just p, Just c) -> asyncFetchMessagesSurrounding c p
-    _ -> return ()
 
 -- | Clear out the state of a PostListWindow
 exitPostListMode :: TeamId -> MH ()
@@ -99,17 +94,12 @@ postListSelectDown :: TeamId -> MH ()
 postListSelectDown tId = do
   selId <- use (csTeam(tId).tsPostListWindow.postListSelected)
   posts <- use (csTeam(tId).tsPostListWindow.postListPosts)
-  let nextMsg = getNextMessage (MessagePostId <$> selId) posts
+  let nextMsg = getNextMessage selId posts
   case nextMsg of
     Nothing -> return ()
     Just m -> do
-      let pId = m^.mMessageId >>= messageIdPostId
-      csTeam(tId).tsPostListWindow.postListSelected .= pId
-      case (m^.mChannelId, pId) of
-        (Just c, Just p) -> asyncFetchMessagesSurrounding c p
-        o -> mhLog LogError
-             (T.pack $ "postListSelectDown" <>
-              " unable to get channel or post ID: " <> show o)
+      let mId = m^.mMessageId
+      csTeam(tId).tsPostListWindow.postListSelected .= mId
 
 -- | Move the selection down in the PostListWindow, which corresponds
 -- to finding a chronologically /old/ message.
@@ -117,32 +107,35 @@ postListSelectUp :: TeamId -> MH ()
 postListSelectUp tId = do
   selId <- use (csTeam(tId).tsPostListWindow.postListSelected)
   posts <- use (csTeam(tId).tsPostListWindow.postListPosts)
-  let prevMsg = getPrevMessage (MessagePostId <$> selId) posts
+  let prevMsg = getPrevMessage selId posts
   case prevMsg of
     Nothing -> return ()
     Just m -> do
-      let pId = m^.mMessageId >>= messageIdPostId
-      csTeam(tId).tsPostListWindow.postListSelected .= pId
-      case (m^.mChannelId, pId) of
-        (Just c, Just p) -> asyncFetchMessagesSurrounding c p
-        o -> mhLog LogError
-             (T.pack $ "postListSelectUp" <>
-              " unable to get channel or post ID: " <> show o)
+      let mId = m^.mMessageId
+      csTeam(tId).tsPostListWindow.postListSelected .= mId
 
 -- | Unflag the post currently selected in the PostListWindow, if any
 postListUnflagSelected :: TeamId -> MH ()
 postListUnflagSelected tId = do
   msgId <- use (csTeam(tId).tsPostListWindow.postListSelected)
+  msgs <- use (csTeam(tId).tsPostListWindow.postListPosts)
   case msgId of
     Nothing  -> return ()
-    Just pId -> flagMessage pId False
-
+    Just mId -> case postIdForMessageId mId msgs of
+        Nothing -> return ()
+        Just pId -> flagPost pId False
 
 -- | Jumps to the specified message in the message's main channel
 -- display and changes to MessageSelectState.
 postListJumpToCurrent :: TeamId -> MH ()
 postListJumpToCurrent tId = do
   msgId <- use (csTeam(tId).tsPostListWindow.postListSelected)
+  msgs <- use (csTeam(tId).tsPostListWindow.postListPosts)
   case msgId of
     Nothing  -> return ()
-    Just pId -> jumpToPost pId
+    Just mId -> case postIdForMessageId mId msgs of
+        Nothing -> return ()
+        Just pId -> jumpToPost pId
+
+postIdForMessageId :: MessageId -> Messages -> Maybe PostId
+postIdForMessageId mId msgs = findMessage mId msgs >>= messagePostId

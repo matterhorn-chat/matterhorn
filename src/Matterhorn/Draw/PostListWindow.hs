@@ -103,7 +103,7 @@ drawPostsBox contents st tId =
         -- The full message list, rendered with the current selection
         renderedMessageList =
           let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
-              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csTeam(tId).tsPostListWindow.postListSelected)
+              matchesMessage (m, _) = m^.mMessageId == (st^.csTeam(tId).tsPostListWindow.postListSelected)
               messagesWithStates = (, InThreadShowParent) <$> messages
               tag = PostList
           in case s of

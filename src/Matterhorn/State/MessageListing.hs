@@ -34,7 +34,7 @@ import           Network.Mattermost.Types
 
 import           Matterhorn.Clipboard ( copyToClipboard )
 import           Matterhorn.State.Links
-import {-# SOURCE #-} Matterhorn.State.Messages ( flagMessage, pinMessage )
+import {-# SOURCE #-} Matterhorn.State.Messages ( flagPost, pinMessage )
 import           Matterhorn.Types
 import           Matterhorn.Types.RichText ( findVerbatimChunk, makePermalink )
 import           Matterhorn.Windows.ViewMessage
@@ -92,7 +92,7 @@ flagSelectedMessage which =
     withListingSelectedMessage which $ \msg ->
         when (isFlaggable msg) $ do
             case messagePostId msg of
-                Just pId -> flagMessage pId (not (msg^.mFlagged))
+                Just pId -> flagPost pId (not (msg^.mFlagged))
                 Nothing -> return ()
 
 -- | Tell the server that the message we currently have selected

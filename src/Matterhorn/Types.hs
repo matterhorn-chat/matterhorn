@@ -1413,7 +1413,7 @@ emptyChannelSelectState tId =
 -- | The state of the post list window.
 data PostListWindowState =
     PostListWindowState { _postListPosts    :: !Messages
-                        , _postListSelected :: !(Maybe PostId)
+                        , _postListSelected :: !(Maybe MessageId)
                         }
 
 data InternalTheme =

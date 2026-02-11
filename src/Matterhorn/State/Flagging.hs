@@ -74,8 +74,8 @@ updateMessageFlag pId f = do
                   | otherwise -> do
                       selId <- use (csTeam tId.tsPostListWindow.postListSelected)
                       posts <- use (csTeam tId.tsPostListWindow.postListPosts)
-                      let nextId = case getNextPostId selId posts of
-                            Nothing -> getPrevPostId selId posts
+                      let nextId = case getNextMessageId selId posts of
+                            Nothing -> getPrevMessageId selId posts
                             Just x  -> Just x
                       csTeam tId.tsPostListWindow.postListSelected .= nextId
                       csTeam tId.tsPostListWindow.postListPosts %=
