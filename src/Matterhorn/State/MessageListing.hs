@@ -40,15 +40,16 @@ import           Matterhorn.Types.RichText ( findVerbatimChunk, makePermalink )
 import           Matterhorn.Windows.ViewMessage
 
 
-getListingSelectedMessage :: Lens' ChatState (MessageListing n)
+getListingSelectedMessage :: Traversal' ChatState (MessageListing n)
                           -> ChatState
                           -> Maybe Message
 getListingSelectedMessage which st = do
-    selMsgId <- selectMessageId $ st^.which.mlMessageSelect
+    mId <- st^?which.mlMessageSelect
+    selMsgId <- selectMessageId mId
     let chanMsgs = st^.which.mlMessages
     findMessage selMsgId chanMsgs
 
-withListingSelectedMessage :: Lens' ChatState (MessageListing n)
+withListingSelectedMessage :: Traversal' ChatState (MessageListing n)
                            -> (Message -> MH ())
                            -> MH ()
 withListingSelectedMessage which act = do
