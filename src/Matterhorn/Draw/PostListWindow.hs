@@ -22,7 +22,9 @@ import           Matterhorn.Draw.MessageInterface ( renderMessageListing
                                                   , messageListingBottomBar
                                                   )
 import           Matterhorn.Draw.Util
-import           Matterhorn.Events.PostListWindow ( postListWindowKeybindings )
+import           Matterhorn.Events.PostListWindow ( postListWindowKeybindings
+                                                  , postListWindowKeyOptions
+                                                  )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 
@@ -52,8 +54,7 @@ drawPostsBox contents st tId =
 
   where
         ev = keyEventBindings st (postListWindowKeybindings tId)
-        extraBindings = [ (ev ActivateListItemEvent, "Goto")
-                        ]
+        extraBindings = [ (ev evVal, name) | (evVal, name, _, _) <- postListWindowKeyOptions tId ]
 
         hs = getHighlightSet st tId
 
