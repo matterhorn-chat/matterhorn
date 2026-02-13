@@ -1,6 +1,7 @@
 module Matterhorn.Events.PostListWindow
   ( onEventPostListWindow
   , postListWindowKeyHandlers
+  , postListWindowKeybindings
   )
 where
 

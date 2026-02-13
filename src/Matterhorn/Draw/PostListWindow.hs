@@ -22,6 +22,7 @@ import           Matterhorn.Draw.MessageInterface ( renderMessageListing
                                                   , messageListingBottomBar
                                                   )
 import           Matterhorn.Draw.Util
+import           Matterhorn.Events.PostListWindow ( postListWindowKeybindings )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 
@@ -47,9 +48,13 @@ drawPostsBox contents st tId =
   (padRight (Pad 1) $
    renderMessageListing st True Nothing hs (csTeam(tId).tsPostListWindow)
      False PostList id) <=>
-  (messageListingBottomBar st tId (csTeam(tId).tsPostListWindow) (const []))
+  (messageListingBottomBar st tId (csTeam(tId).tsPostListWindow) (const extraBindings))
 
   where
+        ev = keyEventBindings st (postListWindowKeybindings tId)
+        extraBindings = [ (ev ActivateListItemEvent, "Goto")
+                        ]
+
         hs = getHighlightSet st tId
 
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
