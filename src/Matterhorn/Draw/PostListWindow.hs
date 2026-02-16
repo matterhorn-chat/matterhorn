@@ -47,9 +47,8 @@ drawPostsBox contents st tId =
   centerLayer $
   hLimitWithPadding 10 $
   borderWithLabel contentHeader $
-  (padRight (Pad 1) $
-   renderMessageListing st True Nothing hs (csTeam(tId).tsPostListWindow)
-     False PostList id) <=>
+  (renderMessageListing st True Nothing hs (csTeam(tId).tsPostListWindow)
+     False True PostList id) <=>
   (messageListingBottomBar st tId (csTeam(tId).tsPostListWindow) (const extraBindings))
 
   where
