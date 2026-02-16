@@ -26,10 +26,10 @@ import           Matterhorn.Types.RichText ( TeamBaseURL, parseMarkdown, unBlock
 import           Matterhorn.Util
 
 
-startMessageUrlSelect :: Lens' ChatState (MessageListing n)
+startMessageUrlSelect :: Lens' ChatState (MessageInterface n i)
                       -> MH ()
 startMessageUrlSelect which = do
-    msgs <- use (which.mlMessages)
+    msgs <- use (which.miListing.mlMessages)
     let urls = V.fromList $ findMessageUrls msgs
     startUrlSelect which urls
 
@@ -41,26 +41,26 @@ startTopicUrlSelect tId which = do
     cId <- use (which.miChannelId)
     withChannel cId $ \ch -> do
         let urls = V.fromList $ findTopicUrls baseUrl $ ch^.ccInfo.cdHeader
-        startUrlSelect (which.miListing) urls
+        startUrlSelect which urls
 
-startUrlSelect :: Lens' ChatState (MessageListing n)
+startUrlSelect :: Lens' ChatState (MessageInterface n i)
                -> V.Vector LinkChoice
                -> MH ()
 startUrlSelect which urls = do
-    src <- use (which.mlUrlListSource)
+    src <- use (which.miListing.mlUrlListSource)
     let urlsWithIndexes = V.indexed urls
-    which.mlMode .= ShowUrlList
-    which.mlUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
-    which.mlUrlList.ulSource .= Just src
+    which.miMode .= ShowUrlList
+    which.miUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)
+    which.miUrlList.ulSource .= Just src
 
-stopUrlSelect :: Lens' ChatState (MessageListing n)
+stopUrlSelect :: Lens' ChatState (MessageInterface n i)
               -> MH ()
 stopUrlSelect which = do
-    which.mlMode .= ShowingTail
+    which.miMode .= Compose
 
-openSelectedURL :: Lens' ChatState (MessageListing n) -> MH ()
+openSelectedURL :: Lens' ChatState (MessageInterface n i) -> MH ()
 openSelectedURL which = do
-    selected <- use (which.mlUrlList.ulList.to listSelectedElement)
+    selected <- use (which.miUrlList.ulList.to listSelectedElement)
     case selected of
         Nothing -> return ()
         Just (_, (_, link)) -> openLinkTarget (link^.linkTarget)

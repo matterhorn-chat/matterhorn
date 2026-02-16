@@ -7,14 +7,14 @@ module Matterhorn.Types.MessageInterface
   , miChannelId
   , miTarget
   , miListing
+  , miUrlList
+  , miSaveAttachmentDialog
 
   , MessageListing(..)
-  , mlUrlList
   , mlUrlListSource
   , mlMessageSelect
   , mlMessages
   , mlMode
-  , mlSaveAttachmentDialog
 
   , messageInterfaceCursor
 
@@ -63,11 +63,6 @@ data MessageListing n =
                    , _mlUrlListSource :: !URLListSource
                    -- ^ How to characterize the URLs found in messages
                    -- in this listing
-                   , _mlUrlList :: !(URLList n)
-                   -- ^ The URL listing for this listing
-                   , _mlSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
-                   -- ^ The state for the interactive attachment-saving
-                   -- editor window.
                    }
 
 -- | A UI region in which a specific message listing is viewed, where
@@ -88,29 +83,30 @@ data MessageInterface n i =
                      -- ^ The target value for this message interface
                      , _miListing :: MessageListing n
                      -- ^ The message listing in this interface
+                     , _miUrlList :: !(URLList n)
+                     -- ^ The URL listing for this interface
+                     , _miSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
+                     -- ^ The state for the interactive attachment-saving
+                     -- editor window.
                      }
 
 messageInterfaceCursor :: MessageInterface n i -> Maybe n
 messageInterfaceCursor mi =
     case _mlMode (_miListing mi) of
         MessageSelect -> Nothing
-        ShowUrlList -> Nothing
-        SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _mlSaveAttachmentDialog $ _miListing mi
         ShowingTail ->
             case _miMode mi of
                 Compose           -> Just $ getName $ _esEditor $ _miEditor mi
                 BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
+                SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
                 ManageAttachments -> Nothing
+                ShowUrlList       -> Nothing
 
 data MessageListingMode =
     MessageSelect
     -- ^ Selecting from messages in the listing
-    | ShowUrlList
-    -- ^ Show the URL listing
     | ShowingTail
     -- ^ Showing the most recent messages of the listing
-    | SaveAttachment !LinkChoice
-    -- ^ Show the attachment save UI
     deriving (Eq, Show)
 
 data MessageInterfaceMode =
@@ -120,6 +116,10 @@ data MessageInterfaceMode =
     -- ^ Managing the attachment list
     | BrowseFiles
     -- ^ Browsing the filesystem for attachment files
+    | ShowUrlList
+    -- ^ Show the URL listing
+    | SaveAttachment !LinkChoice
+    -- ^ Show the attachment save UI
     deriving (Eq, Show)
 
 data URLListSource =

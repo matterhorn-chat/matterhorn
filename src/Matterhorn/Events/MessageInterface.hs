@@ -37,12 +37,8 @@ handleMessageInterfaceEvent :: TeamId
 handleMessageInterfaceEvent tId which ev = do
     listingMode <- use (which.miListing.mlMode)
     case listingMode of
-        ShowUrlList ->
-            onEventUrlSelect (which.miListing) ev
         MessageSelect ->
             onEventMessageSelect tId which ev
-        SaveAttachment {} ->
-            onEventSaveAttachmentWindow (which.miListing) ev
         ShowingTail -> do
             mode <- use (which.miMode)
             case mode of
@@ -59,6 +55,10 @@ handleMessageInterfaceEvent tId which ev = do
                     onEventAttachmentList which ev
                 BrowseFiles ->
                     onEventBrowseFile which ev
+                ShowUrlList ->
+                    onEventUrlSelect which ev
+                SaveAttachment {} ->
+                    onEventSaveAttachmentWindow which ev
 
 messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig KeyEvent
@@ -153,4 +153,8 @@ extraEditorKeyHandlers which =
        , onEvent
            ReplyRecentEvent "Reply to the most recent message" $
            replyToLatestMessage which
+
+       , onEvent EnterOpenURLModeEvent "Select and open a URL from the current message list" $
+           startMessageUrlSelect which
+
        ]

@@ -18,7 +18,6 @@ import           Network.Mattermost.Types ( TeamId, UserId )
 
 import           Matterhorn.Constants
 import           Matterhorn.Types
-import           Matterhorn.State.UrlSelect
 import           Matterhorn.State.MessageListing
 import           Matterhorn.State.ReactionEmojiListWindow
 
@@ -38,10 +37,6 @@ messageListingKeyHandlers which =
     [ onEvent SelectOldestMessageEvent "Scroll to top of message list" $ do
         beginMessageSelect which
         messageSelectFirst which
-
-    , onEvent EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startMessageUrlSelect which
-
     ]
 
 messageSelectCommonKeyHandlers :: TeamId

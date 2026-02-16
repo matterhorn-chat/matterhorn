@@ -326,14 +326,14 @@ newMessageInterface cId pId msgs es target src =
                         , _miMode = Compose
                         , _miEditor = es
                         , _miTarget = target
+                        , _miUrlList = URLList { _ulList = list urlListName mempty 2
+                                               , _ulSource = Nothing
+                                               }
+                        , _miSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
                         , _miListing = MessageListing { _mlUrlListSource = src
-                                                      , _mlUrlList = URLList { _ulList = list urlListName mempty 2
-                                                                             , _ulSource = Nothing
-                                                                             }
                                                       , _mlMode = ShowingTail
                                                       , _mlMessages = msgs
                                                       , _mlMessageSelect = MessageSelectState Nothing
-                                                      , _mlSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
                                                       }
                         }
 
@@ -365,11 +365,7 @@ newTeamState config team chanList =
                                     , _mlMessageSelect = MessageSelectState Nothing
                                     , _mlMode = MessageSelect
                                     , _mlUrlListSource = FromPostList
-                                    , _mlUrlList = URLList { _ulList = list (UrlList PostList) mempty 2
-                                                           , _ulSource = Nothing
-                                                           }
-                                                           , _mlSaveAttachmentDialog = newSaveAttachmentDialog PostList "(unused)"
-                                                           }
+                                    }
                  }
 
 nullChannelListWindowState :: TeamId -> ListWindowState Channel ChannelSearchScope
