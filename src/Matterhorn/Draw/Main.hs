@@ -25,7 +25,6 @@ import           Matterhorn.Draw.ChannelList ( renderChannelList, channelListWid
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.MessageInterface
 import           Matterhorn.Draw.Autocomplete
-import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 import           Matterhorn.Types

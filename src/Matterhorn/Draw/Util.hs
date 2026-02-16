@@ -5,7 +5,6 @@ module Matterhorn.Draw.Util
   , renderKeybindingHelp
   , insertDateLines
   , getDateFormat
-  , mkChannelName
   , userSigilFromInfo
   , multilineHeightLimit
   , keyEventBindings
@@ -88,19 +87,6 @@ userSigilFromInfo u = case u^.uiStatus of
     Away         -> '-'
     DoNotDisturb -> '×'
     Other _      -> '?'
-
-mkChannelName :: ChatState -> ChannelInfo -> Text
-mkChannelName st c = T.append sigil t
-    where
-        t = case c^.cdDMUserId >>= flip knownUserById st of
-            Nothing -> c^.cdName
-            Just u -> u^.uiName
-        sigil = case c^.cdType of
-            Private   -> mempty
-            Ordinary  -> normalChannelSigil
-            Group     -> mempty
-            Direct    -> userSigil
-            Unknown _ -> mempty
 
 -- | Resolve the specified key event into a pretty-printed
 -- representation of the active bindings for that event, using the

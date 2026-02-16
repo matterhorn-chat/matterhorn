@@ -335,6 +335,8 @@ module Matterhorn.Types
   , knownUserByNickname
   , channelIdByChannelName
   , channelIdByUsername
+  , channelNameForChannelId
+  , mkChannelName
   , knownUserById
   , allUserIds
   , addNewUser
@@ -418,7 +420,7 @@ import           Network.Mattermost.Types
 import           Network.Mattermost.Types.Config
 import           Network.Mattermost.WebSocket ( WebsocketEvent, WebsocketActionResponse )
 
-import           Matterhorn.Constants ( normalChannelSigil )
+import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.InputHistory
 import           Matterhorn.Emoji
 import           Matterhorn.Types.Common
@@ -1684,6 +1686,28 @@ makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 Brick.suffixLenses ''Config
+
+channelNameForChannelId :: ChatState -> ChannelId -> Maybe Text
+channelNameForChannelId st cId = do
+    chan <- st^?csChannels.channelByIdL(cId)
+    case chan^.ccInfo.cdType of
+        Direct
+            | Just u <- flip knownUserById st =<< chan^.ccInfo.cdDMUserId ->
+                 return $ addUserSigil $ u^.uiName
+        _ -> return $ mkChannelName st $ chan^.ccInfo
+
+mkChannelName :: ChatState -> ChannelInfo -> Text
+mkChannelName st c = T.append sigil t
+    where
+        t = case c^.cdDMUserId >>= flip knownUserById st of
+            Nothing -> c^.cdName
+            Just u -> u^.uiName
+        sigil = case c^.cdType of
+            Private   -> mempty
+            Ordinary  -> normalChannelSigil
+            Group     -> mempty
+            Direct    -> userSigil
+            Unknown _ -> mempty
 
 -- | Given a list of event handlers and an event, try to handle the
 -- event with the handlers in the specified order. If a handler returns
