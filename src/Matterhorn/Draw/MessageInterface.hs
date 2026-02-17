@@ -84,7 +84,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
 
     renderMessages inMsgSel =
         vBox [ renderMessageListing st inMsgSel editCutoff hs (which.miListing)
-                   renderReplyIndent region insertTransitions
+                   renderReplyIndent False region insertTransitions
              , bottomBorder inMsgSel
              , inputPreview st (which.miEditor) tId previewVpName hs
              , inputArea st (which.miEditor) focused hs
@@ -198,10 +198,11 @@ renderMessageListing :: ChatState
                      -> HighlightSet
                      -> Lens' ChatState (MessageListing Name)
                      -> Bool
+                     -> Bool
                      -> Name
                      -> (Messages -> Messages)
                      -> Widget Name
-renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region insertTransitions =
+renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent displayChannel region insertTransitions =
     freezeBorders messages
     where
     messages = padTop Max chatText
@@ -214,6 +215,12 @@ renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region
                     renderMostRecentMessages st hs editCutoff renderReplyIndent region $
                     retrogradeMsgsWithThreadStates $
                     reverseMessages messagesWithTransitions
+
+    channelNameForMessage m = fromMaybe "unknown channel" $ do
+        cId <- m^.mChannelId
+        channelNameForChannelId st cId
+
+    curUser = myUsername st
 
     renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
@@ -231,12 +238,20 @@ renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent region
         -- deleted).
         let (s, (before, after)) = splitDirSeqOn (\(m, _) -> m^.mMessageId == selMsgId) msgsWithStates
             msgsWithStates = chronologicalMsgsWithThreadStates msgs
+            messageRenderer msg ts n =
+                let result = renderSingleMessage st hs renderReplyIndent Nothing msg ts n
+                    channelNameLine = hBorderWithLabel $
+                                      renderText' Nothing curUser hs Nothing $
+                                      "[" <> channelNameForMessage msg <> "]"
+                in if displayChannel
+                   then channelNameLine <=> result
+                   else result
         in case s of
              Nothing ->
                  renderMostRecentMessages st hs editCutoff renderReplyIndent region before
              Just m ->
                  unsafeRenderMessageSelection (m, (before, after))
-                     (renderSingleMessage st hs renderReplyIndent Nothing) region
+                     messageRenderer region
 
     messagesWithTransitions =
         -- If the message list is empty, add an informative message to

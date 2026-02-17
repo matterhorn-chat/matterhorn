@@ -48,7 +48,7 @@ drawPostsBox contents st tId =
   hLimitWithPadding 10 $
   borderWithLabel contentHeader $
   (renderMessageListing st True Nothing hs (csTeam(tId).tsPostListWindow)
-     False PostList id) <=>
+     False True PostList id) <=>
   (messageListingBottomBar st tId (csTeam(tId).tsPostListWindow) (const extraBindings))
 
   where
