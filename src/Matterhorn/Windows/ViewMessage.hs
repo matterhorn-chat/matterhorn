@@ -92,25 +92,13 @@ resetVp n = do
 
 renderTab :: TeamId -> ViewMessageWindowTab -> ChatState -> Widget Name
 renderTab tId tab cs =
-    let mLatestMessage = case cs^.csTeam(tId).tsViewedMessage of
+    let msg = case cs^.csTeam(tId).tsViewedMessage of
           Nothing -> error "BUG: no message to show, please report!"
-          Just (m, _) -> getLatestMessage cs tId m
-    in case mLatestMessage of
-        Nothing -> emptyWidget
-        Just latestMessage ->
-            case tab of
-                VMTabMessage -> viewMessageBox cs tId latestMessage
-                VMTabReactions -> reactionsText cs tId latestMessage
-                VMTabAuthorInfo -> authorInfo cs tId latestMessage
-
-getLatestMessage :: ChatState -> TeamId -> Message -> Maybe Message
-getLatestMessage cs tId m =
-    case m^.mMessageId of
-        Nothing -> Just m
-        Just mId -> do
-            cId <- cs^.csCurrentChannelId(tId)
-            chan <- cs^?csChannel(cId)
-            findMessage mId $ chan^.ccMessageInterface.miListing.mlMessages
+          Just (m, _) -> m
+    in case tab of
+        VMTabMessage -> viewMessageBox cs tId msg
+        VMTabReactions -> reactionsText cs tId msg
+        VMTabAuthorInfo -> authorInfo cs tId msg
 
 handleEvent :: TeamId -> ViewMessageWindowTab -> Vty.Event -> MH ()
 handleEvent tId VMTabMessage =
