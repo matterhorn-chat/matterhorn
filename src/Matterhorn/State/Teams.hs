@@ -52,7 +52,6 @@ import qualified Network.Mattermost.Endpoints as MM
 
 import           Matterhorn.Types
 import           Matterhorn.Types.Common
-import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.NonemptyStack
 import           Matterhorn.LastRunState
 import           Matterhorn.State.Async
@@ -322,18 +321,20 @@ newMessageInterface :: ChannelId
 newMessageInterface cId pId msgs es target src =
     let urlListName = UrlList eName
         eName = getName $ es^.esEditor
-    in MessageInterface { _miMessages = msgs
-                        , _miRootPostId = pId
+    in MessageInterface { _miRootPostId = pId
                         , _miChannelId = cId
-                        , _miMessageSelect = MessageSelectState Nothing
                         , _miMode = Compose
                         , _miEditor = es
                         , _miTarget = target
-                        , _miUrlListSource = src
                         , _miUrlList = URLList { _ulList = list urlListName mempty 2
                                                , _ulSource = Nothing
                                                }
                         , _miSaveAttachmentDialog = newSaveAttachmentDialog eName "(unused)"
+                        , _miListing = MessageListing { _mlUrlListSource = src
+                                                      , _mlMode = ShowingTail
+                                                      , _mlMessages = msgs
+                                                      , _mlMessageSelect = MessageSelectState Nothing
+                                                      }
                         }
 
 newTeamState :: Config
@@ -345,7 +346,6 @@ newTeamState config team chanList =
     in TeamState { _tsModeStack                = newStack Main
                  , _tsFocus                    = chanList
                  , _tsTeam                     = team
-                 , _tsPostListWindow           = PostListWindowState emptyDirSeq Nothing
                  , _tsUserListWindow           = nullUserListWindowState tId
                  , _tsChannelListWindow        = nullChannelListWindowState tId
                  , _tsChannelSelectState       = emptyChannelSelectState tId
@@ -360,6 +360,12 @@ newTeamState config team chanList =
                  , _tsChannelListSorting       = configChannelListSorting config
                  , _tsThreadInterface          = Nothing
                  , _tsMessageInterfaceFocus    = FocusCurrentChannel
+                 , _tsPostListWindow           =
+                     MessageListing { _mlMessages = mempty
+                                    , _mlMessageSelect = MessageSelectState Nothing
+                                    , _mlMode = MessageSelect
+                                    , _mlUrlListSource = FromPostList
+                                    }
                  }
 
 nullChannelListWindowState :: TeamId -> ListWindowState Channel ChannelSearchScope

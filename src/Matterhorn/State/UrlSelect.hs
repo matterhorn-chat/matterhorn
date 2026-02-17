@@ -29,7 +29,7 @@ import           Matterhorn.Util
 startMessageUrlSelect :: Lens' ChatState (MessageInterface n i)
                       -> MH ()
 startMessageUrlSelect which = do
-    msgs <- use (which.miMessages)
+    msgs <- use (which.miListing.mlMessages)
     let urls = V.fromList $ findMessageUrls msgs
     startUrlSelect which urls
 
@@ -47,7 +47,7 @@ startUrlSelect :: Lens' ChatState (MessageInterface n i)
                -> V.Vector LinkChoice
                -> MH ()
 startUrlSelect which urls = do
-    src <- use (which.miUrlListSource)
+    src <- use (which.miListing.mlUrlListSource)
     let urlsWithIndexes = V.indexed urls
     which.miMode .= ShowUrlList
     which.miUrlList.ulList %= listReplace urlsWithIndexes (Just $ length urls - 1)

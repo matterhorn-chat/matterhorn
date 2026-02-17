@@ -4,6 +4,7 @@ module Matterhorn.Events.MessageSelect
   , messageSelectKeyHandlers
   , onEventMessageSelect
   , onEventMessageSelectDeleteConfirm
+  , editingContextSensitiveOptions
   )
 where
 
@@ -13,17 +14,14 @@ import           Matterhorn.Prelude
 import           Brick.Keybindings
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
-import           Lens.Micro.Platform ( Lens', to )
+import           Lens.Micro.Platform ( Lens' )
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, UserId )
 
+import           Matterhorn.Events.MessageListing
 import           Matterhorn.State.MessageSelect
-import           Matterhorn.State.ReactionEmojiListWindow
 import           Matterhorn.Types
 
-
-messagesPerPageOperation :: Int
-messagesPerPageOperation = 10
 
 onEventMessageSelect :: TeamId
                      -> Lens' ChatState (MessageInterface n i)
@@ -52,73 +50,46 @@ messageSelectKeyHandlers :: TeamId
                          -> Lens' ChatState (MessageInterface n i)
                          -> [MHKeyEventHandler]
 messageSelectKeyHandlers tId which =
-    [ onEvent CancelEvent "Cancel message selection" $
-        exitMessageSelect which
+    messageSelectCommonKeyHandlers tId (which.miListing) <>
+    messageSelectEditingKeyHandlers tId which
 
-    , onEvent SelectUpEvent "Select the previous message" $
-        messageSelectUp which
+messageSelectEditingKeyHandlers :: TeamId
+                                -> Lens' ChatState (MessageInterface n i)
+                                -> [MHKeyEventHandler]
+messageSelectEditingKeyHandlers tId which =
+    handlerForOption which <$> editingContextSensitiveOptions tId which
 
-    , onEvent SelectDownEvent "Select the next message" $
-        messageSelectDown which
+handlerForOption :: Lens' ChatState (MessageInterface n i)
+                 -> (KeyEvent, T.Text, T.Text, UserId -> Message -> Bool, MH ())
+                 -> MHKeyEventHandler
+handlerForOption which (ev, _, desc, canUse, act) =
+    onEvent ev desc $ do
+        myId <- gets myUserId
+        withSelectedMessage which $ \msg ->
+            when (canUse myId msg) act
 
-    , onEvent ScrollTopEvent "Scroll to top and select the oldest message" $
-        messageSelectFirst which
+editingContextSensitiveOptions :: TeamId
+                               -> Lens' ChatState (MessageInterface n i)
+                               -> [(KeyEvent, T.Text, T.Text, UserId -> Message -> Bool, MH ())]
+editingContextSensitiveOptions tId which =
+    [ (ReplyMessageEvent, "reply", "Begin composing a reply to the selected message",
+         const isReplyable, beginReplyCompose which)
 
-    , onEvent ScrollBottomEvent "Scroll to bottom and select the latest message" $
-        messageSelectLast which
+    , (EditMessageEvent, "edit", "Begin editing the selected message",
+         \uId m -> isMyMessage uId m && isEditable m,
+         beginEditMessage which)
 
-    , onEvent
-        PageUpEvent
-        (T.pack $ "Move the cursor up by " <> show messagesPerPageOperation <> " messages")
-        (messageSelectUpBy which messagesPerPageOperation)
+    , (DeleteMessageEvent, "delete", "Delete the selected message (with confirmation)",
+         \uId m -> isMyMessage uId m && isDeletable m,
+         beginConfirmDeleteSelectedMessage tId which)
 
-    , onEvent
-        PageDownEvent
-        (T.pack $ "Move the cursor down by " <> show messagesPerPageOperation <> " messages")
-        (messageSelectDownBy which messagesPerPageOperation)
+    , (OpenThreadEvent, "thread", "Open the selected message's thread in a thread window",
+         const isReplyable, openThreadWindow tId which)
 
-    , onEvent OpenMessageURLEvent "Open all URLs in the selected message" $
-        openSelectedMessageURLs which
+    , (FillGapEvent, "load messages", "Fetch messages for the selected gap",
+         const isGap, fillSelectedGap which)
 
-    , onEvent ReplyMessageEvent "Begin composing a reply to the selected message" $
-         beginReplyCompose which
+    , (OpenMessageInExternalEditorEvent, "open in editor", "Open the message's source in $EDITOR",
+         const (not . isGap), openSelectedMessageInEditor which)
 
-    , onEvent EditMessageEvent "Begin editing the selected message" $
-         beginEditMessage which
-
-    , onEvent DeleteMessageEvent "Delete the selected message (with confirmation)" $
-         beginConfirmDeleteSelectedMessage tId which
-
-    , onEvent YankMessageEvent "Copy a verbatim section or message to the clipboard" $
-         yankSelectedMessageVerbatim which
-
-    , onEvent YankWholeMessageEvent "Copy an entire message to the clipboard" $
-         yankSelectedMessage which
-
-    , onEvent PinMessageEvent "Toggle whether the selected message is pinned" $
-         pinSelectedMessage which
-
-    , onEvent FlagMessageEvent "Flag the selected message" $
-         flagSelectedMessage which
-
-    , onEvent ViewMessageEvent "View the selected message" $
-         viewSelectedMessage tId which
-
-    , onEvent OpenThreadEvent "Open the selected message's thread in a thread window" $ do
-         openThreadWindow tId which
-
-    , onEvent FillGapEvent "Fetch messages for the selected gap" $
-         fillSelectedGap which
-
-    , onEvent ReactToMessageEvent "Post a reaction to the selected message" $ do
-         mMsg <- use (to (getSelectedMessage which))
-         case mMsg of
-             Nothing -> return ()
-             Just m -> enterReactionEmojiListWindowMode tId m
-
-    , onEvent CopyPostLinkEvent "Copy a post's link to the clipboard" $
-         copyPostLink tId which
-
-    , onEvent OpenMessageInExternalEditorEvent "Open the message's source in $EDITOR" $
-         openSelectedMessageInEditor which
     ]

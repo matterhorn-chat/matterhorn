@@ -17,7 +17,7 @@ import           Matterhorn.Types
 
 import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent )
 import           Matterhorn.Events.ChannelTopicWindow ( channelTopicWindowMouseHandler )
-import           Matterhorn.State.MessageSelect ( exitMessageSelect )
+import           Matterhorn.State.MessageListing ( exitMessageSelect )
 import           Matterhorn.State.Reactions ( toggleReaction )
 import           Matterhorn.State.Links ( openLinkTarget )
 
@@ -84,12 +84,12 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
                 foc <- use (csTeam(tId).tsMessageInterfaceFocus)
                 case foc of
                     FocusThread ->
-                        exitMessageSelect $ unsafeThreadInterface tId
+                        exitMessageSelect ((unsafeThreadInterface tId).miListing)
                     FocusCurrentChannel -> do
                         mcId <- use (csCurrentChannelId(tId))
                         case mcId of
                             Nothing -> return ()
-                            Just cId -> exitMessageSelect $ csChannelMessageInterface cId
+                            Just cId -> exitMessageSelect ((csChannelMessageInterface cId).miListing)
             changeChannelByName tId $ addUserSigil username
         ClickableAttachmentInMessage _ fId ->
             void $ openLinkTarget $ LinkFileId fId

@@ -50,4 +50,4 @@ openSaveAttachmentWindow which = do
 closeSaveAttachmentWindow :: Lens' ChatState (MessageInterface n i)
                           -> MH ()
 closeSaveAttachmentWindow which =
-    which.miMode .= Compose
+    which.miMode .= ShowUrlList

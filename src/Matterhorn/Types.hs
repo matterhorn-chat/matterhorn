@@ -221,10 +221,6 @@ module Matterhorn.Types
   , emptyGlobalEditState
   , gedYankBuffer
 
-  , PostListWindowState(..)
-  , postListSelected
-  , postListPosts
-
   , UserSearchScope(..)
   , ChannelSearchScope(..)
 
@@ -329,6 +325,7 @@ module Matterhorn.Types
   , userList
   , resetAutocomplete
   , isMine
+  , isMyMessage
   , setUserStatus
   , myUser
   , myUsername
@@ -338,6 +335,9 @@ module Matterhorn.Types
   , knownUserByNickname
   , channelIdByChannelName
   , channelIdByUsername
+  , channelNameForChannelId
+  , addUserSigils
+  , mkChannelName
   , knownUserById
   , allUserIds
   , addNewUser
@@ -421,7 +421,7 @@ import           Network.Mattermost.Types
 import           Network.Mattermost.Types.Config
 import           Network.Mattermost.WebSocket ( WebsocketEvent, WebsocketActionResponse )
 
-import           Matterhorn.Constants ( normalChannelSigil )
+import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.InputHistory
 import           Matterhorn.Emoji
 import           Matterhorn.Types.Common
@@ -1285,7 +1285,7 @@ data TeamState =
               -- consult the chat state for the latest *version* of any
               -- message with an ID here, to be sure that the latest
               -- version is used (e.g. if it gets edited, etc.).
-              , _tsPostListWindow :: PostListWindowState
+              , _tsPostListWindow :: MessageListing Name
               -- ^ The state of the post list window.
               , _tsUserListWindow :: ListWindowState UserInfo UserSearchScope
               -- ^ The state of the user list window.
@@ -1409,19 +1409,13 @@ emptyChannelSelectState tId =
                        , _channelSelectMatches = Z.fromList []
                        }
 
--- | The state of the post list window.
-data PostListWindowState =
-    PostListWindowState { _postListPosts    :: !Messages
-                        , _postListSelected :: !(Maybe PostId)
-                        }
-
 data InternalTheme =
     InternalTheme { internalThemeName :: !Text
                   , internalTheme :: !Theme
                   , internalThemeDesc :: !Text
                   }
 
--- | The state of the search result list window. Type 'a' is the type
+-- | The state of a search result list window. Type 'a' is the type
 -- of data in the list. Type 'b' is the search scope type.
 data ListWindowState a b =
     ListWindowState { _listWindowSearchResults :: !(List Name a)
@@ -1689,13 +1683,39 @@ makeLenses ''ChatResources
 makeLenses ''ChatState
 makeLenses ''TeamState
 makeLenses ''GlobalEditState
-makeLenses ''PostListWindowState
 makeLenses ''ListWindowState
 makeLenses ''ChannelSelectState
 makeLenses ''UserPreferences
 makeLenses ''ConnectionInfo
 makeLenses ''ChannelTopicDialogState
 Brick.suffixLenses ''Config
+
+channelNameForChannelId :: ChatState -> ChannelId -> Maybe Text
+channelNameForChannelId st cId = do
+    chan <- st^?csChannels.channelByIdL(cId)
+    case chan^.ccInfo.cdType of
+        Direct
+            | Just u <- flip knownUserById st =<< chan^.ccInfo.cdDMUserId ->
+                 return $ addUserSigil $ u^.uiName
+        Group ->
+            return $ addUserSigils (chan^.ccInfo.cdDisplayName)
+        _ -> return $ mkChannelName st $ chan^.ccInfo
+
+addUserSigils :: Text -> Text
+addUserSigils s = T.unwords $ (userSigil <>) <$> T.words s
+
+mkChannelName :: ChatState -> ChannelInfo -> Text
+mkChannelName st c = T.append sigil t
+    where
+        t = case c^.cdDMUserId >>= flip knownUserById st of
+            Nothing -> c^.cdName
+            Just u -> u^.uiName
+        sigil = case c^.cdType of
+            Private   -> mempty
+            Ordinary  -> normalChannelSigil
+            Group     -> mempty
+            Direct    -> userSigil
+            Unknown _ -> mempty
 
 -- | Given a list of event handlers and an event, try to handle the
 -- event with the handlers in the specified order. If a handler returns
@@ -1878,7 +1898,7 @@ channelEditor cId =
 
 channelMessageSelect :: ChannelId -> Lens' ChatState MessageSelectState
 channelMessageSelect cId =
-    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miMessageSelect
+    csChannels.maybeChannelByIdL cId.singular _Just.ccMessageInterface.miListing.mlMessageSelect
 
 csTeam :: TeamId -> Lens' ChatState TeamState
 csTeam tId =
@@ -1917,7 +1937,7 @@ csChannel cId =
 
 csChannelMessages :: ChannelId -> Traversal' ChatState Messages
 csChannelMessages cId =
-    csChannelMessageInterface(cId).miMessages
+    csChannelMessageInterface(cId).miListing.mlMessages
 
 withChannel :: ChannelId -> (ClientChannel -> MH ()) -> MH ()
 withChannel cId = withChannelOrDefault cId ()
@@ -1998,6 +2018,12 @@ isMine :: ChatState -> Message -> Bool
 isMine st msg =
     case msg^.mUser of
         AuthorById _ uid -> uid == myUserId st
+        _ -> False
+
+isMyMessage :: UserId -> Message -> Bool
+isMyMessage myId m =
+    case m^.mUser of
+        AuthorById _ authorId -> authorId == myId
         _ -> False
 
 getMessageForPostId :: ChatState -> PostId -> Maybe Message
@@ -2242,7 +2268,7 @@ maybeThreadInterface tId = csTeam(tId).tsThreadInterface
 
 threadInterfaceEmpty :: TeamId -> MH Bool
 threadInterfaceEmpty tId = do
-    mLen <- preuse (maybeThreadInterface(tId)._Just.miMessages.to messagesLength)
+    mLen <- preuse (maybeThreadInterface(tId)._Just.miListing.mlMessages.to messagesLength)
     case mLen of
         Nothing -> return True
         Just len -> return $ len == 0
@@ -2257,15 +2283,15 @@ withThreadInterface tId cId act = do
 threadInterfaceDeleteWhere :: TeamId -> ChannelId -> (Message -> Bool) -> MH ()
 threadInterfaceDeleteWhere tId cId f =
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.miMessages.traversed.filtered f %=
+        maybeThreadInterface(tId)._Just.miListing.mlMessages.traversed.filtered f %=
             (& mDeleted .~ True)
 
 modifyThreadMessages :: TeamId -> ChannelId -> (Messages -> Messages) -> MH ()
 modifyThreadMessages tId cId f = do
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.miMessages %= f
+        maybeThreadInterface(tId)._Just.miListing.mlMessages %= f
 
 modifyEachThreadMessage :: TeamId -> ChannelId -> (Message -> Message) -> MH ()
 modifyEachThreadMessage tId cId f = do
     withThreadInterface tId cId $ do
-        maybeThreadInterface(tId)._Just.miMessages.traversed %= f
+        maybeThreadInterface(tId)._Just.miListing.mlMessages.traversed %= f

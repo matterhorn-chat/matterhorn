@@ -55,7 +55,7 @@ updateMessageFlag pId f = do
               mTi <- preuse (threadInterface(tId))
               case mTi of
                   Just ti | ti^.miChannelId == cId ->
-                      threadInterface(tId).miMessages.traversed.filtered isTargetMessage.mFlagged .= f
+                      threadInterface(tId).miListing.mlMessages.traversed.filtered isTargetMessage.mFlagged .= f
                   _ -> return ()
 
               -- We also want to update the post window if this happens
@@ -64,7 +64,7 @@ updateMessageFlag pId f = do
               case mode of
                 PostListWindow PostListFlagged
                   | f ->
-                      csTeam tId.tsPostListWindow.postListPosts %=
+                      csTeam tId.tsPostListWindow.mlMessages %=
                         addMessage (msg & mFlagged .~ True)
 
                   -- deleting here is tricky, because it means that we
@@ -72,14 +72,17 @@ updateMessageFlag pId f = do
                   -- it _up_ unless we can't, in which case we'll try
                   -- moving it down.
                   | otherwise -> do
-                      selId <- use (csTeam tId.tsPostListWindow.postListSelected)
-                      posts <- use (csTeam tId.tsPostListWindow.postListPosts)
-                      let nextId = case getNextPostId selId posts of
-                            Nothing -> getPrevPostId selId posts
-                            Just x  -> Just x
-                      csTeam tId.tsPostListWindow.postListSelected .= nextId
-                      csTeam tId.tsPostListWindow.postListPosts %=
-                        filterMessages (((/=) `on` _mMessageId) msg)
+                      mSelId <- preuse (csTeam tId.tsPostListWindow.mlMessageSelect)
+                      case mSelId of
+                          Nothing -> return ()
+                          Just (MessageSelectState selId) -> do
+                              posts <- use (csTeam tId.tsPostListWindow.mlMessages)
+                              let nextId = case getNextMessageId selId posts of
+                                    Nothing -> getPrevMessageId selId posts
+                                    Just x  -> Just x
+                              csTeam tId.tsPostListWindow.mlMessageSelect .= MessageSelectState nextId
+                              csTeam tId.tsPostListWindow.mlMessages %=
+                                filterMessages (((/=) `on` _mMessageId) msg)
                 _ -> return ()
 
       case mTId of

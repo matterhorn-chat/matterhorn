@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.ShowHelp
   ( drawShowHelp
   , commandTextTable
@@ -31,6 +32,7 @@ import           Matterhorn.Events.Global
 import           Matterhorn.Events.Main
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.MessageInterface
+import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.ThemeListWindow
 import           Matterhorn.Events.PostListWindow
 import           Matterhorn.Events.ShowHelp
@@ -434,12 +436,19 @@ themeHelp = vBox
     in vBox $ mkEntry <$> names
   ]
 
+genericPostListWindowKeyHandlers :: [MHKeyEventHandler]
+genericPostListWindowKeyHandlers =
+    postListWindowKeyHandlers teamIdThunk <>
+    messageListingKeyHandlers whichListingThunk <>
+    messageSelectCommonKeyHandlers teamIdThunk whichListingThunk
+
 keybindSections :: [(Text, [MHKeyEventHandler])]
 keybindSections =
     [ ("Global Keybindings", globalKeyHandlers)
     , ("Help Page", helpKeyHandlers teamIdThunk)
     , ("Main Interface", mainKeyHandlers teamIdThunk <>
-                         messageInterfaceKeyHandlers whichThunk)
+                         messageInterfaceKeyHandlers whichThunk <>
+                         messageListingKeyHandlers whichListingThunk)
     , ("Message Editing", extraEditorKeyHandlers whichThunk)
     , ("Text Editing", editingKeyHandlers editorThunk)
     , ("Channel Select Mode", channelSelectKeyHandlers teamIdThunk)
@@ -453,7 +462,7 @@ keybindSections =
     , ("Message Viewer: Reactions tab", viewMessageReactionsKeyHandlers teamIdThunk)
     , ("Attachment List", attachmentListKeyHandlers whichThunk)
     , ("Attachment File Browser", attachmentBrowseKeyHandlers whichThunk)
-    , ("Flagged Messages", postListWindowKeyHandlers teamIdThunk)
+    , ("Post Search Window", genericPostListWindowKeyHandlers)
     , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
     ]
 
@@ -468,6 +477,9 @@ editorThunk = error "BUG: should not evaluate editorThunk"
 
 whichThunk :: Lens' ChatState (MessageInterface n i)
 whichThunk = error "BUG: should not evaluate whichThunk"
+
+whichListingThunk :: Lens' ChatState (MessageListing n)
+whichListingThunk = error "BUG: should not evaluate whichListingThunk"
 
 helpBox :: HelpScreen -> Widget Name -> Widget Name
 helpBox scr helpText =

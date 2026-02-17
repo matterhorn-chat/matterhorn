@@ -89,6 +89,7 @@ library
                        Matterhorn.Events.Global
                        Matterhorn.Events.Main
                        Matterhorn.Events.ManageAttachments
+                       Matterhorn.Events.MessageListing
                        Matterhorn.Events.MessageSelect
                        Matterhorn.Events.MessageInterface
                        Matterhorn.Events.Mouse
@@ -128,6 +129,7 @@ library
                        Matterhorn.State.ListWindow
                        Matterhorn.State.Logging
                        Matterhorn.State.MessageSelect
+                       Matterhorn.State.MessageListing
                        Matterhorn.State.Messages
                        Matterhorn.State.NotifyPrefs
                        Matterhorn.State.PostListWindow
@@ -178,8 +180,8 @@ library
                      , data-clist           >= 0.1.2   && < 0.3
                      , semigroups           >= 0.18    && < 0.20
                      , crypton-connection   >= 0.3.1   && < 0.5
-                     , text                 >= 1.2.5.0 && < 2.1
-                     , bytestring           >= 0.10    && < 0.12
+                     , text                 >= 1.2.5.0 && < 2.2
+                     , bytestring           >= 0.10    && < 0.13
                      , stm                  >= 2.4     && < 2.6
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
@@ -197,7 +199,7 @@ library
                      , directory            >= 1.3     && < 1.4
                      , vector               < 0.14
                      , strict               >= 0.3     && < 0.6
-                     , hashable             >= 1.2     && < 1.5
+                     , hashable             >= 1.2     && < 1.6
                      , digest               >= 0.0.2   && < 0.0.3
                      , commonmark           >= 0.2.1   && < 0.3
                      , commonmark-extensions >= 0.2.1.2 && < 0.3

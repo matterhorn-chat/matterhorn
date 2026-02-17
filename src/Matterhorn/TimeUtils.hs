@@ -1,5 +1,9 @@
 module Matterhorn.TimeUtils
-    ( lookupLocalTimeZone
+    ( DateTimeFormat
+    , dateTimeFormat
+    , dateTimeFormatString
+
+    , lookupLocalTimeZone
     , utcTimezone
     , startOfDay
     , justAfter, justBefore
@@ -24,6 +28,18 @@ import           Data.Time.LocalTime.TimeZone.Series ( TimeZoneSeries(..)
 
 import           Network.Mattermost.Types ( ServerTime(..) )
 
+
+newtype DateTimeFormat = DateTimeFormat Text
+
+dateTimeFormatString :: DateTimeFormat -> Text
+dateTimeFormatString (DateTimeFormat fmt) = fmt
+
+dateTimeFormat :: Text -> Maybe DateTimeFormat
+dateTimeFormat s =
+    let stripped = T.strip s
+    in if T.null stripped
+       then Nothing
+       else Just $ DateTimeFormat stripped
 
 -- | Get the timezone series that should be used for converting UTC
 -- times into local times with appropriate DST adjustments.
@@ -67,8 +83,8 @@ asLocalTime :: TimeZoneSeries -> UTCTime -> LocalTime
 asLocalTime = utcToLocalTime'
 
 -- | Local time in displayable format
-localTimeText :: Text -> LocalTime -> Text
-localTimeText fmt time = T.pack $ formatTime defaultTimeLocale (T.unpack fmt) time
+localTimeText :: DateTimeFormat -> LocalTime -> Text
+localTimeText fmt time = T.pack $ formatTime defaultTimeLocale (T.unpack (dateTimeFormatString fmt)) time
 
 -- | Provides a time value that can be used when there are no other times available
 originTime :: UTCTime

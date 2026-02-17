@@ -20,13 +20,14 @@ import           Network.Mattermost.Types ( TeamId )
 import           Matterhorn.Types
 import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.ManageAttachments
+import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.Editing
 import           Matterhorn.State.UrlSelect
-import           Matterhorn.State.MessageSelect
 import           Matterhorn.State.Channels
+import           Matterhorn.State.MessageListing ( beginMessageSelect )
 
 
 handleMessageInterfaceEvent :: TeamId
@@ -34,52 +35,43 @@ handleMessageInterfaceEvent :: TeamId
                             -> Vty.Event
                             -> MH Bool
 handleMessageInterfaceEvent tId which ev = do
-    mode <- use (which.miMode)
-    case mode of
-        Compose ->
-            handleEventWith [ mhHandleKeyboardEvent (extraEditorKeybindings which)
-                            , mhHandleKeyboardEvent (messageInterfaceKeybindings which)
-                            , \e -> do
-                                case e of
-                                    (Vty.EvPaste bytes) -> handlePaste (which.miEditor) bytes
-                                    _ -> handleEditingInput (which.miEditor) e
-                                return True
-                            ] ev
+    listingMode <- use (which.miListing.mlMode)
+    case listingMode of
         MessageSelect ->
             onEventMessageSelect tId which ev
-        ShowUrlList ->
-            onEventUrlSelect which ev
-        SaveAttachment {} ->
-            onEventSaveAttachmentWindow which ev
-        ManageAttachments ->
-            onEventAttachmentList which ev
-        BrowseFiles ->
-            onEventBrowseFile which ev
+        ShowingTail -> do
+            mode <- use (which.miMode)
+            case mode of
+                Compose ->
+                    handleEventWith [ mhHandleKeyboardEvent (extraEditorKeybindings which)
+                                    , mhHandleKeyboardEvent (messageInterfaceKeybindings which)
+                                    , \e -> do
+                                        case e of
+                                            (Vty.EvPaste bytes) -> handlePaste (which.miEditor) bytes
+                                            _ -> handleEditingInput (which.miEditor) e
+                                        return True
+                                    ] ev
+                ManageAttachments ->
+                    onEventAttachmentList which ev
+                BrowseFiles ->
+                    onEventBrowseFile which ev
+                ShowUrlList ->
+                    onEventUrlSelect which ev
+                SaveAttachment {} ->
+                    onEventSaveAttachmentWindow which ev
 
 messageInterfaceKeybindings :: Lens' ChatState (MessageInterface n i)
                             -> KeyConfig KeyEvent
                             -> KeyDispatcher KeyEvent MH
 messageInterfaceKeybindings which kc =
-    unsafeKeyDispatcher kc (messageInterfaceKeyHandlers which)
+    unsafeKeyDispatcher kc $
+        messageInterfaceKeyHandlers which <>
+        messageListingKeyHandlers (which.miListing)
 
 messageInterfaceKeyHandlers :: Lens' ChatState (MessageInterface n i)
                             -> [MHKeyEventHandler]
 messageInterfaceKeyHandlers which =
-    [ onEvent EnterSelectModeEvent
-        "Select a message to edit/reply/delete" $
-        beginMessageSelect which
-
-    , onEvent PageUpEvent "Page up in the message list (enters message select mode)" $ do
-        beginMessageSelect which
-
-    , onEvent SelectOldestMessageEvent "Scroll to top of message list" $ do
-        beginMessageSelect which
-        messageSelectFirst which
-
-    , onEvent EnterOpenURLModeEvent "Select and open a URL from the current message list" $
-        startMessageUrlSelect which
-
-    , onEvent EnterOpenTopicURLModeEvent "Select and open a URL from the current channel's topic" $
+    [ onEvent EnterOpenTopicURLModeEvent "Select and open a URL from the current channel's topic" $
         withCurrentTeam $ \tId ->
             startTopicUrlSelect tId which
     ]
@@ -98,8 +90,15 @@ extraEditorKeyHandlers which =
     in [ onEvent ToggleMultiLineEvent "Toggle multi-line message compose mode" $
               toggleMultilineEditing editWhich
 
+       , onEvent EnterSelectModeEvent
+           "Select a message to edit/reply/delete" $
+           beginMessageSelect (which.miListing)
+
+       , onEvent PageUpEvent "Page up in the message list (enters message select mode)" $
+           beginMessageSelect (which.miListing)
+
        , onEvent CancelEvent "Cancel autocomplete, message reply, or edit, in that order" $
-            cancelAutocompleteOrReplyOrEdit editWhich
+           cancelAutocompleteOrReplyOrEdit editWhich
 
        , onEvent
            InvokeEditorEvent
@@ -154,5 +153,8 @@ extraEditorKeyHandlers which =
        , onEvent
            ReplyRecentEvent "Reply to the most recent message" $
            replyToLatestMessage which
-       ]
 
+       , onEvent EnterOpenURLModeEvent "Select and open a URL from the current message list" $
+           startMessageUrlSelect which
+
+       ]

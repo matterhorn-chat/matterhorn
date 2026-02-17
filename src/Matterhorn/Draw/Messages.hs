@@ -7,7 +7,7 @@ module Matterhorn.Draw.Messages
   , printableNameForAuthor
   , renderSingleMessage
   , unsafeRenderMessageSelection
-  , renderLastMessages
+  , renderMostRecentMessages
   , addEllipsis
   , mkClickableInline
   )
@@ -294,14 +294,14 @@ renderMessageSeq remainingHeight renderFunc limitFunc tag ms
         rest <- renderMessageSeq (remainingHeight - (V.imageHeight $ result^.imageL)) renderFunc limitFunc tag (messagesDrop 1 ms)
         return $ result : rest
 
-renderLastMessages :: ChatState
-                   -> HighlightSet
-                   -> Maybe ServerTime
-                   -> Bool
-                   -> Name
-                   -> DirectionalSeq Retrograde (Message, ThreadState)
-                   -> Widget Name
-renderLastMessages st hs editCutoff renderReplyIndent tag msgs =
+renderMostRecentMessages :: ChatState
+                         -> HighlightSet
+                         -> Maybe ServerTime
+                         -> Bool
+                         -> Name
+                         -> DirectionalSeq Retrograde (Message, ThreadState)
+                         -> Widget Name
+renderMostRecentMessages st hs editCutoff renderReplyIndent tag msgs =
     Widget Greedy Greedy $ do
         ctx <- getContext
         let targetHeight = ctx^.availHeightL

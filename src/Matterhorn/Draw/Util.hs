@@ -3,9 +3,8 @@ module Matterhorn.Draw.Util
   , renderTime
   , renderDate
   , renderKeybindingHelp
-  , insertDateMarkers
+  , insertDateLines
   , getDateFormat
-  , mkChannelName
   , userSigilFromInfo
   , multilineHeightLimit
   , keyEventBindings
@@ -19,6 +18,7 @@ import           Brick
 import           Brick.Keybindings
 
 import           Data.List ( intersperse )
+import           Data.Maybe ( fromJust )
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Network.Mattermost.Types
@@ -28,23 +28,26 @@ import           Matterhorn.Themes
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
 
+defaultTimeFormat :: DateTimeFormat
+defaultTimeFormat = fromJust $ dateTimeFormat "%R"
 
-defaultTimeFormat :: Text
-defaultTimeFormat = "%R"
-
-defaultDateFormat :: Text
-defaultDateFormat = "%Y-%m-%d"
+defaultDateFormat :: DateTimeFormat
+defaultDateFormat = fromJust $ dateTimeFormat "%Y-%m-%d"
 
 multilineHeightLimit :: Int
 multilineHeightLimit = 5
 
-getTimeFormat :: ChatState -> Text
+getTimeFormat :: ChatState -> DateTimeFormat
 getTimeFormat st =
-    maybe defaultTimeFormat id (st^.csResources.crConfiguration.configTimeFormatL)
+    fromMaybe defaultTimeFormat (dateTimeFormat =<< fmt)
+    where
+        fmt = st^.csResources.crConfiguration.configTimeFormatL
 
-getDateFormat :: ChatState -> Text
+getDateFormat :: ChatState -> DateTimeFormat
 getDateFormat st =
-    maybe defaultDateFormat id (st^.csResources.crConfiguration.configDateFormatL)
+    fromMaybe defaultDateFormat (dateTimeFormat =<< fmt)
+    where
+        fmt = st^.csResources.crConfiguration.configDateFormatL
 
 renderTime :: ChatState -> UTCTime -> Widget Name
 renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)
@@ -52,11 +55,9 @@ renderTime st = renderUTCTime (getTimeFormat st) (st^.timeZone)
 renderDate :: ChatState -> UTCTime -> Widget Name
 renderDate st = renderUTCTime (getDateFormat st) (st^.timeZone)
 
-renderUTCTime :: Text -> TimeZoneSeries -> UTCTime -> Widget a
+renderUTCTime :: DateTimeFormat -> TimeZoneSeries -> UTCTime -> Widget a
 renderUTCTime fmt tz t =
-    if T.null fmt
-    then emptyWidget
-    else withDefAttr timeAttr (txt $ localTimeText fmt $ asLocalTime tz t)
+    withDefAttr timeAttr (txt $ localTimeText fmt $ asLocalTime tz t)
 
 renderKeybindingHelp :: ChatState -> Text -> [KeyEvent] -> Widget Name
 renderKeybindingHelp st label evs =
@@ -68,8 +69,8 @@ renderKeybindingHelp st label evs =
 -- in between messages with different creation dates. Server dates from
 -- messages are converted to local time (via the current timezone)
 -- and midnight of that timezone used to generate date markers.
-insertDateMarkers :: Messages -> Text -> TimeZoneSeries -> Messages
-insertDateMarkers ms datefmt tz = foldr (addMessage . dateMsg) ms dateRange
+insertDateLines :: DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
+insertDateLines datefmt tz ms = foldr (addMessage . dateMsg) ms dateRange
     where dateRange = foldr checkDateChange Set.empty ms
           checkDateChange m = let msgDay = startOfDay (Just tz) (withServerTime (m^.mDate))
                               in if m^.mDeleted then id else Set.insert msgDay
@@ -86,19 +87,6 @@ userSigilFromInfo u = case u^.uiStatus of
     Away         -> '-'
     DoNotDisturb -> '×'
     Other _      -> '?'
-
-mkChannelName :: ChatState -> ChannelInfo -> Text
-mkChannelName st c = T.append sigil t
-    where
-        t = case c^.cdDMUserId >>= flip knownUserById st of
-            Nothing -> c^.cdName
-            Just u -> u^.uiName
-        sigil = case c^.cdType of
-            Private   -> mempty
-            Ordinary  -> normalChannelSigil
-            Group     -> mempty
-            Direct    -> userSigil
-            Unknown _ -> mempty
 
 -- | Resolve the specified key event into a pretty-printed
 -- representation of the active bindings for that event, using the

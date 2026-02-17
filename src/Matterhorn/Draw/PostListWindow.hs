@@ -14,16 +14,23 @@ import           Brick.Widgets.Border
 import           Brick.Widgets.Center
 import           Control.Monad.Trans.Reader ( withReaderT )
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( (%~), to )
+import           Lens.Micro.Platform ( (%~) )
 
-import           Network.Mattermost.Lenses
 import           Network.Mattermost.Types
 
-import           Matterhorn.Draw.Messages
+import           Matterhorn.Draw.MessageInterface ( renderMessageListing
+                                                  , messageListingBottomBar
+                                                  )
 import           Matterhorn.Draw.Util
+import           Matterhorn.Events.PostListWindow ( postListWindowKeybindings
+                                                  , postListWindowKeyOptions
+                                                  )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 
+
+drawPostListWindow :: PostListContents -> ChatState -> TeamId -> Widget Name
+drawPostListWindow contents st tId = joinBorders $ drawPostsBox contents st tId
 
 hLimitWithPadding :: Int -> Widget n -> Widget n
 hLimitWithPadding pad contents = Widget
@@ -33,17 +40,23 @@ hLimitWithPadding pad contents = Widget
       withReaderT (& availWidthL  %~ (\ n -> n - (2 * pad))) $ render $ cropToContext contents
   }
 
-drawPostListWindow :: PostListContents -> ChatState -> TeamId -> Widget Name
-drawPostListWindow contents st tId = joinBorders $ drawPostsBox contents st tId
-
 -- | Draw a PostListWindow as a floating window on top of whatever
 -- is rendered beneath it
 drawPostsBox :: PostListContents -> ChatState -> TeamId -> Widget Name
 drawPostsBox contents st tId =
-  centerLayer $ hLimitWithPadding 10 $ borderWithLabel contentHeader $
-    padRight (Pad 1) messageListContents
-  where -- The 'window title' of the window
+  centerLayer $
+  hLimitWithPadding 10 $
+  borderWithLabel contentHeader $
+  (renderMessageListing st True Nothing hs (csTeam(tId).tsPostListWindow)
+     False True PostList id) <=>
+  (messageListingBottomBar st tId (csTeam(tId).tsPostListWindow) (const extraBindings))
+
+  where
+        ev = keyEventBindings st (postListWindowKeybindings tId)
+        extraBindings = [ (ev evVal, name) | (evVal, name, _, _) <- postListWindowKeyOptions tId ]
+
         hs = getHighlightSet st tId
+
         contentHeader = withAttr channelListHeaderAttr $ txt $ case contents of
           PostListFlagged -> "Flagged posts"
           PostListPinned cId ->
@@ -55,59 +68,9 @@ drawPostsBox contents st tId =
             then ": " <> terms
             else " (" <> (T.pack . show . length) entries <> "): " <> terms
 
-        entries = filterMessages knownChannel $ st^.csTeam(tId).tsPostListWindow.postListPosts
-        messages = insertDateMarkers
-                     entries
-                     (getDateFormat st)
-                     (st^.timeZone)
+        entries = filterMessages knownChannel $ st^.csTeam(tId).tsPostListWindow.mlMessages
 
         knownChannel msg =
             case msg^.mChannelId of
                 Just cId | Nothing <- st^?csChannels.channelByIdL(cId) -> False
                 _ -> True
-
-        -- The overall contents, with a sensible default even if there
-        -- are no messages
-        messageListContents
-          | null messages =
-            padTopBottom 1 $
-            hCenter $
-            withDefAttr clientEmphAttr $
-            str $ case contents of
-              PostListFlagged -> "You have no flagged messages."
-              PostListPinned _ -> "This channel has no pinned messages."
-              PostListSearch _ searching ->
-                if searching
-                  then "Searching ..."
-                  else "No search results found"
-          | otherwise = vBox renderedMessageList
-
-        -- The render-message function we're using
-        renderMessageForWindow msg tState tag =
-          let renderedMsg = renderSingleMessage st hs True Nothing msg tState tag
-          in case msg^.mOriginalPost of
-            -- We should factor out some of the channel name logic at
-            -- some point, but we can do that later
-            Just post
-              | Just chan <- st^?csChannels.channelByIdL(post^.postChannelIdL) ->
-                 case chan^.ccInfo.cdType of
-                  Direct
-                    | Just u <- flip knownUserById st =<< chan^.ccInfo.cdDMUserId ->
-                        (forceAttr channelNameAttr (txt (addUserSigil $ u^.uiName)) <=>
-                          (str "  " <+> renderedMsg))
-                  _ -> (forceAttr channelNameAttr (txt (chan^.ccInfo.to (mkChannelName st))) <=>
-                         (str "  " <+> renderedMsg))
-            _ | CP _ <- msg^.mType -> str "[BUG: unknown channel]"
-              | otherwise -> renderedMsg
-
-        -- The full message list, rendered with the current selection
-        renderedMessageList =
-          let (s, (before, after)) = splitDirSeqOn matchesMessage messagesWithStates
-              matchesMessage (m, _) = m^.mMessageId == (MessagePostId <$> st^.csTeam(tId).tsPostListWindow.postListSelected)
-              messagesWithStates = (, InThreadShowParent) <$> messages
-              tag = PostList
-          in case s of
-            Nothing ->
-                map (\(m, tst) -> renderMessageForWindow m tst tag) (toList messagesWithStates)
-            Just curMsg ->
-              [unsafeRenderMessageSelection (curMsg, (before, after)) renderMessageForWindow tag]

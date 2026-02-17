@@ -19,7 +19,6 @@ import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
 
 import           Matterhorn.Constants ( normalChannelSigil )
 import           Matterhorn.Draw.ChannelList ( channelListWidth )
-import           Matterhorn.Draw.Util ( mkChannelName )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )

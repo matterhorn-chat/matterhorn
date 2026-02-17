@@ -39,8 +39,8 @@ of Nothing@ or @case mType of C _@).
 module Matterhorn.Types.Messages
   ( -- * Message and operations on a single Message
     Message(..)
-  , isDeletable, isReplyable, isReactable, isEditable, isReplyTo, isGap, isFlaggable
-  , isPinnable, isEmote, isJoinLeave, isTransition, isNewMessagesTransition
+  , isDeletable, isReplyable, hasURLs, isReactable, isEditable, isReplyTo, isGap, isFlaggable
+  , isPinnable, isEmote, isJoinLeave, isTransition, isNewMessagesTransition, hasVerbatimContent
   , mText, mUser, mDate, mType, mPending, mDeleted, mPinned
   , mAttachments, mInReplyToMsg, mMessageId, mReactions, mFlagged
   , mOriginalPost, mChannelId, mMarkdownSource, mTeamId
@@ -729,3 +729,11 @@ msgURLs msg =
                                  , ECode $ Inlines $ Seq.singleton $ EText $ a^.attachmentName
                                  ]
   in msgUrls <> attachmentURLs
+
+hasURLs :: Message -> Bool
+hasURLs m =
+    let numURLs = Seq.length $ msgURLs m
+    in numURLs > 0
+
+hasVerbatimContent :: Message -> Bool
+hasVerbatimContent m = isJust (findVerbatimChunk (m^.mText))

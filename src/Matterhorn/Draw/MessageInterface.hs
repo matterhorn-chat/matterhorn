@@ -1,6 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.MessageInterface
   ( drawMessageInterface
+  , renderMessageListing
+  , messageListingBottomBar
   )
 where
 
@@ -18,7 +20,6 @@ import           Brick.Widgets.Edit ( editContentsL, renderEditor, getEditConten
 import           Data.Char ( isSpace, isPunctuation )
 import qualified Data.Foldable as F
 import           Data.List ( intersperse )
-import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -26,8 +27,7 @@ import           Data.Text.Zipper ( cursorPosition )
 import           Data.Time.Clock ( UTCTime(..) )
 import           Lens.Micro.Platform ( (.~), (^?!), to, view, Lens', Traversal', SimpleGetter )
 
-import           Network.Mattermost.Types ( ChannelId, Type(Direct, Group)
-                                          , ServerTime(..), TeamId, idString
+import           Network.Mattermost.Types ( ServerTime(..), TeamId, idString
                                           )
 
 import           Matterhorn.Constants
@@ -38,10 +38,11 @@ import           Matterhorn.Draw.InputPreview
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Events.MessageSelect
+import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.UrlSelect
-import           Matterhorn.State.MessageSelect
+import           Matterhorn.State.MessageListing ( getListingSelectedMessage )
 import           Matterhorn.Themes
-import           Matterhorn.TimeUtils ( justAfter, justBefore )
+import           Matterhorn.TimeUtils ( DateTimeFormat, justAfter, justBefore )
 import           Matterhorn.Types
 import           Matterhorn.Types.DirectionalSeq ( emptyDirSeq )
 import           Matterhorn.Types.RichText
@@ -58,31 +59,40 @@ drawMessageInterface :: ChatState
 drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
     interfaceContents
     where
-    inMsgSelect = st^.which.miMode == MessageSelect
+    cId = st^.which.miChannelId
     eName = getName $ st^.which.miEditor.esEditor
     region = MessageInterfaceMessages eName
     previewVpName = MessagePreviewViewport eName
 
     interfaceContents =
-        case st^.which.miMode of
-            Compose           -> renderMessages False
-            MessageSelect     -> renderMessages True
-            ShowUrlList       -> drawUrlSelectWindow st hs which
-            SaveAttachment {} -> drawSaveAttachmentWindow st which
-            ManageAttachments -> drawAttachmentList st which
-            BrowseFiles       -> drawFileBrowser st which
+        case st^.which.miListing.mlMode of
+            MessageSelect -> renderMessages True
+            ShowingTail   ->
+                case st^.which.miMode of
+                    Compose           -> renderMessages False
+                    ManageAttachments -> drawAttachmentList st which
+                    BrowseFiles       -> drawFileBrowser st which
+                    ShowUrlList       -> drawUrlSelectWindow st hs which
+                    SaveAttachment {} -> drawSaveAttachmentWindow st which
+
+    editCutoff = getEditedMessageCutoff cId st
+    newMsgCutoff = if not showNewMsgLine
+                   then Nothing
+                   else getNewMessageCutoff cId st
+
+    insertTransitions = insertAllTransitions newMsgCutoff (getDateFormat st) (st ^. timeZone)
 
     renderMessages inMsgSel =
-        vBox [ freezeBorders $
-               renderMessageListing st inMsgSel showNewMsgLine tId hs which renderReplyIndent region
-             , bottomBorder
+        vBox [ renderMessageListing st inMsgSel editCutoff hs (which.miListing)
+                   renderReplyIndent False region insertTransitions
+             , bottomBorder inMsgSel
              , inputPreview st (which.miEditor) tId previewVpName hs
              , inputArea st (which.miEditor) focused hs
              ]
 
-    bottomBorder =
-        if inMsgSelect
-        then messageSelectBottomBar st tId which
+    bottomBorder inMsgSel =
+        if inMsgSel
+        then messageInterfaceBottomBar st tId which
         else hBox [ showAttachmentCount
                   , hBorder
                   , showTypingUsers
@@ -119,18 +129,30 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                      , txt " to manage)"
                      ]
 
-messageSelectBottomBar :: ChatState
-                       -> TeamId
-                       -> Lens' ChatState (MessageInterface Name i)
-                       -> Widget Name
-messageSelectBottomBar st tId which =
-    case getSelectedMessage which st of
+messageInterfaceBottomBar :: ChatState
+                          -> TeamId
+                          -> Lens' ChatState (MessageInterface Name i)
+                          -> Widget Name
+messageInterfaceBottomBar st tId which =
+    messageListingBottomBar st tId (which.miListing) mkExtraOptions
+    where
+        mkExtraOptions postMsg = messageInterfaceSelectionKeyOptions st tId which postMsg
+
+messageListingBottomBar :: ChatState
+                        -> TeamId
+                        -> Lens' ChatState (MessageListing Name)
+                        -> (Message -> [(T.Text, T.Text)])
+                        -> Widget Name
+messageListingBottomBar st tId which mkExtraOptions =
+    case getListingSelectedMessage which st of
         Nothing -> emptyWidget
         Just postMsg ->
             let optionList = if null usableOptions
                              then txt "(no actions available for this message)"
                              else hBox $ intersperse (txt " ") usableOptions
-                usableOptions = mkOption <$> messageSelectionKeyOptions st tId which postMsg
+                usableOptions = mkOption <$> allOptions
+                allOptions = messageListingSelectionKeyOptions st tId which postMsg <>
+                             mkExtraOptions postMsg
                 mkOption (k, desc) = withDefAttr messageSelectStatusAttr (txt k) <+>
                                      txt (":" <> desc)
             in hBox [ hLimit 1 hBorder
@@ -140,117 +162,67 @@ messageSelectBottomBar st tId which =
                     , hBorder
                     ]
 
-messageSelectionKeyOptions :: ChatState
-                           -> TeamId
-                           -> Lens' ChatState (MessageInterface Name i)
-                           -> Message
-                           -> [(T.Text, T.Text)]
-messageSelectionKeyOptions st tId which msg =
+messageInterfaceSelectionKeyOptions :: ChatState
+                                    -> TeamId
+                                    -> Lens' ChatState (MessageInterface Name i)
+                                    -> Message
+                                    -> [(T.Text, T.Text)]
+messageInterfaceSelectionKeyOptions st tId which msg =
     let ev = keyEventBindings st (messageSelectKeybindings tId which)
-        hasVerb = isJust (findVerbatimChunk (msg^.mText))
-        hasURLs = numURLs > 0
-        numURLs = Seq.length $ msgURLs msg
-        s = if numURLs == 1 then "" else "s"
-        openUrlsMsg = "open " <> (T.pack $ show numURLs) <> " URL" <> s
-        getUsable (usable, key, label) = if usable then Just (key, label) else Nothing
-        options = [ ( not $ isGap msg
-                  , ev YankWholeMessageEvent
-                  , "yank-all"
-                  )
-                , ( isFlaggable msg && not (msg^.mFlagged)
-                  , ev FlagMessageEvent
-                  , "flag"
-                  )
-                , ( isFlaggable msg && msg^.mFlagged
-                  , ev FlagMessageEvent
-                  , "unflag"
-                  )
-                , ( isReplyable msg
-                  , ev OpenThreadEvent
-                  , "thread"
-                  )
-                , ( isPostMessage msg
-                  , ev CopyPostLinkEvent
-                  , "copy-link"
-                  )
-                , ( isPinnable msg && not (msg^.mPinned)
-                  , ev PinMessageEvent
-                  , "pin"
-                  )
-                , ( isPinnable msg && msg^.mPinned
-                  , ev PinMessageEvent
-                  , "unpin"
-                  )
-                , ( isReplyable msg
-                  , ev ReplyMessageEvent
-                  , "reply"
-                  )
-                , ( not $ isGap msg
-                  , ev ViewMessageEvent
-                  , "view"
-                  )
-                , ( not $ isGap msg
-                  , ev OpenMessageInExternalEditorEvent
-                  , "open"
-                  )
-                , ( isGap msg
-                  , ev FillGapEvent
-                  , "load messages"
-                  )
-                , ( isMine st msg && isEditable msg
-                  , ev EditMessageEvent
-                  , "edit"
-                  )
-                , ( isMine st msg && isDeletable msg
-                  , ev DeleteMessageEvent
-                  , "delete"
-                  )
-                , ( hasURLs
-                  , ev OpenMessageURLEvent
-                  , openUrlsMsg
-                  )
-                , ( hasVerb
-                  , ev YankMessageEvent
-                  , "yank-code"
-                  )
-                , ( isReactable msg
-                  , ev ReactToMessageEvent
-                  , "react"
-                  )
-                ]
+        myId = myUserId st
+        getUsable (eventVal, label, _, isUsable, _) =
+            if isUsable myId msg
+            then Just (ev eventVal, label)
+            else Nothing
+        options = editingContextSensitiveOptions tId which
+    in catMaybes $ getUsable <$> options
+
+messageListingSelectionKeyOptions :: ChatState
+                                  -> TeamId
+                                  -> Lens' ChatState (MessageListing Name)
+                                  -> Message
+                                  -> [(T.Text, T.Text)]
+messageListingSelectionKeyOptions st tId which msg =
+    let ev = keyEventBindings st (messageListingKeybindings tId which)
+        myId = myUserId st
+        getUsable (eventVal, label, _, isUsable, _) =
+            if isUsable myId msg
+            then Just (ev eventVal, label)
+            else Nothing
+        options = contextSensitiveOptions tId which
     in catMaybes $ getUsable <$> options
 
 renderMessageListing :: ChatState
                      -> Bool
-                     -> Bool
-                     -> TeamId
+                     -> Maybe ServerTime
                      -> HighlightSet
-                     -> Lens' ChatState (MessageInterface Name i)
+                     -> Lens' ChatState (MessageListing Name)
+                     -> Bool
                      -> Bool
                      -> Name
+                     -> (Messages -> Messages)
                      -> Widget Name
-renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyIndent region =
-    messages
+renderMessageListing st inMsgSelect editCutoff hs which renderReplyIndent displayChannel region insertTransitions =
+    freezeBorders messages
     where
-    mcId = st^.(csCurrentChannelId tId)
-
     messages = padTop Max chatText
 
-    chatText =
-        case mcId of
-            Nothing -> fill ' '
-            Just cId ->
-                if inMsgSelect
-                then freezeBorders $
-                     renderMessagesWithSelect cId (st^.which.miMessageSelect) (buildMessages cId)
-                else cached region $
-                     freezeBorders $
-                     renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region $
-                     retrogradeMsgsWithThreadStates $
-                     reverseMessages $
-                     buildMessages cId
+    chatText = if inMsgSelect
+               then freezeBorders $
+                    renderMessagesWithSelect (st^.which.mlMessageSelect) messagesWithTransitions
+               else cached region $
+                    freezeBorders $
+                    renderMostRecentMessages st hs editCutoff renderReplyIndent region $
+                    retrogradeMsgsWithThreadStates $
+                    reverseMessages messagesWithTransitions
 
-    renderMessagesWithSelect cId (MessageSelectState selMsgId) msgs =
+    channelNameForMessage m = fromMaybe "unknown channel" $ do
+        cId <- m^.mChannelId
+        channelNameForChannelId st cId
+
+    curUser = myUsername st
+
+    renderMessagesWithSelect (MessageSelectState selMsgId) msgs =
         -- In this case, we want to fill the message list with messages
         -- but use the post ID as a cursor. To do this efficiently we
         -- only want to render enough messages to fill the screen.
@@ -266,48 +238,62 @@ renderMessageListing st inMsgSelect showNewMsgLine tId hs which renderReplyInden
         -- deleted).
         let (s, (before, after)) = splitDirSeqOn (\(m, _) -> m^.mMessageId == selMsgId) msgsWithStates
             msgsWithStates = chronologicalMsgsWithThreadStates msgs
+            messageRenderer msg ts n =
+                let result = renderSingleMessage st hs renderReplyIndent Nothing msg ts n
+                    channelNameLine = hBorderWithLabel $
+                                      renderText' Nothing curUser hs Nothing $
+                                      "[" <> channelNameForMessage msg <> "]"
+                in if displayChannel
+                   then channelNameLine <=> result
+                   else result
         in case s of
              Nothing ->
-                 renderLastMessages st hs (getEditedMessageCutoff cId st) renderReplyIndent region before
+                 renderMostRecentMessages st hs editCutoff renderReplyIndent region before
              Just m ->
                  unsafeRenderMessageSelection (m, (before, after))
-                     (renderSingleMessage st hs renderReplyIndent Nothing) region
+                     messageRenderer region
 
-    buildMessages cId =
+    messagesWithTransitions =
         -- If the message list is empty, add an informative message to
         -- the message listing to make it explicit that this listing is
         -- empty.
-        let cutoff = if showNewMsgLine
-                     then getNewMessageCutoff cId st
-                     else Nothing
-            ms = filterMessageListing st (which.miMessages)
+        let ms = filterMessageListing st (which.mlMessages)
         in if F.null ms
-           then addMessage (emptyChannelFillerMessage st cId) emptyDirSeq
+           then addMessage emptyChannelFillerMessage emptyDirSeq
            else insertTransitions ms
-                                  cutoff
-                                  (getDateFormat st)
-                                  (st ^. timeZone)
 
-insertTransitions :: Messages -> Maybe NewMessageIndicator -> Text -> TimeZoneSeries -> Messages
-insertTransitions ms cutoff = insertDateMarkers $ foldr addMessage ms newMessagesT
-    where anyNondeletedNewMessages t =
-              isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
-          newMessagesT = case cutoff of
-              Nothing -> []
-              Just Hide -> []
-              Just (NewPostsAfterServerTime t)
-                  | anyNondeletedNewMessages t -> [newMessagesMsg $ justAfter t]
-                  | otherwise -> []
-              Just (NewPostsStartingAt t)
-                  | anyNondeletedNewMessages (justBefore t) -> [newMessagesMsg $ justBefore t]
-                  | otherwise -> []
-          newMessagesMsg d = newMessageOfType (T.pack "New Messages")
-                             (C NewMessagesTransition) d
+insertAllTransitions :: Maybe NewMessageIndicator -> DateTimeFormat -> TimeZoneSeries -> Messages -> Messages
+insertAllTransitions cutoff fmt tz =
+    insertDateLines fmt tz .
+    insertNewMessagesLine cutoff
+
+insertNewMessagesLine :: Maybe NewMessageIndicator -> Messages -> Messages
+insertNewMessagesLine Nothing ms = ms
+insertNewMessagesLine (Just val) ms = fromMaybe ms $ do
+    newMsg <- case val of
+        NewPostsAfterServerTime t
+            | anyNondeletedNewMessages t ->
+                return $ newMessagesMsg $ justAfter t
+            | otherwise ->
+                Nothing
+        NewPostsStartingAt t
+            | anyNondeletedNewMessages (justBefore t) ->
+                return $ newMessagesMsg $ justBefore t
+            | otherwise ->
+                Nothing
+        Hide ->
+            Nothing
+    return $ addMessage newMsg ms
+    where
+        anyNondeletedNewMessages t =
+            isJust $ findLatestUserMessage (not . view mDeleted) (messagesAfter t ms)
+        newMessagesMsg d = newMessageOfType (T.pack "New Messages")
+                           (C NewMessagesTransition) d
 
 -- | Construct a single message to be displayed in the specified channel
 -- when it does not yet have any user messages posted to it.
-emptyChannelFillerMessage :: ChatState -> ChannelId -> Message
-emptyChannelFillerMessage st cId =
+emptyChannelFillerMessage :: Message
+emptyChannelFillerMessage =
     newMessageOfType msg (C Informative) ts
     where
         -- This is a bogus timestamp, but its value does not matter
@@ -316,22 +302,7 @@ emptyChannelFillerMessage st cId =
         -- otherwise include this bogus date) or other messages (which
         -- would make for a broken message sorting).
         ts = ServerTime $ UTCTime (toEnum 0) 0
-        chan = fromJust $ findChannelById cId (st^.csChannels)
-        chanName = mkChannelName st (chan^.ccInfo)
-        msg = case chan^.ccInfo.cdType of
-            Direct ->
-                let u = chan^.ccInfo.cdDMUserId >>= flip knownUserById st
-                in case u of
-                    Nothing -> userMsg Nothing
-                    Just _ -> userMsg (Just chanName)
-            Group ->
-                groupMsg (chan^.ccInfo.cdDisplayName)
-            _ ->
-                chanMsg chanName
-        userMsg (Just cn) = "You have not yet sent any direct messages to " <> cn <> "."
-        userMsg Nothing   = "You have not yet sent any direct messages to this user."
-        groupMsg us = "There are not yet any direct messages in the group " <> us <> "."
-        chanMsg cn = "There are not yet any messages in the " <> cn <> " channel."
+        msg = "There are not yet any messages in this channel."
 
 filterMessageListing :: ChatState -> Traversal' ChatState Messages -> Messages
 filterMessageListing st msgsWhich =
@@ -346,22 +317,20 @@ inputArea :: ChatState
           -> HighlightSet
           -> Widget Name
 inputArea st which focused hs =
-    let replyPrompt = "reply> "
-        normalPrompt = "> "
-        editPrompt = "edit> "
+    let replyPrompt = "reply"
+        normalPrompt = ""
+        editPrompt = "edit"
+        addDelimiter = (<> "> ")
         showReplyPrompt = st^.which.esShowReplyPrompt
         maybeHighlight = if focused
                          then withDefAttr focusedEditorPromptAttr
                          else id
         prompt = maybeHighlight $
                  reportExtent (MessageInputPrompt $ getName editor) $
-                 txt $ case st^.which.esEditMode of
-            Replying {} ->
-                if showReplyPrompt then replyPrompt else normalPrompt
-            Editing {}  ->
-                editPrompt
-            NewPost ->
-                normalPrompt
+                 txt $ addDelimiter $ case st^.which.esEditMode of
+                     Replying {} -> if showReplyPrompt then replyPrompt else normalPrompt
+                     Editing {}  -> editPrompt
+                     NewPost     -> normalPrompt
         editor = st^.which.esEditor
         inputBox = renderEditor (drawEditorContents st which hs) True editor
         curContents = getEditContents editor

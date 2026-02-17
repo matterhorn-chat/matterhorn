@@ -1,20 +1,25 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Matterhorn.Types.MessageInterface
   ( MessageInterface(..)
-  , miMessages
   , miEditor
   , miMode
-  , miMessageSelect
   , miRootPostId
   , miChannelId
   , miTarget
-  , miUrlListSource
+  , miListing
   , miUrlList
   , miSaveAttachmentDialog
+
+  , MessageListing(..)
+  , mlUrlListSource
+  , mlMessageSelect
+  , mlMessages
+  , mlMode
 
   , messageInterfaceCursor
 
   , MessageInterfaceMode(..)
+  , MessageListingMode(..)
   , MessageInterfaceTarget(..)
   , URLListSource(..)
 
@@ -45,16 +50,28 @@ import           Matterhorn.Types.EditState
 import           Matterhorn.Types.Messages
 
 
+-- | A UI region in which a specific message listing is viewed, in which
+-- the user can select from the listed messages and take actions on
+-- them.
+data MessageListing n =
+    MessageListing { _mlMessages :: !Messages
+                   -- ^ The messages.
+                   , _mlMessageSelect :: !MessageSelectState
+                   -- ^ Message selection state for the listing.
+                   , _mlMode :: !MessageListingMode
+                   -- ^ The mode of the listing.
+                   , _mlUrlListSource :: !URLListSource
+                   -- ^ How to characterize the URLs found in messages
+                   -- in this listing
+                   }
+
 -- | A UI region in which a specific message listing is viewed, where
--- the user can send messages in that channel or thread.
+-- the user can send messages in that channel or thread and edit,
+-- delete, or otherwise modify messages.
 data MessageInterface n i =
-    MessageInterface { _miMessages :: !Messages
-                     -- ^ The messages.
-                     , _miEditor :: !(EditState n)
+    MessageInterface { _miEditor :: !(EditState n)
                      -- ^ The editor and associated state for composing
                      -- messages in this channel or thread.
-                     , _miMessageSelect :: !MessageSelectState
-                     -- ^ Message selection state for the interface.
                      , _miRootPostId :: !i
                      -- ^ The root post ID if these messages belong to a
                      -- thread.
@@ -64,9 +81,8 @@ data MessageInterface n i =
                      -- ^ The mode of the interface.
                      , _miTarget :: !MessageInterfaceTarget
                      -- ^ The target value for this message interface
-                     , _miUrlListSource :: !URLListSource
-                     -- ^ How to characterize the URLs found in messages
-                     -- in this interface
+                     , _miListing :: MessageListing n
+                     -- ^ The message listing in this interface
                      , _miUrlList :: !(URLList n)
                      -- ^ The URL listing for this interface
                      , _miSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
@@ -76,32 +92,40 @@ data MessageInterface n i =
 
 messageInterfaceCursor :: MessageInterface n i -> Maybe n
 messageInterfaceCursor mi =
-    case _miMode mi of
-        Compose           -> Just $ getName $ _esEditor $ _miEditor mi
-        SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
-        BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
-        ManageAttachments -> Nothing
-        MessageSelect     -> Nothing
-        ShowUrlList       -> Nothing
+    case _mlMode (_miListing mi) of
+        MessageSelect -> Nothing
+        ShowingTail ->
+            case _miMode mi of
+                Compose           -> Just $ getName $ _esEditor $ _miEditor mi
+                BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
+                SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
+                ManageAttachments -> Nothing
+                ShowUrlList       -> Nothing
+
+data MessageListingMode =
+    MessageSelect
+    -- ^ Selecting from messages in the listing
+    | ShowingTail
+    -- ^ Showing the most recent messages of the listing
+    deriving (Eq, Show)
 
 data MessageInterfaceMode =
     Compose
     -- ^ Composing messages and interacting with the editor
-    | MessageSelect
-    -- ^ Selecting from messages in the listing
-    | ShowUrlList
-    -- ^ Show the URL listing
-    | SaveAttachment !LinkChoice
-    -- ^ Show the attachment save UI
     | ManageAttachments
     -- ^ Managing the attachment list
     | BrowseFiles
     -- ^ Browsing the filesystem for attachment files
+    | ShowUrlList
+    -- ^ Show the URL listing
+    | SaveAttachment !LinkChoice
+    -- ^ Show the attachment save UI
     deriving (Eq, Show)
 
 data URLListSource =
     FromChannel !ChannelId
     | FromThreadIn !ChannelId
+    | FromPostList
     deriving (Show, Eq)
 
 data MessageInterfaceTarget =
@@ -123,5 +147,6 @@ data SaveAttachmentDialogState n =
                               }
 
 makeLenses ''MessageInterface
+makeLenses ''MessageListing
 makeLenses ''URLList
 makeLenses ''SaveAttachmentDialogState
