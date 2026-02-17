@@ -43,7 +43,6 @@
 | `M-8` | `show-flagged-posts` | View currently flagged posts |
 | `C-M-o` | `enter-topic-url-open` | Select and open a URL from the current channel's topic |
 | `S-Home` | `select-oldest-message` | Scroll to top of message list |
-| `C-o` | `enter-url-open` | Select and open a URL from the current message list |
 
 # Message Editing
 | Keybinding | Event Name | Description |
@@ -60,6 +59,7 @@
 | `Up` | `scroll-up` | Scroll up in the channel input history |
 | `Down` | `scroll-down` | Scroll down in the channel input history |
 | `C-r` | `reply-recent` | Reply to the most recent message |
+| `C-o` | `enter-url-open` | Select and open a URL from the current message list |
 
 # Text Editing
 | Keybinding | Event Name | Description |
@@ -218,7 +218,6 @@
 | ---------- | ---------- | ----------- |
 | `Enter` | `activate-list-item` | Jump to and select current message |
 | `S-Home` | `select-oldest-message` | Scroll to top of message list |
-| `C-o` | `enter-url-open` | Select and open a URL from the current message list |
 | `k`, `Up` | `select-up` | Select the previous message |
 | `Esc`, `C-c` | `cancel` | Cancel message selection |
 | `j`, `Down` | `select-down` | Select the next message |
