@@ -336,6 +336,7 @@ module Matterhorn.Types
   , channelIdByChannelName
   , channelIdByUsername
   , channelNameForChannelId
+  , addUserSigils
   , mkChannelName
   , knownUserById
   , allUserIds
@@ -1694,7 +1695,12 @@ channelNameForChannelId st cId = do
         Direct
             | Just u <- flip knownUserById st =<< chan^.ccInfo.cdDMUserId ->
                  return $ addUserSigil $ u^.uiName
+        Group ->
+            return $ addUserSigils (chan^.ccInfo.cdDisplayName)
         _ -> return $ mkChannelName st $ chan^.ccInfo
+
+addUserSigils :: Text -> Text
+addUserSigils s = T.unwords $ (userSigil <>) <$> T.words s
 
 mkChannelName :: ChatState -> ChannelInfo -> Text
 mkChannelName st c = T.append sigil t
