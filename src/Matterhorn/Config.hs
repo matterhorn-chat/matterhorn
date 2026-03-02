@@ -27,6 +27,7 @@ import qualified Data.Text.IO as T
 import qualified Graphics.Vty as Vty
 import           System.Directory ( makeAbsolute, getHomeDirectory )
 import           System.Environment ( getExecutablePath )
+import           System.Exit ( exitFailure )
 import           System.FilePath ( (</>), takeDirectory, splitPath, joinPath )
 import           System.Process ( readProcess )
 import           Network.Mattermost.Types (ConnectionType(..))
@@ -566,8 +567,14 @@ loadConfig fp = do
         Left err -> do
             throwE $ "Unable to parse " ++ absPath ++ ":" ++ fatalString err
         Right (warns, confNoKeys) -> do
-            let mKeys = either (const Nothing) id $ keybindingsFromIni allEvents keybindingsSectionName t'
-                kc = newKeyConfig allEvents defaultBindings (fromMaybe mempty mKeys)
+            loadedKeys <- case keybindingsFromIni allEvents keybindingsSectionName t' of
+                Left e -> liftIO $ do
+                    putStrLn $ "Error parsing custom keybindings in " <> fp <> ": " <> e
+                    exitFailure
+                Right result ->
+                    return result
+
+            let kc = newKeyConfig allEvents defaultBindings (fromMaybe mempty loadedKeys)
                 conf = confNoKeys { configUserKeys = kc }
 
             actualPass <- case configPass conf of
