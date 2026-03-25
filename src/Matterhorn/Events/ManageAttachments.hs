@@ -77,9 +77,9 @@ attachmentBrowseKeyHandlers which =
       mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserSelectEnter
       withFileBrowser which (tryAddAttachment which . FB.fileBrowserSelection)
-    , onEvent FileBrowserSelectCurrentEvent "Select file" $
+    , onEvent FileBrowserSelectCurrentEvent "Toggle selection of current file" $
       mhZoom' (which.miEditor.unsafeEsFileBrowser)
-        FB.actionFileBrowserSelectCurrent
+        FB.actionFileBrowserToggleCurrent
     , onEvent FileBrowserListPageUpEvent "Move cursor one page up" $
       mhZoom' (which.miEditor.unsafeEsFileBrowser)
         FB.actionFileBrowserListPageUp

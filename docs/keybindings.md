@@ -203,7 +203,7 @@
 | `o` | `open-attachment` | Open the selected file using the URL open command |
 | `/` | `filebrowser-begin-search` | Begin search for name in list |
 | `Enter` | `filebrowser-select-file-or-enter-directory` | Select file or enter directory |
-| `Space` | `filebrowser-select-current` | Select file |
+| `Space` | `filebrowser-select-current` | Toggle selection of current file |
 | `C-b`, `PgUp` | `filebrowser-list-page-up` | Move cursor one page up |
 | `C-f`, `PgDown` | `filebrowser-list-page-down` | Move cursor one page down |
 | `C-u` | `filebrowser-list-half-page-up` | Move cursor one-half page up |
