@@ -186,7 +186,7 @@ library
                      , config-ini           >= 0.2.2.0 && < 0.3
                      , process              >= 1.4     && < 1.7
                      , microlens-platform   >= 0.3     && < 0.5
-                     , brick                >= 2.8.3   && < 2.9
+                     , brick                >= 2.11    && < 2.12
                      , brick-skylighting    >= 1.0     && < 1.1
                      , vty                  >= 6.4     && < 6.6
                      , vty-crossplatform    >= 0.2.0.0 && < 0.6.0.0
