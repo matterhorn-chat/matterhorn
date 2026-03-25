@@ -51,9 +51,15 @@ showAttachmentFileBrowser :: Lens' ChatState (MessageInterface Name i) -> MH ()
 showAttachmentFileBrowser which = do
     cId <- use (which.miEditor.esChannelId)
     config <- use (csResources.crConfiguration)
-    filePath <- liftIO $ defaultAttachmentsPath config
-    browser <- liftIO $ Just <$> FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser cId) filePath
-    which.miEditor.esFileBrowser .= browser
+    defaultPath <- liftIO $ defaultAttachmentsPath config
+    prevBrowser <- use (which.miEditor.esFileBrowser)
+
+    let initialPath = (FB.getWorkingDirectory <$> prevBrowser) <|> defaultPath
+
+    browser <- liftIO $
+        FB.newFileBrowser FB.selectNonDirectories (AttachmentFileBrowser cId) initialPath
+
+    which.miEditor.esFileBrowser .= Just browser
     which.miMode .= BrowseFiles
 
 getHomeDir :: IO (Maybe String)
