@@ -18,6 +18,7 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Widgets.Edit ( applyEdit )
+import           Control.Exception ( SomeException, try )
 import qualified Data.Text as T
 import           Data.Text.Zipper ( clearZipper, insertMany )
 import           Data.Maybe ( fromJust )
@@ -90,7 +91,15 @@ openMessageInEditor m which = do
                 Sys.withSystemTempFile "matterhorn_editor.md" $ \tmpFileName tmpFileHandle -> do
                     hPutStr tmpFileHandle $ T.unpack $ unsafeUserText $ postMessage p
                     hClose tmpFileHandle
-                    void $ Sys.system (editorProgram <> " " <> tmpFileName)
+                    let opener = (Sys.proc editorProgram [tmpFileName]) { Sys.std_in  = Sys.Inherit
+                                                                        , Sys.std_out = Sys.Inherit
+                                                                        , Sys.std_err = Sys.Inherit
+                                                                        }
+                    result <- try $ Sys.createProcess opener
+                    case result of
+                        Left (_::SomeException) -> return ()
+                        Right (_, _, _, ph) -> void $ Sys.waitForProcess ph
+
                     return s
 
     exitMessageSelect (which.miListing)
