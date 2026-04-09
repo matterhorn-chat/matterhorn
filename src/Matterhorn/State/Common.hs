@@ -43,12 +43,13 @@ import           Control.Exception ( SomeException, try )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
+import           Data.List ( isPrefixOf )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( (.=), (%=), (%~), (.~) )
-import           System.Directory ( createDirectoryIfMissing )
+import           System.Directory ( createDirectoryIfMissing, canonicalizePath )
 import           System.Environment.XDG.BaseDir ( getUserCacheDir )
 import           System.Exit ( ExitCode(..) )
 import           System.FilePath
@@ -320,7 +321,7 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
 
 -- | Given a file ID and server session, fetch the file into a temporary
 -- location and return its path. The caller is responsible for deleting
--- the file.
+-- the file. Raises IOExceptions on failure.
 fetchFile :: FileId -> Session -> IO String
 fetchFile fId sess = do
     -- The link is for an attachment, so fetch it and then
@@ -328,8 +329,20 @@ fetchFile fId sess = do
     info <- mmGetMetadataForFile fId sess
     cacheDir <- getUserCacheDir xdgName
     let dir = cacheDir </> "files" </> T.unpack (idString fId)
-        filename = T.unpack (fileInfoName info)
-        fullPath = dir </> filename
+        -- The server-provided filename must be sanitized of path
+        -- components
+        unsafeFilename = T.unpack (fileInfoName info)
+        safeFilename = takeFileName unsafeFilename
+
+    -- If the sanitized filename is nonsense, bail.
+    when (safeFilename `elem` ["", ".", ".."]) $
+        fail $ "Server-provided filename invalid: " <> show unsafeFilename
+
+    let fullPath = dir </> safeFilename
+
+    canonicalPath <- canonicalizePath fullPath
+    when (not $ dir `isPrefixOf` canonicalPath) $
+        fail $ "Attachment filename cannot be saved due to symlink clash: " <> show unsafeFilename
 
     fetchFileAtPath fId sess fullPath
     return fullPath
