@@ -27,6 +27,7 @@ import           Brick.Main ( invalidateCache )
 import           Brick.Widgets.Edit ( Editor, applyEdit , handleEditorEvent
                                     , getEditContents, editContentsL )
 import qualified Brick.Widgets.List as L
+import           Control.Exception ( SomeException, try )
 import qualified Codec.Binary.UTF8.Generic as UTF8
 import           Control.Arrow
 import qualified Control.Concurrent.STM as STM
@@ -99,7 +100,15 @@ invokeExternalEditor which = do
         Sys.hClose tmpFileHandle
 
         -- Run the editor
-        status <- Sys.system (editorProgram <> " " <> tmpFileName)
+        status <- do
+            let opener = (Sys.proc editorProgram [tmpFileName]) { Sys.std_in  = Sys.Inherit
+                                                                , Sys.std_out = Sys.Inherit
+                                                                , Sys.std_err = Sys.Inherit
+                                                                }
+            result <- try $ Sys.createProcess opener
+            case result of
+                Left (_::SomeException) -> return $ Sys.ExitFailure 1
+                Right (_, _, _, ph) -> Sys.waitForProcess ph
 
         -- On editor exit, if exited with zero status, read temp file.
         -- If non-zero status, skip temp file read.
