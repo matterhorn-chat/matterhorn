@@ -6,10 +6,11 @@ mentioned="${1?}"
 sender="${2?}"
 message="${3?}"
 
-# Escape backslashes
+# Sanitize message text and sender: escape backslashes and quote double
+# quotes
 message="${message//\\/\\\\}"
-
-# quote double quotes in the message text
 message="${message//\"/\\\"}"
+sender="${sender//\\/\\\\}"
+sender="${sender//\"/\\\"}"
 
 osascript -e "display notification \"$message\" with title \"Mattermost message from $sender\""
