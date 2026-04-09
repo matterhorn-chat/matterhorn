@@ -240,8 +240,8 @@ getAttachmentText p =
     Nothing -> mempty
     Just attachments ->
       Blocks $ fmap (Blockquote . render) attachments
-  where render att = parseMarkdown Nothing (att^.ppaTextL) <>
-                     parseMarkdown Nothing (att^.ppaFallbackL) <>
+  where render att = parseMarkdown Nothing (sanitizeUserText' $ att^.ppaTextL) <>
+                     parseMarkdown Nothing (sanitizeUserText' $ att^.ppaFallbackL) <>
                      renderAttFields (att^.ppaFieldsL)
 
 -- | Render a bulleted list with any text fields that the post may have
