@@ -259,7 +259,7 @@ renderAttFieldItem f = singleB $ Para $ renderAttFieldItemContent f
 renderAttFieldItemContent :: PostPropAttachmentField -> Inlines
 renderAttFieldItemContent f = Inlines $ Seq.fromList $
                               renderAttFieldItemName f <>
-                              [EText $ ppafValue f]
+                              [EText $ sanitizeUserText' $ ppafValue f]
 
 -- | The field name can sometimes be empty
 renderAttFieldItemName :: PostPropAttachmentField -> [Inline]
