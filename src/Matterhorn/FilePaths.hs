@@ -42,7 +42,7 @@ import System.Environment.XDG.BaseDir ( getUserConfigFile
                                       , getUserConfigDir
                                       , getAllDataDirs
                                       )
-import System.FilePath ( (</>), takeBaseName, takeDirectory, splitPath, joinPath )
+import System.FilePath ( (</>), takeFileName, takeBaseName, takeDirectory, splitPath, joinPath )
 
 
 xdgName :: String
@@ -52,7 +52,9 @@ historyFileName :: FilePath
 historyFileName = "history.txt"
 
 lastRunStateFileName :: Text -> FilePath
-lastRunStateFileName teamId = "last_run_state_" ++ unpack teamId ++ ".json"
+lastRunStateFileName teamId =
+    let fn = takeFileName $ unpack teamId
+    in "last_run_state_" ++ fn ++ ".json"
 
 configFileName :: FilePath
 configFileName = "config.ini"
