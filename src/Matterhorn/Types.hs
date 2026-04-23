@@ -2141,6 +2141,14 @@ data ClientCommand =
                             -- as help text.
                             , clientCommandArgSpec :: !(CommandArgs a)
                             -- ^ The command's argument specification.
+                            , clientShouldResetEditorMode :: Bool
+                            -- ^ Whether the editor's mode should be
+                            -- reset after processing this command. In
+                            -- almost all cases, this should be True;
+                            -- the only time it should be False is when
+                            -- a client command does something to the
+                            -- editor state being used to compose a new
+                            -- message, such as add an attachment.
                             , clientCommandAction :: a -> MH ()
                             -- ^ The command's implementation.
                             }

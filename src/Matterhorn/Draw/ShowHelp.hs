@@ -93,7 +93,7 @@ commandHelpInfo :: [(T.Text, T.Text)]
 commandHelpInfo = pairs
     where
         pairs = [ (info, desc)
-                | ClientCommand cmd desc args _ <- cs
+                | ClientCommand cmd desc args _ _ <- cs
                 , let argSpec = printArgSpec args
                       spc = if T.null argSpec then "" else " "
                       info = T.cons '/' cmd <> spc <> argSpec

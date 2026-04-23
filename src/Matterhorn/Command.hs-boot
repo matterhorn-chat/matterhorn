@@ -13,4 +13,4 @@ import Matterhorn.Types ( MH, ClientCommand, CommandArgs )
 
 commandList :: [ClientCommand]
 printArgSpec :: CommandArgs a -> Text
-dispatchCommand :: TeamId -> Text -> MH ()
+dispatchCommand :: TeamId -> Text -> MH Bool

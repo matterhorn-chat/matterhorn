@@ -226,7 +226,7 @@ handleInputSubmission editWhich content = do
 
     csInputHistory %= addHistoryEntry content cId
 
-    case T.uncons content of
+    shouldResetEditMode <- case T.uncons content of
       Just ('/', cmd) -> do
           tId <- do
               mTid <- use (editWhich.esTeamId)
@@ -243,13 +243,19 @@ handleInputSubmission editWhich content = do
           -- file before actually sending the message
           resetAttachmentList editWhich
 
+          return True
+
     -- Reset the autocomplete UI
     resetAutocomplete editWhich
 
     -- Reset the edit mode *after* handling the input so that the input
-    -- handler can tell whether we're editing, replying, etc.
-    resetEditMode <- use (editWhich.esResetEditMode)
-    editWhich.esEditMode .= resetEditMode
+    -- handler can tell whether we're editing, replying, etc. Note
+    -- that we might not reset the edit mode for some commands if they
+    -- manipulate a message during composition, which is why we check
+    -- shouldResetEditMode first.
+    when shouldResetEditMode $ do
+        resetEditMode <- use (editWhich.esResetEditMode)
+        editWhich.esEditMode .= resetEditMode
 
 closingPunctuationMarks :: String
 closingPunctuationMarks = ".,'\";:)]!?"
