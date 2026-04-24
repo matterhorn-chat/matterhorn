@@ -28,7 +28,6 @@ import           Matterhorn.Prelude
 import           Brick ( invalidateCache )
 import           Control.Monad ( replicateM_ )
 import           Data.Maybe ( fromJust )
-import qualified Data.Text as T
 import           Lens.Micro.Platform
 
 import           Network.Mattermost.Types
