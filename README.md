@@ -56,7 +56,6 @@ We provide a number of avenues for getting support:
 * Built-in help (`/help`)
 * [Command list](docs/commands.md)
 * [Keybinding list](docs/keybindings.md)
-* Chat with the developers on [the Mattermost Community server](https://community.mattermost.com/core/channels/matterhorn)
 * File tickets on this repository
 
 # Features
