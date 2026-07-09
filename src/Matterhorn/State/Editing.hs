@@ -270,9 +270,9 @@ handleEditingInput :: Lens' ChatState (EditState Name)
 handleEditingInput which e = do
     cId <- use (which.esChannelId)
 
-    -- Only handle input events to the editor if we permit editing:
-    -- if multiline mode is off, or if there is only one line of text
-    -- in the editor. This means we skip input this catch-all handler
+    -- Only handle input events to the editor if we permit editing: if
+    -- multiline mode is off, or if there is only one line of text in
+    -- the editor. This means we skip input in this catch-all handler
     -- if we're *not* in multiline mode *and* there are multiple lines,
     -- i.e., we are showing the user the status message about the
     -- current editor state and editing is not permitted.
