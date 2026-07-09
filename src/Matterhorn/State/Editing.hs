@@ -374,10 +374,7 @@ handleEditingInput which e = do
     checkForAutocompletion target ctx
 
     -- Reset the spell check timer for this editor
-    mReset <- use (which.esSpellCheckTimerReset)
-    case mReset of
-        Nothing -> return ()
-        Just reset -> liftIO reset
+    resetSpellCheckTimer which
 
     -- If the preview is enabled and multi-line editing is enabled and
     -- the line count changed, we need to invalidate the rendering cache
@@ -393,6 +390,13 @@ handleEditingInput which e = do
     -- handling.
     when justCompleted $
         which.esJustCompleted .= False
+
+resetSpellCheckTimer :: Lens' ChatState (EditState Name) -> MH ()
+resetSpellCheckTimer which = do
+    mReset <- use (which.esSpellCheckTimerReset)
+    case mReset of
+        Nothing -> return ()
+        Just reset -> liftIO reset
 
 -- | Send the user_typing action to the server asynchronously, over the
 -- connected websocket. If the websocket is not connected, drop the
