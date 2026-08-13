@@ -10,6 +10,7 @@ import           Matterhorn.Prelude
 
 import           Brick
 import           Brick.Widgets.Border
+import qualified Data.Foldable as F
 import           Data.List ( intersperse )
 import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
@@ -18,6 +19,7 @@ import           Lens.Micro.Platform ( Lens' )
 
 import           Network.Mattermost.Types ( Type(Direct, Private, Group)
                                           , TeamId, teamDisplayName, teamId
+                                          , bookmarkDisplayName
                                           )
 
 
@@ -160,12 +162,19 @@ teamList st =
                  ]
 
 renderChannelBookmarks :: ChatState -> ClientChannel -> Widget Name
-renderChannelBookmarks st chan =
-    if Seq.null (chan^.ccInfo.cdBookmarks)
+renderChannelBookmarks _st chan =
+    if Seq.null bs
        then emptyWidget
        else hBorder <=> bookmarkList
     where
-      bookmarkList = str "Bookmarks here!"
+      bs = chan^.ccInfo.cdBookmarks
+      bookmarkList =
+          hBox $
+          padRight (Pad 1) <$>
+          renderBookmark <$>
+          F.toList bs
+      renderBookmark b =
+          txt $ "[" <> (sanitizeUserText $ bookmarkDisplayName b) <> "]"
 
 renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
 renderChannelHeader st tId hs chan =
