@@ -47,6 +47,7 @@ import           Network.Mattermost.Types ( TeamId, Team, Channel, User, userId
                                           , channelMemberMsgCount
                                           , channelTotalMsgCount
                                           , UserParam(UserById)
+                                          , Bookmark
                                           )
 import qualified Network.Mattermost.Endpoints as MM
 
@@ -220,7 +221,8 @@ buildTeamState cr me team = do
     -- last channel, we don't have to consider other cases here:
     chanPairs <- forM (toList chans) $ \c -> do
         m <- MM.mmGetChannelMember (getId c) (UserById $ userId me) session
-        cChannel <- makeClientChannel eventQueue (cr^.crSpellChecker) (userId me) (Just tId) c m
+        bs <- MM.mmGetChannelBookmarks (getId c) session
+        cChannel <- makeClientChannel eventQueue (cr^.crSpellChecker) (userId me) (Just tId) bs c m
         return (getId c, cChannel)
 
     now <- getCurrentTime
@@ -446,18 +448,19 @@ makeClientChannel :: (MonadIO m)
                   -> Maybe Aspell
                   -> UserId
                   -> Maybe TeamId
+                  -> Seq Bookmark
                   -> Channel
                   -> ChannelMember
                   -> m ClientChannel
-makeClientChannel eventQueue spellChecker myId tId nc member = do
+makeClientChannel eventQueue spellChecker myId tId bs nc member = do
     msgs <- emptyChannelMessages
     mi <- liftIO $ newChannelMessageInterface spellChecker eventQueue tId (getId nc) msgs
-    return ClientChannel { _ccInfo = initialChannelInfo myId nc member
+    return ClientChannel { _ccInfo = initialChannelInfo myId bs nc member
                          , _ccMessageInterface = mi
                          }
 
-initialChannelInfo :: UserId -> Channel -> ChannelMember -> ChannelInfo
-initialChannelInfo myId chan member =
+initialChannelInfo :: UserId -> Seq Bookmark -> Channel -> ChannelMember -> ChannelInfo
+initialChannelInfo myId bs chan member =
     let updated  = chan ^. channelLastPostAtL
     in ChannelInfo { _cdChannelId              = chan^.channelIdL
                    , _cdTeamId                 = chan^.channelTeamIdL
@@ -480,4 +483,5 @@ initialChannelInfo myId chan member =
                    , _cdFetchPending           = False
                    , _cdTotalMessageCount      = channelTotalMsgCount chan
                    , _cdViewedMessageCount     = channelMemberMsgCount member
+                   , _cdBookmarks              = bs
                    }

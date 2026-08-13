@@ -12,6 +12,7 @@ import           Brick
 import           Brick.Widgets.Border
 import           Data.List ( intersperse )
 import           Data.Maybe ( fromJust )
+import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( Lens' )
 
@@ -90,6 +91,9 @@ mainInterface st mode mtId =
         tId <- mtId
         let hs = getHighlightSet st tId
 
+            bookmarks chan =
+                renderChannelBookmarks st chan
+
             channelHeader chan =
                 withDefAttr channelHeaderAttr $
                 padRight Max $
@@ -111,7 +115,7 @@ mainInterface st mode mtId =
         cId <- st^.csCurrentChannelId(tId)
         ch <- st^?csChannel(cId)
 
-        let channelUI = channelHeader ch <=> hBorder <=> channelMessageIface cId
+        let channelUI = channelHeader ch <=> bookmarks ch <=> hBorder <=> channelMessageIface cId
 
         return $ fromMaybe channelUI $ do
             tui <- maybeThreadIface
@@ -154,6 +158,14 @@ teamList st =
                         ]
                  , hBorder
                  ]
+
+renderChannelBookmarks :: ChatState -> ClientChannel -> Widget Name
+renderChannelBookmarks st chan =
+    if Seq.null (chan^.ccInfo.cdBookmarks)
+       then emptyWidget
+       else hBorder <=> bookmarkList
+    where
+      bookmarkList = str "Bookmarks here!"
 
 renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
 renderChannelHeader st tId hs chan =

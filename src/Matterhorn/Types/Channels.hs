@@ -19,7 +19,7 @@ module Matterhorn.Types.Channels
   , cdName, cdDisplayName, cdHeader, cdPurpose, cdType
   , cdMentionCount, cdDMUserId, cdChannelId
   , cdSidebarShowOverride, cdNotifyProps, cdTeamId, cdFetchPending
-  , cdTotalMessageCount, cdViewedMessageCount
+  , cdTotalMessageCount, cdViewedMessageCount, cdBookmarks
   -- * Managing ClientChannel collections
   , noChannels, addChannel, removeChannel, findChannelById, modifyChannelById
   , channelByIdL, maybeChannelByIdL
@@ -76,6 +76,7 @@ import           Network.Mattermost.Types ( Channel(..), UserId, ChannelId
                                           , WithDefault(..)
                                           , ServerTime
                                           , TeamId
+                                          , Bookmark
                                           , channelTotalMsgCount
                                           )
 
@@ -200,6 +201,8 @@ data ChannelInfo = ChannelInfo
     -- ^ Total message count
   , _cdViewedMessageCount :: !Int
     -- ^ Viewed message count, for tracking unread status
+  , _cdBookmarks :: !(Seq Bookmark)
+    -- ^ Channel bookmarks
   }
 
 -- ** Channel-related Lenses

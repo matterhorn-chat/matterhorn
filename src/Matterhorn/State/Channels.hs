@@ -335,9 +335,11 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
             spellChecker <- use (csResources.crSpellChecker)
             un <- gets myUsername
 
-            -- Create a new ClientChannel structure
+            -- Create a new ClientChannel structure. Note that we use
+            -- an initially empty bookmark list because that will be
+            -- fetched separately.
             cChannel <- (ccInfo %~ channelInfoFromChannelWithData un nc member) <$>
-                       makeClientChannel eventQueue spellChecker (me^.userIdL) (channelTeamId nc) nc member
+                       makeClientChannel eventQueue spellChecker (me^.userIdL) (channelTeamId nc) mempty nc member
 
             st <- use id
 
@@ -395,6 +397,10 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                         Nothing -> use csCurrentTeamId
                         Just i -> return $ Just i
 
+                    -- Schedule a fetch of the bookmarks for this
+                    -- channel.
+                    updateChannelBookmarks (getId nc)
+
                     -- Finally, set our focus to the newly created
                     -- channel if the caller requested a change of
                     -- channel. Also consider the last join request
@@ -413,6 +419,14 @@ handleNewChannel_ permitPostpone switch sbUpdate nc member = do
                                 case pending1 of
                                     Just (Just act) -> act
                                     _ -> return ()
+
+updateChannelBookmarks :: ChannelId -> MH ()
+updateChannelBookmarks cId = do
+    session <- getSession
+    doAsyncWith Normal $ do
+        bs <- MM.mmGetChannelBookmarks cId session
+        return $ Just $ Work "updateChannelBookmarks" $
+            csChannel(cId).ccInfo.cdBookmarks .= bs
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to.  Note that this condition is only cleared by the
@@ -511,6 +525,8 @@ setFocusWith tId updatePrev f onChange onNoChange = do
 postChangeChannelCommon :: TeamId -> MH ()
 postChangeChannelCommon tId = do
     fetchVisibleIfNeeded tId
+    withCurrentChannel tId $ \cId _ ->
+        updateChannelBookmarks cId
 
 loadLastChannelInput :: Lens' ChatState (MessageInterface n i) -> MH ()
 loadLastChannelInput which = do
@@ -935,7 +951,8 @@ handleChannelInvite cId = do
                   pending <- case mtId of
                       Nothing -> return Nothing
                       Just tId -> checkPendingChannelChange tId cId
-                  handleNewChannel (isJust pending) SidebarUpdateImmediate cwd member)
+                  handleNewChannel (isJust pending) SidebarUpdateImmediate cwd member
+                  )
 
 addUserByNameToCurrentChannel :: TeamId -> Text -> MH ()
 addUserByNameToCurrentChannel tId uname =
