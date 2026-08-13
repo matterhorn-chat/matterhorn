@@ -240,14 +240,13 @@ handleWebsocketEvent we = do
             | otherwise -> return ()
 
         WMChannelBookmarkUpdated
-            | Just (One b) <- wepBookmarks (weData we) ->
-                updateChannelBookmark b
+            | Just cId <- webChannelId (weBroadcast we) ->
+                updateChannelBookmarks cId
             | otherwise -> return ()
 
         WMChannelBookmarkSorted
-            | Just (Many bs) <- wepBookmarks (weData we)
-            , Just cId <- webChannelId (weBroadcast we) ->
-                setChannelBookmarks cId bs
+            | Just cId <- webChannelId (weBroadcast we) ->
+                updateChannelBookmarks cId
             | otherwise -> return ()
 
         -- We deliberately ignore these events:

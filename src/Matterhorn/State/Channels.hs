@@ -19,6 +19,7 @@ module Matterhorn.State.Channels
   , removeChannelBookmark
   , updateChannelBookmark
   , setChannelBookmarks
+  , updateChannelBookmarks
   , prevChannel
   , nextChannel
   , recentChannel
