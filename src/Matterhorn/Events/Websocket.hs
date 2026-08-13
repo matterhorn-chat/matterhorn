@@ -229,17 +229,26 @@ handleWebsocketEvent we = do
                         refreshChannelById cId
             | otherwise -> return ()
 
-        WMChannelBookmarkCreated ->
-            return ()
+        WMChannelBookmarkCreated
+            | Just b <- wepBookmark (weData we) ->
+                addChannelBookmark b
+            | otherwise -> return ()
 
-        WMChannelBookmarkDeleted ->
-            return ()
+        WMChannelBookmarkDeleted
+            | Just b <- wepBookmark (weData we) ->
+                removeChannelBookmark b
+            | otherwise -> return ()
 
-        WMChannelBookmarkUpdated ->
-            return ()
+        WMChannelBookmarkUpdated
+            | Just (One b) <- wepBookmarks (weData we) ->
+                updateChannelBookmark b
+            | otherwise -> return ()
 
-        WMChannelBookmarkSorted ->
-            return ()
+        WMChannelBookmarkSorted
+            | Just (Many bs) <- wepBookmarks (weData we)
+            , Just cId <- webChannelId (weBroadcast we) ->
+                setChannelBookmarks cId bs
+            | otherwise -> return ()
 
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()

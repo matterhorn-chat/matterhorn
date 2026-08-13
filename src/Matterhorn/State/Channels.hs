@@ -15,6 +15,10 @@ module Matterhorn.State.Channels
   , nextUnreadChannel
   , nextUnreadUserOrChannel
   , createOrFocusDMChannel
+  , addChannelBookmark
+  , removeChannelBookmark
+  , updateChannelBookmark
+  , setChannelBookmarks
   , prevChannel
   , nextChannel
   , recentChannel
@@ -426,7 +430,30 @@ updateChannelBookmarks cId = do
     doAsyncWith Normal $ do
         bs <- MM.mmGetChannelBookmarks cId session
         return $ Just $ Work "updateChannelBookmarks" $
-            csChannel(cId).ccInfo.cdBookmarks .= bs
+            setChannelBookmarks cId bs
+
+addChannelBookmark :: Bookmark -> MH ()
+addChannelBookmark b = do
+    let cId = bookmarkChannelId b
+    csChannel(cId).ccInfo.cdBookmarks %= (Seq.|> b)
+
+removeChannelBookmark :: Bookmark -> MH ()
+removeChannelBookmark b = do
+    let cId = bookmarkChannelId b
+    csChannel(cId).ccInfo.cdBookmarks %= (Seq.filter ((/= (bookmarkId b)) . bookmarkId))
+
+updateChannelBookmark :: Bookmark -> MH ()
+updateChannelBookmark b = do
+    let cId = bookmarkChannelId b
+        findAndUpdate old =
+            if bookmarkId b == bookmarkId old
+            then b
+            else old
+    csChannel(cId).ccInfo.cdBookmarks %= fmap findAndUpdate
+
+setChannelBookmarks :: ChannelId -> Seq Bookmark -> MH ()
+setChannelBookmarks cId bs =
+    csChannel(cId).ccInfo.cdBookmarks .= bs
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to.  Note that this condition is only cleared by the
