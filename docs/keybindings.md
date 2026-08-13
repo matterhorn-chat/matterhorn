@@ -42,6 +42,7 @@
 | `M-l` | `clear-unread` | Clear the current channel's unread / edited indicators |
 | `M-8` | `show-flagged-posts` | View currently flagged posts |
 | `C-M-o` | `enter-topic-url-open` | Select and open a URL from the current channel's topic |
+| `C-M-b` | `enter-bookmark-open` | Select and open a bookmark from the current channel's bookmark list |
 | `S-Home` | `select-oldest-message` | Scroll to top of message list |
 
 # Message Editing

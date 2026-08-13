@@ -4,6 +4,7 @@ module Matterhorn.State.UrlSelect
   -- * URL selection modes
     startTopicUrlSelect
   , startMessageUrlSelect
+  , startBookmarkSelect
   , stopUrlSelect
   , openSelectedURL
   )
@@ -18,11 +19,14 @@ import qualified Data.Text as T
 import qualified Data.Vector as V
 import           Lens.Micro.Platform ( (.=), (%=), to, Lens' )
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, BookmarkContents(..), Bookmark(..), fileInfoId )
 
 import           Matterhorn.State.Links
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText ( TeamBaseURL, parseMarkdown, unBlocks, blockGetURLs )
+import           Matterhorn.Types.Common ( sanitizeUserText )
+import           Matterhorn.Types.RichText ( TeamBaseURL, parseMarkdown, unBlocks, blockGetURLs, URL(URL)
+                                           , Inline(EText), singleI
+                                           )
 import           Matterhorn.Util
 
 
@@ -32,6 +36,21 @@ startMessageUrlSelect which = do
     msgs <- use (which.miListing.mlMessages)
     let urls = V.fromList $ findMessageUrls msgs
     startUrlSelect which urls
+
+startBookmarkSelect :: Lens' ChatState (MessageInterface n i)
+                    -> MH ()
+startBookmarkSelect which = do
+    cId <- use (which.miChannelId)
+    bs <- use (csChannel(cId).ccInfo.cdBookmarks)
+    let mkLinkChoice b =
+            let target = case bookmarkContents b of
+                    BookmarkLink url -> LinkURL $ URL $ sanitizeUserText url
+                    BookmarkFile fInfo -> LinkFileId $ fileInfoId fInfo
+            in LinkChoice Nothing NoAuthor
+                   (Just $ singleI $ EText $ sanitizeUserText $ bookmarkDisplayName b)
+                   target
+
+    startUrlSelect which $ V.fromList (mkLinkChoice <$> F.toList bs)
 
 startTopicUrlSelect :: TeamId
                     -> Lens' ChatState (MessageInterface n i)

@@ -74,6 +74,9 @@ messageInterfaceKeyHandlers which =
     [ onEvent EnterOpenTopicURLModeEvent "Select and open a URL from the current channel's topic" $
         withCurrentTeam $ \tId ->
             startTopicUrlSelect tId which
+
+    , onEvent EnterOpenBookmarkModeEvent "Select and open a bookmark from the current channel's bookmark list" $
+        startBookmarkSelect which
     ]
 
 extraEditorKeybindings :: Lens' ChatState (MessageInterface Name i)
