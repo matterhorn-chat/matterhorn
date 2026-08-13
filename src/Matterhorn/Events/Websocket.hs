@@ -229,6 +229,18 @@ handleWebsocketEvent we = do
                         refreshChannelById cId
             | otherwise -> return ()
 
+        WMChannelBookmarkCreated ->
+            return ()
+
+        WMChannelBookmarkDeleted ->
+            return ()
+
+        WMChannelBookmarkUpdated ->
+            return ()
+
+        WMChannelBookmarkSorted ->
+            return ()
+
         -- We deliberately ignore these events:
         WMChannelCreated -> return ()
         WMEmojiAdded -> return ()
