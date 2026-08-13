@@ -40,6 +40,7 @@ import           Matterhorn.State.PostListWindow
 import           Matterhorn.State.UserListWindow
 import           Matterhorn.State.ChannelListWindow
 import           Matterhorn.State.ThemeListWindow
+import           Matterhorn.State.ManageChannelBookmarks
 import           Matterhorn.State.Messages
 import           Matterhorn.State.NotifyPrefs
 import           Matterhorn.State.Teams
@@ -137,6 +138,19 @@ commandList =
         withCurrentTeam $ \tId ->
             withCurrentChannel tId $ \cId _ ->
                 beginChannelDeleteConfirm tId cId
+
+  , ClientCommand "manage-bookmarks" "Manage the current channel's bookmarks"
+    NoArg True $ \ () -> do
+        withCurrentTeam $ \tId ->
+            withCurrentChannel tId $ \cId _ -> do
+                -- We need to ignore this command if the thread is
+                -- focused since this command only makes sense in
+                -- channels.
+                foc <- use (csTeam(tId).tsMessageInterfaceFocus)
+                case foc of
+                    FocusThread -> return ()
+                    FocusCurrentChannel ->
+                        enterManageChannelBookmarksMode (csChannelMessageInterface(cId))
 
   , ClientCommand "hide" "Hide the current DM or group channel from the channel list"
     NoArg True $ \ () -> do

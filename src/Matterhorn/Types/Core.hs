@@ -185,6 +185,8 @@ data Name =
     | VScrollBar Brick.ClickableScrollbarElement !Name
     -- ^ The name of the scroll bar elements for the specified viewport
     -- name.
+    | ManageChannelBookmarksList !ChannelId
+    -- ^ The list of bookmarks for the channel's bookmark manager
     deriving (Eq, Show, Ord)
 
 -- | A match in channel selection mode.

@@ -40,6 +40,7 @@ import           Matterhorn.Draw.RichText
 import           Matterhorn.Events.MessageSelect
 import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.UrlSelect
+import           Matterhorn.Draw.ManageChannelBookmarks
 import           Matterhorn.State.MessageListing ( getListingSelectedMessage )
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils ( DateTimeFormat, justAfter, justBefore )
@@ -74,6 +75,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                     BrowseFiles       -> drawFileBrowser st which
                     ShowUrlList       -> drawUrlSelectWindow st hs which
                     SaveAttachment {} -> drawSaveAttachmentWindow st which
+                    ManageBookmarks   -> drawManageChannelBookmarks st which
 
     editCutoff = getEditedMessageCutoff cId st
     newMsgCutoff = if not showNewMsgLine

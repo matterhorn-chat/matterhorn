@@ -9,6 +9,7 @@ module Matterhorn.Types.MessageInterface
   , miListing
   , miUrlList
   , miSaveAttachmentDialog
+  , miBookmarkManager
 
   , MessageListing(..)
   , mlUrlListSource
@@ -30,6 +31,9 @@ module Matterhorn.Types.MessageInterface
   , SaveAttachmentDialogState(..)
   , attachmentPathEditor
   , attachmentPathDialogFocus
+
+  , BookmarkManager(..)
+  , bmBookmarkList
   )
 where
 
@@ -38,12 +42,13 @@ import           Matterhorn.Prelude
 
 import           Brick ( getName )
 import           Brick.Focus ( FocusRing )
-import           Brick.Widgets.List ( List )
+import           Brick.Widgets.List ( List, GenericList )
 import           Brick.Widgets.Edit ( Editor )
 import           Brick.Widgets.FileBrowser ( fileBrowserNameG )
 import qualified Data.Text as T
+import qualified Data.Sequence as Seq
 import           Lens.Micro.Platform ( makeLenses, _Just )
-import           Network.Mattermost.Types ( ChannelId, TeamId )
+import           Network.Mattermost.Types ( ChannelId, TeamId, Bookmark )
 
 import           Matterhorn.Types.Core ( MessageSelectState )
 import           Matterhorn.Types.EditState
@@ -64,6 +69,11 @@ data MessageListing n =
                    -- ^ How to characterize the URLs found in messages
                    -- in this listing
                    }
+
+data BookmarkManager n =
+    BookmarkManager { _bmBookmarkList :: !(GenericList n Seq.Seq Bookmark)
+                    -- ^ The list of bookmarks shown in the list for editing
+                    }
 
 -- | A UI region in which a specific message listing is viewed, where
 -- the user can send messages in that channel or thread and edit,
@@ -88,6 +98,9 @@ data MessageInterface n i =
                      , _miSaveAttachmentDialog :: !(SaveAttachmentDialogState n)
                      -- ^ The state for the interactive attachment-saving
                      -- editor window.
+                     , _miBookmarkManager :: !(BookmarkManager n)
+                     -- ^ The bookmark manager for this interface, used
+                     -- only for channel interfaces
                      }
 
 messageInterfaceCursor :: MessageInterface n i -> Maybe n
@@ -100,6 +113,7 @@ messageInterfaceCursor mi =
                 BrowseFiles       -> (_esFileBrowser $ _miEditor mi)^?_Just.fileBrowserNameG
                 SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
                 ManageAttachments -> Nothing
+                ManageBookmarks   -> Nothing
                 ShowUrlList       -> Nothing
 
 data MessageListingMode =
@@ -114,6 +128,8 @@ data MessageInterfaceMode =
     -- ^ Composing messages and interacting with the editor
     | ManageAttachments
     -- ^ Managing the attachment list
+    | ManageBookmarks
+    -- ^ Managing the bookmark list
     | BrowseFiles
     -- ^ Browsing the filesystem for attachment files
     | ShowUrlList
@@ -150,3 +166,4 @@ makeLenses ''MessageInterface
 makeLenses ''MessageListing
 makeLenses ''URLList
 makeLenses ''SaveAttachmentDialogState
+makeLenses ''BookmarkManager

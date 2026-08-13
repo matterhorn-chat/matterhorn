@@ -337,6 +337,8 @@ newMessageInterface cId pId msgs es target src =
                                                       , _mlMessages = msgs
                                                       , _mlMessageSelect = MessageSelectState Nothing
                                                       }
+                        , _miBookmarkManager = BookmarkManager { _bmBookmarkList = list (ManageChannelBookmarksList cId) mempty 1
+                                                               }
                         }
 
 newTeamState :: Config

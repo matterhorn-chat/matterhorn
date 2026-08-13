@@ -63,6 +63,7 @@ library
                        Matterhorn.Draw.ListWindow
                        Matterhorn.Draw.Main
                        Matterhorn.Draw.ManageAttachments
+                       Matterhorn.Draw.ManageChannelBookmarks
                        Matterhorn.Draw.MessageDeleteConfirm
                        Matterhorn.Draw.MessageInterface
                        Matterhorn.Draw.Messages
@@ -89,6 +90,7 @@ library
                        Matterhorn.Events.Global
                        Matterhorn.Events.Main
                        Matterhorn.Events.ManageAttachments
+                       Matterhorn.Events.ManageChannelBookmarks
                        Matterhorn.Events.MessageListing
                        Matterhorn.Events.MessageSelect
                        Matterhorn.Events.MessageInterface
@@ -128,6 +130,7 @@ library
                        Matterhorn.State.Links
                        Matterhorn.State.ListWindow
                        Matterhorn.State.Logging
+                       Matterhorn.State.ManageChannelBookmarks
                        Matterhorn.State.MessageSelect
                        Matterhorn.State.MessageListing
                        Matterhorn.State.Messages

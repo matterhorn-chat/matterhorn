@@ -22,6 +22,7 @@ import           Matterhorn.Events.SaveAttachmentWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.MessageListing
 import           Matterhorn.Events.MessageSelect
+import           Matterhorn.Events.ManageChannelBookmarks
 import           Matterhorn.Events.UrlSelect
 import           Matterhorn.State.Attachments
 import           Matterhorn.State.Editing
@@ -53,6 +54,8 @@ handleMessageInterfaceEvent tId which ev = do
                                     ] ev
                 ManageAttachments ->
                     onEventAttachmentList which ev
+                ManageBookmarks ->
+                    onEventManageChannelBookmarks which ev
                 BrowseFiles ->
                     onEventBrowseFile which ev
                 ShowUrlList ->
