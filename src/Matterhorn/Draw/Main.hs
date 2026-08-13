@@ -20,6 +20,9 @@ import           Lens.Micro.Platform ( Lens' )
 import           Network.Mattermost.Types ( Type(Direct, Private, Group)
                                           , TeamId, teamDisplayName, teamId
                                           , bookmarkDisplayName
+                                          , BookmarkContents(..), bookmarkId
+                                          , fileInfoId, bookmarkContents
+                                          , bookmarkDisplayName
                                           )
 
 
@@ -170,11 +173,21 @@ renderChannelBookmarks _st chan =
       bs = chan^.ccInfo.cdBookmarks
       bookmarkList =
           hBox $
-          padRight (Pad 1) <$>
-          renderBookmark <$>
-          F.toList bs
+          txt "Bookmarks: " :
+          (padRight (Pad 1) <$>
+           renderBookmark <$>
+           F.toList bs)
       renderBookmark b =
-          txt $ "[" <> (sanitizeUserText $ bookmarkDisplayName b) <> "]"
+          case bookmarkContents b of
+              BookmarkLink url ->
+                  withDefAttr urlAttr $
+                  clickable (ClickableChannelLinkBookmark (bookmarkId b) (sanitizeUserText url)) $
+                  hyperlink (sanitizeUserText url) $
+                  txt $ "<" <> (sanitizeUserText $ bookmarkDisplayName b) <> ">"
+              BookmarkFile fInfo ->
+                  withDefAttr clientMessageAttr $
+                  clickable (ClickableChannelFileBookmark (bookmarkId b) (fileInfoId fInfo)) $
+                  txt $ "<" <> (sanitizeUserText $ bookmarkDisplayName b) <> ">"
 
 renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
 renderChannelHeader st tId hs chan =
