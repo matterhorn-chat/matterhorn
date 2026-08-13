@@ -1265,7 +1265,7 @@ data TeamState =
               -- ^ The current application mode stack when viewing this
               -- team. This is used to dispatch to different rendering
               -- and event handling routines. The current mode is always
-              -- in at the top of the stack.
+              -- at the top of the stack.
               , _tsChannelSelectState :: ChannelSelectState
               -- ^ The state of the user's input and selection for
               -- channel selection mode.
