@@ -26,6 +26,7 @@
 | `/log-start <path>` | Begin logging debug information to the specified path |
 | `/log-status` | Show current debug logging status |
 | `/log-stop` | Stop logging |
+| `/manage-bookmarks` | Manage the current channel's bookmarks |
 | `/members` | Show the current channel's members |
 | `/message-preview` | Toggle preview of the current message |
 | `/move-team-left` | Move the currently-selected team to the left in the team list |
