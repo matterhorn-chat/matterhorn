@@ -68,7 +68,7 @@ import           Brick.Main ( invalidateCache, invalidateCacheEntry
                             , viewportScroll
                             )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
-import           Brick.Widgets.List ( listElementsL, listFindBy, listSelectedElement, listReplace )
+import           Brick.Widgets.List ( listFindBy, listSelectedElement, listReplace )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
@@ -465,7 +465,7 @@ setChannelBookmarks cId bs = do
     mSel <- listSelectedElement <$> use (csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList)
 
     -- Overwrite the bookmark manager's bookmark list
-    csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList.listElementsL .= bs
+    csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList %= listReplace bs (Just 0)
 
     -- If there was a selected bookmark, try to find and select it in
     -- the new list.
