@@ -68,6 +68,7 @@ import           Brick.Main ( invalidateCache, invalidateCacheEntry
                             , viewportScroll
                             )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
+import           Brick.Widgets.List ( listElementsL, listFindBy, listSelectedElement )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
@@ -453,8 +454,23 @@ updateChannelBookmark b = do
     csChannel(cId).ccInfo.cdBookmarks %= fmap findAndUpdate
 
 setChannelBookmarks :: ChannelId -> Seq Bookmark -> MH ()
-setChannelBookmarks cId bs =
+setChannelBookmarks cId bs = do
     csChannel(cId).ccInfo.cdBookmarks .= bs
+
+    -- Before updating the channel's bookmark manager, capture any
+    -- existing selection so we can preserve it if possible.
+    mSel <- listSelectedElement <$> use (csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList)
+
+    -- Overwrite the bookmark manager's bookmark list
+    csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList.listElementsL .= bs
+
+    -- If there was a selected bookmark, try to find and select it in
+    -- the new list.
+    case mSel of
+        Nothing -> return ()
+        Just (_, prev) -> do
+            let matching b = bookmarkId b == bookmarkId prev
+            csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList %= listFindBy matching
 
 -- | Check to see whether the specified channel has been queued up to
 -- be switched to.  Note that this condition is only cleared by the

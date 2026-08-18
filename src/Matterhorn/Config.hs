@@ -188,6 +188,8 @@ defaultBindings =
     , (EnterOpenURLModeEvent            , [ ctrl 'o' ])
     , (EnterOpenTopicURLModeEvent       , [ meta $ ctrl 'o' ])
     , (EnterOpenBookmarkModeEvent       , [ meta $ ctrl 'b' ])
+    , (ReorderBookmarkUp                , [ bind 'u' ])
+    , (ReorderBookmarkDown              , [ bind 'd' ])
     , (ClearUnreadEvent                 , [ meta 'l' ])
     , (ToggleMultiLineEvent             , [ meta 'e' ])
     , (EnterFlaggedPostsEvent           , [ meta '8' ])

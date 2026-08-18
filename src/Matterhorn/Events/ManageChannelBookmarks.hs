@@ -39,4 +39,10 @@ manageChannelBookmarksKeyHandlers :: Lens' ChatState (MessageInterface n i) -> [
 manageChannelBookmarksKeyHandlers which =
     [ onEvent CancelEvent "Close bookmark manager" $
         exitManageChannelBookmarksMode which
+
+    , onEvent ReorderBookmarkUp "Move the selected bookmark up in the list" $
+        moveSelectedBookmarkUp which
+
+    , onEvent ReorderBookmarkDown "Move the selected bookmark down in the list" $
+        moveSelectedBookmarkDown which
     ]

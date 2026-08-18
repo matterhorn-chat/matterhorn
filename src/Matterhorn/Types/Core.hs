@@ -302,6 +302,9 @@ data KeyEvent
   | ShowAttachmentListEvent
   | ChangeMessageEditorFocus
 
+  | ReorderBookmarkUp
+  | ReorderBookmarkDown
+
   | EditorKillToBolEvent
   | EditorKillToEolEvent
   | EditorBolEvent
@@ -456,6 +459,8 @@ allEvents =
     , ("enter-url-open", EnterOpenURLModeEvent)
     , ("enter-topic-url-open", EnterOpenTopicURLModeEvent)
     , ("enter-bookmark-open", EnterOpenBookmarkModeEvent)
+    , ("reorder-bookmark-up", ReorderBookmarkUp)
+    , ("reorder-bookmark-down", ReorderBookmarkDown)
     , ("load-more", LoadMoreEvent)
     , ("open-message-url", OpenMessageURLEvent)
     , ("scroll-up", ScrollUpEvent)
