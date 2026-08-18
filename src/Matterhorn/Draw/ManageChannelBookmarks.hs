@@ -19,6 +19,9 @@ import Matterhorn.Themes ( clientMessageAttr )
 import Matterhorn.Types
 import Matterhorn.Types.Common ( sanitizeUserText )
 
+bookmarkNameMaxSize :: Int
+bookmarkNameMaxSize = 35
+
 drawManageChannelBookmarks :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
 drawManageChannelBookmarks st which =
     headerRow <=> bookmarkList
@@ -30,7 +33,7 @@ drawManageChannelBookmarks st which =
 bookmarkListRow :: Text -> Text -> Widget Name
 bookmarkListRow displayName target =
     vLimit 1 $
-    hBox [ hLimit 35 $ padRight Max $ txt displayName
+    hBox [ hLimit bookmarkNameMaxSize $ padRight Max $ txt displayName
          , padRight Max $ txt target
          ]
 
