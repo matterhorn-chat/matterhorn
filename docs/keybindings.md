@@ -245,3 +245,10 @@
 | `PgUp` | `page-up` | Page up in the emoji list |
 | `Enter` | `activate-list-item` | Post the selected emoji reaction |
 
+# Bookmark Manager
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `Esc`, `C-c` | `cancel` | Close bookmark manager |
+| `u` | `reorder-bookmark-up` | Move the selected bookmark up in the list |
+| `d` | `reorder-bookmark-down` | Move the selected bookmark down in the list |
+

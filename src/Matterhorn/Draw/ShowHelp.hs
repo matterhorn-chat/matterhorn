@@ -42,6 +42,7 @@ import           Matterhorn.Events.ChannelListWindow
 import           Matterhorn.Events.ReactionEmojiListWindow
 import           Matterhorn.Events.ManageAttachments
 import           Matterhorn.Events.TabbedWindow
+import           Matterhorn.Events.ManageChannelBookmarks
 import           Matterhorn.Windows.ViewMessage
 import           Matterhorn.HelpTopics ( helpTopics )
 import           Matterhorn.Draw.RichText ( renderText )
@@ -464,6 +465,7 @@ keybindSections =
     , ("Attachment File Browser", attachmentBrowseKeyHandlers whichThunk)
     , ("Post Search Window", genericPostListWindowKeyHandlers)
     , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
+    , ("Bookmark Manager", manageChannelBookmarksKeyHandlers whichThunk)
     ]
 
 teamIdThunk :: TeamId
