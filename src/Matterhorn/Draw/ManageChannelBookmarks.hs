@@ -63,6 +63,9 @@ bookmarkManagerBottomBar st which =
                           , ( ev ReorderBookmarkDown
                             , "move down"
                             )
+                          , ( ev CancelEvent
+                            , "close"
+                            )
                           ]
                 ev = keyEventBindings st (manageChannelBookmarksKeybindings which)
                 optionList = hBox $ intersperse (txt " ") usableOptions
