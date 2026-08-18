@@ -8,14 +8,19 @@ where
 import Prelude ()
 import Matterhorn.Prelude
 
+import Data.List ( intersperse )
+
 import Brick
 import Brick.Widgets.List
+import Brick.Widgets.Border
 
 import Lens.Micro.Platform ( Lens' )
 
 import Network.Mattermost.Types
 
-import Matterhorn.Themes ( clientMessageAttr )
+import Matterhorn.Draw.Util ( keyEventBindings )
+import Matterhorn.Events.ManageChannelBookmarks
+import Matterhorn.Themes
 import Matterhorn.Types
 import Matterhorn.Types.Common ( sanitizeUserText )
 
@@ -24,11 +29,12 @@ bookmarkNameMaxSize = 35
 
 drawManageChannelBookmarks :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
 drawManageChannelBookmarks st which =
-    headerRow <=> bookmarkList
+    headerRow <=> bookmarkList <=> bottomBar
     where
         headerRow = forceAttr clientMessageAttr $
                     bookmarkListRow "Bookmark Name" "Info"
         bookmarkList = renderList renderBookmark True (st^.which.miBookmarkManager.bmBookmarkList)
+        bottomBar = bookmarkManagerBottomBar st which
 
 bookmarkListRow :: Text -> Text -> Widget Name
 bookmarkListRow displayName target =
@@ -45,3 +51,29 @@ renderBookmark _ b =
         target = case bookmarkContents b of
             BookmarkLink url ->   "Link: " <> (sanitizeUserText url)
             BookmarkFile fInfo -> "File: " <> (fileInfoName fInfo)
+
+bookmarkManagerBottomBar :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
+bookmarkManagerBottomBar st which =
+    case listSelectedElement $ st^.which.miBookmarkManager.bmBookmarkList of
+        Nothing -> hBorder
+        Just _ ->
+            let options = [ ( ev ReorderBookmarkUp
+                            , "move up"
+                            )
+                          , ( ev ReorderBookmarkDown
+                            , "move down"
+                            )
+                          ]
+                ev = keyEventBindings st (manageChannelBookmarksKeybindings which)
+                optionList = hBox $ intersperse (txt " ") usableOptions
+                usableOptions = mkOption <$> options
+                mkOption (k, desc) = withDefAttr urlSelectStatusAttr (txt k) <+> txt (":" <> desc)
+            in if null usableOptions
+               then hBorder
+               else hBox [ hLimit 1 hBorder
+                         , txt "["
+                         , txt "Options: "
+                         , optionList
+                         , txt "]"
+                         , hBorder
+                         ]
