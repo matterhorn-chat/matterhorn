@@ -45,4 +45,7 @@ manageChannelBookmarksKeyHandlers which =
 
     , onEvent ReorderBookmarkDown "Move the selected bookmark down in the list" $
         moveSelectedBookmarkDown which
+
+    , onEvent DeleteBookmark "Delete the selected bookmark" $
+        deleteSelectedBookmark which
     ]

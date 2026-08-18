@@ -190,6 +190,7 @@ defaultBindings =
     , (EnterOpenBookmarkModeEvent       , [ meta $ ctrl 'b' ])
     , (ReorderBookmarkUp                , [ bind 'u' ])
     , (ReorderBookmarkDown              , [ bind 'd' ])
+    , (DeleteBookmark                   , [ ctrl 'd' ])
     , (ClearUnreadEvent                 , [ meta 'l' ])
     , (ToggleMultiLineEvent             , [ meta 'e' ])
     , (EnterFlaggedPostsEvent           , [ meta '8' ])

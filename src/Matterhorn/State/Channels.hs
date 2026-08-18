@@ -68,7 +68,7 @@ import           Brick.Main ( invalidateCache, invalidateCacheEntry
                             , viewportScroll
                             )
 import           Brick.Widgets.Edit ( applyEdit, getEditContents, editContentsL )
-import           Brick.Widgets.List ( listElementsL, listFindBy, listSelectedElement )
+import           Brick.Widgets.List ( listElementsL, listFindBy, listSelectedElement, listReplace )
 import           Control.Concurrent.Async ( runConcurrently, Concurrently(..) )
 import           Control.Exception ( SomeException, try )
 import           Data.Char ( isAlphaNum )
@@ -443,6 +443,11 @@ removeChannelBookmark :: Bookmark -> MH ()
 removeChannelBookmark b = do
     let cId = bookmarkChannelId b
     csChannel(cId).ccInfo.cdBookmarks %= (Seq.filter ((/= (bookmarkId b)) . bookmarkId))
+
+    newBs <- use (csChannel(cId).ccInfo.cdBookmarks)
+
+    -- let matching b' = bookmarkId b' == bookmarkId b
+    csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList %= listReplace newBs (Just 0)
 
 updateChannelBookmark :: Bookmark -> MH ()
 updateChannelBookmark b = do

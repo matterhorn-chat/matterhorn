@@ -63,6 +63,9 @@ bookmarkManagerBottomBar st which =
                           , ( ev ReorderBookmarkDown
                             , "move down"
                             )
+                          , ( ev DeleteBookmark
+                            , "delete"
+                            )
                           , ( ev CancelEvent
                             , "close"
                             )

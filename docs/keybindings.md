@@ -251,4 +251,5 @@
 | `Esc`, `C-c` | `cancel` | Close bookmark manager |
 | `u` | `reorder-bookmark-up` | Move the selected bookmark up in the list |
 | `d` | `reorder-bookmark-down` | Move the selected bookmark down in the list |
+| `C-d` | `delete-bookmark` | Delete the selected bookmark |
 

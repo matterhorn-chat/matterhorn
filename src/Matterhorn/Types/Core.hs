@@ -304,6 +304,7 @@ data KeyEvent
 
   | ReorderBookmarkUp
   | ReorderBookmarkDown
+  | DeleteBookmark
 
   | EditorKillToBolEvent
   | EditorKillToEolEvent
@@ -461,6 +462,7 @@ allEvents =
     , ("enter-bookmark-open", EnterOpenBookmarkModeEvent)
     , ("reorder-bookmark-up", ReorderBookmarkUp)
     , ("reorder-bookmark-down", ReorderBookmarkDown)
+    , ("delete-bookmark", DeleteBookmark)
     , ("load-more", LoadMoreEvent)
     , ("open-message-url", OpenMessageURLEvent)
     , ("scroll-up", ScrollUpEvent)

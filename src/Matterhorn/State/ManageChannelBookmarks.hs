@@ -6,6 +6,7 @@ module Matterhorn.State.ManageChannelBookmarks
 
     , moveSelectedBookmarkUp
     , moveSelectedBookmarkDown
+    , deleteSelectedBookmark
     )
 where
 
@@ -53,6 +54,14 @@ moveSelectedBookmarkDown which = do
             doAsyncWith Normal $ do
                 MM.mmSetChannelBookmarkOrder (MM.bookmarkChannelId b) (MM.bookmarkId b) (i + 1) session
                 return Nothing
+
+deleteSelectedBookmark :: Lens' ChatState (MessageInterface n i) -> MH ()
+deleteSelectedBookmark which = do
+    session <- getSession
+    withSelectedBookmark which $ \bs b i ->
+        doAsyncWith Normal $ do
+            MM.mmDeleteChannelBookmark (MM.bookmarkChannelId b) (MM.bookmarkId b) session
+            return Nothing
 
 withSelectedBookmark :: Lens' ChatState (MessageInterface n i)
                      -> (Seq MM.Bookmark -> MM.Bookmark -> Int -> MH ())
