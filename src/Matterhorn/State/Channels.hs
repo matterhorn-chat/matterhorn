@@ -445,8 +445,6 @@ removeChannelBookmark b = do
     csChannel(cId).ccInfo.cdBookmarks %= (Seq.filter ((/= (bookmarkId b)) . bookmarkId))
 
     newBs <- use (csChannel(cId).ccInfo.cdBookmarks)
-
-    -- let matching b' = bookmarkId b' == bookmarkId b
     csChannelMessageInterface(cId).miBookmarkManager.bmBookmarkList %= listReplace newBs (Just 0)
 
 updateChannelBookmark :: Bookmark -> MH ()
