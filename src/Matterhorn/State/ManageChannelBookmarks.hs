@@ -58,7 +58,7 @@ moveSelectedBookmarkDown which = do
 deleteSelectedBookmark :: Lens' ChatState (MessageInterface n i) -> MH ()
 deleteSelectedBookmark which = do
     session <- getSession
-    withSelectedBookmark which $ \bs b i ->
+    withSelectedBookmark which $ \_ b _ ->
         doAsyncWith Normal $ do
             MM.mmDeleteChannelBookmark (MM.bookmarkChannelId b) (MM.bookmarkId b) session
             return Nothing
