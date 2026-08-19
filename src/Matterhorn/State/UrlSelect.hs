@@ -7,6 +7,9 @@ module Matterhorn.State.UrlSelect
   , startBookmarkSelect
   , stopUrlSelect
   , openSelectedURL
+
+  , bookmarkToLinkChoice
+  , bookmarkLinkTarget
   )
 where
 
@@ -42,15 +45,20 @@ startBookmarkSelect :: Lens' ChatState (MessageInterface n i)
 startBookmarkSelect which = do
     cId <- use (which.miChannelId)
     bs <- use (csChannel(cId).ccInfo.cdBookmarks)
-    let mkLinkChoice b =
-            let target = case bookmarkContents b of
-                    BookmarkLink url -> LinkURL $ URL $ sanitizeUserText url
-                    BookmarkFile fInfo -> LinkFileId $ fileInfoId fInfo
-            in LinkChoice Nothing NoAuthor
-                   (Just $ singleI $ EText $ sanitizeUserText $ bookmarkDisplayName b)
-                   target
+    startUrlSelect which $ V.fromList (bookmarkToLinkChoice <$> F.toList bs)
 
-    startUrlSelect which $ V.fromList (mkLinkChoice <$> F.toList bs)
+bookmarkToLinkChoice :: Bookmark -> LinkChoice
+bookmarkToLinkChoice b =
+    let target = bookmarkLinkTarget b
+    in LinkChoice Nothing NoAuthor
+           (Just $ singleI $ EText $ sanitizeUserText $ bookmarkDisplayName b)
+           target
+
+bookmarkLinkTarget :: Bookmark -> LinkTarget
+bookmarkLinkTarget b =
+    case bookmarkContents b of
+        BookmarkLink url -> LinkURL $ URL $ sanitizeUserText url
+        BookmarkFile fInfo -> LinkFileId $ fileInfoId fInfo
 
 startTopicUrlSelect :: TeamId
                     -> Lens' ChatState (MessageInterface n i)

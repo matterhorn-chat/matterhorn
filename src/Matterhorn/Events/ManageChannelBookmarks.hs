@@ -37,7 +37,11 @@ manageChannelBookmarksKeybindings which kc =
 
 manageChannelBookmarksKeyHandlers :: Lens' ChatState (MessageInterface n i) -> [MHKeyEventHandler]
 manageChannelBookmarksKeyHandlers which =
-    [ onEvent CancelEvent "Close bookmark manager" $
+    [ onKey (bind V.KEnter)
+          "Open the selected bookmark" $
+          openSelectedBookmark which
+
+    , onEvent CancelEvent "Close bookmark manager" $
         exitManageChannelBookmarksMode which
 
     , onEvent ReorderBookmarkUp "Move the selected bookmark up in the list" $

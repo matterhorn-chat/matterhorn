@@ -7,6 +7,7 @@ module Matterhorn.State.ManageChannelBookmarks
     , moveSelectedBookmarkUp
     , moveSelectedBookmarkDown
     , deleteSelectedBookmark
+    , openSelectedBookmark
     )
 where
 
@@ -20,6 +21,8 @@ import qualified Network.Mattermost.Types as MM
 import qualified Network.Mattermost.Endpoints as MM
 
 import Matterhorn.State.Async
+import Matterhorn.State.UrlSelect ( bookmarkLinkTarget )
+import Matterhorn.State.Links ( openLinkTarget )
 import Matterhorn.Types
 
 
@@ -62,6 +65,11 @@ deleteSelectedBookmark which = do
         doAsyncWith Normal $ do
             MM.mmDeleteChannelBookmark (MM.bookmarkChannelId b) (MM.bookmarkId b) session
             return Nothing
+
+openSelectedBookmark :: Lens' ChatState (MessageInterface n i) -> MH ()
+openSelectedBookmark which =
+    withSelectedBookmark which $ \_ b _ ->
+        openLinkTarget $ bookmarkLinkTarget b
 
 withSelectedBookmark :: Lens' ChatState (MessageInterface n i)
                      -> (Seq MM.Bookmark -> MM.Bookmark -> Int -> MH ())
