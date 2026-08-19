@@ -76,6 +76,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                     ShowUrlList       -> drawUrlSelectWindow st hs which
                     SaveAttachment {} -> drawSaveAttachmentWindow st which
                     ManageBookmarks   -> drawManageChannelBookmarks st which
+                    ManageBookmarksConfirmingDelete b -> drawManageChannelBookmarksConfirmingDelete b
 
     editCutoff = getEditedMessageCutoff cId st
     newMsgCutoff = if not showNewMsgLine

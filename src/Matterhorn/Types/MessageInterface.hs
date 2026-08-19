@@ -114,6 +114,7 @@ messageInterfaceCursor mi =
                 SaveAttachment {} -> Just $ getName $ _attachmentPathEditor $ _miSaveAttachmentDialog mi
                 ManageAttachments -> Nothing
                 ManageBookmarks   -> Nothing
+                ManageBookmarksConfirmingDelete {} -> Nothing
                 ShowUrlList       -> Nothing
 
 data MessageListingMode =
@@ -130,6 +131,8 @@ data MessageInterfaceMode =
     -- ^ Managing the attachment list
     | ManageBookmarks
     -- ^ Managing the bookmark list
+    | ManageBookmarksConfirmingDelete !Bookmark
+    -- ^ Managing the bookmark list, but confirming a bookmark deletion
     | BrowseFiles
     -- ^ Browsing the filesystem for attachment files
     | ShowUrlList

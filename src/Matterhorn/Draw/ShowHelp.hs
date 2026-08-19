@@ -23,7 +23,7 @@ import qualified Data.Text as T
 import qualified Graphics.Vty as Vty
 import           Lens.Micro.Platform ( Lens' )
 
-import           Network.Mattermost.Types ( TeamId )
+import           Network.Mattermost.Types ( TeamId, Bookmark )
 import           Network.Mattermost.Version ( mmApiVersion )
 
 import           Matterhorn.Command
@@ -466,10 +466,14 @@ keybindSections =
     , ("Post Search Window", genericPostListWindowKeyHandlers)
     , ("Reaction Emoji Search Window", reactionEmojiListWindowKeyHandlers teamIdThunk)
     , ("Bookmark Manager", manageChannelBookmarksKeyHandlers whichThunk)
+    , ("Bookmark Manager: Confirm Deletion", manageChannelBookmarksConfirmingDeleteKeyHandlers whichThunk bookmarkThunk)
     ]
 
 teamIdThunk :: TeamId
 teamIdThunk = error "BUG: should not evaluate teamIdThunk"
+
+bookmarkThunk :: Bookmark
+bookmarkThunk = error "BUG: should not evaluate bookmarkThunk"
 
 tabbedWinThunk :: Lens' ChatState (TabbedWindow ChatState MH Name Int)
 tabbedWinThunk = error "BUG: should not evaluate tabbedWinThunk"

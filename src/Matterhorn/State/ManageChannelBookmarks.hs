@@ -6,8 +6,11 @@ module Matterhorn.State.ManageChannelBookmarks
 
     , moveSelectedBookmarkUp
     , moveSelectedBookmarkDown
-    , deleteSelectedBookmark
     , openSelectedBookmark
+
+    , requestSelectedBookmarkDeletion
+    , confirmBookmarkDeletion
+    , cancelBookmarkDeletion
     )
 where
 
@@ -58,13 +61,21 @@ moveSelectedBookmarkDown which = do
                 MM.mmSetChannelBookmarkOrder (MM.bookmarkChannelId b) (MM.bookmarkId b) (i + 1) session
                 return Nothing
 
-deleteSelectedBookmark :: Lens' ChatState (MessageInterface n i) -> MH ()
-deleteSelectedBookmark which = do
-    session <- getSession
+requestSelectedBookmarkDeletion :: Lens' ChatState (MessageInterface n i) -> MH ()
+requestSelectedBookmarkDeletion which =
     withSelectedBookmark which $ \_ b _ ->
-        doAsyncWith Normal $ do
-            MM.mmDeleteChannelBookmark (MM.bookmarkChannelId b) (MM.bookmarkId b) session
-            return Nothing
+        which.miMode .= ManageBookmarksConfirmingDelete b
+
+cancelBookmarkDeletion :: Lens' ChatState (MessageInterface n i) -> MH ()
+cancelBookmarkDeletion which = which.miMode .= ManageBookmarks
+
+confirmBookmarkDeletion :: Lens' ChatState (MessageInterface n i) -> MM.Bookmark -> MH ()
+confirmBookmarkDeletion which b = do
+    session <- getSession
+    doAsyncWith Normal $ do
+        MM.mmDeleteChannelBookmark (MM.bookmarkChannelId b) (MM.bookmarkId b) session
+        return $ Just $ Work "confirmBookmarkDeletion" $
+            which.miMode .= ManageBookmarks
 
 openSelectedBookmark :: Lens' ChatState (MessageInterface n i) -> MH ()
 openSelectedBookmark which =

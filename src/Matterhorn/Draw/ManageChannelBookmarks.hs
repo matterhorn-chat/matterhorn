@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.ManageChannelBookmarks
   ( drawManageChannelBookmarks
+  , drawManageChannelBookmarksConfirmingDelete
   )
 where
 
@@ -13,6 +14,7 @@ import Data.List ( intersperse )
 import Brick
 import Brick.Widgets.List
 import Brick.Widgets.Border
+import Brick.Widgets.Center
 
 import Lens.Micro.Platform ( Lens' )
 
@@ -35,6 +37,21 @@ drawManageChannelBookmarks st which =
                     bookmarkListRow "Bookmark Name" "Info"
         bookmarkList = renderList renderBookmark True (st^.which.miBookmarkManager.bmBookmarkList)
         bottomBar = bookmarkManagerBottomBar st which
+
+drawManageChannelBookmarksConfirmingDelete :: Bookmark -> Widget Name
+drawManageChannelBookmarksConfirmingDelete b =
+    center $
+    padLeftRight 5 $
+    borderWithLabel (withDefAttr clientEmphAttr $ txt "Confirm Deletion") $
+    hCenter $
+    padTopBottom 1 $
+    vBox [ hCenter $ txt "Delete bookmark:"
+         , padBottom (Pad 1) $
+           hCenter $
+           withDefAttr clientEmphAttr $
+           txt $ sanitizeUserText $ bookmarkDisplayName b
+         , hCenter $ txt "Are you sure? y/n"
+         ]
 
 bookmarkListRow :: Text -> Text -> Widget Name
 bookmarkListRow displayName target =

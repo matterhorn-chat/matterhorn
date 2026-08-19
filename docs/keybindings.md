@@ -254,3 +254,10 @@
 | `d` | `reorder-bookmark-down` | Move the selected bookmark down in the list |
 | `C-d` | `delete-bookmark` | Delete the selected bookmark |
 
+# Bookmark Manager: Confirm Deletion
+| Keybinding | Event Name | Description |
+| ---------- | ---------- | ----------- |
+| `y` | (non-customizable key) | Confirm deletion |
+| `n` | (non-customizable key) | Cancel deletion |
+| `Esc`, `C-c` | `cancel` | Cancel deletion |
+

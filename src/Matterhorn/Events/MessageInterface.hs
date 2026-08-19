@@ -56,6 +56,8 @@ handleMessageInterfaceEvent tId which ev = do
                     onEventAttachmentList which ev
                 ManageBookmarks ->
                     onEventManageChannelBookmarks which ev
+                ManageBookmarksConfirmingDelete b ->
+                    onEventManageChannelBookmarksConfirmingDelete which b ev
                 BrowseFiles ->
                     onEventBrowseFile which ev
                 ShowUrlList ->
