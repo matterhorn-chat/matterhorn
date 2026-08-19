@@ -29,7 +29,7 @@ bookmarkNameMaxSize = 35
 
 drawManageChannelBookmarks :: ChatState -> Lens' ChatState (MessageInterface Name i) -> Widget Name
 drawManageChannelBookmarks st which =
-    headerRow <=> bookmarkList <=> bottomBar
+    headerRow <=> bookmarkList <=> padBottom (Pad 1) bottomBar
     where
         headerRow = forceAttr clientMessageAttr $
                     bookmarkListRow "Bookmark Name" "Info"
