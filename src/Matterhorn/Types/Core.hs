@@ -164,7 +164,7 @@ data Name =
     -- ^ The name of a clickable channel list group heading.
     | ClickableReactionEmojiListWindowEntry !(Bool, T.Text)
     -- ^ The name of a clickable reaction emoji list entry.
-    | ClickableChannelBookmark !BookmarkId !LinkTarget
+    | ClickableChannelBookmark !Int !BookmarkId !LinkTarget
     -- ^ A clickable file channel bookmark
     | AttachmentPathEditor !Name
     -- ^ The name of the specified message interface's attachment

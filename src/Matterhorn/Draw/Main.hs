@@ -176,17 +176,17 @@ renderChannelBookmarks _st chan =
           txt "Bookmarks: " :
           (padRight (Pad 1) <$>
            renderBookmark <$>
-           F.toList bs)
-      renderBookmark b =
+           (zip [0..] $ F.toList bs))
+      renderBookmark (i, b) =
           case bookmarkContents b of
               BookmarkLink url ->
                   withDefAttr urlAttr $
-                  clickable (ClickableChannelBookmark (bookmarkId b) (LinkURL $ URL $ sanitizeUserText url)) $
+                  clickable (ClickableChannelBookmark i (bookmarkId b) (LinkURL $ URL $ sanitizeUserText url)) $
                   hyperlink (sanitizeUserText url) $
                   txt $ "<" <> (sanitizeUserText $ bookmarkDisplayName b) <> ">"
               BookmarkFile fInfo ->
                   withDefAttr clientMessageAttr $
-                  clickable (ClickableChannelBookmark (bookmarkId b) (LinkFileId $ fileInfoId fInfo)) $
+                  clickable (ClickableChannelBookmark i (bookmarkId b) (LinkFileId $ fileInfoId fInfo)) $
                   txt $ "<" <> (sanitizeUserText $ bookmarkDisplayName b) <> ">"
 
 renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name

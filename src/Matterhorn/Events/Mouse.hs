@@ -99,7 +99,7 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             toggleChannelListGroupVisibility label
         ClickableURLListEntry _ t ->
             void $ openLinkTarget t
-        ClickableChannelBookmark _ t ->
+        ClickableChannelBookmark _ _ t ->
             void $ openLinkTarget t
         VScrollBar e vpName -> do
             let vp = viewportScroll vpName
