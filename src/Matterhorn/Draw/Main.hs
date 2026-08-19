@@ -168,12 +168,12 @@ renderChannelBookmarks :: ChatState -> ClientChannel -> Widget Name
 renderChannelBookmarks _st chan =
     if Seq.null bs
        then emptyWidget
-       else hBorder <=> bookmarkList
+       else hBorderWithLabel title <=> bookmarkList
     where
+      title = withDefAttr clientEmphAttr $ txt "Bookmarks"
       bs = chan^.ccInfo.cdBookmarks
       bookmarkList =
           hBox $
-          txt "Bookmarks: " :
           (padRight (Pad 1) <$>
            renderBookmark <$>
            (zip [0..] $ F.toList bs))
