@@ -16,6 +16,7 @@ import           Data.Maybe ( fromJust )
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import           Lens.Micro.Platform ( Lens' )
+import           Graphics.Vty ( imageWidth )
 
 import           Network.Mattermost.Types ( Type(Direct, Private, Group)
                                           , TeamId, teamDisplayName, teamId
@@ -173,7 +174,7 @@ renderChannelBookmarks _st chan =
       title = withDefAttr clientEmphAttr $ txt "Bookmarks"
       bs = chan^.ccInfo.cdBookmarks
       bookmarkList =
-          hBox $
+          hWrap $
           (padRight (Pad 1) <$>
            renderBookmark <$>
            (zip [0..] $ F.toList bs))
@@ -186,6 +187,28 @@ renderChannelBookmarks _st chan =
           in withDefAttr urlAttr $
              clickable (ClickableChannelBookmark i (bookmarkId b) target) $
              txt $ "<" <> (sanitizeUserText $ bookmarkDisplayName b) <> ">"
+
+hWrap :: [Widget n] -> Widget n
+hWrap [] = emptyWidget
+hWrap [w] = w
+hWrap ws =
+    Widget Greedy Fixed $ do
+        ctx <- getContext
+        results <- mapM render ws
+
+        let width = availWidth ctx
+            theLines = go width [] results
+
+            go _ [] [] = []
+            go _ l  [] = [l]
+            go r l  as | r <= 0 = l : go width [] as
+            go remaining l (a:as) =
+                let aWidth = imageWidth $ a^.imageL
+                in if aWidth <= remaining
+                   then go (remaining - aWidth) (a : l) as
+                   else l : go (width - aWidth) [a] as
+
+        render $ vBox $ (hBox . reverse . fmap resultToWidget) <$> theLines
 
 renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
 renderChannelHeader st tId hs chan =
