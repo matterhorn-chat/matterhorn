@@ -19,7 +19,6 @@ import           Lens.Micro.Platform ( Lens' )
 
 import           Network.Mattermost.Types ( Type(Direct, Private, Group)
                                           , TeamId, teamDisplayName, teamId
-                                          , bookmarkDisplayName
                                           , BookmarkContents(..), bookmarkId
                                           , fileInfoId, bookmarkContents
                                           , bookmarkDisplayName
