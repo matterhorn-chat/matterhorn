@@ -57,7 +57,10 @@ bookmarkManagerBottomBar st which =
     case listSelectedElement $ st^.which.miBookmarkManager.bmBookmarkList of
         Nothing -> hBorder
         Just _ ->
-            let options = [ ( ev ReorderBookmarkUp
+            let options = [ ( ev ActivateListItemEvent
+                            , "open"
+                            )
+                          , ( ev ReorderBookmarkUp
                             , "move up"
                             )
                           , ( ev ReorderBookmarkDown
