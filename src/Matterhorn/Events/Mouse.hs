@@ -14,7 +14,6 @@ import           Matterhorn.State.Channels
 import           Matterhorn.State.Teams ( setTeam )
 import           Matterhorn.State.ListWindow ( listWindowActivate )
 import           Matterhorn.Types
-import           Matterhorn.Types.RichText (URL(URL))
 
 import           Matterhorn.Events.EditNotifyPrefs ( handleEditNotifyPrefsEvent )
 import           Matterhorn.Events.ChannelTopicWindow ( channelTopicWindowMouseHandler )
@@ -100,10 +99,8 @@ globalMouseHandler tId (MouseDown n _ _ _) = do
             toggleChannelListGroupVisibility label
         ClickableURLListEntry _ t ->
             void $ openLinkTarget t
-        ClickableChannelLinkBookmark _ url ->
-            void $ openLinkTarget $ LinkURL $ URL url
-        ClickableChannelFileBookmark _ fId ->
-            void $ openLinkTarget $ LinkFileId fId
+        ClickableChannelBookmark _ t ->
+            void $ openLinkTarget t
         VScrollBar e vpName -> do
             let vp = viewportScroll vpName
             mh $ case e of

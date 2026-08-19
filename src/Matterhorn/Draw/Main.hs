@@ -33,6 +33,7 @@ import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
+import           Matterhorn.Types.RichText (URL(URL))
 import qualified Matterhorn.Zipper as Z
 
 
@@ -180,12 +181,12 @@ renderChannelBookmarks _st chan =
           case bookmarkContents b of
               BookmarkLink url ->
                   withDefAttr urlAttr $
-                  clickable (ClickableChannelLinkBookmark (bookmarkId b) (sanitizeUserText url)) $
+                  clickable (ClickableChannelBookmark (bookmarkId b) (LinkURL $ URL $ sanitizeUserText url)) $
                   hyperlink (sanitizeUserText url) $
                   txt $ "<" <> (sanitizeUserText $ bookmarkDisplayName b) <> ">"
               BookmarkFile fInfo ->
                   withDefAttr clientMessageAttr $
-                  clickable (ClickableChannelFileBookmark (bookmarkId b) (fileInfoId fInfo)) $
+                  clickable (ClickableChannelBookmark (bookmarkId b) (LinkFileId $ fileInfoId fInfo)) $
                   txt $ "<" <> (sanitizeUserText $ bookmarkDisplayName b) <> ">"
 
 renderChannelHeader :: ChatState -> TeamId -> HighlightSet -> ClientChannel -> Widget Name
