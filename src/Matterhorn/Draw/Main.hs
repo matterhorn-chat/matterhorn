@@ -132,7 +132,7 @@ mainInterface st mode mtId =
                 ThreadRight -> channelUI <+> vBorder <+> tui
 
     maybeSubdue = if mode == ChannelSelect
-                  then forceAttr $ attrName ""
+                  then forceAttrAllowStyle $ attrName ""
                   else id
 
 teamList :: ChatState -> Widget Name
