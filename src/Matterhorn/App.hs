@@ -57,6 +57,9 @@ cursorByMode cs s tId mode =
                 ti <- s^.csTeam(tId).tsThreadInterface
                 cur <- messageInterfaceCursor ti
                 B.showCursorNamed cur cs
+        ChannelSelect ->
+            let n = B.getName $ s^.csTeam(tId).tsChannelSelectState.channelSelectInput
+            in B.showCursorNamed n cs
         LeaveChannelConfirm           -> Nothing
         DeleteChannelConfirm          -> Nothing
         MessageSelectDeleteConfirm {} -> Nothing
@@ -64,7 +67,6 @@ cursorByMode cs s tId mode =
         ViewMessage                   -> Nothing
         ShowHelp {}                   -> Nothing
         EditNotifyPrefs               -> Nothing
-        ChannelSelect                 -> B.showFirstCursor s cs
         UserListWindow                -> B.showFirstCursor s cs
         ReactionEmojiListWindow       -> B.showFirstCursor s cs
         ChannelListWindow             -> B.showFirstCursor s cs
