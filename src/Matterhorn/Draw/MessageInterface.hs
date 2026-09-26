@@ -31,6 +31,7 @@ import           Network.Mattermost.Types ( ChannelId, Type(Direct, Group)
                                           )
 
 import           Matterhorn.Constants
+import           Matterhorn.Draw.Autocomplete
 import           Matterhorn.Draw.Buttons
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.ManageAttachments
@@ -77,7 +78,7 @@ drawMessageInterface st hs tId showNewMsgLine which renderReplyIndent focused =
                renderMessageListing st inMsgSel showNewMsgLine tId hs which renderReplyIndent region
              , bottomBorder
              , inputPreview st (which.miEditor) tId previewVpName hs
-             , inputArea st (which.miEditor) focused hs
+             , inputArea st which focused hs
              ]
 
     bottomBorder =
@@ -341,7 +342,7 @@ filterMessageListing st msgsWhich =
             | otherwise = not $ isJoinLeave m
 
 inputArea :: ChatState
-          -> Lens' ChatState (EditState Name)
+          -> Lens' ChatState (MessageInterface Name i)
           -> Bool
           -> HighlightSet
           -> Widget Name
@@ -349,21 +350,22 @@ inputArea st which focused hs =
     let replyPrompt = "reply> "
         normalPrompt = "> "
         editPrompt = "edit> "
-        showReplyPrompt = st^.which.esShowReplyPrompt
+        showReplyPrompt = st^.which.miEditor.esShowReplyPrompt
         maybeHighlight = if focused
                          then withDefAttr focusedEditorPromptAttr
                          else id
         prompt = maybeHighlight $
                  reportExtent (MessageInputPrompt $ getName editor) $
-                 txt $ case st^.which.esEditMode of
+                 txt $ case st^.which.miEditor.esEditMode of
             Replying {} ->
                 if showReplyPrompt then replyPrompt else normalPrompt
             Editing {}  ->
                 editPrompt
             NewPost ->
                 normalPrompt
-        editor = st^.which.esEditor
-        inputBox = renderEditor (drawEditorContents st which hs) True editor
+        editor = st^.which.miEditor.esEditor
+        acLayer = vLimit 100 $ autocompleteLayer st (which.miEditor)
+        inputBox = acLayer `above` renderEditor (drawEditorContents st (which.miEditor) hs) True editor
         curContents = getEditContents editor
         multilineContent = length curContents > 1
         multilineHints =
@@ -376,7 +378,7 @@ inputArea st which focused hs =
                          " to finish."
                  ]
 
-        replyDisplay = case st^.which.esEditMode of
+        replyDisplay = case st^.which.miEditor.esEditMode of
             Replying msg _ | showReplyPrompt ->
                 let msgWithoutParent = msg & mInReplyToMsg .~ NotAReply
                 in hBox [ replyArrow
@@ -406,7 +408,7 @@ inputArea st which focused hs =
         kc = st^.csResources.crConfiguration.configUserKeysL
         multiLineToggleKey = ppMaybeBinding $ firstActiveBinding kc ToggleMultiLineEvent
 
-        commandBox = case st^.which.esEphemeral.eesMultiline of
+        commandBox = case st^.which.miEditor.esEphemeral.eesMultiline of
             False ->
                 let linesStr = "line" <> if numLines == 1 then "" else "s"
                     numLines = length curContents
