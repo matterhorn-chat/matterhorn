@@ -1,4 +1,10 @@
 
+90000.1.2
+=========
+
+Updated build constraints for `data-clist`, `vty-crossplatform`, and
+`aeson` to build on GHC 9.8.
+
 90000.1.1
 =========
 

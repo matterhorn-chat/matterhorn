@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Autocomplete
-  ( drawAutocompleteLayers
+  ( autocompleteLayer
   )
 where
 
@@ -13,7 +13,7 @@ import           Brick.Widgets.List ( renderList, listElementsL, listSelectedFoc
                                     , listSelectedElement
                                     )
 import qualified Data.Text as T
-import           Lens.Micro.Platform ( SimpleGetter, Lens' )
+import           Lens.Micro.Platform ( SimpleGetter )
 
 import           Network.Mattermost.Types ( User(..), Channel(..), TeamId )
 
@@ -22,22 +22,6 @@ import           Matterhorn.Draw.ChannelList ( channelListWidth )
 import           Matterhorn.Themes
 import           Matterhorn.Types
 import           Matterhorn.Types.Common ( sanitizeUserText )
-
-drawAutocompleteLayers :: ChatState -> [Widget Name]
-drawAutocompleteLayers st =
-    catMaybes [ do
-                    tId <- st^.csCurrentTeamId
-                    cId <- st^.csCurrentChannelId(tId)
-                    return $ autocompleteLayer st (channelEditor(cId))
-              , do
-                    tId <- st^.csCurrentTeamId
-                    void $ st^.csTeam(tId).tsThreadInterface
-                    let ti :: Lens' ChatState ThreadInterface
-                        ti = unsafeThreadInterface(tId)
-                        ed :: SimpleGetter ChatState (EditState Name)
-                        ed = ti.miEditor
-                    return $ autocompleteLayer st ed
-              ]
 
 autocompleteLayer :: ChatState -> SimpleGetter ChatState (EditState Name) -> Widget Name
 autocompleteLayer st which =
@@ -75,8 +59,6 @@ renderAutocompleteBox st tId mCurChan which ac =
         visibleHeight = min maxListHeight numResults
         numResults = length elements
         elements = matchList^.listElementsL
-        editorName = getName $ st^.which.esEditor
-        isMultiline = st^.which.esEphemeral.eesMultiline
         label = withDefAttr clientMessageAttr $
                 txt $ elementTypeLabel (ac^.acType) <> ": " <> (T.pack $ show numResults) <>
                      " match" <> (if numResults == 1 then "" else "es") <>
@@ -110,18 +92,12 @@ renderAutocompleteBox st tId mCurChan which ac =
                    render $ hLimit lim w
                else Nothing
 
-        -- The top left corner of the editor area is given by the
-        -- prompt, or by the editor position if multiline is enabled (in
-        -- which case no prompt is drawn).
-        editorTop = if isMultiline
-                    then editorName
-                    else MessageInputPrompt editorName
+        verticalOffset = -1 * (visibleHeight + 2)
 
     in if numResults == 0
        then emptyWidget
        else Widget Greedy Greedy $ do
-           let verticalOffset = -1 * (visibleHeight + 2)
-           render $ relativeTo editorTop (Location (0, verticalOffset)) $
+           render $ translateLayer (Location (-2, verticalOffset)) $
                     maybeLimit $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $
