@@ -97,7 +97,7 @@ renderAutocompleteBox st tId mCurChan which ac =
     in if numResults == 0
        then emptyWidget
        else Widget Greedy Greedy $ do
-           render $ translateLayer (Location (-2, verticalOffset)) $
+           render $ translateLayer (Location (0, verticalOffset)) $
                     maybeLimit $
                     vBox [ hBorderWithLabel label
                          , vLimit visibleHeight $

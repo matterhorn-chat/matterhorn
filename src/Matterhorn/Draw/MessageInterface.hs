@@ -336,7 +336,7 @@ inputArea st which focused hs =
                          normalPrompt
         editor = st^.which.miEditor.esEditor
         acLayer = vLimit 100 $ autocompleteLayer st (which.miEditor)
-        inputBox = acLayer `above` renderEditor (drawEditorContents st (which.miEditor) hs) True editor
+        inputBox = renderEditor (drawEditorContents st (which.miEditor) hs) True editor
         curContents = getEditContents editor
         multilineContent = length curContents > 1
         multilineHints =
@@ -394,7 +394,7 @@ inputArea st which focused hs =
                                  ]
                             else [inputBox]
             True -> vLimit multilineHeightLimit inputBox <=> multilineHints
-    in replyDisplay <=> commandBox
+    in replyDisplay <=> (acLayer `above` commandBox)
 
 drawEditorContents :: ChatState
                    -> SimpleGetter ChatState (EditState Name)
