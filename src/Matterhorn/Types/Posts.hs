@@ -207,8 +207,15 @@ attachmentFromFileInfo hostname info =
 --   'ParentId' if it has a known one.
 toClientPost :: T.Text -> Maybe TeamBaseURL -> Maybe TeamId -> Post -> Maybe PostId -> ClientPost
 toClientPost hostname baseUrl mTeamId p parentId =
+  -- Note that we add a trailing newline because messages often don't
+  -- end with one, but the markdown parser is intended to be used with
+  -- POSIX files that end with a newline. Without the newline, some
+  -- Markdown constructs may fail to parse correctly, such as tables.
+  -- In general, it should be harmless to add this newline because it
+  -- won't be considered significant enough to introduce a line break or
+  -- paragraph in the parsed result.
   let src = unEmote (postClientPostType p) $ sanitizeUserText $ postMessage p
-  in ClientPost { _cpText          = parseMarkdown baseUrl src <> getAttachmentText p
+  in ClientPost { _cpText          = parseMarkdown baseUrl (src <> "\n") <> getAttachmentText p
                 , _cpMarkdownSource = src
                 , _cpUser          = postUserId p
                 , _cpUserOverride  = p^.postPropsL.postPropsOverrideUsernameL
