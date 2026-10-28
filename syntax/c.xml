@@ -15,7 +15,7 @@
     <!ENTITY pphash "&ispphash;\s*">
 ]>
 <language name="C" section="Sources"
-          version="18" kateversion="5.79"
+          version="19" kateversion="5.79"
           indenter="cstyle"
           extensions="*.c;*.C;*.h"
           mimetype="text/x-csrc;text/x-c++src;text/x-chdr"
@@ -130,7 +130,6 @@
       <item>wint_t</item>
       <item>_BitInt</item> <!-- C23 -->
       <item>_Bool</item>
-      <item>bool</item>
       <item>_Decimal32</item> <!-- C23 -->
       <item>_Decimal64</item> <!-- C23 -->
       <item>_Decimal128</item> <!-- C23 -->

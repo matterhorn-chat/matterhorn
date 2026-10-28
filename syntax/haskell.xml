@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language [
-  <!ENTITY symbolops "\-!#\$&#37;&amp;\*\+/&lt;=&gt;\?&#92;@\^\|~\.:">
+  <!ENTITY symbolops "\-!#\$&#37;&amp;\*\+/&lt;=&gt;\?&#92;&#92;@\^\|~\.:">
 ]>
-<language name="Haskell" alternativeNames="HS" version="21" kateversion="5.53" section="Sources" extensions="*.hs;*.chs;*.hs-boot" mimetype="text/x-haskell" author="Nicolas Wu (zenzike@gmail.com)" license="LGPL" indenter="haskell" style="haskell">
+<language name="Haskell" alternativeNames="HS" version="22" kateversion="5.53" section="Sources" extensions="*.hs;*.chs;*.hs-boot" mimetype="text/x-haskell" author="Nicolas Wu (zenzike@gmail.com)" license="LGPL" indenter="haskell" style="haskell">
   <highlighting>
   <list name="keywords">
     <item>case</item>
@@ -473,7 +473,8 @@
       <RegExpr attribute="Special"          context="#stay" String="(::|=&gt;|-&gt;|&lt;-|=)(?![&symbolops;])" />
       <RegExpr attribute="Signature"        context="#stay" String="\s*[a-z_][a-zA-Z0-9_']*\s*(?=::([^&symbolops;]|$))|\s*(\([&symbolops;]*\))*\s*(?=::[^&symbolops;])" />
       <RegExpr attribute="Function"         context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*[a-z_][a-zA-Z0-9_']*" />
-      <RegExpr attribute="Operator"         context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*[&symbolops;]+" />
+      <!-- Match backslash operators before general operators (order matters for precedence) -->
+      <RegExpr attribute="Operator"         context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*\\[!#\$%&amp;\*\+/&lt;=&gt;\?\\@\^\|~\.:]+|([A-Z][a-zA-Z0-9_']*\.)*[&symbolops;]+" />
       <RegExpr attribute="Type"             context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*[A-Z][a-zA-Z0-9_']*|'(?![A-Z]')([A-Z][a-zA-Z0-9_']*\.)*[A-Z][a-zA-Z0-9_']*" />
 
       <RegExpr    attribute="Float"   context="#stay" String ="\d+\.\d+([Ee][+-]?\d+)?|\d+[Ee][+-]?\d+"/>
@@ -541,11 +542,12 @@
     </context>
     <context attribute="Normal" lineEndContext="#pop" name="import">
       <DetectSpaces attribute="Normal" />
+      <IncludeRules context="FindComment" />
       <keyword attribute="Keyword"          context="#stay" String="import_keywords" />
       <RegExpr attribute="Function"         context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*[a-z][a-zA-Z0-9_']*" />
       <RegExpr attribute="Type"             context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*[A-Z][a-zA-Z0-9_']*" />
-
-      <IncludeRules context="FindComment" />
+      <!-- Add operator matching to import context (backslash operators matched first) -->
+      <RegExpr attribute="Operator"         context="#stay" String="([A-Z][a-zA-Z0-9_']*\.)*\\[!#\$%&amp;\*\+/&lt;=&gt;\?\\@\^\|~\.:]+|([A-Z][a-zA-Z0-9_']*\.)*[&symbolops;]+" />
     </context>
 
     <!-- Haddock -->

@@ -18,9 +18,9 @@
           extensions="*.ml;*.mli"
           mimetype="text/x-ocaml"
           section="Sources"
-          version="11"
+          version="12"
           priority="10"
-          kateversion="5.79"
+          kateversion="6.22"
           author="Glyn Webster (glynwebster@orcon.net.nz) and Vincent Hugot (vincent.hugot@gmail.com)"
           license="LGPL" >
 

@@ -144,7 +144,6 @@
        <item>ms</item>
        <item>ns</item>
        <item>us</item>
-       <item>ns</item>
        <item>ps</item>
        <item>fs</item>
        <item>step</item>
@@ -362,10 +361,6 @@
         <item>$acosh</item>
         <item>$tan</item>
         <item>$atanh</item>
-        <item>$fatal</item>
-        <item>$error</item>
-        <item>$warning</item>
-        <item>$info</item>
         <item>$fatal</item>
         <item>$error</item>
         <item>$warning</item>

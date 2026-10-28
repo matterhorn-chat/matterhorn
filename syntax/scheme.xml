@@ -11,13 +11,15 @@
   <!ENTITY initial "(?:[&initial_ascii_set;]|&initial_others;)">
   <!ENTITY subsequent "(?:[&initial_ascii_set;0-9-@.+\p{Nd}\p{Mc}\p{Me}]|&initial_others;)">
   <!ENTITY symbol "(?:&initial;&subsequent;*+)">
+
+  <!ENTITY funcname "\s*[A-Za-z0-9-!$&#37;&quot;*/:&lt;=>?~_^+.@]+\s*">
 ]>
 <!--
   https://www.scheme.com/tspl4/
   https://www.gnu.org/software/kawa/Syntax.html
   https://www.gnu.org/software/guile/manual/html_node/Scheme-Syntax.html
 -->
-<language version="12" kateversion="5.79" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile;*.chicken;*.meta" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
+<language version="14" kateversion="5.79" name="Scheme" section="Scripts" extensions="*.scm;*.ss;*.scheme;*.guile;*.chicken;*.meta" mimetype="text/x-scheme" author="Dominik Haumann (dhaumann@kde.org)" license="MIT" priority="9">
   <highlighting>
     <list name="operators">
       <item>&lt;=</item>
@@ -86,13 +88,7 @@
       <item>rs</item>
       <item>us</item>
       <item>sp</item>
-      <item>nl</item>
-      <item>ht</item>
-      <item>bs</item>
-      <item>cr</item>
-      <item>np</item>
       <item>null</item>
-      <item>nul</item>
     </list>
     <list name="defines">
       <item>define</item>
@@ -361,7 +357,6 @@
       <item>error?</item>
       <item>eval</item>
       <item>even?</item>
-      <item>exact-&gt;inexact</item>
       <item>exact->inexact</item>
       <item>exact-integer-sqrt</item>
       <item>exact</item>
@@ -621,7 +616,6 @@
       <item>not</item>
       <item>null-environment</item>
       <item>null?</item>
-      <item>number-&gt;string</item>
       <item>number->string</item>
       <item>number?</item>
       <item>numerator</item>
@@ -805,10 +799,10 @@
         <Detect2Chars attribute="Brackets1" context="Level1" char="`" char1="("/>
         <Detect2Chars attribute="Brackets1" context="Level1" char="#" char1="("/>
         <Detect2Chars attribute="Brackets1" context="Level1" char="@" char1="("/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel0"/>
       </context>
 
-      <context name="Default" attribute="Normal" lineEndContext="#stay">
+      <context name="DefaultPre" attribute="Normal" lineEndContext="#stay">
         <DetectSpaces/>
         <DetectChar attribute="Comment" context="hash" char="#" lookAhead="1"/>
         <DetectChar attribute="Comment" context="semicolon" char=";" lookAhead="1"/>
@@ -816,12 +810,45 @@
         <Detect2Chars attribute="String" context="Template" char="&amp;" char1="{"/>
         <AnyChar attribute="Other Brackets" context="#stay" String="{}[]"/>
         <keyword attribute="Keyword" context="#stay" String="keywords"/>
-        <keyword attribute="Definition" context="function_decl" String="defines"/>
+      </context>
+
+      <context name="DefaultPost" attribute="Normal" lineEndContext="#stay">
         <keyword attribute="Operator" context="#stay" String="operators"/>
         <RegExpr attribute="Normal" context="#stay" String="&symbol;"/>
         <!-- s, f, d, l are extensions of Kawa -->
         <RegExpr attribute="Float" context="#stay" String="[0-9]*+\.[0-9]++([esfdl][+-]?[0-9]++)?|[0-9]++[esfdl][+-]?[0-9]++"/>
         <Int attribute="Decimal" context="#stay"/>
+      </context>
+
+      <context name="DefaultLevel0" attribute="Normal" lineEndContext="#stay">
+        <IncludeRules context="DefaultPre"/>
+        <keyword attribute="Definition" context="function_decl_level0" String="defines"/>
+        <IncludeRules context="DefaultPost"/>
+      </context>
+      <context name="DefaultLevel1" attribute="Normal" lineEndContext="#stay">
+        <IncludeRules context="DefaultPre"/>
+        <keyword attribute="Definition" context="function_decl_level1" String="defines"/>
+        <IncludeRules context="DefaultPost"/>
+      </context>
+      <context name="DefaultLevel2" attribute="Normal" lineEndContext="#stay">
+        <IncludeRules context="DefaultPre"/>
+        <keyword attribute="Definition" context="function_decl_level2" String="defines"/>
+        <IncludeRules context="DefaultPost"/>
+      </context>
+      <context name="DefaultLevel3" attribute="Normal" lineEndContext="#stay">
+        <IncludeRules context="DefaultPre"/>
+        <keyword attribute="Definition" context="function_decl_level3" String="defines"/>
+        <IncludeRules context="DefaultPost"/>
+      </context>
+      <context name="DefaultLevel4" attribute="Normal" lineEndContext="#stay">
+        <IncludeRules context="DefaultPre"/>
+        <keyword attribute="Definition" context="function_decl_level4" String="defines"/>
+        <IncludeRules context="DefaultPost"/>
+      </context>
+      <context name="DefaultLevel5" attribute="Normal" lineEndContext="#stay">
+        <IncludeRules context="DefaultPre"/>
+        <keyword attribute="Definition" context="function_decl_level5" String="defines"/>
+        <IncludeRules context="DefaultPost"/>
       </context>
 
 
@@ -908,12 +935,12 @@
       <context name="XMLTagExpr1" attribute="Normal" lineEndContext="#stay">
         <DetectChar attribute="Brackets1" context="Level1" char="("/>
         <DetectChar attribute="XML Tag" context="#pop!XMLTag" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel0"/>
       </context>
       <context name="XMLTagExpr2" attribute="Normal" lineEndContext="#stay">
         <DetectChar attribute="Brackets1" context="Level1" char="("/>
         <DetectChar attribute="XML Tag" context="#pop!XMLTag" char="}"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel0"/>
       </context>
 
       <context name="XMLTag" attribute="XML Attribute" lineEndContext="#stay">
@@ -978,12 +1005,12 @@
       <context name="XMLEnclosedExpr1" attribute="Normal" lineEndContext="#pop">
         <DetectChar attribute="Brackets2" context="Level2" char="("/>
         <DetectChar attribute="Brackets1" context="#pop" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel1"/>
       </context>
       <context name="XMLEnclosedExpr2" attribute="Normal" lineEndContext="#pop">
         <DetectChar attribute="Brackets2" context="Level2" char="("/>
         <DetectChar attribute="Brackets1" context="#pop" char="}"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel1"/>
       </context>
 
       <context name="XMLProc" attribute="XML Attribute" lineEndContext="#stay" fallthroughContext="XMLProcAttrs">
@@ -998,9 +1025,9 @@
         <DetectIdentifier/>
         <Detect2Chars attribute="XML Comment" context="XMLCommentCheck" char="-" char1="-" lookAhead="1"/>
       </context>
-      <context name="XMLCommentCheck" attribute="Comment" lineEndContext="#stay">
+      <context name="XMLCommentCheck" attribute="Comment" lineEndContext="#stay" fallthroughContext="#pop">
         <StringDetect attribute="XML Tag" context="#pop#pop" String="-->"/>
-        <Detect2Chars attribute="XML Error" context="#pop" char="-" char1="-"/>
+        <DetectChar attribute="XML Error" char="-"/>
       </context>
 
       <context name="XMLCDATA" attribute="XML CDATA" lineEndContext="#stay">
@@ -1297,8 +1324,97 @@
       </context>
 
 
+      <!--
+      (define (f x y)
+        (+ x y))
+      # procedures that return procedures
+      (define ((f x) y)
+        (+ x y))
+      -->
+      <context name="procedure_level1" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop!Level1">
+        <DetectChar context="#pop!procedure_param1" char="(" lookAhead="1"/>
+        <RegExpr attribute="Function" context="#pop!procedure_param1" String="&funcname;"/>
+        <DetectSpaces attribute="Function"/>
+      </context>
+      <context name="procedure_level2" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop!Level2">
+        <DetectChar context="#pop!procedure_param2" char="(" lookAhead="1"/>
+        <RegExpr attribute="Function" context="#pop!procedure_param2" String="&funcname;"/>
+        <DetectSpaces attribute="Function"/>
+      </context>
+      <context name="procedure_level3" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop!Level3">
+        <DetectChar context="#pop!procedure_param3" char="(" lookAhead="1"/>
+        <RegExpr attribute="Function" context="#pop!procedure_param3" String="&funcname;"/>
+        <DetectSpaces attribute="Function"/>
+      </context>
+      <context name="procedure_level4" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop!Level4">
+        <DetectChar context="#pop!procedure_param4" char="(" lookAhead="1"/>
+        <RegExpr attribute="Function" context="#pop!procedure_param4" String="&funcname;"/>
+        <DetectSpaces attribute="Function"/>
+      </context>
+      <context name="procedure_level5" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop!Level5">
+        <DetectChar context="#pop!procedure_param5" char="(" lookAhead="1"/>
+        <RegExpr attribute="Function" context="#pop!procedure_param5" String="&funcname;"/>
+        <DetectSpaces attribute="Function"/>
+      </context>
+      <context name="procedure_level6" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop!Level6">
+        <DetectChar context="#pop!procedure_param6" char="(" lookAhead="1"/>
+        <RegExpr attribute="Function" context="#pop!procedure_param6" String="&funcname;"/>
+        <DetectSpaces attribute="Function"/>
+      </context>
+
+      <context name="procedure_param1" attribute="Normal" lineEndContext="#stay">
+        <DetectChar attribute="Brackets2" context="procedure_level2" char="("/>
+        <IncludeRules context="Level1"/>
+      </context>
+      <context name="procedure_param2" attribute="Normal" lineEndContext="#stay">
+        <DetectChar attribute="Brackets3" context="procedure_level3" char="("/>
+        <IncludeRules context="Level2"/>
+      </context>
+      <context name="procedure_param3" attribute="Normal" lineEndContext="#stay">
+        <DetectChar attribute="Brackets4" context="procedure_level4" char="("/>
+        <IncludeRules context="Level3"/>
+      </context>
+      <context name="procedure_param4" attribute="Normal" lineEndContext="#stay">
+        <DetectChar attribute="Brackets5" context="procedure_level5" char="("/>
+        <IncludeRules context="Level4"/>
+      </context>
+      <context name="procedure_param5" attribute="Normal" lineEndContext="#stay">
+        <DetectChar attribute="Brackets6" context="procedure_level6" char="("/>
+        <IncludeRules context="Level5"/>
+      </context>
+      <context name="procedure_param6" attribute="Normal" lineEndContext="#stay">
+        <DetectChar attribute="Brackets1" context="procedure_level1" char="("/>
+        <IncludeRules context="Level6"/>
+      </context>
+
       <context name="function_decl" attribute="Function" lineEndContext="#stay">
-        <RegExpr attribute="Function" context="#pop" String="\s*[A-Za-z0-9-!$%&quot;*/:&lt;=>?~_^+.@]*\s*"/>
+        <RegExpr attribute="Function" context="#pop" String="&funcname;"/>
+        <DetectSpaces attribute="Function"/>
+      </context>
+
+      <context name="function_decl_level0" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop">
+        <DetectChar attribute="Brackets1" context="#pop!procedure_level1" char="("/>
+        <IncludeRules context="function_decl"/>
+      </context>
+      <context name="function_decl_level1" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop">
+        <DetectChar attribute="Brackets2" context="#pop!procedure_level2" char="("/>
+        <IncludeRules context="function_decl"/>
+      </context>
+      <context name="function_decl_level2" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop">
+        <DetectChar attribute="Brackets3" context="#pop!procedure_level3" char="("/>
+        <IncludeRules context="function_decl"/>
+      </context>
+      <context name="function_decl_level3" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop">
+        <DetectChar attribute="Brackets4" context="#pop!procedure_level4" char="("/>
+        <IncludeRules context="function_decl"/>
+      </context>
+      <context name="function_decl_level4" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop">
+        <DetectChar attribute="Brackets5" context="#pop!procedure_level5" char="("/>
+        <IncludeRules context="function_decl"/>
+      </context>
+      <context name="function_decl_level5" attribute="Function" lineEndContext="#stay" fallthroughContext="#pop">
+        <DetectChar attribute="Brackets6" context="#pop!procedure_level6" char="("/>
+        <IncludeRules context="function_decl"/>
       </context>
 
 
@@ -1309,7 +1425,7 @@
         <Detect2Chars attribute="Brackets2" context="Level2" char="#" char1="("/>
         <Detect2Chars attribute="Brackets2" context="Level2" char="@" char1="("/>
         <DetectChar attribute="Brackets1" context="#pop" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel1"/>
       </context>
       <context name="Level2" attribute="Normal" lineEndContext="#stay">
         <DetectChar attribute="Brackets3" context="Level3" char="("/>
@@ -1318,7 +1434,7 @@
         <Detect2Chars attribute="Brackets3" context="Level3" char="#" char1="("/>
         <Detect2Chars attribute="Brackets3" context="Level3" char="@" char1="("/>
         <DetectChar attribute="Brackets2" context="#pop" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel2"/>
       </context>
       <context name="Level3" attribute="Normal" lineEndContext="#stay">
         <DetectChar attribute="Brackets4" context="Level4" char="("/>
@@ -1327,7 +1443,7 @@
         <Detect2Chars attribute="Brackets4" context="Level4" char="#" char1="("/>
         <Detect2Chars attribute="Brackets4" context="Level4" char="@" char1="("/>
         <DetectChar attribute="Brackets3" context="#pop" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel3"/>
       </context>
       <context name="Level4" attribute="Normal" lineEndContext="#stay">
         <DetectChar attribute="Brackets5" context="Level5" char="("/>
@@ -1336,7 +1452,7 @@
         <Detect2Chars attribute="Brackets5" context="Level5" char="#" char1="("/>
         <Detect2Chars attribute="Brackets5" context="Level5" char="@" char1="("/>
         <DetectChar attribute="Brackets4" context="#pop" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel4"/>
       </context>
       <context name="Level5" attribute="Normal" lineEndContext="#stay">
         <DetectChar attribute="Brackets6" context="Level6" char="("/>
@@ -1345,16 +1461,11 @@
         <Detect2Chars attribute="Brackets6" context="Level6" char="#" char1="("/>
         <Detect2Chars attribute="Brackets6" context="Level6" char="@" char1="("/>
         <DetectChar attribute="Brackets5" context="#pop" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="DefaultLevel5"/>
       </context>
       <context name="Level6" attribute="Normal" lineEndContext="#stay">
-        <DetectChar attribute="Brackets1" context="Level1" char="("/>
-        <Detect2Chars attribute="Brackets1" context="Level1" char="'" char1="("/>
-        <Detect2Chars attribute="Brackets1" context="Level1" char="`" char1="("/>
-        <Detect2Chars attribute="Brackets1" context="Level1" char="#" char1="("/>
-        <Detect2Chars attribute="Brackets1" context="Level1" char="@" char1="("/>
         <DetectChar attribute="Brackets6" context="#pop" char=")"/>
-        <IncludeRules context="Default"/>
+        <IncludeRules context="Level0"/>
       </context>
     </contexts>
     <itemDatas>

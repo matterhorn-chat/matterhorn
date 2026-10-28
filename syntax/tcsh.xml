@@ -9,7 +9,7 @@
         <!ENTITY pathpart "([\w_@.&#37;*?+-]|\\ )">     <!-- valid character in a file name -->
         <!ENTITY tab      "&#9;">
 ]>
-<language name="Tcsh" version="10" kateversion="5.53" section="Scripts" extensions="*.csh;*.tcsh;csh.cshrc;csh.login;.tcshrc;.cshrc;.login" mimetype="application/x-csh" casesensitive="1" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="LGPL">
+<language name="Tcsh" version="12" kateversion="5.53" section="Scripts" extensions="*.csh;*.tcsh;csh.cshrc;csh.login;.tcshrc;.cshrc;.login" mimetype="application/x-csh;text/x-csh" casesensitive="1" author="Matthew Woehlke (mw_triad@users.sourceforge.net)" license="LGPL">
 
 <!-- (c) 2006 Matthew Woehlke (mw_triad@users.sourceforge.net)
     Based on the bash highlighter by Wilbert Berendsen (wilbert@kde.nl)
@@ -465,7 +465,7 @@
   </highlighting>
   <general>
     <comments>
-      <comment name="singleLine" start="#"/>
+      <comment name="singleLine" start="#" position="afterwhitespace"/>
     </comments>
     <keywords casesensitive="1" weakDeliminator="^%#[]$._{}:-" additionalDeliminator="`"/>
   </general>

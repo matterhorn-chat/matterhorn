@@ -22,7 +22,7 @@
  * Boston, MA  02110-1301, USA.                                       *
  **********************************************************************
  -->
-<language version="17" kateversion="5.0" name="Clojure" alternativeNames="CLJ" section="Sources" extensions="*.clj;*.cljs;*.cljc" mimetype="" author="Dominik Haumann [lisp] modified for clojure by Caspar Hasenclever" license="LGPLv2+">
+<language version="18" kateversion="5.0" name="Clojure" alternativeNames="CLJ" section="Sources" extensions="*.clj;*.cljs;*.cljc" mimetype="" author="Dominik Haumann [lisp] modified for clojure by Caspar Hasenclever" license="LGPLv2+">
   <highlighting>
     <list name="definitions">
       <item>def</item>
@@ -696,7 +696,6 @@
       <item>*testing-vars*</item>
       <item>*test-out*</item>
       <item>*use-context-classloader*</item>
-      <item>*warn-on-reflection*</item>
       <item>*warn-on-reflection*</item>
       <item>false</item>
       <item>nil</item>

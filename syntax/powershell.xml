@@ -4,7 +4,7 @@
 ]>
 <language
   name="PowerShell"
-  version="14"
+  version="16"
   kateversion="5.79"
   extensions="*.ps1;*.psm1;*.psd1"
   section="Scripts"
@@ -104,7 +104,6 @@
       <item>Add-ClusterSharedVolume</item>
       <item>Add-ClusterVirtualMachineRole</item>
       <item>Add-Computer</item>
-      <item>Add-Content</item>
       <item>Add-History</item>
       <item>Add-JobTrigger</item>
       <item>Add-Member</item>
@@ -906,12 +905,17 @@
         <RegExpr attribute="Number" context="NumericSuffix" String="\b(0b[01]+|0x[0-9a-fA-F]+|([0-9]+(\.[0-9]*)?|\.[0-9]+)(e([-+][0-9]+|[0-9]*))?)(?=(u?[ysl]|[und])?([kmgtp]b)?\b)" insensitive="1"/>
         <RegExpr String="[-\w]+"/>
       </context>
-      <context attribute="Numeric Suffix" name="NumericSuffix" fallthroughContext="#pop">
+      <context attribute="Numeric Suffix" name="NumericSuffix" fallthroughContext="#pop" lineEndContext="#pop">
         <DetectIdentifier attribute="Numeric Suffix" context="#pop"/>
       </context>
 
       <!-- $( -->
       <context attribute="Normal Text" name="VarCmd">
+        <DetectChar attribute="Symbol" context="#pop" char=")"/>
+        <DetectChar attribute="Symbol" context="VarCmdFuncCall" char="("/>
+        <IncludeRules context="Normal"/>
+      </context>
+      <context attribute="Normal Text" name="VarCmdFuncCall">
         <DetectChar attribute="Symbol" context="#pop" char=")"/>
         <IncludeRules context="Normal"/>
       </context>

@@ -29,8 +29,6 @@
             <item>open</item>
             <item>final</item>
 
-            <item>get</item>
-            <item>set</item>
             <item>fun</item>
             <item>var</item>
             <item>val</item>

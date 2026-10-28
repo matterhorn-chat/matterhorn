@@ -262,7 +262,6 @@
       <item>BooleanFunction</item>
       <item>ByteOrdering</item>
       <item>C</item>
-      <item>C</item>
       <item>CityData</item>
       <item>ContinuousAction</item>
       <item>CallPacket</item>
@@ -530,7 +529,6 @@
       <item>ContinuedFractionK</item>
       <item>CylindricalDecomposition</item>
       <item>D</item>
-      <item>D</item>
       <item>DepthFirstScan</item>
       <item>DiskMatrix</item>
       <item>DagumDistribution</item>
@@ -737,7 +735,6 @@
       <item>Depth</item>
       <item>Disk</item>
       <item>DynamicWrapper</item>
-      <item>E</item>
       <item>E</item>
       <item>End</item>
       <item>ExactNumberQ</item>
@@ -1209,7 +1206,6 @@
       <item>HotellingTSquareDistribution</item>
       <item>HermiteH</item>
       <item>HoytDistribution</item>
-      <item>I</item>
       <item>I</item>
       <item>ImportString</item>
       <item>Interrupt</item>
@@ -1782,7 +1778,6 @@
       <item>Min</item>
       <item>MultivariateTDistribution</item>
       <item>N</item>
-      <item>N</item>
       <item>NormalizedSquaredEuclideanDistance</item>
       <item>NotPrecedesSlantEqual</item>
       <item>NakagamiDistribution</item>
@@ -1949,7 +1944,6 @@
       <item>Normalize</item>
       <item>NotPrecedesEqual</item>
       <item>NyquistPlot</item>
-      <item>O</item>
       <item>O</item>
       <item>Operate</item>
       <item>OutputForm</item>

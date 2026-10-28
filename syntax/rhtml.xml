@@ -44,7 +44,7 @@
 -->
 	
 <!-- Hold the "language" opening tag on a single line, as mentioned in "language.dtd". -->
-<language name="Ruby/Rails/RHTML" version="15" kateversion="5.79" section="Markup" extensions="*.rhtml;*.RHTML;*.html.erb" mimetype="" author="Richard Dale rdale@foton.es" license="LGPLv2+">
+<language name="Ruby/Rails/RHTML" version="17" kateversion="5.79" section="Markup" extensions="*.rhtml;*.RHTML;*.erb" mimetype="" author="Richard Dale rdale@foton.es" license="LGPLv2+" priority="1">
 	
 	<highlighting>
 	
@@ -171,7 +171,6 @@
 			<item>readlines</item>
 			<item>require</item>
 			<item>scan</item>
-			<item>select</item>
 			<item>set_trace_func</item>
 			<item>sleep</item>
 			<item>split</item>
@@ -373,14 +372,12 @@
 				<StringDetect attribute="Comment" context="#pop" String="--&gt;" endRegion="comment" />
 				<IncludeRules context="##Comments" />
 				<DetectIdentifier/>
-				<RegExpr attribute="Error" context="#stay" String="-(-(?!-&gt;))+" />
 			</context>
 			
 			<context name="CDATA" attribute="Normal Text" lineEndContext="#stay">
 				<DetectSpaces/>
 				<DetectIdentifier/>
 				<StringDetect attribute="CDATA" context="#pop" String="]]&gt;" endRegion="cdata" />
-				<StringDetect attribute="EntityRef" context="#stay" String="]]&amp;gt;" />
 			</context>
 			
 			<context name="PI" attribute="Normal Text" lineEndContext="#stay">
@@ -420,71 +417,57 @@
 				<IncludeRules context="FindPEntityRefs" />
 			</context>
 			
-			<context name="El Open" attribute="Normal Text" lineEndContext="#stay">
+			<context name="El Open" attribute="Error" lineEndContext="#stay">
 				<IncludeRules context="find-rubysource" />
 				
 				<Detect2Chars attribute="Element" context="#pop" char="/" char1="&gt;" />
 				<DetectChar attribute="Element" context="#pop" char="&gt;" />
 				<IncludeRules context="FindAttributes" />
-				<RegExpr attribute="Error" context="#stay" String="\S" />
+				<DetectSpaces attribute="Normal Text"/>
 			</context>
 			
-			<context name="El Close" attribute="Normal Text" lineEndContext="#stay">
+			<context name="El Close" attribute="Error" lineEndContext="#stay">
 				<IncludeRules context="find-rubysource" />
 				
 				<DetectChar attribute="Element" context="#pop" char="&gt;" />
-				<RegExpr attribute="Error" context="#stay" String="\S" />
+				<DetectSpaces attribute="Normal Text"/>
 			</context>
 			
-			<context name="El Close 2" attribute="Normal Text" lineEndContext="#stay">
-				<IncludeRules context="find-rubysource" />
-				
-				<DetectChar attribute="Element" context="#pop#pop#pop" char="&gt;" />
-				<RegExpr attribute="Error" context="#stay" String="\S" />
-			</context>
-			
-			<context name="El Close 3" attribute="Normal Text" lineEndContext="#stay">
-				<IncludeRules context="find-rubysource" />
-				
-				<DetectChar attribute="Element" context="#pop#pop#pop#pop" char="&gt;" />
-				<RegExpr attribute="Error" context="#stay" String="\S" />
-			</context>
-			
-			<context name="CSS" attribute="Normal Text" lineEndContext="#stay">
+			<context name="CSS" attribute="Error" lineEndContext="#stay">
 				<IncludeRules context="find-rubysource" />
 				
 				<Detect2Chars attribute="Element" context="#pop" char="/" char1="&gt;" endRegion="style" />
 				<DetectChar attribute="Element" context="CSS content" char="&gt;" />
 				<IncludeRules context="FindAttributes" />
-				<RegExpr attribute="Error" context="#stay" String="\S" />
+				<DetectSpaces attribute="Normal Text"/>
 			</context>
 			
 			<context name="CSS content" attribute="Normal Text" lineEndContext="#stay">
 				<IncludeRules context="find-rubysource" />
 				
-				<WordDetect attribute="Element" context="El Close 2" String="&lt;/style" insensitive="true" endRegion="style" />
+				<WordDetect attribute="Element" context="#pop#pop!El Close" String="&lt;/style" insensitive="true" endRegion="style" />
 				<IncludeRules context="##CSS" includeAttrib="true"/>
 			</context>
 			
-			<context name="JS" attribute="Normal Text" lineEndContext="#stay">
+			<context name="JS" attribute="Error" lineEndContext="#stay">
 				<IncludeRules context="find-rubysource" />
 				
 				<Detect2Chars attribute="Element" context="#pop" char="/" char1="&gt;" endRegion="script" />
 				<DetectChar attribute="Element" context="JS content" char="&gt;" />
 				<IncludeRules context="FindAttributes" />
-				<RegExpr attribute="Error" context="#stay" String="\S" />
+				<DetectSpaces attribute="Normal Text"/>
 			</context>
 			
 			<context name="JS content" attribute="Normal Text" lineEndContext="#stay">
 				<IncludeRules context="find-rubysource" />
 				
-				<WordDetect attribute="Element" context="El Close 2" String="&lt;/script" insensitive="true" endRegion="script" />
+				<WordDetect attribute="Element" context="#pop#pop!El Close" String="&lt;/script" insensitive="true" endRegion="script" />
 				<RegExpr attribute="Comment" context="JS comment close" String="//(?=.*&lt;/script\b)" insensitive="true" />
 				<IncludeRules context="Normal##JavaScript" includeAttrib="true"/>
 			</context>
 			
 			<context name="JS comment close" attribute="Comment" lineEndContext="#pop">
-				<RegExpr attribute="Element" context="El Close 3" String="&lt;/script\b" insensitive="true" endRegion="script" />
+				<RegExpr attribute="Element" context="#pop#pop#pop!El Close" String="&lt;/script\b" insensitive="true" endRegion="script" />
 				<IncludeRules context="##Comments" />
 			</context>
 			

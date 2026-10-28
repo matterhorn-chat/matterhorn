@@ -43,7 +43,7 @@
      * v1 [2019-02-10]: Initial version
 -->
 
-<language name="Mustache/Handlebars (HTML)" version="9" kateversion="5.79"
+<language name="Mustache/Handlebars (HTML)" version="10" kateversion="5.79"
           section="Markup" priority="1" mimetype=""
           extensions="*.mustache;*.handlebars;*.hbs;*.ractive;*.hogan;*.hulk;*.html.mst;*.html.mu;*.html.rac"
           author="Nibaldo González (nibgonz@gmail.com), based on the HTML highlighter by Wilbert Berendsen (wilbert@kde.nl)"
@@ -223,19 +223,19 @@
 			<RegExpr context="#stay" attribute="Element Tag" String="&lt;/\s*&gt;" />
 			<RegExpr context="ElementTagEnd" attribute="Element Tag" String="&lt;/\s*&name;" />
 		</context>
-		<context name="ElementTagEnd" attribute="Normal Text" lineEndContext="#stay">
+		<context name="ElementTagEnd" attribute="Error" lineEndContext="#stay">
 			<DetectChar context="#pop" attribute="Element Tag" char="&gt;" />
+			<DetectSpaces attribute="Normal Text"/>
 			<IncludeRules context="MustacheVariables" />
-			<RegExpr context="#stay" attribute="Error" String="\S" />
 		</context>
 
 		<!-- Inside the tag -->
-		<context name="ElementTag" attribute="Normal Text" lineEndContext="#stay">
+		<context name="ElementTag" attribute="Error" lineEndContext="#stay">
 			<Detect2Chars context="#pop" attribute="Element Tag" char="/" char1="&gt;" />
 			<DetectChar context="#pop" attribute="Element Tag" char="&gt;" />
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="FindAttributes" />
-			<RegExpr context="#stay" attribute="Error" String="\S" />
+			<DetectSpaces attribute="Normal Text"/>
 		</context>
 		<context name="FindAttributes" attribute="Normal Text" lineEndContext="#stay">
 			<RegExpr context="#stay" attribute="Attribute" String="&attributeName;" />
@@ -274,7 +274,6 @@
 		<context name="Comment" attribute="Comment" lineEndContext="#stay">
 			<DetectSpaces/>
 			<StringDetect context="#pop" attribute="Comment" String="--&gt;" endRegion="Comment" />
-			<RegExpr context="#stay" attribute="Error" String="-(?:-(?!-&gt;))+" />
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="##Comments" />
 		</context>
@@ -295,7 +294,6 @@
 		<context name="CDATA" attribute="Normal Text" lineEndContext="#stay">
 			<IncludeRules context="MustacheVariables" />
 			<StringDetect context="#pop" attribute="CDATA" String="]]&gt;" endRegion="cdata" />
-			<StringDetect context="#stay" attribute="EntityRef" String="]]&amp;gt;" />
 		</context>
 
 		<context name="PI" attribute="Normal Text" lineEndContext="#stay">
@@ -335,12 +333,12 @@
 
 		<!-- CSS -->
 
-		<context name="CSS" attribute="Normal Text" lineEndContext="#stay">
+		<context name="CSS" attribute="Error" lineEndContext="#stay">
 			<Detect2Chars context="#pop" attribute="Element Tag" char="/" char1="&gt;" endRegion="style" />
 			<DetectChar context="#pop!CSSContent" attribute="Element Tag" char="&gt;" />
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="FindAttributes" />
-			<RegExpr context="#stay" attribute="Error" String="\S" />
+			<DetectSpaces attribute="Normal Text"/>
 		</context>
 		<context name="CSSContent" attribute="Normal Text" lineEndContext="#stay">
 			<WordDetect context="#pop!ElementTagEnd" attribute="Element Tag" String="&lt;/style" insensitive="true" endRegion="style" />
@@ -377,12 +375,12 @@
 
 		<!-- JavaScript -->
 
-		<context name="JS" attribute="Normal Text" lineEndContext="#stay">
+		<context name="JS" attribute="Error" lineEndContext="#stay">
 			<DetectChar context="#pop!JSContent" attribute="Element Tag" char="&gt;" />
 			<Detect2Chars context="#pop" attribute="Element Tag" char="/" char1="&gt;" endRegion="script" />
 			<IncludeRules context="MustacheVariables" />
 			<IncludeRules context="FindAttributes" />
-			<RegExpr attribute="Error" context="#stay" String="\S" />
+			<DetectSpaces attribute="Normal Text"/>
 		</context>
 
 		<context name="JSContent" attribute="Normal Text" lineEndContext="#stay">

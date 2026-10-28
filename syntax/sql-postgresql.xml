@@ -21,7 +21,7 @@
   -->
 
 <language name="SQL (PostgreSQL)"
-          version="16"
+          version="17"
           kateversion="5.44"
           section="Database"
           extensions="*.sql;*.SQL;*.ddl;*.DDL"
@@ -498,7 +498,6 @@
       <item>PROCEDURE</item>
       <item>PROGRAM</item>
       <item>PUBLIC</item>
-      <item>RANGE</item>
       <item>PUBLICATION</item>
       <item>QUOTE</item>
       <item>RANGE</item>

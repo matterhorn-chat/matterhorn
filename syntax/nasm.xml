@@ -2548,7 +2548,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
       <item>__?FLOAT_DAZ?__</item>
       <item>__?FLOAT_ROUND?__</item>
       <item>__?FLOAT?__</item>
-      <item>__?FLOAT?__</item>
     </list>
 
     <list name="special symbols">

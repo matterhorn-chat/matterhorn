@@ -40,7 +40,7 @@
 	<!ENTITY scope2 "::(?=[^\s\:])"> <!-- Points after keyword or group { } -->
 
 ]>
-<language name="Rust" alternativeNames="RS" version="15" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" indenter="cstyle" priority="15" license="MIT" author="The Rust Project Developers">
+<language name="Rust" alternativeNames="RS" version="16" kateversion="5.0" section="Sources" extensions="*.rs" mimetype="text/rust" indenter="cstyle" priority="16" license="MIT" author="The Rust Project Developers">
 <highlighting>
 	<list name="fn">
 		<item>fn</item>
@@ -373,6 +373,7 @@
 			<keyword String="fn" attribute="Keyword" context="Function"/>
 			<keyword String="type" attribute="Keyword" context="Type"/>
 			<keyword String="self" attribute="Self" context="#stay"/>
+			<RegExpr String="&scope1;|&scope2;" attribute="Scope"/>
 			<keyword String="keywords" attribute="Keyword" context="#stay"/>
 			<keyword String="controlflow" attribute="Control Flow" context="#stay"/>
 			<keyword String="types" attribute="Type" context="#stay"/>
@@ -386,7 +387,6 @@
 			<RegExpr String="\b0(?:b[01_]*[^01_]|o[0-7_]*[^0-7_]|x[0-9a-fA-F_]*[^0-9a-fA-F_])\w*&rustIntSuf;\b" attribute="Error" context="#stay"/>
 			<Detect2Chars char="#" char1="[" attribute="Attribute" context="Attribute" beginRegion="Attribute"/>
 			<StringDetect String="#![" attribute="Attribute" context="Attribute" beginRegion="Attribute"/>
-			<RegExpr String="&scope1;|&scope2;" attribute="Scope"/>
 			<RegExpr String="&rustIdent;!" attribute="Macro"/>
 			<RegExpr String="&apos;&rustIdent;(?!&apos;)" attribute="Lifetime"/>
 			<DetectChar char="{" attribute="Symbol" context="#stay" beginRegion="Brace" />

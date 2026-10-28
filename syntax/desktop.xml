@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language>
+<language name=".desktop" version="6" kateversion="5.0"
+          section="Configuration" extensions="*.desktop;*.kdelnk;*.desktop.cmake"
+          mimetype="application/x-desktop">
+  <highlighting>
+    <contexts>
+      <context attribute="Key" lineEndContext="#stay" name="Normal">
+        <RegExpr String="^\[.*\]$" attribute="Section" context="#stay" beginRegion="Section" endRegion="Section" column="0"/>
+        <RegExpr String="\[.*\]" attribute="Language" context="Value"/>
+        <DetectChar char="#" attribute="Comment" context="Comment" firstNonSpace="true"/>
+        <DetectChar char="=" attribute="Normal Text" context="Value"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#pop" name="Value"/>
+      <context attribute="Comment"     lineEndContext="#pop" name="Comment">
+        <DetectSpaces />
+        <IncludeRules context="##Comments"/>
+      </context>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text" defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Section"  defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Key"  defStyleNum="dsDataType" spellChecking="false"/>
+      <itemData name="Language"  defStyleNum="dsDecVal" bold="1" spellChecking="false"/>
+      <itemData name="Comment" defStyleNum="dsComment"/>
+    </itemDatas>
+  </highlighting>
+  <general>
+    <comments>
+      <comment name="singleLine" start="#"/>
+    </comments>
+  </general>
+</language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

@@ -53,7 +53,7 @@
      * v1 [2018-06-20]: Initial version
 -->
 
-<language name="JavaScript React (JSX)" version="10" kateversion="5.53" section="Scripts" indenter="cstyle"
+<language name="JavaScript React (JSX)" alternativeNames="JSX" version="11" kateversion="5.53" section="Scripts" indenter="cstyle"
           priority="9" extensions="*.jsx" mimetype="text/jsx;text/x-jsx;application/jsx;application/x-jsx;"
           author="Nibaldo González (nibgonz@gmail.com)" license="MIT">
 

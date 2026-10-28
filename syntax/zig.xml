@@ -7,7 +7,7 @@
     <!ENTITY exp_float "(?:[eE][+-]?&dec_int;)">
     <!ENTITY exp_hexfloat "(?:[pP][-+]?&dec_int;)">
 ]>
-<language name="Zig" section="Sources" version="2" kateversion="5.62" indenter="cstyle" extensions="*.zig" mimetype="text/x-zig" priority="1" author="Waqar Ahmed (waqar.17a@gmail.com)" license="MIT">
+<language name="Zig" section="Sources" version="4" kateversion="5.62" indenter="cstyle" extensions="*.zig" mimetype="text/x-zig" priority="1" author="Waqar Ahmed (waqar.17a@gmail.com)" license="MIT">
     <highlighting>
         <list name="keywords">
             <item>addrspace</item>
@@ -234,6 +234,8 @@
                 <keyword attribute="Control Flow" context="#stay" String="controlflow"/>
                 <keyword attribute="Modifiers" context="#stay" String="modifiers"/>
                 <WordDetect attribute="Self Variable" String="self"/>
+                <DetectChar attribute="Symbol" context="#stay" char="{" beginRegion="Brace1" />
+                <DetectChar attribute="Symbol" context="#stay" char="}" endRegion="Brace1" />
                 <!-- <AnyChar context="SpecialType" String="iu" lookAhead="1"/> -->
                 <DetectIdentifier/>
             </context>
@@ -268,6 +270,7 @@
                 <DetectChar attribute="Decimal" context="#pop!SuffixNumber" char="0"/>
             </context>
             <context name="SuffixNumber" attribute="Normal Text" lineEndContext="#pop" fallthroughContext="#pop">
+                <StringDetect attribute="Symbol" String=".." context="#pop"/> <!-- in `[0..a]` -->
                 <AnyChar attribute="Error" String=".0123456789" context="#pop"/>
                 <DetectIdentifier attribute="Error" context="#pop"/>
             </context>

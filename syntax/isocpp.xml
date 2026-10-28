@@ -35,7 +35,7 @@
 <language
     name="ISO C++"
     section="Sources"
-    version="31"
+    version="32"
     kateversion="5.79"
     indenter="cstyle"
     style="C++"
@@ -468,24 +468,24 @@
       </context>
 
       <context name="IntSuffixPattern" attribute="Error" lineEndContext="#pop#pop" fallthroughContext="NumericSuffixError">
+        <DetectChar context="#pop!NumericUserSuffixPattern" char="_" lookAhead="1"/>
         <!-- https://en.cppreference.com/w/cpp/language/integer_literal#The_type_of_the_literal -->
         <RegExpr attribute="Standard Suffix" context="NumericSuffixError" String="([Uu](LL?|ll?|[Zz])?|(LL?|ll?|[Zz])[Uu]?)\b"/>
         <!-- https://en.cppreference.com/w/cpp/language/user_literal#Standard_library -->
         <RegExpr attribute="Standard Classes" context="NumericSuffixError" String="(?:i[fl]?|min|[mun]?s|[hyd])\b"/>
-        <DetectChar context="#pop!NumericUserSuffixPattern" char="_" lookAhead="1"/>
       </context>
 
       <context name="FloatSuffix" attribute="Error" lineEndContext="#pop#pop" fallthroughContext="NumericSuffixError">
         <DetectChar attribute="Error" context="#stay" char="'" />
-        <AnyChar context="#pop!FloatSuffixPattern" String="fFlLimsh_" lookAhead="1"/>
+        <AnyChar context="#pop!FloatSuffixPattern" String="fFlLbBimshd_" lookAhead="1"/>
       </context>
 
       <context name="FloatSuffixPattern" attribute="Error" lineEndContext="#pop#pop" fallthroughContext="NumericSuffixError">
+        <DetectChar context="#pop!NumericUserSuffixPattern" char="_" lookAhead="1"/>
         <!-- https://en.cppreference.com/w/cpp/language/floating_literal#Syntax -->
-        <AnyChar attribute="Standard Suffix" context="NumericSuffixError" String="fFlL" />
+        <RegExpr attribute="Standard Suffix" context="NumericSuffixError" String="[fF](?:16|32|64|128)?|[lL]|bf16|BF16"/>
         <!-- https://en.cppreference.com/w/cpp/language/user_literal#Standard_library -->
-        <RegExpr attribute="Standard Classes" context="NumericSuffixError" String="(?:i[fl]?|min|[mun]?s|h)\b" />
-        <DetectChar context="#pop!NumericUserSuffixPattern" char="_" lookAhead="1" />
+        <RegExpr attribute="Standard Classes" context="NumericSuffixError" String="(?:i[fl]?|min|[mun]?s|[hd])\b"/>
       </context>
 
       <context name="NumericUserSuffixPattern" attribute="Error" lineEndContext="#pop#pop">

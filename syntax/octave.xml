@@ -1847,7 +1847,6 @@
       <item>bisectionstep</item>
       <item>builtin</item>
       <item>bwfill</item>
-      <item>bwlabel</item>
       <item>cell2csv</item>
       <item>celleval</item>
       <item>Chi</item>
@@ -1877,7 +1876,6 @@
       <item>dispatch</item>
       <item>dispatch_help</item>
       <item>display_fixed_operations</item>
-      <item>dlmread</item>
       <item>ellint_Ecomp</item>
       <item>ellint_Kcomp</item>
       <item>ellipj</item>
@@ -2054,7 +2052,6 @@
       <item>transport_3</item>
       <item>transport_4</item>
       <item>transport_5</item>
-      <item>trisolve</item>
       <item>waitbar</item>
       <item>xmlread</item>
       <item>zeta</item>
@@ -2202,7 +2199,6 @@
       <item>dftmtx</item>
       <item>dhbar</item>
       <item>dilate</item>
-      <item>dispatch</item>
       <item>distance</item>
       <item>dlmread</item>
       <item>dlmwrite</item>
@@ -2215,7 +2211,6 @@
       <item>edit</item>
       <item>ellip</item>
       <item>ellipdemo</item>
-      <item>ellipj</item>
       <item>ellipke</item>
       <item>ellipord</item>
       <item>__ellip_ws</item>

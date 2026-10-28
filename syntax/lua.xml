@@ -48,7 +48,7 @@
     - NOTE, FIXME, TODO alerts added on comments
     - improved highlighting
 -->
-<language name="Lua" version="18" indenter="lua" kateversion="5.79" section="Scripts" extensions="*.lua;*.rockspec" mimetype="text/x-lua">
+<language name="Lua" version="21" indenter="cstyle" kateversion="5.79" section="Scripts" extensions="*.lua;*.rockspec" mimetype="text/x-lua">
   <highlighting>
     <list name="keywords">
       <item>and</item>
@@ -57,6 +57,8 @@
       <item>local</item>
       <item>not</item>
       <item>or</item>
+      <!-- 5.5 -->
+      <item>global</item>
     </list>
 
     <list name="specialvars">
@@ -190,6 +192,7 @@
 
       <!-- Table Manipulation -->
       <item>table.concat</item>
+      <item>table.create</item>
       <item>table.insert</item>
       <item>table.move</item>
       <item>table.pack</item>
@@ -273,8 +276,6 @@
       <item>cgilua</item>
       <item>cgilua.addclosefunction</item>
       <item>cgilua.addopenfunction</item>
-      <item>cgilua.addopenfunction</item>
-      <item>cgilua.addscripthandler</item>
       <item>cgilua.addscripthandler</item>
       <item>cgilua.buildprocesshandler</item>
       <item>cgilua.contentheader</item>
@@ -368,13 +369,10 @@
       <item>concat</item>
       <item>insert</item>
       <item>move</item>
-      <item>pack</item>
       <item>remove</item>
       <item>sort</item>
-      <item>unpack</item>
 
       <!-- luasql -->
-      <item>close</item>
       <item>commit</item>
       <item>connect</item>
       <item>escape</item>
@@ -555,14 +553,22 @@
         <IncludeRules context="Normal" />
       </context>
 
-      <context name="String_single" attribute="Strings"     lineEndContext="Error">
+      <context name="String_single" attribute="Strings"     lineEndContext="UnclosedString">
         <DetectChar   attribute="Strings"  context="Special_char"  char="\" lookAhead="true"/>
         <DetectChar   attribute="Strings"  context="#pop"  char="'"/>
       </context>
 
-      <context name="String_double" attribute="Strings"     lineEndContext="Error">
+      <context name="String_double" attribute="Strings"     lineEndContext="UnclosedString">
         <DetectChar   attribute="Strings"  context="Special_char"  char="\" lookAhead="true"/>
         <DetectChar   attribute="Strings"  context="#pop"  char="&quot;"/>
+      </context>
+
+      <context name="UnclosedString" attribute="Error" lineEndContext="#stay" fallthroughContext="#pop#pop">
+				<!-- A single string/comment reached the end of the line without a \ line escape -->
+				<!-- We set the following line (or part of it) to the "Error" attribute so that this error is easier to spot -->
+        <DetectSpaces attribute="Error" context="#pop#pop"/>
+        <DetectIdentifier attribute="Error" context="#pop#pop"/>
+				<RegExpr attribute="Error" String="^([^-[()&quot;'\s]|-(?!-)|\[(?!=))+" context="#pop#pop" column="0"/>
       </context>
 
       <context name="Special_char"  attribute="Error"       lineEndContext="#pop">
@@ -581,8 +587,6 @@
         <StringDetect attribute="RawStrings"    context="#pop"  String="]%1]" dynamic="true" />
       </context>
 
-      <context name="Error"         attribute="Error"       lineEndContext="#stay">
-      </context>
     </contexts>
 
     <itemDatas>

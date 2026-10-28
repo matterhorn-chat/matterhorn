@@ -33,7 +33,7 @@
 
 <!-- Hold the "language" opening tag on a single line, as mentioned in "language.dtd". -->
 <language name="Crystal" section="Sources"
-	  version="0" kateversion="5.0"
+	  version="1" kateversion="5.0"
 	  extensions="*.cr"
 	  mimetype="application/x-crystal"
 	  style="crystal" indenter="ruby"
@@ -42,6 +42,7 @@
 	<highlighting>
 
 		<list name="keywords">
+			<item>alias</item>
 			<item>begin</item>
 			<item>break</item>
 			<item>case</item>
@@ -50,13 +51,18 @@
 			<item>elsif</item>
 			<item>end</item>
 			<item>ensure</item>
+			<item>enum</item>
 			<item>for</item>
+			<item>fun</item>
 			<item>if</item>
 			<item>in</item>
+			<item>lib</item>
 			<item>next</item>
 			<item>rescue</item>
 			<item>return</item>
 			<item>then</item>
+			<item>type</item>
+			<item>union</item>
 			<item>unless</item>
 			<item>until</item>
 			<item>when</item>

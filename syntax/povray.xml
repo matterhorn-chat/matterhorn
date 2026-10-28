@@ -376,7 +376,6 @@
 			<item>tightness</item>
 			<item>tile2</item>
 			<item>tiles</item>
-			<item>normal</item>
 			<item>tolerance</item>
 			<item>toroidal</item>
 			<item>torus</item>
@@ -716,7 +715,6 @@
 			<item>texture</item>
 			<item>tile2</item>
 			<item>tiles</item>
-			<item>normal</item>
 			<item>toroidal</item>
 			<item>transmit</item>
 			<item>triangle_wave</item>

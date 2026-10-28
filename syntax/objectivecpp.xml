@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language>
-<language name="Objective-C++" alternativeNames="ObjectiveC++;Objective-CPP;ObjectiveCPP;ObjC++;ObjCPP" version="12" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objc++src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
+<language name="Objective-C++" alternativeNames="ObjectiveC++;Objective-CPP;ObjectiveCPP;ObjC++;ObjCPP" version="13" kateversion="5.0" section="Sources" extensions="*.mm;*.M;*.h" mimetype="text/x-objc++src;text/x-c-hdr" author="Gennady Telegin (gepo@lvk.cs.msu.su">
   <highlighting>
     <list name="keywords">
       <item>break</item>
@@ -94,7 +94,6 @@
       <item>Q_SIGNALS</item>
       <item>Q_SLOTS</item>
       <item>Q_FOREACH</item>
-      <item>Q_DECLARE_FLAGS</item>
       <item>Q_INIT_RESOURCE</item>
       <item>Q_CLEANUP_RESOURCE</item>
       <item>Q_GLOBAL_STATIC</item>

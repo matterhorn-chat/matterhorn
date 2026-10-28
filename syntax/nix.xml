@@ -4,7 +4,7 @@
 ]>
 
 <!--
-    SPDX-FileCopyrightText: 2021 Marco Rebhan <me@dblsaiko.net>
+    SPDX-FileCopyrightText: 2024-2025 Katalin Rebhan <me@dblsaiko.net>
     SPDX-FileContributor: Tuan Le <webmaster@michivi.com>
 
     SPDX-License-Identifier: MIT
@@ -12,18 +12,17 @@
 
 <language
     name="Nix"
-    version="2"
+    version="5"
     kateversion="5.79"
     section="Scripts"
     extensions="*.nix"
     casesensitive="1"
-    author="Marco Rebhan &lt;me@dblsaiko.net&gt;"
+    author="Katalin Rebhan &lt;me@dblsaiko.net&gt;"
     license="MIT"
     priority="1"
 >
     <highlighting>
         <list name="keywords">
-            <item>assert</item>
             <item>rec</item>
             <item>and</item>
             <item>or</item>
@@ -50,6 +49,7 @@
                 <WordDetect String="let" attribute="Keyword" context="Let" />
                 <WordDetect String="if" attribute="Keyword" context="If" />
                 <WordDetect String="with" attribute="Keyword" context="With" />
+                <WordDetect String="assert" attribute="Keyword" context="Assert" />
                 <Detect2Chars char="/" char1="/" attribute="Operator" />
                 <Detect2Chars char="?" char1="?" attribute="Operator" />
                 <Detect2Chars char="+" char1="+" attribute="Operator" />
@@ -73,9 +73,15 @@
                 <RegExpr String="[a-zA-Z0-9-_.]*(/[a-zA-Z0-9-_.]+)+" attribute="Path" />
                 <Float attribute="Float" />
                 <Int attribute="Int" />
+                <DetectChar char="." attribute="Symbol" context="Set Access" />
                 <WordDetect String="true" attribute="Constant" />
                 <WordDetect String="false" attribute="Constant" />
                 <WordDetect String="null" attribute="Constant" />
+            </context>
+            <context name="Set Access" attribute="Normal Text" lineEndContext="#stay">
+                <Detect2Chars char="$" char1="{" attribute="Special Char" context="#pop!Interpolated String" />
+                <DetectChar char="&quot;" attribute="String" context="#pop!String" />
+                <DetectIdentifier context="#pop" />
             </context>
             <context name="Parentheses" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar char=")" attribute="Symbol" context="#pop" />
@@ -129,6 +135,7 @@
                 <DetectChar char="=" attribute="Operator" context="Any Brace - Set Value" />
                 <DetectChar char="&quot;" attribute="String" context="Any Brace - String" />
                 <Detect2Chars char="'" char1="'" attribute="String" context="Any Brace - String2" />
+                <Detect2Chars char="$" char1="{" attribute="Special Char" context="Any Brace - Interpolated String" />
 
                 <DetectChar char="," attribute="Symbol" context="#pop!Set Expansion" />
                 <DetectChar char="?" attribute="Symbol" context="Any Brace - Default Value" />
@@ -146,17 +153,21 @@
                 <DetectChar char=";" attribute="Symbol" context="#pop#pop!Set" />
                 <IncludeRules context="Set Value" />
             </context>
-            <context name="Any Brace - String" attribute="Normal Text" lineEndContext="#stay">
+            <context name="Any Brace - String" attribute="String" lineEndContext="#stay">
                 <DetectChar char="&quot;" attribute="String" context="#pop#pop!Set" />
                 <IncludeRules context="String" />
             </context>
-            <context name="Any Brace - String2" attribute="Normal Text" lineEndContext="#stay">
+            <context name="Any Brace - String2" attribute="String" lineEndContext="#stay">
                 <Detect2Chars char="'" char1="'" attribute="String" context="#pop#pop!Set" />
                 <IncludeRules context="String" />
             </context>
             <context name="Any Brace - Inherit" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar char=";" attribute="Symbol" context="#pop#pop!Set" />
                 <IncludeRules context="Inherit" />
+            </context>
+            <context name="Any Brace - Interpolated String" attribute="Normal Text">
+                <DetectChar char="}" attribute="Special Char" context="#pop!Set" />
+                <IncludeRules context="Interpolated String" />
             </context>
             <context name="Any Brace - Default Value" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar char="," attribute="Symbol" context="#pop#pop!Set Expansion" />
@@ -168,12 +179,23 @@
                 <DetectChar char="&quot;" attribute="String" context="String" />
                 <Detect2Chars char="'" char1="'" attribute="String" context="String2" />
                 <DetectChar char="=" attribute="Operator" context="Set Value" />
+                <Detect2Chars char="$" char1="{" attribute="Special Char" context="Interpolated String" />
                 <RegExpr String="&ident;" attribute="Identifier" />
                 <IncludeRules context="Comment Rules" />
             </context>
             <context name="Inherit" attribute="Normal Text" lineEndContext="#stay">
-                <DetectChar char=";" attribute="Symbol" context="#pop" />
-                <IncludeRules context="Single Expression" />
+                <DetectChar char="(" attribute="Symbol" context="Inherit - Source" />
+                <DetectIdentifier attribute="Identifier" context="Inherit - Keys" />
+            </context>
+            <context name="Inherit - Source" attribute="Normal Text" lineEndContext="#stay">
+                <DetectChar char=")" attribute="Symbol" context="#pop!Inherit - Keys" />
+
+                <IncludeRules context="Parentheses" />
+            </context>
+            <context name="Inherit - Keys" attribute="Normal Text" lineEndContext="#stay">
+                <DetectChar char=";" attribute="Symbol" context="#pop#pop" />
+                <DetectChar char="(" attribute="Error" />
+                <DetectIdentifier attribute="Identifier" />
             </context>
 
             <context name="Set" attribute="Normal Text" lineEndContext="#stay">
@@ -237,6 +259,10 @@
             </context>
 
             <context name="With" attribute="Normal Text" lineEndContext="#stay">
+                <DetectChar char=";" attribute="Symbol" context="#pop" />
+                <IncludeRules context="Expression" />
+            </context>
+            <context name="Assert" attribute="Normal Text" lineEndContext="#stay">
                 <DetectChar char=";" attribute="Symbol" context="#pop" />
                 <IncludeRules context="Expression" />
             </context>

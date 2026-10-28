@@ -2,7 +2,7 @@
 <!DOCTYPE language [
     <!ENTITY identchar "[A-Za-z0-9-+&lt;&gt;/*]">
 ]>
-<language version="11" kateversion="5.79" name="Common Lisp" section="Sources" extensions="*.lisp;*.cl;*.lsp;*.el" mimetype="" author="Dominik Haumann (dhaumann@kde.org)" license="MIT">
+<language version="12" kateversion="5.79" name="Common Lisp" section="Sources" extensions="*.lisp;*.cl;*.lsp;*.el" mimetype="" author="Dominik Haumann (dhaumann@kde.org)" license="MIT">
   <highlighting>
     <list name="symbols">
       <item>&lt;</item>
@@ -427,7 +427,6 @@
       <item>initialize-instance</item> 
       <item>inline</item> 
       <item>in-package</item> 
-      <item>in-package</item> 
       <item>input-stream-p</item> 
       <item>inspect</item> 
       <item>int-char</item> 
@@ -519,7 +518,6 @@
       <item>macroexpand-l</item> 
       <item>macro-function</item> 
       <item>macrolet</item> 
-      <item>make-array</item> 
       <item>make-array</item> 
       <item>make-broadcast-stream</item> 
       <item>make-char</item> 
@@ -911,7 +909,6 @@
       <item>translate-pathname</item> 
       <item>tree-equal</item> 
       <item>truename</item> 
-      <item>truncase</item> 
       <item>truncate</item> 
       <item>two-way-stream</item> 
       <item>two-way-stream-input-stream</item> 
@@ -1058,14 +1055,10 @@
     <list name="variables">
       <item>*applyhook*</item>
       <item>*break-on-signals*</item>
-      <item>*break-on-signals*</item>
       <item>*break-on-warnings*</item>
       <item>*compile-file-pathname*</item>
-      <item>*compile-file-pathname*</item>
-      <item>*compile-file-truename*</item>
       <item>*compile-file-truename*</item>
       <item>*compile-print*</item>
-      <item>*compile-verbose*</item>
       <item>*compile-verbose*</item>
       <item>*debugger-hook*</item>
       <item>*debug-io*</item>
@@ -1091,13 +1084,10 @@
       <item>*print-level*</item>
       <item>*print-lines*</item>
       <item>*print-miser-width*</item>
-      <item>*print-miser-width*</item>
-      <item>*print-pprint-dispatch*</item>
       <item>*print-pprint-dispatch*</item>
       <item>*print-pretty*</item>
       <item>*print-radix*</item>
       <item>*print-readably*</item>
-      <item>*print-right-margin*</item>
       <item>*print-right-margin*</item>
       <item>*query-io*</item>
       <item>*random-state*</item>

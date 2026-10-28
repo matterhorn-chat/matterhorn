@@ -117,10 +117,6 @@
       <item>rfe</item>
       <item>sb</item>
       <item>sh</item>
-      <item>sw</item>
-      <item>swcl</item>
-      <item>swl</item>
-      <item>swr</item>
       <item>sll</item>
       <item>sllv</item>
       <item>slt</item>
@@ -139,6 +135,7 @@
       <item>swc1</item>
       <item>swc2</item>
       <item>swc3</item>
+      <item>swcl</item>
       <item>swl</item>
       <item>swr</item>
       <item>syscall</item>

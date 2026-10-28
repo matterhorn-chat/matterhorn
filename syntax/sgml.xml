@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language>
 <language name="SGML" version="5" kateversion="5.0" section="Markup" extensions="*.sgml" mimetype="text/sgml">
+
+<!--
+missing features:
+- DOCTYPE with ELEMENT, ENTITY, SHORTREF, USEMAP
+- special processing: INCLUDE, IGNORE, CDATA, RCDATA, TEMP
+    <![ IGNORE [ bla bla ]]>
+    <![ %Maryland; [ bla bla ]]> (entity replacement)
+- `<ITALIC>text</>` (SHORTTAG) for `<ITALIC>text</ITALIC>`
+- `<ITALIC/text/` (NET) for `<ITALIC>text</ITALIC>`
+    `<ITALIC/text<BOLD/text//` for `<ITALIC>text<BOLD>text</BOLD></ITALIC>`
+- `<cell>a<>b<>c` for `<cell>a</cell><cell>b</cell><cell>c`
+- entity: `&je;`, `&#space;`, `&#2345;`, etc
+- comment everywhere: <tag - - comment - - no comment>
+                            ~           ~ These spaces do not exist,
+                                          but it is not possible to delete them
+                                          without having an XML syntax error
+-->
+
   <highlighting>
     <contexts>
        <context attribute="Normal Text" lineEndContext="#stay" name="Normal Text" >

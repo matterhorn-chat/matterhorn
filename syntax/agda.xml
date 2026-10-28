@@ -3,7 +3,7 @@
   <!ENTITY charsdelim "_;.&#34;(){}@">
   <!ENTITY wordsep "(?=[&charsdelim;]|\s|$)">
 ]>
-<language name="Agda" version="9" kateversion="5.0" section="Sources" extensions="*.agda" mimetype="text/x-agda" author="Matthias C. M. Troffaes" license="LGPL">
+<language name="Agda" version="10" kateversion="5.0" section="Sources" extensions="*.agda" mimetype="text/x-agda" author="Matthias C. M. Troffaes" license="LGPL">
   <highlighting>
     <list name="reserved keywords">
       <item>abstract</item>
@@ -29,6 +29,7 @@
       <item>module</item>
       <item>mutual</item>
       <item>no-eta-equality</item>
+      <item>opaque</item>
       <item>open</item>
       <item>overlap</item>
       <item>pattern</item>
@@ -44,6 +45,7 @@
       <item>syntax</item>
       <item>tactic</item>
       <item>to</item>
+      <item>unfolding</item>
       <item>unquote</item>
       <item>unquoteDecl</item>
       <item>unquoteDef</item>

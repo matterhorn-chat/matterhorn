@@ -4,7 +4,7 @@
     <!ENTITY bullet "&#xd7;">
     <!ENTITY envname "[a-zA-Z]+\*?">
 ]>
-<language name="LaTeX" version="23" section="Markup" kateversion="5.79" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz;*.pgf" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
+<language name="LaTeX" version="25" section="Markup" kateversion="5.79" priority="10" extensions="*.tex;*.ltx;*.dtx;*.sty;*.cls;*.bbx;*.cbx;*.lbx;*.tikz;*.pgf" mimetype="text/x-tex" casesensitive="1" author="Jeroen Wijnhout (Jeroen.Wijnhout@kdemail.net)+Holger Danielsson (holger.danielsson@versanet.de)+Michel Ludwig (michel.ludwig@kdemail.net)+Thomas Braun (thomas.braun@virtuell-zuhause.de)" license="LGPL" >
   <highlighting>
     <!-- NOTE: Keywords of kind "\something" do not need a delimiter before "\".
          Using a DetectChar rule with lookAhead to detect "\" at the beginning
@@ -5049,9 +5049,9 @@
         <DetectSpaces/>
         <RegExpr String=".+" attribute="Error" context="#stay"/>
       </context>
-      <context name="HighlightingRuby" attribute="Normal Text" lineEndContext="#stay">
+      <context name="HighlightingRuby" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="Expr##Ruby">
         <IncludeRules context="HighlightingCommon"/>
-        <IncludeRules context="##Ruby" includeAttrib="true"/>
+        <IncludeRules context="Ruby##Ruby" includeAttrib="true"/>
       </context>
 
       <context name="HighlightingRustCodeEnvS" attribute="Error" lineEndContext="#stay">
@@ -5281,9 +5281,9 @@
         <DetectSpaces/>
         <RegExpr String=".+" attribute="Error" context="#stay"/>
       </context>
-      <context name="Highlightingsed" attribute="Normal Text" lineEndContext="#stay">
+      <context name="Highlightingsed" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="Command##sed">
         <IncludeRules context="HighlightingCommon"/>
-        <IncludeRules context="##sed" includeAttrib="true"/>
+        <IncludeRules context="Start##sed" includeAttrib="true"/>
       </context>
 
       <context name="HighlightingSieveCodeEnvS" attribute="Error" lineEndContext="#stay">

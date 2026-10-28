@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE language>
-<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.vs;*.frag;*.fs;*.geom;*.gs;*.tcs;*.tes" mimetype="text/x-glslsrc" version="11" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL" indenter="cstyle">
+<language name="GLSL" section="3D" extensions="*.glsl;*.vert;*.vs;*.frag;*.fs;*.geom;*.gs;*.tcs;*.tes" mimetype="text/x-glslsrc" version="12" kateversion="5.0" author="Oliver Richers (o.richers@tu-bs.de)" license="LGPL" indenter="cstyle">
 	<!--
 		Based on GLSLangSpec.4.60.pdf
 		https://www.khronos.org/registry/OpenGL/specs/gl/
@@ -189,7 +189,7 @@
 			<item>uimage2D</item>
 
 			<item>usampler2DArray</item>
-			<item>utexture1DArray</item>
+			<item>utexture2DArray</item>
 			<item>uimage2DArray</item>
 
 			<item>usampler2DMS</item>
@@ -292,7 +292,6 @@
 
 			<!-- tesselation -->
 			<item>isolines</item>
-			<item>triangles</item>
 			<item>quads</item>
 			<item>point_mode</item>
 			<item>equal_spacing</item>
@@ -337,7 +336,6 @@
 			<item>atomicCounterXor</item>
 			<item>atomicAdd</item>
 			<item>atomicAnd</item>
-			<item>atomicCompSwap</item>
 			<item>atomicExchange</item>
 			<item>atomicMax</item>
 			<item>atomicMin</item>
@@ -1192,7 +1190,6 @@
 			<item>gl_MultiTexCoord0</item>
 			<item>gl_MultiTexCoord1</item>
 			<item>gl_MultiTexCoord2</item>
-			<item>gl_MultiTexCoord2</item>
 			<item>gl_MultiTexCoord3</item>
 			<item>gl_MultiTexCoord4</item>
 			<item>gl_MultiTexCoord5</item>
@@ -1221,7 +1218,6 @@
 			<item>gl_MaxAtomicCounterBindings</item>
 			<item>gl_MaxAtomicCounterBufferSize</item>
 			<item>gl_MaxClipDistances</item>
-			<item>gl_MaxClipPlanes</item>
 			<item>gl_MaxCombinedAtomicCounterBuffers</item>
 			<item>gl_MaxCombinedAtomicCounters</item>
 			<item>gl_MaxCombinedClipAndCullDistances</item>
@@ -1257,7 +1253,6 @@
 			<item>gl_MaxImageUnits</item>
 			<item>gl_MaxInputAttachments</item>
 			<item>gl_MaxLights</item>
-			<item>gl_MaxPatchVertices</item>
 			<item>gl_MaxProgramTexelOffset</item>
 			<item>gl_MaxSamples</item>
 			<item>gl_MaxTessControlAtomicCounterBuffers</item>
@@ -1277,13 +1272,10 @@
 			<item>gl_MaxTessEvaluationUniformComponents</item>
 			<item>gl_MaxTessGenLevel</item>
 			<item>gl_MaxTessPatchComponents</item>
-			<item>gl_MaxTextureCoords</item>
 			<item>gl_MaxTextureImageUnits</item>
-			<item>gl_MaxTextureUnits</item>
 			<item>gl_MaxTransformFeedbackBuffers</item>
 			<item>gl_MaxTransformFeedbackInterleavedComponents</item>
 			<item>gl_MaxVaryingComponents</item>
-			<item>gl_MaxVaryingFloats</item>
 			<item>gl_MaxVaryingVectors</item>
 			<item>gl_MaxVertexAtomicCounterBuffers</item>
 			<item>gl_MaxVertexAtomicCounters</item>
@@ -1359,8 +1351,6 @@
 			<item>gl_BackSecondaryColor</item>
 			<item>gl_TexCoord</item>
 			<item>gl_FogFragCoord</item>
-			<item>gl_Color</item>
-			<item>gl_SecondaryColor</item>
 		</list>
 		<contexts>
 			<context attribute="Normal Text" lineEndContext="#stay" name="Normal">

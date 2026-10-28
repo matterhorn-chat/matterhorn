@@ -691,7 +691,6 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
       <item>pen_bot</item>
       <item>savepen</item>
 
-      <item>clearpen</item>
       <item>clear_pen_memory</item>
       <item>lft</item>
       <item>rt</item>
@@ -716,7 +715,6 @@ author="Yedvilun (yedvilun@gmail.com)" license="LGPL">
       <item>clearxy</item>
       <item>clearit</item>
       <item>clearpen</item>
-      <item>pickup</item>
       <item>shipit</item>
 
       <item>bye</item>

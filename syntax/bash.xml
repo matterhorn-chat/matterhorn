@@ -56,21 +56,26 @@
 
     <!ENTITY arithmetic_as_subshell "\(((?:[^`'&quot;()$]++|\$\{[^`'&quot;(){}$]+\}|\$(?=[^{`'&quot;()])|`[^`]*+`|\((?1)(?:[)]|(?=['&quot;])))++)(?:[)](?=$|[^)])|[&quot;'])">
 
-    <!ENTITY unary_operators  "-[abcdefghkprstuwxGLNOSovRnz]&eos;">
-    <!ENTITY binary_operators "(?:-(?:e[fq]|[nolg]t|[nlg]e)|==?|!=)&eos;">
+    <!ENTITY unary_operators  "-[abcdefghkprstuwxGLNOSovRnz](?=\\?$|[ &tab;])">
+    <!ENTITY binary_operators "(?:-(?:e[fq]|[nolg]t|[nlg]e)|==?|!=)(?=\\?$|[ &tab;])">
 
     <!ENTITY dblbracket_close "\]\](?=($|[ &tab;;|&amp;)]))">
 
     <!ENTITY weakDeliminatorSymbols "^&#37;#[]$.{}:-/">
 ]>
 
+<!--
+https://git.savannah.gnu.org/cgit/bash.git/tree/NEWS
+current: bash-5.2
+-->
+
 <language
     name="Bash"
-    version="51"
+    version="58"
     kateversion="5.79"
     section="Scripts"
-    extensions="*.sh;*.bash;*.ebuild;*.eclass;*.exlib;*.exheres-0;.bashrc;.bash_profile;.bash_login;.profile;PKGBUILD;APKBUILD"
-    mimetype="application/x-shellscript"
+    extensions="*.sh;*.bash;*.ebuild;*.eclass;*.exlib;*.exheres-0;.bashrc;.bash_profile;.bash_login;.profile;.envrc;PKGBUILD;APKBUILD"
+    mimetype="application/x-shellscript;text/x-shellscript"
     casesensitive="1"
     author="Wilbert Berendsen (wilbert@kde.nl)"
     license="LGPL"
@@ -664,10 +669,12 @@
         <Detect2Chars attribute="Parameter Expansion" context="#pop!VarBraceStart" char="$" char1="{"/>
         <StringDetect context="#pop!ExprDblParenSubstOrSubstCommand" String="$((" lookAhead="1"/>
         <Detect2Chars attribute="Parameter Expansion" context="#pop!SubstCommand" char="$" char1="(" beginRegion="subshell"/>
+        <!-- The old format $[exp] is undocumented, deprecated
+        and will be removed in upcoming versions of bash. -->
       </context>
       <context attribute="Command" lineEndContext="#pop#pop" name="DispatchStringVariables">
         <Detect2Chars attribute="String SingleQ" context="#pop!StringEsc" char="$" char1="'"/>
-        <Detect2Chars attribute="String Transl." context="#pop!StringDQ" char="$" char1="&quot;"/>
+        <Detect2Chars attribute="String Transl." context="#pop!StringTrDQ" char="$" char1="&quot;"/>
       </context>
       <context attribute="Command" lineEndContext="#pop#pop" name="DispatchVarnameVariables">
         <RegExpr attribute="Dollar Prefix" context="#pop!VarNamePrefixedWithDollar" String="\$(?=&varname;|[*@#?$!0-9-])"/>
@@ -872,6 +879,7 @@
 
       <!-- FindPathThenPopInAlternateValue consumes path in ${xx:here}-->
       <context attribute="Normal Text" lineEndContext="#pop" name="FindPathThenPopInAlternateValue">
+        <DetectChar attribute="Variable" char="&amp;"/>
         <Detect2Chars context="#pop!PathThenPopInAlternateValue" char="?" char1="(" lookAhead="1"/>
         <Detect2Chars context="#pop!PathThenPopInAlternateValue" char="*" char1="(" lookAhead="1"/>
         <Detect2Chars context="#pop!PathThenPopInAlternateValue" char="+" char1="(" lookAhead="1"/>
@@ -1221,7 +1229,7 @@
       <context attribute="String DoubleQ" lineEndContext="#stay" name="StringDQDispatchVariables">
         <IncludeRules context="DispatchSubstVariables"/>
         <IncludeRules context="DispatchVarnameVariables"/>
-        <DetectChar attribute="String DoubleQ" context="#pop" char="$"/>
+        <DetectChar context="#pop" char="$"/>
       </context>
       <context attribute="String DoubleQ" lineEndContext="#pop" name="StringDQEscape">
         <Detect2Chars attribute="String Escape" context="#pop" char="\" char1="&quot;"/>
@@ -1229,7 +1237,17 @@
         <Detect2Chars attribute="String Escape" context="#pop" char="\" char1="`"/>
         <Detect2Chars attribute="String Escape" context="#pop" char="\" char1="$"/>
         <LineContinue attribute="String Escape" context="#pop"/>
-        <DetectChar attribute="String DoubleQ" context="#pop" char="\"/>
+        <DetectChar context="#pop" char="\"/>
+      </context>
+
+      <!-- StringTrDQ consumes anything till $", substitutes vars and expressions -->
+      <context attribute="String Transl." lineEndContext="#stay" name="StringTrDQ">
+        <DetectSpaces attribute="String Transl."/>
+        <DetectIdentifier attribute="String Transl."/>
+        <DetectChar attribute="String Transl." context="#pop" char="&quot;"/>
+        <DetectChar context="StringDQEscape" char="\" lookAhead="1"/>
+        <DetectChar context="StringDQDispatchVariables" char="$" lookAhead="1"/>
+        <DetectChar attribute="Backquote" context="RegularBackq" char="`"/>
       </context>
 
       <!-- RegularBackq consumes anything till ` -->
@@ -1239,12 +1257,12 @@
         <IncludeRules context="Start"/>
       </context>
 
-      <!-- StringEsc eats till ', but escaping many characters -->
+      <!-- StringEsc eats till ', but escaping many characters in $'...' -->
       <context attribute="String SingleQ" lineEndContext="#stay" name="StringEsc">
         <DetectSpaces attribute="String SingleQ"/>
         <DetectIdentifier attribute="String SingleQ"/>
         <DetectChar attribute="String SingleQ" context="#pop" char="'"/>
-        <RegExpr attribute="String Escape" context="#stay" String="\\(?:[abefnrtv\\']|[0-7]{1,3}|x[A-Fa-f0-9]{1,2}|c.)"/>
+        <RegExpr attribute="String Escape" context="#stay" String="\\(?:[abeEfnrtv\\'&quot;?]|[0-7]{1,3}|x[A-Fa-f0-9]{1,2}|u[A-Fa-f0-9]{1,4}|U[A-Fa-f0-9]{1,8}|c.)"/>
       </context>
 
       <context attribute="Normal Text" lineEndContext="#stay" name="FindWord">
@@ -1270,10 +1288,21 @@
       </context>
 
       <!-- VarBraceStart is called as soon as ${ is encoutered -->
-      <context attribute="Variable" lineEndContext="#pop!VarBrace" name="VarBraceStart" fallthroughContext="#pop!VarBrace">
+      <context attribute="Variable" lineEndContext="#pop!SubstBraceCommand" name="VarBraceStart" fallthroughContext="#pop!VarBrace">
+        <!-- '${!}' as process ID variable, not a Parameter Expansion -->
         <StringDetect context="#pop!VarBrace" String="!}" lookAhead="1"/>
         <DetectChar attribute="Parameter Expansion Operator" context="#pop!VarBracePrefix" char="!"/>
         <DetectChar attribute="Parameter Expansion Operator" context="#pop!VarBrace" char="#"/>
+        <!-- Bash-5.3: ${ cmd; } -->
+        <DetectSpaces attribute="Normal Text" context="#pop!SubstBraceCommand"/>
+        <!-- Bash-5.3: ${|cmd;} -->
+        <DetectChar attribute="Control" context="#pop!SubstBraceCommand" char="|"/>
+      </context>
+
+      <!-- SubstBraceCommand is called after a '${ ' are '${|' are encountered -->
+      <context attribute="Normal Text" lineEndContext="#stay" name="SubstBraceCommand" fallthroughContext="Command">
+        <DetectChar attribute="Parameter Expansion" context="#pop" char="}"/>
+        <IncludeRules context="Start"/>
       </context>
 
       <!-- VarBracePrefix called as soon as ${! is encoutered -->
@@ -1368,7 +1397,7 @@
       <!-- called as soon as ${xxx@ is encoutered -->
       <context attribute="Normal Text" lineEndContext="#stay" name="VarTransformation" fallthroughContext="#pop!VarError">
         <DetectChar attribute="Parameter Expansion" context="#pop" char="}"/>
-        <AnyChar attribute="Parameter Expansion" context="#stay" String="UuLQEPAKa"/>
+        <AnyChar attribute="Parameter Expansion" context="#stay" String="UuLQEPAKak"/>
       </context>
 
       <context attribute="Escape" lineEndContext="#pop" name="BraceExpansion">
@@ -1495,13 +1524,19 @@
         <IncludeRules context="FindNormalText"/>
       </context>
 
-      <context attribute="Normal Text" lineEndContext="#stay" name="ExprBracketParam2" fallthroughContext="ExprBracketValue">
+      <context attribute="Normal Text" lineEndContext="#stay" name="ExprBracketParam2" fallthroughContext="#pop!ExprBracketParam2_Value">
+        <LineContinue attribute="Escape" context="SkipSpaces"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="ExprBracketParam2_Value" fallthroughContext="ExprBracketValue">
         <DetectSpaces attribute="Normal Text" context="#pop!ExprBracketParam3"/>
         <AnyChar context="TestMaybeBinary" String="-=!" lookAhead="1"/>
         <IncludeRules context="FindExprBracketEnd"/>
       </context>
 
-      <context attribute="Normal Text" lineEndContext="ExprBracketFinal" name="ExprBracketParam3" fallthroughContext="ExprBracketValue">
+      <context attribute="Normal Text" lineEndContext="ExprBracketFinal" name="ExprBracketParam3" fallthroughContext="#pop!ExprBracketParam3_Value">
+        <LineContinue attribute="Escape" context="SkipSpaces"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="ExprBracketFinal" name="ExprBracketParam3_Value" fallthroughContext="ExprBracketValue">
         <DetectSpaces attribute="Normal Text" context="#pop!ExprBracketFinal"/>
         <IncludeRules context="FindExprBracketEnd"/>
       </context>
@@ -1525,8 +1560,12 @@
         <RegExpr attribute="Expression" context="#pop" String="&binary_operators;"/>
       </context>
 
+      <context attribute="Normal Text" lineEndContext="#pop" name="SkipSpaces" fallthroughContext="#pop">
+        <DetectSpaces context="#pop"/>
+      </context>
 
-      <!-- ExprDblBracket consumes an expression till ]] -->
+
+      <!-- ExprDblBracket consumes an expression till ]] in [[ ... ]] -->
       <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracket" fallthroughContext="#pop!ExprDblBracketNot">
         <DetectSpaces attribute="Normal Text" context="#stay"/>
         <DetectChar attribute="Comment" context="Comment" char="#"/>
@@ -1641,7 +1680,10 @@
         <DetectChar attribute="Operator" context="ExprDblBracketValuePattern" char=")" endRegion="expression" beginRegion="subshell"/>
       </context>
 
-      <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracketParam2" fallthroughContext="ExprDblBracketValuePattern">
+      <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracketParam2" fallthroughContext="#pop!ExprDblBracketParam2_Value">
+        <LineContinue attribute="Escape" context="SkipSpaces"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracketParam2_Value" fallthroughContext="ExprDblBracketValuePattern">
         <DetectSpaces attribute="Normal Text" context="#pop!ExprDblBracketParam3"/>
         <AnyChar context="TestMaybeBinary2" String="-=!" lookAhead="1"/>
         <AnyChar attribute="Expression" context="#pop!ExprDblBracketParam3Spe" String="&lt;>"/>
@@ -1657,7 +1699,10 @@
         <DetectSpaces attribute="Normal Text" context="#pop!ExprDblBracketParam3"/>
       </context>
 
-      <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracketParam3" fallthroughContext="ExprDblBracketValuePattern">
+      <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracketParam3" fallthroughContext="#pop!ExprDblBracketParam3_Value">
+        <LineContinue attribute="Escape" context="SkipSpaces"/>
+      </context>
+      <context attribute="Normal Text" lineEndContext="#stay" name="ExprDblBracketParam3_Value" fallthroughContext="ExprDblBracketValuePattern">
         <DetectSpaces attribute="Normal Text" context="#pop!ExprDblBracketFinal"/>
         <IncludeRules context="FindExprDblBracketEnd"/>
         <AnyChar attribute="Error" context="#stay" String="&lt;>"/>
@@ -1773,7 +1818,7 @@
         <DetectChar attribute="Error" context="#pop" char="]"/>
       </context>
 
-      <!-- SubShell consumes shell input till ) -->
+      <!-- SubShell consumes shell input till ) in (...) -->
       <context attribute="Normal Text" lineEndContext="#stay" name="SubShell" fallthroughContext="Command">
         <DetectChar attribute="Keyword" context="#pop" char=")" endRegion="subshell"/>
         <IncludeRules context="Start"/>
@@ -1788,7 +1833,7 @@
         <IncludeRules context="NormalOption"/>
       </context>
 
-      <!-- AssignArray consumes everything till ), marking assignments -->
+      <!-- AssignArray consumes everything till ) in var=(...), marking assignments -->
       <context attribute="Normal Text" lineEndContext="#stay" name="AssignArray" fallthroughContext="NormalOption">
         <DetectSpaces attribute="Normal Text" context="#stay"/>
         <DetectChar attribute="Comment" context="Comment" char="#"/>
@@ -1807,7 +1852,7 @@
         <IncludeRules context="Start"/>
       </context>
 
-      <!-- Subscript consumes anything till ], marks as Variable -->
+      <!-- Subscript consumes anything till ] in [ ... ], marks as Variable -->
       <context attribute="Normal Text" lineEndContext="#stay" name="Subscript" fallthroughContext="#pop!Subscript2">
         <DetectChar attribute="Parameter Expansion Operator" context="#pop" char="]"/>
         <AnyChar attribute="Decimal" context="#stay" String="0123456789"/>
@@ -1901,8 +1946,9 @@
   </highlighting>
   <general>
     <comments>
-      <comment name="singleLine" start="#"/>
+      <comment name="singleLine" start="#" position="afterwhitespace"/>
     </comments>
     <keywords casesensitive="1" weakDeliminator="_&weakDeliminatorSymbols;" additionalDeliminator="`"/>
   </general>
 </language>
+<!-- kate: replace-tabs on; tab-width 2; indent-width 2; -->

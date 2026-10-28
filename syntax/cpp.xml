@@ -12,7 +12,7 @@
     name="C++"
     alternativeNames="CPP"
     section="Sources"
-    version="19"
+    version="21"
     kateversion="5.79"
     indenter="cstyle"
     style="C++"
@@ -121,9 +121,6 @@
     <item>QAXTYPE</item>
     <!-- http://doc.qt.io/qt-5/qdesignercustomwidgetinterface.html#macros -->
     <item>QDESIGNER_WIDGET_EXPORT</item>
-    <!-- http://doc.qt.io/qt-5/qqmlengine.html#macros -->
-    <item>QML_DECLARE_TYPE</item>
-    <item>QML_DECLARE_TYPEINFO</item>
     <!-- http://doc.qt.io/qt-5/qmetaobject.html#macros -->
     <item>Q_ARG</item>
     <item>Q_RETURN_ARG</item>
@@ -366,7 +363,6 @@
     <item>Q_DECL_RELAXED_CONSTEXPR</item>
     <item>Q_DESTRUCTOR_FUNCTION</item>
     <item>Q_DESTRUCTOR_FUNCTION0</item>
-    <item>Q_DISABLE_COPY</item>
     <item>Q_DUMMY_COMPARISON_OPERATOR</item>
     <item>Q_FALLTHROUGH</item>
     <item>Q_FOREACH</item>
@@ -464,10 +460,13 @@
     <item>Q_MOVABLE_TYPE</item>
     <item>Q_DUMMY_TYPE</item>
     <item>Q_RELOCATABLE_TYPE</item>
+    <!-- http://doc.qt.io/qt-5/qqmlengine.html#macros -->
     <!--https://doc.qt.io/qt-6/qqmlengine.html#macros-->
+    <!-- https://doc.qt.io/qt-6/qqmlintegration-h.html#macros -->
     <item>QML_ADDED_IN_MINOR_VERSION</item>
     <item>QML_ANONYMOUS</item>
     <item>QML_ATTACHED</item>
+    <item>QML_CONSTRUCTIBLE_VALUE</item>
     <item>QML_DECLARE_TYPE</item>
     <item>QML_DECLARE_TYPEINFO</item>
     <item>QML_ELEMENT</item>
@@ -482,6 +481,7 @@
     <item>QML_REMOVED_IN_MINOR_VERSION</item>
     <item>QML_SEQUENTIAL_CONTAINER</item>
     <item>QML_SINGLETON</item>
+    <item>QML_STRUCTURED_VALUE</item>
     <item>QML_UNAVAILABLE</item>
     <item>QML_UNCREATABLE</item>
     <item>QML_VALUE_TYPE</item>
@@ -593,7 +593,6 @@
     <item>qRed</item>
     <item>qRgb</item>
     <item>qRgba</item>
-    <item>qRgba</item>
     <item>qRgba64</item>
     <item>qUnpremultiply</item>
     <!-- http://doc.qt.io/qt-5/qcoreapplication.html#related-non-members -->
@@ -662,13 +661,17 @@
   <list name="QtClasses">
     <!-- Extracted with regular expression  Q[A-Z0-9][A-Za-z0-9]*  -->
     <item>Q3DBars</item>
+    <item>Q3DBarsWidgetItem</item>
     <item>Q3DCamera</item>
+    <item>Q3DGraphsWidgetItem</item>
     <item>Q3DInputHandler</item>
     <item>Q3DLight</item>
     <item>Q3DObject</item>
     <item>Q3DScatter</item>
+    <item>Q3DScatterWidgetItem</item>
     <item>Q3DScene</item>
     <item>Q3DSurface</item>
+    <item>Q3DSurfaceWidgetItem</item>
     <item>Q3DTheme</item>
     <item>QAbstract3DAxis</item>
     <item>QAbstract3DGraph</item>
@@ -690,6 +693,7 @@
     <item>QAbstractClipBlendNode</item>
     <item>QAbstractDataProxy</item>
     <item>QAbstractEventDispatcher</item>
+    <item>QAbstractEventDispatcherV2</item>
     <item>QAbstractExtensionFactory</item>
     <item>QAbstractExtensionManager</item>
     <item>QAbstractFileIconProvider</item>
@@ -741,8 +745,11 @@
     <item>QAccelerometer</item>
     <item>QAccelerometerFilter</item>
     <item>QAccelerometerReading</item>
+    <item>QAccessibilityHints</item>
     <item>QAccessible</item>
     <item>QAccessibleActionInterface</item>
+    <item>QAccessibleAnnouncementEvent</item>
+    <item>QAccessibleAttributesInterface</item>
     <item>QAccessibleEditableTextInterface</item>
     <item>QAccessibleEvent</item>
     <item>QAccessibleInterface</item>
@@ -814,6 +821,8 @@
     <item>QAtomicScopedValueRollback</item>
     <item>QAttribute</item>
     <item>QAudioBuffer</item>
+    <item>QAudioBufferInput</item>
+    <item>QAudioBufferOutput</item>
     <item>QAudioDecoder</item>
     <item>QAudioDecoderControl</item>
     <item>QAudioDevice</item>
@@ -859,6 +868,7 @@
     <item>QBarDataItem</item>
     <item>QBarDataProxy</item>
     <item>QBarLegendMarker</item>
+    <item>QBarModelMapper</item>
     <item>QBarSeries</item>
     <item>QBarSet</item>
     <item>QBaseIterator</item>
@@ -967,6 +977,7 @@
     <item>QCheckBox</item>
     <item>QChildEvent</item>
     <item>QChildWindowEvent</item>
+    <item>QChronoTimer</item>
     <item>QClearBuffers</item>
     <item>QClipAnimator</item>
     <item>QClipBlendNodeCreatedChangeBase</item>
@@ -1093,6 +1104,7 @@
     <item>QDir</item>
     <item>QDirectionalLight</item>
     <item>QDirIterator</item>
+    <item>QDirListing</item>
     <item>QDirModel</item>
     <item>QDispatchCompute</item>
     <item>QDistanceFilter</item>
@@ -1105,6 +1117,7 @@
     <item>QDnsMailExchangeRecord</item>
     <item>QDnsServiceRecord</item>
     <item>QDnsTextRecord</item>
+    <item>QDnsTlsAssociationRecord</item>
     <item>QDockWidget</item>
     <item>QDomAttr</item>
     <item>QDomCDATASection</item>
@@ -1181,7 +1194,10 @@
     <item>QFontInfo</item>
     <item>QFontMetrics</item>
     <item>QFontMetricsF</item>
+    <item>QFontVariableAxis</item>
     <item>QFormBuilder</item>
+    <item>QFormDataBuilder</item>
+    <item>QFormDataPartBuilder</item>
     <item>QFormLayout</item>
     <item>QForwardRenderer</item>
     <item>QFrame</item>
@@ -1299,21 +1315,26 @@
     <item>QGraphicsView</item>
     <item>QGraphicsWidget</item>
     <item>QGraphTheme</item>
+    <item>QGraphsTheme</item>
     <item>QGregorianCalendar</item>
     <item>QGridLayout</item>
     <item>QGroupBox</item>
+    <item>QGrpcBidiStream</item>
     <item>QGrpcBidirStream</item>
     <item>QGrpcCallOptions</item>
     <item>QGrpcCallReply</item>
     <item>QGrpcChannel</item>
     <item>QGrpcChannelOperation</item>
     <item>QGrpcChannelOptions</item>
+    <item>QGrpcClientBase</item>
     <item>QGrpcClientInterceptor</item>
     <item>QGrpcClientInterceptorManager</item>
     <item>QGrpcClientStream</item>
     <item>QGrpcHttp2Channel</item>
     <item>QGrpcInterceptorContinuation</item>
     <item>QGrpcOperation</item>
+    <item>QGrpcOperationContext</item>
+    <item>QGrpcSerializationFormat</item>
     <item>QGrpcServerStream</item>
     <item>QGrpcStatus</item>
     <item>QGuiApplication</item>
@@ -1342,6 +1363,7 @@
     <item>QHelpIndexWidget</item>
     <item>QHelpLink</item>
     <item>QHelpSearchEngine</item>
+    <item>QHelpSearchEngineCore</item>
     <item>QHelpSearchQuery</item>
     <item>QHelpSearchQueryWidget</item>
     <item>QHelpSearchResult</item>
@@ -1365,11 +1387,13 @@
     <item>QHttpMultiPart</item>
     <item>QHttpPart</item>
     <item>QHttpServer</item>
+    <item>QHttpServerConfiguration</item>
     <item>QHttpServerRequest</item>
     <item>QHttpServerResponder</item>
     <item>QHttpServerResponse</item>
     <item>QHttpServerRouter</item>
     <item>QHttpServerRouterRule</item>
+    <item>QHttpServerWebSocketUpgradeResponse</item>
     <item>QHumidityFilter</item>
     <item>QHumidityReading</item>
     <item>QHumiditySensor</item>
@@ -1420,6 +1444,8 @@
     <item>QIterable</item>
     <item>QIterator</item>
     <item>QJalaliCalendar</item>
+    <item>QJniArray</item>
+    <item>QJniArrayBase</item>
     <item>QJniEnvironment</item>
     <item>QJniObject</item>
     <item>QJoint</item>
@@ -1438,7 +1464,6 @@
     <item>QJulianCalendar</item>
     <item>QKeyboardDevice</item>
     <item>QKeyboardHandler</item>
-    <item>QKeyEvent</item>
     <item>QKeyCombination</item>
     <item>QKeyEvent</item>
     <item>QKeyEventTransition</item>
@@ -1458,6 +1483,7 @@
     <item>QLayoutItem</item>
     <item>QLCDNumber</item>
     <item>QLegend</item>
+    <item>QLegendData</item>
     <item>QLegendMarker</item>
     <item>QLEInteger</item>
     <item>QLerpClipBlend</item>
@@ -1564,6 +1590,7 @@
     <item>QMessageLogContext</item>
     <item>QMessageLogger</item>
     <item>QMetaClassInfo</item>
+    <item>QMetaContainer</item>
     <item>QMetaDataReaderControl</item>
     <item>QMetaDataWriterControl</item>
     <item>QMetaEnum</item>
@@ -1602,7 +1629,6 @@
     <item>QMorphPhongMaterial</item>
     <item>QMorphTarget</item>
     <item>QMouseDevice</item>
-    <item>QMouseEvent</item>
     <item>QMouseEvent</item>
     <item>QMouseEventTransition</item>
     <item>QMouseHandler</item>
@@ -1685,6 +1711,9 @@
     <item>QOAuth1</item>
     <item>QOAuth1Signature</item>
     <item>QOAuth2AuthorizationCodeFlow</item>
+    <item>QOAuth2DeviceAuthorizationFlow</item>
+    <item>QOAuthHttpServerReplyHandler</item>
+    <item>QOAuthUriSchemeReplyHandler</item>
     <item>QObject</item>
     <item>QObjectBindableProperty</item>
     <item>QObjectCleanupHandler</item>
@@ -1828,6 +1857,7 @@
     <item>QPainter</item>
     <item>QPainterPath</item>
     <item>QPainterPathStroker</item>
+    <item>QPainterStateGuard</item>
     <item>QPaintEvent</item>
     <item>QPair</item>
     <item>QPalette</item>
@@ -1842,6 +1872,7 @@
     <item>QPdfDocumentRenderOptions</item>
     <item>QPdfLink</item>
     <item>QPdfLinkModel</item>
+    <item>QPdfOutputIntent</item>
     <item>QPdfPageNavigation</item>
     <item>QPdfPageNavigator</item>
     <item>QPdfPageRenderer</item>
@@ -1868,6 +1899,7 @@
     <item>QPictureFormatPlugin</item>
     <item>QPictureIO</item>
     <item>QPieLegendMarker</item>
+    <item>QPieModelMapper</item>
     <item>QPieSeries</item>
     <item>QPieSlice</item>
     <item>QPinchGesture</item>
@@ -1907,6 +1939,7 @@
     <item>QPlaneGeometryView</item>
     <item>QPlaneMesh</item>
     <item>QPlatformSurfaceEvent</item>
+    <item>QPlaybackOptions</item>
     <item>QPluginLoader</item>
     <item>QPoint</item>
     <item>QPointer</item>
@@ -1952,6 +1985,7 @@
     <item>QProtobufJsonSerializer</item>
     <item>QProtobufMessage</item>
     <item>QProtobufMessageDeleter</item>
+    <item>QProtobufRepeatedIterator</item>
     <item>QProtobufSerializer</item>
     <item>QProximityFilter</item>
     <item>QProximityReading</item>
@@ -2022,6 +2056,7 @@
     <item>QRadioTunerControl</item>
     <item>QRandomGenerator</item>
     <item>QRandomGenerator64</item>
+    <item>QRangeModel</item>
     <item>QRasterMode</item>
     <item>QRasterPaintEngine</item>
     <item>QRasterWindow</item>
@@ -2071,6 +2106,7 @@
     <item>QRgba64</item>
     <item>QRgbaFloat</item>
     <item>QRhi</item>
+    <item>QRhiAdapter</item>
     <item>QRhiBuffer</item>
     <item>QRhiColorAttachment</item>
     <item>QRhiCommandBuffer</item>
@@ -2104,6 +2140,7 @@
     <item>QRhiShaderResourceBinding</item>
     <item>QRhiShaderResourceBindings</item>
     <item>QRhiShaderStage</item>
+    <item>QRhiShadingRateMap</item>
     <item>QRhiStats</item>
     <item>QRhiSwapChain</item>
     <item>QRhiSwapChainHdrInfo</item>
@@ -2123,6 +2160,7 @@
     <item>QRhiVulkanCommandBufferNativeHandles</item>
     <item>QRhiVulkanInitParams</item>
     <item>QRhiVulkanNativeHandles</item>
+    <item>QRhiVulkanQueueSubmitParams</item>
     <item>QRhiVulkanRenderPassNativeHandles</item>
     <item>QRhiWidget</item>
     <item>QRomanCalendar</item>
@@ -2288,6 +2326,7 @@
     <item>QSphereMesh</item>
     <item>QSpinBox</item>
     <item>QSplashScreen</item>
+    <item>QSpline3DSeries</item>
     <item>QSplineSeries</item>
     <item>QSplitter</item>
     <item>QSplitterHandle</item>
@@ -2518,6 +2557,7 @@
     <item>QTouchDevice</item>
     <item>QTouchEvent</item>
     <item>QTouchEventSequence</item>
+    <item>QTouchEventWidgetSequence</item>
     <item>QTransform</item>
     <item>QTranslator</item>
     <item>QTransposeProxyModel</item>
@@ -2571,6 +2611,7 @@
     <item>QVideoFilterRunnable</item>
     <item>QVideoFrame</item>
     <item>QVideoFrameFormat</item>
+    <item>QVideoFrameInput</item>
     <item>QVideoProbe</item>
     <item>QVideoRendererControl</item>
     <item>QVideoSink</item>
@@ -2654,12 +2695,16 @@
     <item>QWebEngineCertificateError</item>
     <item>QWebEngineClientCertificateSelection</item>
     <item>QWebEngineClientCertificateStore</item>
+    <item>QWebEngineClientHints</item>
     <item>QWebEngineContextMenuRequest</item>
     <item>QWebEngineCookieStore</item>
     <item>QWebEngineDesktopMediaRequest</item>
     <item>QWebEngineDownloadRequest</item>
+    <item>QWebEngineExtensionInfo</item>
+    <item>QWebEngineExtensionManager</item>
     <item>QWebEngineFileSystemAccessRequest</item>
     <item>QWebEngineFindTextResult</item>
+    <item>QWebEngineFrame</item>
     <item>QWebEngineFullScreenRequest</item>
     <item>QWebEngineHistory</item>
     <item>QWebEngineHistoryItem</item>
@@ -2670,7 +2715,9 @@
     <item>QWebEngineNewWindowRequest</item>
     <item>QWebEngineNotification</item>
     <item>QWebEnginePage</item>
+    <item>QWebEnginePermission</item>
     <item>QWebEngineProfile</item>
+    <item>QWebEngineProfileBuilder</item>
     <item>QWebEngineQuotaRequest</item>
     <item>QWebEngineRegisterProtocolHandlerRequest</item>
     <item>QWebEngineScript</item>
@@ -2692,7 +2739,6 @@
     <item>QWGLNativeContext</item>
     <item>QWhatsThis</item>
     <item>QWhatsThisClickedEvent</item>
-    <item>QWheelEvent</item>
     <item>QWheelEvent</item>
     <item>QWidget</item>
     <item>QWidgetAction</item>
@@ -2751,6 +2797,7 @@
     <item>QXmlStreamReader</item>
     <item>QXmlStreamWriter</item>
     <item>QXYLegendMarker</item>
+    <item>QXYModelMapper</item>
     <item>QXYSeries</item>
     <!-- Not actually classes, but used like those -->
     <item>QByteArrayLiteral</item>
@@ -2775,7 +2822,6 @@
     <!-- Some public types, but not listed in main class list -->
     <item>QFileInfoList</item>
     <item>QMutableStringListIterator</item>
-    <item>QTouchEventSequence</item>                      <!-- QTest -->
     <item>QStringListIterator</item>
     <item>QStringBuilder</item>
     <!-- Helper classes for C++11-only code, where qOverload (requires C++14) can't be used

@@ -426,7 +426,6 @@ v1.0:
 <item>None</item>
 <item>AuthConfig</item>
 <item>FileInfo</item>
-<item>Indexes</item>
 <item>Limit</item>
 <item>Options</item>
 
@@ -488,7 +487,6 @@ v1.0:
 <item>Descending</item>
 <item>Name</item>
 <item>Date</item>
-<item>Size</item>
 <item>Description</item>
 <item>SSL</item>
 <item>TLS</item>
@@ -496,7 +494,6 @@ v1.0:
 <item>emerg</item>
 <item>alert</item>
 <item>crit</item>
-<item>error</item>
 <item>warn</item>
 <item>notice</item>
 <item>info</item>
@@ -527,12 +524,8 @@ v1.0:
 <item>Prod</item>
 <item>ProductOnly</item>
 <item>OS</item>
-<item>Full</item>
 <item>optional</item>
-<item>posixsem</item>
-<item>sysvsem</item>
 <item>sem</item>
-<item>pthread</item>
 <item>fcntl:</item>
 <item>flock:</item>
 <item>file:</item>

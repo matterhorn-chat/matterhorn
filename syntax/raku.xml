@@ -73,7 +73,7 @@
   <!-- <!ENTITY regadverb "(?!\()\s*(?::\w+\s*)*(?=[^\w\s])"> -->
   <!ENTITY regadverb "(?!\()\s*(?=[^\p{L}\p{N}\s])">
 ]>
-<language name="Raku" version="9" kateversion="5.62" section="Scripts" extensions="*.raku;*.rakumod;*.rakudoc;*.rakutest;*.pl6;*.PL6;*.p6;*.pm6;*.pod6" priority="6" author="Jonathan Poelen (jonathan.poelen@gmail.com)" license="MIT">
+<language name="Raku" version="10" kateversion="5.62" section="Scripts" extensions="*.raku;*.rakumod;*.rakudoc;*.rakutest;*.pl6;*.PL6;*.p6;*.pm6;*.pod6" priority="6" author="Jonathan Poelen (jonathan.poelen@gmail.com)" license="MIT">
   <highlighting>
 
     <!-- https://docs.raku.org/routines -->
@@ -324,7 +324,6 @@
       <item>IO</item>
       <item>Int</item>
       <item>Junction</item>
-      <item>Bag</item>
       <item>List</item>
       <item>Macro</item>
       <item>Match</item>
@@ -368,7 +367,6 @@
       <item>uint16</item>
       <item>uint32</item>
       <item>uint64</item>
-      <item>uint</item>
       <item>utf8</item>
       <item>utf16</item>
       <item>utf32</item>
@@ -649,6 +647,7 @@
       <context name="RegexKeyword" attribute="Normal Text" lineEndContext="#stay" fallthroughContext="#pop">
         <DetectSpaces/>
         <DetectChar char="{" context="#pop!RegexKeyword-Pattern{" attribute="Symbol" beginRegion="regex"/>
+        <DetectChar char="(" context="SubExpression(" attribute="Normal Text"/>
         <DetectChar char="#" context="StartComment" attribute="Comment"/>
         <RegExpr String="&ident;"/>
       </context>
@@ -849,7 +848,7 @@
       <!-- Pattern \... -->
 
       <context name="PatternMetaChar" attribute="Pattern" lineEndContext="#pop">
-        <RegExpr String="\\[nthvsdwNTHVSDW]|\\[xX](&unicode_hex_point;(?![0-9a-fA-F])|\[\s*&unicode_hex_point;\s*\])|\\[cC](&unicode_dec_point;(?![0-9])|\[[0-9a-zA-Z\s]+\])|[oO](&unicode_oct_point;(?![0-7])|\[\s*&unicode_oct_point;\s*\])" context="#pop" attribute="Pattern Character Class"/>
+        <RegExpr String="\\[bdefhnrstvwBDEFHNRSTVW]|\\[xX](&unicode_hex_point;(?![0-9a-fA-F])|\[\s*&unicode_hex_point;\s*\])|\\[cC](&unicode_dec_point;(?![0-9])|\[[0-9a-zA-Z\s]+\])|[oO](&unicode_oct_point;(?![0-7])|\[\s*&unicode_oct_point;\s*\])" context="#pop" attribute="Pattern Character Class"/>
         <RegExpr String="\\[^\p{L}\p{N}]" context="#pop" attribute="Pattern Character"/>
 
         <StringDetect String="\x[" context="PatternMetaCharX" attribute="Pattern Character Class" insensitive="1"/>
@@ -874,7 +873,7 @@
       </context>
 
       <context name="C[]" attribute="Pattern">
-        <RegExpr String="\s*(\b[0-9a-zA-Z]+\s*)+"/>
+        <RegExpr String="\s*(\b[0-9a-zA-Z-]+\s*)+"/>
       </context>
 
       <context name="PatternMetaCharMultipleCommon" attribute="Pattern">
@@ -897,7 +896,7 @@
       <context name="PatternMetaCharC" attribute="Pattern Character Class">
         <IncludeRules context="PatternMetaCharMultipleCommon"/>
         <IncludeRules context="C[]"/>
-        <RegExpr String="[^0-9a-zA-Z\],\s]+|[0-9a-zA-Z]+|." attribute="Error"/>
+        <RegExpr String="[^0-9a-zA-Z\],\s-]+|[0-9a-zA-Z]+|." attribute="Error"/>
       </context>
 
 
@@ -1751,6 +1750,7 @@
         <IncludeRules context="q_RawString_common"/>
       </context>
       <context name="q_RawString_common" attribute="String" lineEndContext="#stay">
+        <Detect2Chars char="\" char1="\" context="#stay" attribute="String Special Character"/>
         <Detect2Chars char="\" char1="'" context="#stay" attribute="String Special Character"/>
         <RegExpr String="(?:[^\\']*|\\(?![\\']|&quotingconstruct;|$))*" context="#stay" attribute="String"/>
         <Detect2Chars char="\" char1="q" context="q_QuotingForm" attribute="Operator"/>
