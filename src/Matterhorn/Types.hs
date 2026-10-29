@@ -2246,8 +2246,11 @@ moveLeft v as =
         Nothing -> as
         Just 0 -> as
         Just i ->
-            let (h, t) = splitAt i as
-            in init h <> [v, last h] <> tail t
+            let (h, t) = splitAt (i - 1) as
+            in case t of
+                (a:b:rest) ->
+                    h <> (b:a:rest)
+                _ -> as
 
 moveRight :: (Eq a) => a -> [a] -> [a]
 moveRight v as =
@@ -2257,7 +2260,9 @@ moveRight v as =
             | i == length as - 1 -> as
             | otherwise ->
                 let (h, t) = splitAt i as
-                in h <> [head (tail t), v] <> (tail (tail t))
+                in case t of
+                    (a:b:rest) -> h <> (b:a:rest)
+                    _ -> as
 
 resultToWidget :: Result n -> Widget n
 resultToWidget = Widget Fixed Fixed . return
