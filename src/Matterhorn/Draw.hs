@@ -61,6 +61,8 @@ draw st = fromMaybe (drawMain st Main) $ do
                 EditNotifyPrefs               -> drawNotifyPrefs st tId : monochrome rest
                 ChannelTopicWindow _          -> drawChannelTopicWindow st tId : monochrome rest
         topMode = teamMode $ st^.csTeam(tId)
-        otherModes = tail $ teamModes $ st^.csTeam(tId)
+        otherModes = case teamModes $ st^.csTeam(tId) of
+            (_:rest) -> rest
+            _ -> []
 
     return $ drawMode topMode otherModes
