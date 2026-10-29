@@ -66,7 +66,7 @@ import           Brick.Widgets.Edit
 import           Control.Concurrent ( forkIO, threadDelay )
 import           Control.Exception ( SomeException, catch, try )
 import           Data.Char (isHexDigit)
-import           Data.List (tails, inits)
+import           Data.List (tails, inits, isSuffixOf)
 import           System.IO.Error ( catchIOError )
 import qualified Data.Text as T
 import           Graphics.Vty
@@ -497,10 +497,9 @@ validServer ts =
                _ -> Left "Invalid port"
 
      let host
-           | not (null (uriRegName auth))
-           , '[' == head (uriRegName auth)
-           , ']' == last (uriRegName auth)
-           = init (tail (uriRegName auth))
+           | ('[':rest) <- uriRegName auth
+           , "]" `isSuffixOf` rest
+           = init rest
            | otherwise = uriRegName auth
 
      if null (uriRegName auth) then Left "Missing server name" else Right ()
