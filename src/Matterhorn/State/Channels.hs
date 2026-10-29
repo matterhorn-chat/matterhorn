@@ -667,8 +667,10 @@ nextChannel tId = do
                     -- visible entry in the channel list, we also want
                     -- to scroll the channel list up far enough to show
                     -- the topmost section header.
-                    when (entry == (head $ concat $ snd <$> Z.toList z)) $ do
-                        mh $ vScrollToBeginning $ viewportScroll (ChannelListViewport tId)
+                    case concat $ snd <$> Z.toList z of
+                        (first:_) | entry == first ->
+                            mh $ vScrollToBeginning $ viewportScroll (ChannelListViewport tId)
+                        _ -> return ()
 
     setFocusWith tId True Z.right checkForFirst (return ())
 
