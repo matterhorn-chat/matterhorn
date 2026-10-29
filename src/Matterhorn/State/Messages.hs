@@ -274,7 +274,9 @@ addObtainedMessages cId reqCnt addTrailingGap posts = do
             mTId = chan^.ccInfo.cdTeamId
             -- the first and list PostId in the batch to be added
             earliestPId = last pIdList
-            latestPId = head pIdList
+            latestPId = case pIdList of
+                (latest:_) -> latest
+                _ -> error "BUG: addObtainedMessages: empty post list for channel when empty check failed"
             earliestDate = postCreateAt $ (posts^.postsPostsL) HM.! earliestPId
             latestDate = postCreateAt $ (posts^.postsPostsL) HM.! latestPId
 
