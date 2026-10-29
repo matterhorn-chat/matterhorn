@@ -23,7 +23,6 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Network.Mattermost.Types
 
-import           Matterhorn.Constants ( userSigil, normalChannelSigil )
 import           Matterhorn.Themes
 import           Matterhorn.TimeUtils
 import           Matterhorn.Types
