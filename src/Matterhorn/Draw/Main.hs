@@ -23,7 +23,6 @@ import           Network.Mattermost.Types ( Type(Direct, Private, Group)
 import           Matterhorn.Draw.ChannelList ( renderChannelList, channelListWidth )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.MessageInterface
-import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
 import           Matterhorn.Types
