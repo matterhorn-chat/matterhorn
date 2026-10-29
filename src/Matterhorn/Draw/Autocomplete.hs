@@ -35,7 +35,7 @@ autocompleteLayer st which =
                     mCurChan = do
                         cId <- mcId
                         st^?csChannel(cId)
-                return $ renderAutocompleteBox st tId mCurChan which ac
+                return $ renderAutocompleteBox st tId mCurChan ac
 
 userNotInChannelMarker :: T.Text
 userNotInChannelMarker = "*"
@@ -50,10 +50,9 @@ elementTypeLabel ACCommands = "Commands"
 renderAutocompleteBox :: ChatState
                       -> TeamId
                       -> Maybe ClientChannel
-                      -> SimpleGetter ChatState (EditState Name)
                       -> AutocompleteState Name
                       -> Widget Name
-renderAutocompleteBox st tId mCurChan which ac =
+renderAutocompleteBox st tId mCurChan ac =
     let matchList = _acCompletionList ac
         maxListHeight = 5
         visibleHeight = min maxListHeight numResults
