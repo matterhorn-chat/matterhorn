@@ -1172,8 +1172,10 @@ cycleChannelListSortingMode tId = do
         error $ "BUG: active channel list sorting mode unknown (" <> show curMode <> ")"
 
     let (newMode, newModeDesc) = sortingModeAfter curMode
-        sortingModeAfter m = head $ drop 1 $ snd $ span ((/= m) . fst) $
-                             cycle channelListSortingModes
+        sortingModeAfter m =
+            case drop 1 $ snd $ span ((/= m) . fst) $ cycle channelListSortingModes of
+                (next:_) -> next
+                _ -> error $ "BUG: no next channel list sorting mode found after " <> show curMode
 
     postInfoMessage $ "Sorting channel list: " <> newModeDesc
 
