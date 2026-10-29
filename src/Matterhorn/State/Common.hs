@@ -197,7 +197,9 @@ openWithOpener getTarget = do
                 targetResult <- getTarget
                 let cmdWords = T.words urlOpenCommand
                     (cmds, args) = splitAt 1 (T.unpack <$> cmdWords)
-                    cmd = if null cmds then "$BROWSER" else head cmds
+                    cmd = case cmds of
+                        [] -> "$BROWSER"
+                        (c:_) -> c
                 case targetResult of
                     Left e -> return $ Just $ Work "openWithOpener[1]" $ do
                         mhError e
