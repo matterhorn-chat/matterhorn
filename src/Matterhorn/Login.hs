@@ -56,7 +56,7 @@ where
 import           Prelude ()
 import           Matterhorn.Prelude
 
-import           Brick
+import           Brick hiding (above)
 import           Brick.BChan
 import           Brick.Focus
 import           Brick.Forms
