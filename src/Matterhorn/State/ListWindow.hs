@@ -51,7 +51,7 @@ listWindowActivate tId which val = do
 -- | Get the current search string for the specified window.
 listWindowSearchString :: Lens' ChatState (ListWindowState a b) -> MH Text
 listWindowSearchString which =
-    (head . E.getEditContents) <$> use (which.listWindowSearchInput)
+    (fromMaybe "" . listToMaybe . E.getEditContents) <$> use (which.listWindowSearchInput)
 
 -- | Move the list cursor in the specified window.
 listWindowMove :: Lens' ChatState (ListWindowState a b)
