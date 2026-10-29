@@ -1344,7 +1344,9 @@ cycleElemAfter :: (Eq a) => a -> [a] -> Maybe a
 cycleElemAfter e es =
     if e `notElem` es
     then Nothing
-    else Just $ head $ drop 1 $ dropWhile (/= e) $ cycle es
+    else case drop 1 $ dropWhile (/= e) $ cycle es of
+        (h:_) -> Just h
+        _ -> Nothing
 
 -- | Handles for the View Message window's tabs.
 data ViewMessageWindowTab =
