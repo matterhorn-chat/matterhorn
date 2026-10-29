@@ -1,5 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-x-partial #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
 module Main where
 
