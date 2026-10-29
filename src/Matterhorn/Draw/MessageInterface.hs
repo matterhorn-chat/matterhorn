@@ -389,7 +389,7 @@ inputArea st which focused hs =
                                    str $ "[" <> show numLines <> " " <> linesStr <>
                                          "; Enter: send, " <> T.unpack multiLineToggleKey <>
                                          ": edit, Backspace: cancel] "
-                                 , txt $ head curContents
+                                 , txt $ fromMaybe "" $ listToMaybe curContents
                                  , showCursor (getName editor) (Location (0,0)) $ str " "
                                  ]
                             else [inputBox]
