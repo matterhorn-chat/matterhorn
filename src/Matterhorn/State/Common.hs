@@ -37,9 +37,10 @@ import           Prelude ()
 import           Matterhorn.Prelude
 
 import           Brick.Main ( invalidateCacheEntry, invalidateCache, getVtyHandle )
-import           Control.Concurrent ( MVar, putMVar, forkIO )
+import           Control.Concurrent ( MVar, putMVar, forkIO, newEmptyMVar
+                                   , takeMVar, isEmptyMVar )
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception ( SomeException, try )
+import           Control.Exception ( SomeException, try, evaluate, finally )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
@@ -302,6 +303,24 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
             STM.atomically $ STM.writeTChan outputChan po
             maybe (return ()) (flip putMVar po) mOutputVar
         Right (stdinResult, Just outh, Just errh, ph) -> do
+            -- Start reading both pipes before writing stdin or waiting: a
+            -- child whose output exceeds the pipe buffer blocks on write
+            -- and would otherwise never exit.
+            let drain h = do
+                    var <- newEmptyMVar
+                    void $ forkIO $
+                        finally (do
+                            out <- hGetContents h
+                            void $ evaluate (length out)
+                            putMVar var out)
+                            -- on exception the caller must not block on an
+                            -- empty MVar: report no output instead
+                            (do empty <- isEmptyMVar var
+                                when empty $ putMVar var "")
+                    return var
+            outVar <- drain outh
+            errVar <- drain errh
+
             case stdinResult of
                 Just inh -> do
                     case mInput of
@@ -311,9 +330,9 @@ runLoggedCommand outputChan cmd args mInput mOutputVar = void $ forkIO $ do
                         Nothing -> return ()
                 Nothing -> return ()
 
+            outResult <- takeMVar outVar
+            errResult <- takeMVar errVar
             ec <- waitForProcess ph
-            outResult <- hGetContents outh
-            errResult <- hGetContents errh
             let po = ProgramOutput cmd args outResult errResult ec
             STM.atomically $ STM.writeTChan outputChan po
             maybe (return ()) (flip putMVar po) mOutputVar
