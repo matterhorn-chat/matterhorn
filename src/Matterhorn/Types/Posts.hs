@@ -237,8 +237,8 @@ getAttachmentText p =
     Nothing -> mempty
     Just attachments ->
       Blocks $ fmap (Blockquote . render) attachments
-  where render att = parseMarkdown Nothing (att^.ppaTextL) <>
-                     parseMarkdown Nothing (att^.ppaFallbackL) <>
+  where render att = parseMarkdown Nothing (sanitizeUserText' $ att^.ppaTextL) <>
+                     parseMarkdown Nothing (sanitizeUserText' $ att^.ppaFallbackL) <>
                      renderAttFields (att^.ppaFieldsL)
 
 -- | Render a bulleted list with any text fields that the post may have
@@ -256,14 +256,14 @@ renderAttFieldItem f = singleB $ Para $ renderAttFieldItemContent f
 renderAttFieldItemContent :: PostPropAttachmentField -> Inlines
 renderAttFieldItemContent f = Inlines $ Seq.fromList $
                               renderAttFieldItemName f <>
-                              [EText $ ppafValue f]
+                              [EText $ sanitizeUserText' $ ppafValue f]
 
 -- | The field name can sometimes be empty
 renderAttFieldItemName :: PostPropAttachmentField -> [Inline]
 renderAttFieldItemName f =
   if ppafTitle f == T.empty
   then []
-  else [EStrong $ singleI $ EText $ ppafTitle f, ELineBreak]
+  else [EStrong $ singleI $ EText $ sanitizeUserText' $ ppafTitle f, ELineBreak]
 
 -- ** 'ClientPost' Lenses
 
