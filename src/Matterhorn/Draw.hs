@@ -25,12 +25,11 @@ import Matterhorn.Draw.TabbedWindow
 import Matterhorn.Draw.NotifyPrefs
 import Matterhorn.Types
 
-
 draw :: ChatState -> [Widget Name]
 draw st = fromMaybe (drawMain st Main) $ do
     tId <- st^.csCurrentTeamId
     let messageViewWindow = st^.csTeam(tId).tsViewedMessage.singular _Just._2
-        monochrome = fmap (forceAttr $ attrName "invalid")
+        monochrome = fmap dropColors
         drawMode m ms =
             let rest = case ms of
                     (a:as) -> drawMode a as

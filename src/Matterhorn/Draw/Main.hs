@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 module Matterhorn.Draw.Main
   ( drawMain
+  , dropColors
   )
 where
 
@@ -13,6 +14,8 @@ import           Brick.Widgets.Border
 import           Data.List ( intersperse )
 import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
+import           Graphics.Vty (Attr(..), MaybeDefault(..), rewriteAttrs)
+
 import           Lens.Micro.Platform ( Lens' )
 
 import           Network.Mattermost.Types ( Type(Direct, Private, Group)
@@ -122,8 +125,17 @@ mainInterface st mode mtId =
                 ThreadRight -> channelUI <+> vBorder <+> tui
 
     maybeSubdue = if mode == ChannelSelect
-                  then forceAttr $ attrName ""
+                  then dropColors
                   else id
+
+dropColors :: Widget n -> Widget n
+dropColors w =
+    Widget (hSize w) (vSize w) $ do
+        r <- render w
+        let f a = a { attrForeColor = Default
+                    , attrBackColor = Default
+                    }
+        return $ r { image = rewriteAttrs f $ image r }
 
 teamList :: ChatState -> Widget Name
 teamList st =
