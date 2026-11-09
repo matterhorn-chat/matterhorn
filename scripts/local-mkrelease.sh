@@ -90,7 +90,7 @@ DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
 CABAL_PLAN=$HOME/.cabal/bin/cabal-plan
 
-if [ ! -e $CABAL_PLAN ]
+if [[ "$OSTYPE" =~ ^darwin ]]
 then
     CABAL_PLAN=$HOME/.local/bin/cabal-plan
 fi
