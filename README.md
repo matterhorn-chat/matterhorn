@@ -16,8 +16,11 @@ https://github.com/matterhorn-chat/matterhorn/releases
 
 To run Matterhorn, unpack the binary release archive and run the
 `matterhorn` binary within.  Help is available via the `--help` or
-`-h` flag.
+`-h` flag. Mac users may need to run the provided
+`macos_allow_gatekeeper.sh` script to stop Gatekeeper from blocking the
+binary.
 
+    $ ./macos_allow_gatekeeper.sh # mac users only
     $ matterhorn --help
     $ matterhorn
 

@@ -90,6 +90,21 @@ DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
 CABAL_PLAN=$HOME/.cabal/bin/cabal-plan
 
+if [[ "$OSTYPE" =~ ^darwin ]]
+then
+    CABAL_PLAN=$HOME/.local/bin/cabal-plan
+fi
+
+# This is needed due to a potential bug in cabal-plan where it exits with an
+# error about ~/.cabal/config not existing, without trying to use
+# ~/.config/cabal/config instead.
+# See https://github.com/haskell-hvr/cabal-plan/issues/108 for more info.
+MATTERHORN_RELEASE_CREATED_TMP_SYMLINK=""
+if [[ ! -f "$HOME/.cabal/config" && -f "$HOME/.config/cabal/config" ]]; then
+  ln -s "$HOME/.config/cabal" "$HOME/.cabal"
+  MATTERHORN_RELEASE_CREATED_TMP_SYMLINK="$HOME/.cabal"
+fi
+
 function prepare_dist {
     local ver=$1
     local dest=$2
@@ -108,6 +123,7 @@ function prepare_dist {
     cp -r $ROOT/syntax $dest/
     cp -r $ROOT/notification-scripts $dest/
     cp -r $ROOT/client-scripts $dest/
+    cp $ROOT/scripts/macos_allow_gatekeeper.sh $dest/
     echo $LONG_HEAD > $dest/COMMIT
 
     cd $ROOT && $CABAL_PLAN license-report exe:matterhorn > $dest/COPYRIGHT
@@ -151,6 +167,9 @@ echo
 TMPDIR=$(mktemp -d)
 function cleanup {
     rm -rf $TMPDIR
+    if [ -n "$MATTERHORN_RELEASE_CREATED_TMP_SYMLINK" ]; then
+      rm "$MATTERHORN_RELEASE_CREATED_TMP_SYMLINK"
+    fi
 }
 trap cleanup EXIT
 
