@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# This script is modified from the
-# [verus](https://github.com/verus-lang/verus/) release script.
+# This script is intended to be run after unpacking a release
+# only. It assumes the existence of a `matterhorn` binary in
+# the script's directory.
 
 set -e
 
