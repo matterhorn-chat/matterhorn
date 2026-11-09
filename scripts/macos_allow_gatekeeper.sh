@@ -4,7 +4,6 @@
 # [verus](https://github.com/verus-lang/verus/) release script.
 
 set -e
-set -x
 
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 cd "$script_dir"
