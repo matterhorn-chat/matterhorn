@@ -90,8 +90,9 @@ DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
 CABAL_PLAN=$HOME/.cabal/bin/cabal-plan
 
-if [ ! -e $CABAL_PLAN ]; then
-  CABAL_PLAN=$HOME/.local/bin/cabal-plan
+if [ ! -e $CABAL_PLAN ]
+then
+    CABAL_PLAN=$HOME/.local/bin/cabal-plan
 fi
 
 function prepare_dist {
@@ -112,6 +113,7 @@ function prepare_dist {
     cp -r $ROOT/syntax $dest/
     cp -r $ROOT/notification-scripts $dest/
     cp -r $ROOT/client-scripts $dest/
+    cp $ROOT/scripts/macos_allow_gatekeeper.sh $dest/
     echo $LONG_HEAD > $dest/COMMIT
 
     cd $ROOT && $CABAL_PLAN license-report exe:matterhorn > $dest/COPYRIGHT
