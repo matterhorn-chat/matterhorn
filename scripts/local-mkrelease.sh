@@ -90,6 +90,10 @@ DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
 CABAL_PLAN=$HOME/.cabal/bin/cabal-plan
 
+if [ ! -e $CABAL_PLAN ]; then
+  CABAL_PLAN=$HOME/.local/bin/cabal-plan
+fi
+
 function prepare_dist {
     local ver=$1
     local dest=$2
