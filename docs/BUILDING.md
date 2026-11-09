@@ -12,8 +12,8 @@ from tarball" instructions below.
 In either case, first follow these steps:
 
 1. Install [ghcup](https://www.haskell.org/ghcup/).
-2. Install GHC with `ghcup install`.
-3. Install Cabal with `ghcup install-cabal`.
+2. Install GHC with `ghcup install ghc`.
+3. Install Cabal with `ghcup install cabal`.
 4. Add `~/.ghcup/bin` to your `PATH`.
 5. Run `cabal new-update`
 6. If you are a Mac user, you may need to run
