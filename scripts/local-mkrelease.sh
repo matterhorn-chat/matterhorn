@@ -95,6 +95,14 @@ then
     CABAL_PLAN=$HOME/.local/bin/cabal-plan
 fi
 
+# this is needed due to a potential bug in cabal-plan
+# see https://github.com/haskell-hvr/cabal-plan/issues/108
+MATTERHORN_RELEASE_CREATED_TMP_SYMLINK=""
+if [[ ! -f "$HOME/.cabal/config" && -f "$HOME/.config/cabal/config" ]]; then
+  ln -s "$HOME/.config/cabal" "$HOME/.cabal"
+  MATTERHORN_RELEASE_CREATED_TMP_SYMLINK="$HOME/.cabal"
+fi
+
 function prepare_dist {
     local ver=$1
     local dest=$2
@@ -157,6 +165,9 @@ echo
 TMPDIR=$(mktemp -d)
 function cleanup {
     rm -rf $TMPDIR
+    if [ -n "$MATTERHORN_RELEASE_CREATED_TMP_SYMLINK" ]; then
+      rm "$MATTERHORN_RELEASE_CREATED_TMP_SYMLINK"
+    fi
 }
 trap cleanup EXIT
 
