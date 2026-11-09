@@ -3,7 +3,8 @@ Matterhorn Build Instructions
 
 To build Matterhorn from source, there are two options:
 
-* Clone the repo and follow the "Build from repo" instructions below, or
+* Clone the repo with the `--recurse-submodules` flag
+and follow the "Build from repo" instructions below, or
 
 * Fetch the latest `.tar.gz` source from GitHub and follow the "Build
 from tarball" instructions below.
@@ -32,11 +33,10 @@ default, a GitHub account is necessary to fetch the submodule sources.
 (If you need to do a source build but don't have an SSH key present for
 GitHub access, you'll need to change the submodule URLs; see below.)
 
-1. Clone the `matterhorn` source: `git clone git@github.com:matterhorn-chat/matterhorn.git`
+1. Clone the `matterhorn` source: `git clone --recurse-submodules git@github.com:matterhorn-chat/matterhorn.git`
 2. `cd matterhorn`
-3. Fetch submodules with `git submodule update --init`
-4. Do a local build with `./build.sh` or build a release with `./scripts/local-mkrelease.sh`.
-5. Local builds can be run with `./run.sh`; to run a binary release,
+3. Do a local build with `./build.sh` or build a release with `./scripts/local-mkrelease.sh`.
+4. Local builds can be run with `./run.sh`; to run a binary release,
 just unpack the archive and run the `matterhorn` binary found therein.
 
 Changing the submodule URLs
