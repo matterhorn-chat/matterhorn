@@ -15,6 +15,8 @@ In either case, first follow these steps:
 3. Install Cabal with `ghcup install-cabal`.
 4. Add `~/.ghcup/bin` to your `PATH`.
 5. Run `cabal new-update`
+6. If you are a Mac user, you may need to run
+`ln -s ~/.config/cabal ~/.cabal` for `cabal-plan` to function correctly.
 
 Setting Up
 ==========
