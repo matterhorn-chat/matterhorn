@@ -1,13 +1,13 @@
-Matterhorn Build Instructions
+# Matterhorn Build Instructions
+
 -----------------------------
 
 To build Matterhorn from source, there are two options:
 
-* Clone the repo with the `--recurse-submodules` flag
-and follow the "Build from repo" instructions below, or
+* Using Git, following the ["Build from repo" instructions](#build-from-repo) below.
 
-* Fetch the latest `.tar.gz` source from GitHub and follow the "Build
-from tarball" instructions below.
+* Fetch the latest `.tar.gz` source from GitHub and follow the ["Build
+from tarball" instructions](#build-from-tarball) below.
 
 In either case, first follow these steps:
 
@@ -21,14 +21,12 @@ script to function correctly.
 6. If you are a Mac user, you may need to run
 `ln -s ~/.config/cabal ~/.cabal` for `cabal-plan` to function correctly.
 
-Setting Up
-==========
+## Setting Up
 
 On Ubuntu systems, you may need to first install the `zlib1g-dev`
 package.
 
-Build from repo
-===============
+## Build from repo
 
 Before building Matterhorn from source, you'll need a GitHub account. By
 default, a GitHub account is necessary to fetch the submodule sources.
@@ -41,8 +39,7 @@ GitHub access, you'll need to change the submodule URLs; see below.)
 4. Local builds can be run with `./run.sh`; to run a binary release,
 just unpack the archive and run the `matterhorn` binary found therein.
 
-Changing the submodule URLs
----------------------------
+## Changing the submodule URLs
 
 The repository comes configured with submodules that use SSH URLs to
 fetch from GitHub. If you need to use HTTPS URLs (e.g. if you don't have
@@ -50,8 +47,7 @@ an SSH key present for GitHub access or don't have a GitHub account),
 you'll need to edit the `.gitmodules` file and convert the submodule
 URLs to HTTPS. Then run `git submodule sync`.
 
-Build from tarball
-==================
+## Build from tarball
 
 1. Unpack the latest `.tar.gz` release from GitHub.
 2. `cd matterhorn-<VERSION>`
