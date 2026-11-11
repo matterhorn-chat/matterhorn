@@ -12,6 +12,12 @@ package repository.  It's recommended that the release engineer create
 a `staging_ABBCC.X.Y` branch to protect against other developer
 commits during the release process.
 
+Requirements before running the release process:
+
+* `cabal-plan` must be installed and must be present in the `PATH`.
+
+Release steps are as follows:
+
 1. Set the `matterhorn` package version in the cabal file. The version
    string must be of the form `ABBCC.X.Y` where ABBCC corresponds to
    the Mattermost server version supported by the release. For

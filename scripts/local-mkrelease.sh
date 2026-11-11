@@ -88,12 +88,6 @@ LONG_HEAD=$(git log | head -1 | awk '{ print $2 }')
 SHORT_HEAD=${LONG_HEAD:0:8}
 DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
-CABAL_PLAN=$HOME/.cabal/bin/cabal-plan
-
-if [[ "$OSTYPE" =~ ^darwin ]]
-then
-    CABAL_PLAN=$HOME/.local/bin/cabal-plan
-fi
 
 # This is needed due to a bug in cabal-plan where looks for the Cabal
 # configuration at ~/.cabal/config even if the version of cabal in
@@ -131,7 +125,7 @@ function prepare_dist {
     cp $ROOT/scripts/macos_allow_gatekeeper.sh $dest/
     echo $LONG_HEAD > $dest/COMMIT
 
-    cd $ROOT && $CABAL_PLAN license-report exe:matterhorn > $dest/COPYRIGHT
+    cd $ROOT && cabal-plan license-report exe:matterhorn > $dest/COPYRIGHT
 
     if grep -i gpl $dest/COPYRIGHT >/dev/null
     then
@@ -140,14 +134,16 @@ function prepare_dist {
     fi
 }
 
-function install_tools {
-    if [ ! -e $CABAL_PLAN ]
+function check_tools {
+    if ! which cabal-plan >/dev/null 2>/dev/null
     then
-        cabal install cabal-plan -f license-report
+        echo "Error: cabal-plan is not in the PATH"
+        echo "Add it to the PATH or install it with cabal and try again."
+        exit 1
     fi
 }
 
-install_tools
+check_tools
 
 echo Version: $MHVERSION
 echo Filename: $FILENAME
