@@ -89,9 +89,9 @@ SHORT_HEAD=${LONG_HEAD:0:8}
 DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
 
-# This is needed due to a bug in cabal-plan where looks for the Cabal
-# configuration at ~/.cabal/config even if the version of cabal in
-# use uses the XDG location (~/.config/cabal/config) instead. Since
+# This is needed due to a bug in cabal-plan where it looks for the
+# Cabal configuration at ~/.cabal/config even if the version of cabal
+# in use uses the XDG location (~/.config/cabal/config) instead. Since
 # cabal-plan also doesn't (as of 0.7.7.0) provide any command-line flags
 # to customize the location where it looks for the cabal configuration,
 # we deal with this by symlinking the two for the duration of this
