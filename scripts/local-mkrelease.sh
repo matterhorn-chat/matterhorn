@@ -95,9 +95,14 @@ then
     CABAL_PLAN=$HOME/.local/bin/cabal-plan
 fi
 
-# This is needed due to a potential bug in cabal-plan where it exits with an
-# error about ~/.cabal/config not existing, without trying to use
-# ~/.config/cabal/config instead.
+# This is needed due to a bug in cabal-plan where looks for the Cabal
+# configuration at ~/.cabal/config even if the version of cabal in
+# use uses the XDG location (~/.config/cabal/config) instead. Since
+# cabal-plan also doesn't (as of 0.7.7.0) provide any command-line flags
+# to customize the location where it looks for the cabal configuration,
+# we deal with this by symlinking the two for the duration of this
+# script on systems where the configuration file is in an XDG location.
+#
 # See https://github.com/haskell-hvr/cabal-plan/issues/108 for more info.
 MATTERHORN_RELEASE_CREATED_TMP_SYMLINK=""
 if [[ ! -f "$HOME/.cabal/config" && -f "$HOME/.config/cabal/config" ]]; then
