@@ -271,8 +271,8 @@ parseUsername = P.try $ do
     void $ C.symbol userSigilChar
     let chunk = C.satisfyWord (const True) <|> C.symbol '_' <|> C.symbol '-'
         period = case C.tokenize "" "." of
-            [p] -> p
-            _ -> error "BUG: parseUsername: failed to tokenize basic input"
+            (tok:_) | C.Symbol '.' <- C.tokType tok -> tok
+            result -> error $ "BUG: parseUsername: failed to tokenize basic input: got " <> show result
     uts <- intersperse period <$> do
         c <- chunk
         rest <- P.many $ P.try $ do
