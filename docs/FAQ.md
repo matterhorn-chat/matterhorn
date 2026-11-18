@@ -1,6 +1,32 @@
 
 # Frequently Asked Questions
 
+## How can I tell which messages are part of threads?
+
+There are two ways that Matterhorn indicates this visually. Messages
+that are part of ongoing threads will be rendered with a vertical bar
+before the post's author. In addition, if the messages in a thread
+follow the thread's first post directly, they'll be rendered underneath
+the original post as follows:
+
+```
+user1: hello!
+│ user2: hello to you, too!
+```
+
+But if the message is part of a thread that is interspersed with other
+activity in the channel, those messages will display a portion of the
+thread's original post above them, grayed out:
+
+```
+user1: first line of user1's original message...
+│ user2: new message in thread
+```
+
+To view all messages in a thread by themselves in a dedicated window,
+see the default ``t`` key binding in message selection mode (``C-s`` by
+default).
+
 ## Does matterhorn support Gitlab authentication?
 
 Matterhorn supports GitLab authentication indirectly. In order to use

@@ -88,8 +88,7 @@ LONG_HEAD=$(git log | head -1 | awk '{ print $2 }')
 SHORT_HEAD=${LONG_HEAD:0:8}
 DIRNAME=$(output_dirname)
 FILENAME=$DIRNAME.tar.bz2
-CABAL_DEPS_REPO=https://github.com/matterhorn-chat/cabal-dependency-licenses.git
-CABAL_DEPS_TOOL_DIR=$HOME/.cabal/bin
+CABAL_PLAN=$HOME/.cabal/bin/cabal-plan
 
 function prepare_dist {
     local ver=$1
@@ -111,36 +110,19 @@ function prepare_dist {
     cp -r $ROOT/client-scripts $dest/
     echo $LONG_HEAD > $dest/COMMIT
 
-    cd $ROOT && $CABAL_DEPS_TOOL_DIR/cabal-dependency-licenses > $dest/COPYRIGHT
+    cd $ROOT && $CABAL_PLAN license-report exe:matterhorn > $dest/COPYRIGHT
+
+    if grep -i gpl $dest/COPYRIGHT >/dev/null
+    then
+        echo "ERROR: $dest/COPYRIGHT indicates that one or more Matterhorn dependencies is GPL-licensed!"
+        exit 1
+    fi
 }
 
 function install_tools {
-    if [ ! -f $CABAL_DEPS_TOOL_DIR/cabal-dependency-licenses ]
+    if [ ! -e $CABAL_PLAN ]
     then
-        BUILD=$(mktemp -d)
-        cd $BUILD
-        git clone $CABAL_DEPS_REPO
-
-        cd cabal-dependency-licenses
-
-        # NB: If the version of Cabal that comes with your GHC does not
-        # match the one that was used to build your cabal-install tool,
-        # then this tool will get built with the wrong version of Cabal.
-        # Then later it will complain about that version mismatch. To
-        # account for that, we set the Cabal constraint during this
-        # tool's build to match your cabal-install's reported library
-        # version, e.g.,
-        #
-        #   $ cabal --version
-        #   cabal-install version 2.4.1.0
-        #   compiled using version 2.4.1.0 of the Cabal library
-        #
-        # cabal install --constraint="Cabal==2.4.1.0"
-
-        CABAL_VER=$(cabal --version | grep compiled | awk '{ print $4 }')
-        cabal install --constraint="Cabal==$CABAL_VER"
-        mkdir -p $CABAL_DEPS_TOOL_DIR
-        cd $ROOT && rm -rf $BUILD
+        cabal install cabal-plan -f license-report
     fi
 }
 

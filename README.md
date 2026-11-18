@@ -38,7 +38,7 @@ For most of our binary releases, no additional packages need to be
 installed; they should just work out of the box. But here are some
 additional requirements that may apply for your platform:
 
-* CentOS Steam 8
+* CentOS Stream 8
   * The `ncurses-compat-libs` package must be installed.
 
 ## Other Ways to Install: Third-Party Snap Package

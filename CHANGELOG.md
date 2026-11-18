@@ -1,4 +1,17 @@
 
+90000.1.2
+=========
+
+Updated build constraints for `data-clist`, `vty-crossplatform`, and
+`aeson` to build on GHC 9.8.
+
+90000.1.1
+=========
+
+Bug fixes:
+* Matterhorn now allows the client configuration's
+  `EnableSignUpWithGitLab` to be omitted. (#852)
+
 90000.1.0
 =========
 

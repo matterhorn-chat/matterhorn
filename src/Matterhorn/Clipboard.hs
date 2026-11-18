@@ -15,7 +15,7 @@ import           Matterhorn.Types
 
 copyToClipboard :: Text -> MH ()
 copyToClipboard txt = do
-  result <- liftIO (try (setClipboard (T.unpack txt)))
+  result <- liftIO $ try $ setClipboard $ T.unpack txt
   case result of
     Left e -> do
       let errMsg = case e of

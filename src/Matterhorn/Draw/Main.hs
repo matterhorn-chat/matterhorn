@@ -23,7 +23,6 @@ import           Network.Mattermost.Types ( Type(Direct, Private, Group)
 import           Matterhorn.Draw.ChannelList ( renderChannelList, channelListWidth )
 import           Matterhorn.Draw.Messages
 import           Matterhorn.Draw.MessageInterface
-import           Matterhorn.Draw.Autocomplete
 import           Matterhorn.Draw.Util
 import           Matterhorn.Draw.RichText
 import           Matterhorn.Themes
@@ -34,8 +33,9 @@ import qualified Matterhorn.Zipper as Z
 
 drawMain :: ChatState -> Mode -> [Widget Name]
 drawMain st mode =
-    (connectionLayer st : drawAutocompleteLayers st) <>
-    [joinBorders $ mainInterface st mode (st^.csCurrentTeamId)]
+    [ connectionLayer st
+    , joinBorders $ mainInterface st mode (st^.csCurrentTeamId)
+    ]
 
 connectionLayer :: ChatState -> Widget Name
 connectionLayer st =
@@ -47,7 +47,7 @@ connectionLayer st =
                 let aw = ctx^.availWidthL
                     w = length msg + 2
                     msg = "NOT CONNECTED"
-                render $ translateBy (Location (max 0 (aw - w), 0)) $
+                render $ translateLayer (Location (max 0 (aw - w), 0)) $
                          withDefAttr errorMessageAttr $
                          border $ str msg
 

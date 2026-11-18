@@ -21,7 +21,7 @@ drawChannelSelectPrompt st tId =
        ctx <- getContext
        let rowOffset = ctx^.availHeightL - 1
            e = st^.csTeam(tId).tsChannelSelectState.channelSelectInput
-       render $ translateBy (Location (0, rowOffset)) $
+       render $ translateLayer (Location (0, rowOffset)) $
                 withDefAttr channelSelectPromptAttr $
                 (txt "Switch to channel [use ^ and $ to anchor]: ") <+>
                 (renderEditor (txt . T.concat) True e)
